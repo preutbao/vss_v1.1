@@ -1,0 +1,163 @@
+/* assets/ssi_grid_font.css
+   Font override cho AG Grid — phong cách SSI iBoard
+   Đặt file này vào thư mục: assets/
+*/
+
+/* ── 1. Font cơ bản toàn bảng ───────────────────────────────────────────── */
+.ag-theme-alpine-dark {
+    --ag-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --ag-font-size: 13px;
+}
+
+/* ── 2. Tất cả cell: Roboto Mono, tabular-nums (số thẳng hàng) ──────────── */
+.ag-theme-alpine-dark .ag-cell {
+    font-family: 'Roboto Mono', 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;  /* KEY: giữ số thẳng hàng như SSI */
+    letter-spacing: 0.2px;
+    line-height: 1.4;
+}
+
+/* ── 3. Cột MÃ CK: Sora bold — đậm nét, dễ nhận diện ──────────────────── */
+.ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
+    font-family: 'Sora', 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+    font-variant-numeric: normal !important;
+}
+
+/* ── 4. Cột NGÀNH: Inter — đọc văn bản tốt hơn monospace ───────────────── */
+.ag-theme-alpine-dark .ag-cell[col-id="Sector"],
+.ag-theme-alpine-dark .ag-cell[col-id="Company Common Name"],
+.ag-theme-alpine-dark .ag-cell[col-id="Candlestick_Pattern"],
+.ag-theme-alpine-dark .ag-cell[col-id="RSI_State"] {
+    font-family: 'Inter', sans-serif !important;
+    font-variant-numeric: normal !important;
+    letter-spacing: 0px !important;
+}
+
+/* ── 5. Cột Grade (VALUE / GROWTH / MOM. / VGM): Inter bold ────────────── */
+.ag-theme-alpine-dark .ag-cell[col-id="Value Score"],
+.ag-theme-alpine-dark .ag-cell[col-id="Growth Score"],
+.ag-theme-alpine-dark .ag-cell[col-id="Momentum Score"],
+.ag-theme-alpine-dark .ag-cell[col-id="VGM Score"] {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    font-variant-numeric: normal !important;
+}
+
+/* ── 6. Header: Inter uppercase — sắc nét, gọn ─────────────────────────── */
+.ag-theme-alpine-dark .ag-header-cell-text {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase;
+    color: #7fa8cc;
+}
+
+/* ── 7. Pagination & footer text ────────────────────────────────────────── */
+.ag-theme-alpine-dark .ag-paging-panel,
+.ag-theme-alpine-dark .ag-status-bar {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: #5a8ab0;
+}
+
+/* ── 8. Selected row highlight ──────────────────────────────────────────── */
+.ag-theme-alpine-dark .ag-row/* assets/ssi_grid_font.css
+   Font + màu sắc AG Grid — phong cách SSI iBoard
+   Đặt file này vào thư mục: assets/
+*/
+
+/* ── 1. Font cơ bản toàn bảng ───────────────────────────────────────────── */
+.ag-theme-alpine-dark {
+    --ag-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --ag-font-size: 13px;
+}
+
+/* ── 2. Tất cả cell số liệu: Roboto Mono, tabular-nums ─────────────────── */
+.ag-theme-alpine-dark .ag-cell {
+    font-family: 'Roboto Mono', 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2px;
+    line-height: 1.4;
+}
+
+/* ── 3. Cột MÃ CK: Barlow Semi Condensed — đậm, rộng, dễ đọc như SSI ───── */
+.ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
+    font-family: 'Barlow Semi Condensed', 'Inter', sans-serif !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase !important;
+    font-variant-numeric: normal !important;
+}
+
+/* ── 4. Cột văn bản (NGÀNH, pattern...): Inter ──────────────────────────── */
+.ag-theme-alpine-dark .ag-cell[col-id="Sector"],
+.ag-theme-alpine-dark .ag-cell[col-id="Company Common Name"],
+.ag-theme-alpine-dark .ag-cell[col-id="Candlestick_Pattern"],
+.ag-theme-alpine-dark .ag-cell[col-id="RSI_State"] {
+    font-family: 'Inter', sans-serif !important;
+    font-variant-numeric: normal !important;
+    letter-spacing: 0px !important;
+    font-size: 12px !important;
+}
+
+/* ── 5. Grade badges (VALUE / GROWTH / MOM. / VGM) ─────────────────────── */
+.ag-theme-alpine-dark .ag-cell[col-id="Value Score"],
+.ag-theme-alpine-dark .ag-cell[col-id="Growth Score"],
+.ag-theme-alpine-dark .ag-cell[col-id="Momentum Score"],
+.ag-theme-alpine-dark .ag-cell[col-id="VGM Score"] {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    font-variant-numeric: normal !important;
+}
+
+/* ── 6. Header: Inter uppercase ─────────────────────────────────────────── */
+.ag-theme-alpine-dark .ag-header-cell-text {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase;
+    color: #7fa8cc;
+}
+
+/* ── 7. Row highlight khi select ────────────────────────────────────────── */
+.ag-theme-alpine-dark .ag-row-selected {
+    background-color: rgba(0, 212, 255, 0.08) !important;
+    border-left: 3px solid #00d4ff !important;
+}
+
+/* ── 8. Hover ────────────────────────────────────────────────────────────── */
+.ag-theme-alpine-dark .ag-row:hover {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* ── 9. Pagination ───────────────────────────────────────────────────────── */
+.ag-theme-alpine-dark .ag-paging-panel {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: #5a8ab0;
+}
+
+/* ── 10. Đường kẻ hàng mỏng hơn — gọn như SSI ───────────────────────────── */
+.ag-theme-alpine-dark .ag-row {
+    border-bottom-color: rgba(255, 255, 255, 0.04) !important;
+}-selected {
+    background-color: rgba(0, 212, 255, 0.08) !important;
+    border-left: 3px solid #00d4ff !important;
+}
+
+/* ── 9. Hover row ───────────────────────────────────────────────────────── */
+.ag-theme-alpine-dark .ag-row:hover {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}

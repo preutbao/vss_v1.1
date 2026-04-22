@@ -1,0 +1,13 @@
+/* zoom_lock.css — Force 90% render scale globally */
+html {
+    zoom: 90%;                /* Chrome, Edge, Safari */
+    -moz-transform: scale(0.9);    /* Firefox fallback */
+    -moz-transform-origin: 0 0;
+}
+/* Prevent text-size-adjust on mobile */
+body {
+    -webkit-text-size-adjust: none;
+    -moz-text-size-adjust: none;
+    text-size-adjust: none;
+    touch-action: pan-x pan-y;  /* disable pinch-zoom CSS level */
+}

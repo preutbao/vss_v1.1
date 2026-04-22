@@ -1,0 +1,33 @@
+/* IDX Smart Screener — Futuristic Animations */
+/* Bỏ file này vào thư mục: assets/ */
+
+@keyframes sweep {
+  0%   { left: -60%; }
+  100% { left: 120%; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.7); }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 8px #00ffc8, 0 0 16px rgba(0,255,200,0.5); }
+  50%       { box-shadow: 0 0 4px #00ffc8, 0 0 8px rgba(0,255,200,0.3); }
+}
+
+@keyframes gradientFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}

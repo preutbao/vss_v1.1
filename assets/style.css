@@ -1,0 +1,1944 @@
+/* ============================================================================
+   IDX Smart Screener — Premium Terminal Edition
+   Theme: Bloomberg × TradingView  |  Institutional Grade Dark UI
+   ============================================================================ */
+
+/* === GOOGLE FONTS IMPORT === */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+/* ============================================================================
+   🛡️ HIDE TRADINGVIEW WATERMARK - HARDCORE MODE
+   ============================================================================ */
+img[src*="tradingview" i],
+img[src*="TRADINGVIEW" i],
+img[alt*="tradingview" i],
+img[alt*="TradingView" i],
+img[alt*="TICK CHARTS" i],
+div[class*="tradingview" i],
+div[id*="tradingview" i],
+a[href*="tradingview" i],
+iframe[src*="tradingview" i],
+*[class*="tradingview-widget" i] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -99999px !important;
+    pointer-events: none !important;
+}
+
+/* Hide all small images in header (watermark pattern) */
+#main-header img:not([src*="logo"]):not([src*="Logo"]) {
+    display: none !important;
+}
+
+/* Overlay che watermark góc phải header */
+#main-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(6, 15, 30, 0.7) 25%,
+        rgba(6, 15, 30, 0.95) 50%,
+        rgba(6, 15, 30, 1) 75%
+    );
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* ============================================================================
+   CSS DESIGN TOKENS
+   ============================================================================ */
+:root {
+  /* Core backgrounds */
+  --bg-void:        #020810;
+  --bg-base:        #060f1e;
+  --bg-card:        #091526;
+  --bg-surface:     #0d1d30;
+  --bg-elevated:    #112236;
+  --bg-hover:       #152840;
+  --bg-active:      #1a3550;
+
+  /* Borders */
+  --border-subtle:  #0e2540;
+  --border-dim:     #163660;
+  --border-default: #1d4d80;
+  --border-bright:  #2a6ab0;
+
+  /* Primary accent — electric cyan */
+  --accent:         #00d4ff;
+  --accent-dim:     rgba(0, 212, 255, 0.12);
+  --accent-glow:    rgba(0, 212, 255, 0.25);
+  --accent-deep:    #0090ff;
+
+  /* Semantic */
+  --positive:       #00e676;
+  --positive-dim:   rgba(0, 230, 118, 0.12);
+  --negative:       #ff3d57;
+  --negative-dim:   rgba(255, 61, 87, 0.12);
+  --warning:        #ffb703;
+  --warning-dim:    rgba(255, 183, 3, 0.12);
+  --purple:         #b388ff;
+  --purple-dim:     rgba(179, 136, 255, 0.12);
+
+  /* Text */
+  --text-primary:   #d6eaf8;
+  --text-secondary: #7fa8cc;
+  --text-muted:     #3d6a8a;
+  --text-ticker:    #00d4ff;
+
+  /* Typography - Professional grade fonts */
+  --font-display:   'Montserrat', 'Space Grotesk', 'Sora', sans-serif;  /* Header/Brand */
+  --font-data:      'JetBrains Mono', 'Monaco', monospace;               /* Numbers/Data */
+  --font-ui:        'Inter', -apple-system, sans-serif;                  /* UI Text */
+  --font-brand:     'Space Grotesk', 'Montserrat', sans-serif;           /* Logo/Branding */
+
+  /* Effects */
+  --glow-accent:    0 0 20px rgba(0, 212, 255, 0.3);
+  --glow-positive:  0 0 16px rgba(0, 230, 118, 0.25);
+  --glow-negative:  0 0 16px rgba(255, 61, 87, 0.25);
+  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.6);
+  --shadow-deep:    0 8px 40px rgba(0, 0, 0, 0.8);
+
+  /* Radius */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+}
+
+/* ============================================================================
+   GLOBAL RESET & BASE
+   ============================================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-ui);
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  /* Subtle scan-line texture for terminal feel */
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 212, 255, 0.012) 2px,
+      rgba(0, 212, 255, 0.012) 4px
+    );
+}
+
+/* ============================================================================
+   SCROLLBAR — Sleek blue-themed
+   ============================================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-void); }
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar-corner { background: var(--bg-void); }
+
+/* ============================================================================
+   MAIN LAYOUT
+   ============================================================================ */
+.main-content {
+  padding: 20px 24px;
+  min-height: 100vh;
+  background-color: transparent;
+  width: 100%;
+}
+
+/* ============================================================================
+   PAGE HEADER — Sharp branded header
+   ============================================================================ */
+.page-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  position: relative;
+}
+
+.page-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-deep) 40%, transparent 100%);
+}
+
+.page-header h2 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+}
+
+.page-header h2 i {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+.page-header p {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-data);
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   INFO CARDS — Glass morphism panels
+   ============================================================================ */
+.info-card {
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-surface) 100%);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.info-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.info-card:hover {
+  border-color: var(--border-bright);
+  box-shadow: var(--shadow-card), inset 0 0 40px rgba(0, 212, 255, 0.03);
+}
+
+.info-card:hover::before { opacity: 1; }
+
+/* ============================================================================
+   SCORE BOX — Metric display cards
+   ============================================================================ */
+.score-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  text-align: center;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.score-box::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--accent-dim) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.score-box:hover {
+  border-color: var(--accent);
+  box-shadow: var(--glow-accent);
+  transform: translateY(-2px);
+}
+
+.score-box:hover::after { opacity: 1; }
+
+.metric-label {
+  font-family: var(--font-data);
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-family: var(--font-data);
+  font-size: 22px;
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s;
+}
+
+.metric-row:last-child { border-bottom: none; }
+
+.metric-row:hover {
+  background: var(--bg-hover);
+  margin: 0 -16px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+}
+
+.metric-positive { color: var(--positive) !important; font-weight: 600; }
+.metric-negative { color: var(--negative) !important; font-weight: 600; }
+
+/* ============================================================================
+   AG GRID — Bloomberg Terminal-style data table
+   ============================================================================ */
+.ag-theme-alpine-dark {
+  /* Core tokens */
+  --ag-background-color:              #060f1e;
+  --ag-header-background-color:       #091526;
+  --ag-odd-row-background-color:      #060f1e;
+  --ag-even-row-background-color:     #070e1c;
+  --ag-row-hover-color:               #112236;
+  --ag-border-color:                  #0e2540;
+  --ag-header-column-separator-color: #163660;
+  --ag-foreground-color:              #d6eaf8;
+  --ag-header-foreground-color:       #3d6a8a;
+  --ag-secondary-foreground-color:    #2a5070;
+  --ag-row-border-color:              #0a1e35;
+  --ag-selected-row-background-color: rgba(0, 212, 255, 0.07);
+  --ag-range-selection-border-color:  #00d4ff;
+  --ag-font-family:                   'JetBrains Mono', monospace;
+  --ag-font-size:                     12px;
+  --ag-cell-horizontal-padding:       10px;
+  --ag-row-height:                    38px;
+  --ag-header-height:                 40px;
+
+  border: 1px solid #0e2540 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(0,212,255,0.06);
+}
+
+/* ── Header ── */
+.ag-theme-alpine-dark .ag-header {
+  background: linear-gradient(180deg, #0d1d30 0%, #091526 100%) !important;
+  border-bottom: 2px solid #1d4d80 !important;
+}
+
+.ag-theme-alpine-dark .ag-header-row {
+  background: transparent !important;
+}
+
+.ag-theme-alpine-dark .ag-header-cell {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  color: #3d6a8a !important;
+  border-right: 1px solid #0a1e35 !important;
+  transition: color 0.2s, background 0.2s;
+  padding: 0 10px !important;
+}
+
+.ag-theme-alpine-dark .ag-header-cell:hover {
+  color: #00d4ff !important;
+  background: rgba(0, 212, 255, 0.05) !important;
+}
+
+/* Sort icons */
+.ag-theme-alpine-dark .ag-sort-indicator-icon {
+  color: #00d4ff !important;
+}
+
+/* ── Rows ── */
+.ag-theme-alpine-dark .ag-row {
+  border-bottom: 1px solid #0a1e35 !important;
+  transition: background-color 0.15s ease;
+}
+
+.ag-theme-alpine-dark .ag-row-odd {
+  background-color: #060f1e !important;
+}
+
+.ag-theme-alpine-dark .ag-row-even {
+  background-color: #07101f !important;
+}
+
+.ag-theme-alpine-dark .ag-row:hover {
+  background-color: #112236 !important;
+  /* Subtle left glow on hover */
+  box-shadow: inset 3px 0 0 rgba(0, 212, 255, 0.4);
+}
+
+/* Selected row */
+.ag-theme-alpine-dark .ag-row-selected {
+  background-color: rgba(0, 212, 255, 0.07) !important;
+  box-shadow: inset 3px 0 0 #00d4ff !important;
+}
+
+.ag-theme-alpine-dark .ag-row-selected .ag-cell {
+  color: #d6eaf8 !important;
+}
+
+/* ── Cells ── */
+.ag-theme-alpine-dark .ag-cell {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+  border-right: 1px solid #0a1e35 !important;
+  line-height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Right-aligned cells */
+.ag-theme-alpine-dark .ag-cell[class*="rightAligned"],
+.ag-theme-alpine-dark [col-id] .ag-cell-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Empty/dash values */
+.ag-theme-alpine-dark .ag-cell-value:empty::after {
+  content: '—';
+  color: #1d4d80;
+}
+
+/* ── Pinned columns ── */
+.ag-theme-alpine-dark .ag-pinned-left-cols-container {
+  border-right: 2px solid #1d4d80 !important;
+  box-shadow: 6px 0 16px rgba(0,0,0,0.5);
+  background: #060f1e !important;
+}
+
+.ag-theme-alpine-dark .ag-pinned-left-header {
+  border-right: 2px solid #1d4d80 !important;
+  background: linear-gradient(180deg, #0d1d30 0%, #091526 100%) !important;
+}
+
+/* ── Filter input ── */
+.ag-theme-alpine-dark .ag-filter-toolpanel-header,
+.ag-theme-alpine-dark .ag-filter-body-wrapper {
+  background: #091526 !important;
+  border-color: #1d4d80 !important;
+}
+
+.ag-theme-alpine-dark .ag-input-field-input {
+  background: #0d1d30 !important;
+  border: 1px solid #1d4d80 !important;
+  color: #d6eaf8 !important;
+  border-radius: 4px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+}
+
+/* ── Pagination panel ── */
+.ag-theme-alpine-dark .ag-paging-panel {
+  background: linear-gradient(180deg, #091526 0%, #060f1e 100%) !important;
+  border-top: 1px solid #1d4d80 !important;
+  color: #3d6a8a !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  height: 44px !important;
+  padding: 0 16px !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-button {
+  color: #3d6a8a !important;
+  transition: all 0.2s;
+  border-radius: 4px !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-button:hover:not([disabled]) {
+  background: rgba(0, 212, 255, 0.1) !important;
+  color: #00d4ff !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-button[disabled] {
+  opacity: 0.2 !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-page-summary-panel {
+  color: #7fa8cc !important;
+}
+
+/* ── Scrollbar inside grid ── */
+.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar,
+.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-track,
+.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-track {
+  background: #060f1e;
+}
+
+.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb,
+.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-thumb {
+  background: #163660;
+  border-radius: 3px;
+}
+
+.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb:hover,
+.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-thumb:hover {
+  background: #00d4ff;
+}
+
+/* ── No rows overlay ── */
+.ag-theme-alpine-dark .ag-overlay-no-rows-wrapper {
+  background: #060f1e !important;
+}
+
+.ag-theme-alpine-dark .ag-overlay-no-rows-center {
+  color: #2a5070 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 13px !important;
+}
+
+/* ============================================================================
+   GRADE CHIPS — Score badges
+   ============================================================================ */
+.grade-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-data);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+
+.grade-chip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.06);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.grade-chip:hover::after { opacity: 1; }
+
+/* A */
+.grade-chip-a {
+  background: var(--positive-dim);
+  color: var(--positive);
+  border-color: rgba(0, 230, 118, 0.25);
+}
+.grade-chip-a:hover {
+  background: rgba(0, 230, 118, 0.2);
+  border-color: var(--positive);
+  box-shadow: 0 0 12px rgba(0, 230, 118, 0.3);
+  transform: translateY(-1px);
+}
+.grade-chip-a.active {
+  background: var(--positive);
+  color: #001a0c;
+  border-color: var(--positive);
+  box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);
+}
+
+/* B */
+.grade-chip-b {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: rgba(0, 212, 255, 0.25);
+}
+.grade-chip-b:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: var(--accent);
+  box-shadow: var(--glow-accent);
+  transform: translateY(-1px);
+}
+.grade-chip-b.active {
+  background: var(--accent);
+  color: #001a20;
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.5);
+}
+
+/* C */
+.grade-chip-c {
+  background: var(--warning-dim);
+  color: var(--warning);
+  border-color: rgba(255, 183, 3, 0.25);
+}
+.grade-chip-c:hover {
+  background: rgba(255, 183, 3, 0.2);
+  border-color: var(--warning);
+  box-shadow: 0 0 12px rgba(255, 183, 3, 0.3);
+  transform: translateY(-1px);
+}
+.grade-chip-c.active {
+  background: var(--warning);
+  color: #1a1200;
+  border-color: var(--warning);
+  box-shadow: 0 0 16px rgba(255, 183, 3, 0.4);
+}
+
+/* D */
+.grade-chip-d {
+  background: var(--negative-dim);
+  color: var(--negative);
+  border-color: rgba(255, 61, 87, 0.25);
+}
+.grade-chip-d:hover {
+  background: rgba(255, 61, 87, 0.2);
+  border-color: var(--negative);
+  box-shadow: var(--glow-negative);
+  transform: translateY(-1px);
+}
+.grade-chip-d.active {
+  background: var(--negative);
+  color: #1a0007;
+  border-color: var(--negative);
+  box-shadow: 0 0 16px rgba(255, 61, 87, 0.4);
+}
+
+/* F */
+.grade-chip-f {
+  background: rgba(42, 62, 80, 0.4);
+  color: #4a6a80;
+  border-color: rgba(42, 62, 80, 0.4);
+}
+.grade-chip-f:hover {
+  background: rgba(42, 62, 80, 0.6);
+  border-color: #4a6a80;
+  transform: translateY(-1px);
+}
+.grade-chip-f.active {
+  background: #3d5a70;
+  color: var(--text-primary);
+  border-color: #4a6a80;
+}
+
+/* ============================================================================
+   LEGEND CHIPS
+   ============================================================================ */
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 18px;
+  border-radius: 3px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.legend-a { background: var(--positive); color: #001a0c; }
+.legend-b { background: var(--accent);   color: #001a20; }
+.legend-c { background: var(--warning);  color: #1a1200; }
+.legend-d { background: var(--negative); color: #1a0007; }
+.legend-f { background: #3d5a70;         color: var(--text-primary); }
+
+/* ============================================================================
+   CUSTOM RANGE SLIDER
+   ============================================================================ */
+.custom-range-slider .rc-slider-rail {
+  background-color: var(--border-dim);
+  height: 3px;
+  border-radius: 2px;
+}
+
+.custom-range-slider .rc-slider-track {
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent));
+  height: 3px;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.custom-range-slider .rc-slider-handle {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  background-color: var(--accent);
+  border: 2px solid var(--bg-void);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+  transition: box-shadow 0.2s, transform 0.15s;
+  /* rc-slider dùng translateX(-50%) để căn giữa handle theo left:X%
+     Phải giữ translateX(-50%) khi override transform, nếu không handle bị lệch */
+  transform: translateX(-50%);
+}
+
+.custom-range-slider .rc-slider-handle:hover,
+.custom-range-slider .rc-slider-handle:active {
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.7);
+  /* translateX(-50%) giữ handle căn giữa, scale(1.1) phóng to nhẹ */
+  transform: translateX(-50%) scale(1.1);
+}
+
+/* ============================================================================
+   CRITERIA ITEMS — Filter sidebar list
+   ============================================================================ */
+.criteria-item-hover {
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 2px solid transparent;
+}
+
+.criteria-item-hover:hover {
+  background-color: var(--bg-hover) !important;
+  border-left-color: var(--accent) !important;
+  padding-left: 16px !important;
+}
+
+.criteria-item-hover:active {
+  background-color: var(--bg-active) !important;
+  transform: scale(0.99);
+}
+
+/* ============================================================================
+   COLLAPSE HEADERS
+   ============================================================================ */
+.collapse-header {
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.collapse-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.collapse-header:hover {
+  background-color: var(--bg-elevated) !important;
+}
+
+.collapse-header:hover::before { opacity: 1; }
+
+/* ============================================================================
+   ACTION BUTTONS
+   ============================================================================ */
+
+/* Apply button */
+.btn-apply-ssi {
+  background: linear-gradient(135deg, #0090ff 0%, #00d4ff 100%) !important;
+  border: none !important;
+  color: #001a20 !important;
+  padding: 9px 22px !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font-display) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3) !important;
+}
+
+.btn-apply-ssi::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  transform: translate(-50%, -50%);
+  transition: width 0.5s, height 0.5s;
+}
+
+.btn-apply-ssi:active::before { width: 300px; height: 300px; }
+
+.btn-apply-ssi:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 28px rgba(0, 212, 255, 0.5) !important;
+  filter: brightness(1.1) !important;
+}
+
+.btn-apply-ssi:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3) !important;
+}
+
+/* Save / secondary button */
+.btn-save-ssi {
+  background-color: transparent !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-secondary) !important;
+  padding: 9px 22px !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font-display) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-save-ssi:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background-color: var(--accent-dim) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.15) !important;
+}
+
+/* Reset button */
+#btn-reset-ui {
+  background: transparent !important;
+  border: 1px solid rgba(255, 61, 87, 0.35) !important;
+  color: rgba(255, 61, 87, 0.7) !important;
+  transition: all 0.25s !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font-display) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.5px !important;
+}
+
+#btn-reset-ui:hover {
+  border-color: var(--negative) !important;
+  color: var(--negative) !important;
+  background: var(--negative-dim) !important;
+  box-shadow: 0 0 12px rgba(255, 61, 87, 0.2) !important;
+}
+
+/* Toggle filter panel button */
+#toggle-filter-btn {
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-surface) 100%) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--accent) !important;
+  font-family: var(--font-display) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  border-radius: var(--radius-md) !important;
+  transition: all 0.25s !important;
+}
+
+#toggle-filter-btn:hover {
+  border-color: var(--accent) !important;
+  background: var(--accent-dim) !important;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ============================================================================
+   SELECTS & DROPDOWNS
+   ============================================================================ */
+.ssi-select {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-dim) !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 7px 10px !important;
+  font-family: var(--font-data) !important;
+  font-size: 12px !important;
+  transition: all 0.2s !important;
+}
+
+.ssi-select:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-dim) !important;
+}
+
+.ssi-select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-dim) !important;
+  outline: none !important;
+}
+
+/* Dash Dcc Dropdown */
+.custom-dropdown .Select-control {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-dim) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  min-height: 36px;
+  transition: all 0.2s ease;
+}
+
+.custom-dropdown .Select-control:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-dim) !important;
+}
+
+.custom-dropdown .Select-menu-outer {
+  background-color: var(--bg-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.7), 0 0 0 1px var(--border-dim) !important;
+  margin-top: 4px;
+}
+
+.custom-dropdown .Select-option {
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+  padding: 9px 14px;
+  font-family: var(--font-data) !important;
+  font-size: 12px !important;
+  transition: all 0.15s;
+}
+
+.custom-dropdown .Select-option:hover {
+  background-color: var(--bg-hover) !important;
+  color: var(--accent) !important;
+  padding-left: 18px;
+}
+
+.custom-dropdown .Select-option.is-selected {
+  background-color: var(--accent-dim) !important;
+  color: var(--accent) !important;
+}
+
+.custom-dropdown .Select-value {
+  background-color: rgba(0, 212, 255, 0.1) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 4px !important;
+  color: var(--accent) !important;
+}
+
+.custom-dropdown .Select-placeholder {
+  color: var(--text-muted) !important;
+  font-family: var(--font-data) !important;
+  font-size: 12px !important;
+}
+
+/* SSI sector dropdown */
+.ssi-dropdown-custom .Select-control {
+  background-color: var(--bg-surface) !important;
+  border: 1px solid var(--border-dim) !important;
+  color: var(--text-primary) !important;
+}
+
+.ssi-dropdown-custom .Select-menu-outer {
+  background-color: var(--bg-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.7) !important;
+  max-height: 400px !important;
+  z-index: 9999 !important;
+}
+
+.ssi-dropdown-custom .VirtualizedSelectOption {
+  background-color: transparent !important;
+  color: var(--text-secondary) !important;
+  font-family: var(--font-data) !important;
+}
+
+.ssi-dropdown-custom .VirtualizedSelectFocusedOption {
+  background-color: var(--accent-dim) !important;
+  color: var(--accent) !important;
+}
+
+.ssi-dropdown-custom .Select-value {
+  background-color: rgba(0, 212, 255, 0.1) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+}
+
+.ssi-dropdown-custom .Select-value-label { color: var(--accent) !important; }
+
+.ssi-dropdown-custom .is-focused:not(.is-open) > .Select-control {
+  background-color: var(--bg-surface) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-dim) !important;
+}
+
+.ssi-dropdown-custom .Select-placeholder { color: var(--text-muted) !important; }
+
+/* ============================================================================
+   PERIOD BUTTONS — Chart time period selector
+   ============================================================================ */
+.period-btn {
+  border-color: var(--border-dim) !important;
+  color: var(--text-muted) !important;
+  background-color: transparent !important;
+  font-family: var(--font-data) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 5px 11px !important;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease !important;
+}
+
+.period-btn:hover {
+  background-color: var(--accent-dim) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.period-btn.active, .period-btn:active {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #001a20 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.35) !important;
+}
+
+/* ============================================================================
+   REMOVE FILTER ICON
+   ============================================================================ */
+.remove-filter-icon {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-muted) !important;
+}
+
+.remove-filter-icon:hover {
+  color: var(--negative) !important;
+  transform: rotate(90deg) scale(1.3);
+  filter: drop-shadow(0 0 4px rgba(255, 61, 87, 0.5));
+}
+
+/* ============================================================================
+   RESULT COUNT BAR
+   ============================================================================ */
+#result-count {
+  font-family: var(--font-data);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#filter-stats {
+  font-family: var(--font-data);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ============================================================================
+   CHART CONTROLS & CONTAINERS
+   ============================================================================ */
+.chart-controls-container { animation: slideDown 0.3s ease-out; }
+
+/* Period buttons group */
+.btn-group > .btn {
+  border-width: 1px !important;
+  border-color: var(--border-dim) !important;
+}
+
+.btn-group > .btn:not(:last-child) { border-right: none !important; }
+.btn-group > .btn:hover { z-index: 1; }
+
+/* Plotly modebar */
+.modebar {
+  background-color: var(--bg-elevated) !important;
+  border: 1px solid var(--border-dim) !important;
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+  box-shadow: var(--shadow-card);
+}
+
+.modebar-btn {
+  border-radius: var(--radius-sm);
+  margin: 0 2px;
+  transition: all 0.2s;
+}
+
+.modebar-btn:hover {
+  background-color: var(--accent-dim) !important;
+}
+
+.modebar-btn.active {
+  background-color: rgba(0, 212, 255, 0.25) !important;
+}
+
+/* Chart empty state */
+.fireant-candlestick-chart {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s;
+}
+
+.fireant-candlestick-chart:hover {
+  box-shadow: var(--shadow-deep);
+}
+
+/* ============================================================================
+   TOGGLE SWITCHES (DAQ)
+   ============================================================================ */
+.daq-toggleswitch { transform: scale(0.85); }
+.daq-toggleswitch-label {
+  color: var(--text-secondary) !important;
+  font-family: var(--font-ui) !important;
+  font-size: 12px !important;
+}
+
+/* ============================================================================
+   LOADING INDICATORS
+   ============================================================================ */
+.loading-pulse { animation: pulse 1.5s ease-in-out infinite; }
+
+.loading-spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(0, 212, 255, 0.15);
+  border-radius: 50%;
+  border-top-color: var(--accent);
+  animation: spin 0.8s ease-in-out infinite;
+}
+
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-dim);
+}
+
+.chart-loading-spinner {
+  border: 3px solid rgba(0, 212, 255, 0.1);
+  border-top: 3px solid var(--accent);
+  border-radius: 50%;
+  width: 44px; height: 44px;
+  animation: spin 0.8s linear infinite;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+/* ============================================================================
+   TOAST NOTIFICATIONS
+   ============================================================================ */
+.toast-notification {
+  position: fixed;
+  top: 20px; right: 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  box-shadow: var(--shadow-deep), 0 0 0 1px var(--border-dim);
+  z-index: 9999;
+  font-family: var(--font-ui);
+  animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-success { border-left: 3px solid var(--positive); }
+.toast-error   { border-left: 3px solid var(--negative); }
+.toast-info    { border-left: 3px solid var(--accent); }
+
+/* ============================================================================
+   FILTER PANEL — Inline collapsible panel
+   ============================================================================ */
+#filter-offcanvas {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-dim) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-card) !important;
+  overflow: hidden;
+}
+
+#filter-offcanvas ::-webkit-scrollbar { width: 4px; }
+#filter-offcanvas ::-webkit-scrollbar-track { background: var(--bg-card); }
+#filter-offcanvas ::-webkit-scrollbar-thumb {
+  background-color: var(--border-default);
+  border-radius: 2px;
+}
+#filter-offcanvas ::-webkit-scrollbar-thumb:hover { background-color: var(--accent); }
+
+#filter-offcanvas .collapsing {
+  transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ============================================================================
+   SELECTED FILTERS CONTAINER
+   ============================================================================ */
+#selected-filters-container {
+  min-height: 60px;
+}
+
+/* Individual filter tag */
+.active-filter-tag {
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 8px 12px !important;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.active-filter-tag:hover {
+  border-color: var(--accent) !important;
+}
+
+/* ============================================================================
+   DETAIL TABS — Bottom detail panel
+   ============================================================================ */
+.nav-tabs {
+  border-bottom: 1px solid var(--border-dim) !important;
+  gap: 2px;
+}
+
+.nav-tabs .nav-link {
+  font-family: var(--font-display) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  color: var(--text-muted) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+  padding: 8px 16px !important;
+  transition: all 0.2s !important;
+  background: transparent !important;
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--text-secondary) !important;
+  background: var(--bg-hover) !important;
+  border-color: var(--border-dim) !important;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--accent) !important;
+  background: var(--bg-surface) !important;
+  border-color: var(--border-default) var(--border-default) var(--bg-surface) !important;
+  border-bottom-color: var(--bg-surface) !important;
+}
+
+/* Tab content */
+.tab-content {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-dim);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* Period toggle buttons */
+.btn-group .btn-outline-primary {
+  border-color: var(--border-default) !important;
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+  font-family: var(--font-data) !important;
+  font-size: 11px !important;
+  transition: all 0.2s !important;
+}
+
+.btn-group .btn-outline-primary:hover {
+  background: var(--accent-dim) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.btn-group .btn-outline-primary.active {
+  background: var(--accent) !important;
+  color: #001a20 !important;
+  border-color: var(--accent) !important;
+  font-weight: 700 !important;
+}
+
+/* ============================================================================
+   TABLE STYLES — Detail tabs HTML tables
+   ============================================================================ */
+table {
+  border-collapse: collapse;
+}
+
+th {
+  font-family: var(--font-data) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  color: var(--text-muted) !important;
+  background: var(--bg-surface) !important;
+  border-bottom: 1px solid var(--border-default) !important;
+}
+
+td {
+  font-family: var(--font-data) !important;
+  font-size: 12px !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  color: var(--text-primary);
+}
+
+tr:hover td {
+  background: var(--bg-hover) !important;
+}
+
+/* ============================================================================
+   CHART BACKGROUND FAINT IMAGE
+   ============================================================================ */
+.faint-chart-bg { position: relative; }
+
+.faint-chart-bg::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url('chart-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.04;
+  filter: blur(3px) saturate(0.5);
+  z-index: -1;
+}
+
+/* ============================================================================
+   TOGGLE ICON ANIMATION
+   ============================================================================ */
+#toggle-filter-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#toggle-filter-icon.open { transform: rotate(180deg); }
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes chartFadeIn {
+  from { opacity: 0; transform: scale(0.99); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 212, 255, 0.2); }
+  50%       { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+}
+
+.fireant-candlestick-chart > div { animation: chartFadeIn 0.4s ease-out; }
+
+/* ============================================================================
+   PLOTLY CUSTOMIZATION
+   ============================================================================ */
+.plotly .hoverlayer .hovertext {
+  background-color: var(--bg-elevated) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  font-family: var(--font-data) !important;
+  font-size: 11px !important;
+  box-shadow: var(--shadow-deep) !important;
+}
+
+.plotly .annotation-arrow-g path { stroke: var(--accent) !important; }
+.plotly .shapelayer path { stroke-width: 2 !important; opacity: 0.8 !important; }
+.plotly .shapelayer path:hover { opacity: 1 !important; stroke-width: 3 !important; }
+
+/* ============================================================================
+   BOOTSTRAP OVERRIDES
+   ============================================================================ */
+.card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-dim) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.card-header {
+  background: var(--bg-surface) !important;
+  border-bottom: 1px solid var(--border-dim) !important;
+  font-family: var(--font-display) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  color: var(--text-secondary) !important;
+}
+
+.badge {
+  font-family: var(--font-data) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+@media (max-width: 1200px) {
+  .main-content { padding: 16px; }
+  .grade-chip { width: 30px; height: 22px; font-size: 11px; }
+}
+
+@media (max-width: 768px) {
+  .page-header h2 { font-size: 16px; }
+  .btn-apply-ssi, .btn-save-ssi {
+    padding: 7px 16px !important;
+    font-size: 11px !important;
+  }
+  .period-btn { font-size: 10px !important; padding: 4px 8px !important; }
+}
+/* ============================================================================
+   FIX GIAO DIỆN DROPDOWN (MENU THẢ XUỐNG) BỊ DÍNH CHÙM
+   ============================================================================ */
+
+/* 1. Chỉnh khoảng cách và phông chữ cho danh sách sổ xuống */
+.custom-dropdown .Select-option,
+.ssi-dropdown-custom .VirtualizedSelectOption,
+.Select-option,
+.VirtualizedSelectOption {
+    padding: 12px 16px !important; /* Tăng khoảng cách trên/dưới, trái/phải cho thoáng */
+    font-family: var(--font-ui), 'Inter', sans-serif !important; /* Dùng phông chữ mềm mại, dễ đọc */
+    font-size: 14px !important; /* Chữ to rõ hơn */
+    line-height: 1.6 !important; /* Tăng khoảng cách giữa các dòng nếu chữ dài bị rớt dòng */
+    white-space: normal !important; /* Tự động xuống dòng gọn gàng */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important; /* Thêm đường kẻ mờ phân cách */
+}
+
+/* 2. Hiệu ứng khi di chuột vào từng dòng (Hover) */
+.custom-dropdown .Select-option:hover,
+.ssi-dropdown-custom .VirtualizedSelectOption:hover,
+.Select-option:hover,
+.VirtualizedSelectOption:hover {
+    background-color: rgba(0, 212, 255, 0.08) !important;
+    padding-left: 20px !important; /* Chữ thụt lùi vào một chút cho xịn */
+    transition: all 0.2s ease !important;
+}
+
+/* 3. Chỉnh phông chữ cho Text hiển thị bên ngoài (khi đã chọn xong) */
+.custom-dropdown .Select-value-label,
+.custom-dropdown .Select-placeholder,
+.ssi-dropdown-custom .Select-value-label,
+.ssi-dropdown-custom .Select-placeholder,
+.Select-value-label,
+.Select-placeholder {
+    font-family: var(--font-ui), 'Inter', sans-serif !important;
+    font-size: 14px !important;
+}
+
+/* 4. Mở rộng khung nền đen của Dropdown (Menu Outer) để không bị cắt chữ */
+.custom-dropdown .Select-menu-outer,
+.ssi-dropdown-custom .Select-menu-outer {
+    border-radius: 8px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8) !important;
+    border: 1px solid var(--border-default) !important;
+    padding: 4px 0 !important;
+}
+/* ============================================================================
+   ĐẶC TRỊ GIAO DIỆN DROPDOWN (BẢNG CHỌN NGÀNH) DÍNH CHÙM & BỊ CẮT CHỮ
+   ============================================================================ */
+
+/* Ép CẢ LỚP VỎ VÀ LỚP BÊN TRONG giãn ra để chứa đủ chữ */
+.Select-menu-outer, 
+.Select-menu {
+    width: max-content !important; 
+    min-width: 100% !important;
+    overflow-x: hidden !important; /* Giấu thanh cuộn ngang nếu có */
+}
+
+/* Chỉnh từng dòng chữ bên trong thật thoáng */
+.Select-menu-outer .Select-option,
+.Select-menu-outer .VirtualizedSelectOption {
+    padding: 12px 35px 12px 18px !important; /* Tăng khoảng cách bên phải (35px) để né thanh cuộn */
+    font-family: var(--font-ui), 'Inter', sans-serif !important; 
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    color: var(--text-primary) !important;
+    white-space: nowrap !important; /* Chữ vẫn nằm trên 1 dòng mượt mà */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Hiệu ứng khi rê chuột vào */
+.Select-menu-outer .Select-option:hover,
+.Select-menu-outer .VirtualizedSelectOption:hover,
+.Select-menu-outer .Select-option.is-focused,
+.Select-menu-outer .VirtualizedSelectOption.is-focused {
+    background-color: rgba(0, 212, 255, 0.1) !important;
+    color: var(--accent) !important;
+    padding-left: 24px !important; /* Thụt chữ lùi vào trong một chút */
+}
+
+/* assets/custom.css */
+.ticker-search-dropdown input {
+    color: #ffffff !important;
+    caret-color: #ffffff !important;
+}
+.ticker-search-dropdown .Select-value-label {
+    color: #ffffff !important;
+}
+.ticker-search-dropdown .Select-placeholder {
+    color: #8b949e !important;
+}
+/* ============================================================================
+   ÉP BUỘC HEADER PHẢI CUỘN THEO TRANG (ANTI-FIXED)
+   ============================================================================ */
+#main-header {
+    position: relative !important;
+    top: auto !important;
+    transform: none !important;
+    z-index: 10 !important;
+}
+
+/* Đảm bảo body và html không bị khóa cuộn */
+html, body {
+    overflow: visible !important;
+    overflow-x: hidden !important;
+    height: auto !important;
+}
+
+/* ============================================================================
+   CĂN CHỈNH LỀ CHO THANH SEARCH TÌM KIẾM MÃ CỔ PHIẾU
+   ============================================================================ */
+/* Thụt lề trái (né kính lúp) và lề phải (né dấu x) cho phần Placeholder và Text đã chọn */
+.ticker-search-dropdown .Select-placeholder,
+.ticker-search-dropdown .Select-value {
+    padding-left: 34px !important;  /* Đẩy chữ lùi sang phải 34px để né kính lúp (kính lúp đang ở vị trí 10px) */
+    padding-right: 40px !important; /* Đẩy chữ lùi sang trái 40px để né dấu X và mũi tên */
+}
+
+/* Thụt lề cho con trỏ chuột khi người dùng đang gõ phím */
+.ticker-search-dropdown .Select-input {
+    padding-left: 34px !important;
+}
+
+/* ============================================================================
+   POLISH UI — NÂNG CẤP TOÀN BỘ (TCInvest Grade)
+   ============================================================================ */
+
+/* ── 1. AG GRID TABLE — Font mono cho số, header tối hơn ── */
+.ag-theme-alpine-dark {
+    --ag-background-color: #07111f !important;
+    --ag-odd-row-background-color: #07111f !important;
+    --ag-header-background-color: #040d18 !important;
+    --ag-border-color: #0e2540 !important;
+    --ag-row-border-color: #0a1a2e !important;
+    --ag-header-foreground-color: #7fa8cc !important;
+    --ag-foreground-color: #d6eaf8 !important;
+    --ag-row-hover-color: rgba(0, 212, 255, 0.05) !important;
+    --ag-selected-row-background-color: rgba(0, 212, 255, 0.08) !important;
+    --ag-font-family: 'Inter', -apple-system, sans-serif !important;
+    --ag-font-size: 13px !important;
+    --ag-header-height: 40px !important;
+    --ag-row-height: 44px !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+}
+
+/* Header chữ mono, uppercase */
+.ag-theme-alpine-dark .ag-header-cell-label {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.2px !important;
+    text-transform: uppercase !important;
+    color: #5a8ab0 !important;
+}
+
+/* Số trong bảng dùng font mono */
+.ag-theme-alpine-dark .ag-cell[col-id="Price Close"],
+.ag-theme-alpine-dark .ag-cell[col-id="Volume"],
+.ag-theme-alpine-dark .ag-cell[col-id="Market Cap"],
+.ag-theme-alpine-dark .ag-cell[col-id="Perf_1W"],
+.ag-theme-alpine-dark .ag-cell[col-id="Perf_1M"],
+.ag-theme-alpine-dark .ag-cell[col-id="P/E"],
+.ag-theme-alpine-dark .ag-cell[col-id="P/B"],
+.ag-theme-alpine-dark .ag-cell[col-id="ROE (%)"],
+.ag-theme-alpine-dark .ag-cell[col-id="RSI_14"] {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 13px !important;
+}
+
+/* Ticker cell đặc biệt */
+.ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* Row hover smooth */
+.ag-theme-alpine-dark .ag-row {
+    transition: background-color 0.15s ease !important;
+    border-bottom: 1px solid rgba(14, 37, 64, 0.8) !important;
+}
+
+/* Selected row glow */
+.ag-theme-alpine-dark .ag-row-selected {
+    background-color: rgba(0, 212, 255, 0.08) !important;
+    border-left: 3px solid #00d4ff !important;
+}
+
+/* Pagination */
+.ag-theme-alpine-dark .ag-paging-panel {
+    background-color: #040d18 !important;
+    border-top: 1px solid #0e2540 !important;
+    color: #5a8ab0 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 11px !important;
+    padding: 8px 16px !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-button {
+    color: #7fa8cc !important;
+}
+
+.ag-theme-alpine-dark .ag-paging-button:hover {
+    color: #00d4ff !important;
+}
+
+/* ── 2. FILTER CARD — Padding thoáng hơn, border radius lớn hơn ── */
+[id*="selected-filter"] {
+    border-radius: 8px !important;
+    padding: 8px 10px 6px !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+[id*="selected-filter"]:hover {
+    border-color: rgba(0, 212, 255, 0.3) !important;
+    box-shadow: 0 2px 12px rgba(0, 212, 255, 0.08) !important;
+}
+
+/* Filter card input số */
+[id*="selected-filter"] input[type="number"] {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 10px !important;
+    letter-spacing: 0.3px !important;
+}
+
+/* ── 3. RANGE SLIDER — block trùng đã xóa, xem định nghĩa ở phần CUSTOM RANGE SLIDER phía trên ── */
+
+/* ── 4. RESULT COUNT BADGE — Nổi bật hơn ── */
+#result-count-number {
+    font-family: 'JetBrains Mono', monospace !important;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.5) !important;
+    transition: all 0.3s ease !important;
+}
+
+/* ── 5. SIDEBAR TOOLBAR — Nhìn chuyên nghiệp hơn ── */
+#filter-panel-top-bar {
+    background: linear-gradient(180deg, #0a1628 0%, #060f1e 100%) !important;
+    border-bottom: 1px solid #0e2540 !important;
+}
+
+/* ── 6. STRATEGY DROPDOWN — Style đẹp hơn ── */
+#strategy-preset-dropdown .Select-control {
+    background: linear-gradient(135deg, #091526, #0c1d30) !important;
+    border: 1px solid #1d4d80 !important;
+    border-radius: 8px !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+#strategy-preset-dropdown .Select-control:hover {
+    border-color: #00d4ff !important;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.15) !important;
+}
+
+/* ── 7. BADGE ĐẾM MÃ TRÊN FILTER CARD ── */
+[id*="filter-count-badge"] {
+    font-family: 'JetBrains Mono', monospace !important;
+    transition: color 0.3s, background 0.3s !important;
+}
+
+/* ── 8. MODAL CHI TIẾT CỔ PHIẾU ── */
+.modal-content {
+    background: linear-gradient(135deg, #07111f 0%, #091526 100%) !important;
+    border: 1px solid #163660 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8) !important;
+}
+
+.modal-header {
+    background: #040d18 !important;
+    border-bottom: 1px solid #0e2540 !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding: 16px 24px !important;
+}
+
+.modal-title {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #00d4ff !important;
+    letter-spacing: 1px !important;
+}
+
+/* ── 9. TABS TRONG MODAL ── */
+.nav-tabs {
+    border-bottom: 2px solid #0e2540 !important;
+    background: #040d18 !important;
+    padding: 0 16px !important;
+}
+
+.nav-tabs .nav-link {
+    color: #5a8ab0 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase !important;
+    border: none !important;
+    padding: 10px 16px !important;
+    border-radius: 0 !important;
+    transition: color 0.2s !important;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #00d4ff !important;
+    background: rgba(0, 212, 255, 0.05) !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: #00d4ff !important;
+    background: transparent !important;
+    border-bottom: 2px solid #00d4ff !important;
+    margin-bottom: -2px !important;
+}
+
+/* ── 10. TOAST NOTIFICATION ── */
+.toast {
+    background: #091526 !important;
+    border: 1px solid #1d4d80 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* ── 11. LOADING SPINNER ── */
+._dash-loading {
+    background: rgba(2, 8, 16, 0.8) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+/* ── 12. SECTOR DROPDOWN ── */
+#filter-all-industry .Select-control {
+    min-height: 34px !important;
+    background: #091526 !important;
+    border: 1px solid #1d4d80 !important;
+    border-radius: 8px !important;
+}
+
+/* ── 13. SAVED FILTER DROPDOWN ── */
+#saved-filters-dropdown .Select-control {
+    background: #091526 !important;
+    border: 1px solid #1d4d80 !important;
+    border-radius: 8px !important;
+    min-height: 34px !important;
+}
+
+/* ── 14. SEARCH TICKER INPUT ── */
+#search-ticker-input .Select-control {
+    background: #091526 !important;
+    border: 1px solid #1d4d80 !important;
+    border-radius: 8px !important;
+    min-height: 34px !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+#search-ticker-input .Select-control:hover {
+    border-color: #00d4ff !important;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.15) !important;
+}
+
+/* ── 15. RESULT COUNT TEXT ── */
+#result-count {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 12px !important;
+    color: #5a8ab0 !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* ── 16. COLLAPSE HEADER ── */
+.collapse-header {
+    transition: background 0.15s, padding-left 0.15s !important;
+}
+
+.collapse-header:hover {
+    background: #0d1d30 !important;
+    padding-left: 16px !important;
+}
+
+/* ── 17. CRITERIA ITEM ── */
+.criteria-item-hover {
+    transition: background 0.15s, padding-left 0.15s !important;
+}
+
+.criteria-item-hover:hover {
+    background: rgba(0, 212, 255, 0.06) !important;
+    padding-left: 18px !important;
+}
+
+/* ── 18. THAM KHẢO BADGE ── */
+span[style*="f59e0b"] {
+    animation: pulse-badge 2s ease-in-out infinite !important;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* ── 19. GRADE CHIPS (A/B/C/D/F) ── */
+.grade-chip {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
+    transition: transform 0.1s, box-shadow 0.1s !important;
+}
+
+.grade-chip:hover {
+    transform: scale(1.05) !important;
+}
+
+/* ── 20. SMOOTH SCROLLING CHO FILTER CONTAINER ── */
+#selected-filters-container {
+    scroll-behavior: smooth !important;
+}
+
+#selected-filters-container::-webkit-scrollbar { width: 3px !important; }
+#selected-filters-container::-webkit-scrollbar-thumb {
+    background: #1d4d80 !important;
+    border-radius: 2px !important;
+}
+
+/* Fix màu chữ input trong Compare & Portfolio dropdown */
+.modal input,
+.modal .Select-input input,
+.modal .VirtualizedSelectFocusedOption,
+.modal input[type="text"] {
+    color: #c9d1d9 !important;
+}
+
+/* Custom tooltip thay thế rc-slider tooltip — không bị ảnh hưởng bởi zoom */
+.custom-range-slider .rc-slider-handle::after {
+    content: attr(aria-valuenow);
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1c2333;
+    color: #00d4ff;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    pointer-events: none;
+    display: none;
+}
+.custom-range-slider .rc-slider-handle:hover::after,
+.custom-range-slider .rc-slider-handle:active::after {
+    display: block;
+}
+
+/* Ẩn hoàn toàn tooltip gốc của rc-slider */
+.custom-range-slider .rc-slider-tooltip {
+    display: none !important;
+}
+/* ── Year filter dropdown in filter panel header ── */
+.year-filter-dropdown .Select-control {
+    background-color: #0d1117 !important;
+    border: 1px solid #30363d !important;
+    border-radius: 4px !important;
+    min-height: 26px !important;
+    height: 26px !important;
+}
+.year-filter-dropdown .Select-value-label {
+    color: #58a6ff !important;
+    font-size: 11px !important;
+    line-height: 24px !important;
+}
+.year-filter-dropdown .Select-arrow {
+    border-top-color: #58a6ff !important;
+}
+.year-filter-dropdown .Select-menu-outer {
+    background-color: #161b22 !important;
+    border: 1px solid #30363d !important;
+    font-size: 11px !important;
+    z-index: 9999 !important;
+}
+.year-filter-dropdown .Select-option {
+    background-color: #161b22 !important;
+    color: #c9d1d9 !important;
+    font-size: 11px !important;
+}
+.year-filter-dropdown .Select-option.is-focused {
+    background-color: #21262d !important;
+    color: #58a6ff !important;
+}
+.year-filter-dropdown .Select-option.is-selected {
+    background-color: #1f3a5f !important;
+    color: #58a6ff !important;
+}
+/* ── Shimmer animation cho nút BỘ LỌC ── */
+@keyframes shimmer-slide {
+    0%   { transform: translateX(-100%) skewX(-15deg); }
+    100% { transform: translateX(250%)  skewX(-15deg); }
+}
+
+.btn-filter-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-filter-shimmer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.35),
+        transparent
+    );
+    transform: translateX(-100%) skewX(-15deg);
+    animation: shimmer-slide 0.7s ease-in-out;
+    animation-play-state: paused;
+    pointer-events: none;
+}
+
+.btn-filter-shimmer.play-shimmer::after {
+    animation-play-state: running;
+}

@@ -1,0 +1,95 @@
+/* ============================================================================
+   IDX Screener — Filter Panel Inline Styles  (Premium Edition)
+   ============================================================================ */
+
+/* ── Criteria item hover ───────────────────────────────────── */
+.criteria-item-hover:hover {
+  background-color: rgba(0, 212, 255, 0.06) !important;
+  border-left-color: #00d4ff !important;
+}
+
+/* ── Collapse header hover ─────────────────────────────────── */
+.collapse-header:hover {
+  background-color: #112236 !important;
+}
+
+/* ── Offcanvas custom scrollbar ────────────────────────────── */
+#filter-offcanvas ::-webkit-scrollbar       { width: 4px; }
+#filter-offcanvas ::-webkit-scrollbar-track { background: #060f1e; }
+#filter-offcanvas ::-webkit-scrollbar-thumb {
+  background-color: #1d4d80;
+  border-radius: 2px;
+}
+#filter-offcanvas ::-webkit-scrollbar-thumb:hover {
+  background-color: #00d4ff;
+}
+
+/* ── Smooth collapse animation ─────────────────────────────── */
+#filter-offcanvas .collapsing {
+  transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* ── Toggle button ─────────────────────────────────────────── */
+#toggle-filter-btn:hover {
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+  transform: translateY(-1px);
+  transition: all 0.2s;
+}
+
+/* ── Apply button ──────────────────────────────────────────── */
+.btn-apply-ssi {
+  background: linear-gradient(135deg, #0090ff, #00d4ff) !important;
+  border: none !important;
+  color: #001a20 !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  transition: all 0.25s !important;
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3) !important;
+}
+
+.btn-apply-ssi:hover {
+  filter: brightness(1.1) !important;
+  box-shadow: 0 8px 28px rgba(0, 212, 255, 0.5) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Page header separator ─────────────────────────────────── */
+#filter-offcanvas ~ div .page-header,
+.page-header {
+  padding-top: 16px;
+}
+
+/* ── Active filter tag glow on hover ───────────────────────── */
+.active-filter-tag:hover {
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+}
+
+/* ── Input fields inside filter panel ─────────────────────── */
+#filter-offcanvas input[type="number"] {
+  background: #091526 !important;
+  border: 1px solid #1d4d80 !important;
+  color: #d6eaf8 !important;
+  border-radius: 6px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+#filter-offcanvas input[type="number"]:focus {
+  border-color: #00d4ff !important;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.15) !important;
+  outline: none !important;
+}
+
+/* ── Sector dropdown in filter area ───────────────────────── */
+#filter-offcanvas .Select-control {
+  background: #091526 !important;
+  border-color: #1d4d80 !important;
+}
+
+#filter-offcanvas .Select-placeholder {
+  color: #3d6a8a !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
+}

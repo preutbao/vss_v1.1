@@ -1,0 +1,429 @@
+/* ============================================================================
+   đŸ¨ HERO HEADER STYLES - IDX Smart Screener
+   Background Image + Glassmorphism + Centered Content
+   ============================================================================ */
+
+/* ========== HIDE TRADINGVIEW WATERMARK - HARDCORE MODE ========== */
+
+/* áº¨n má»i thá»© liĂªn quan TradingView - AGGRESSIVE */
+img[src*="tradingview"],
+img[src*="TRADINGVIEW"],
+img[alt*="tradingview"],
+img[alt*="TradingView"],
+img[alt*="TRADINGVIEW"],
+img[alt*="TICK CHARTS"],
+div[class*="tradingview"],
+div[class*="TradingView"],
+div[id*="tradingview"],
+div[id*="TradingView"],
+a[href*="tradingview.com"],
+a[href*="tradingview"],
+.tradingview-widget-copyright,
+#tradingview_widget_wrapper,
+iframe[src*="tradingview"],
+span[class*="tradingview"],
+/* Target specific TradingView watermark classes */
+div[style*="tradingview"],
+img[style*="tradingview"],
+/* Header specific - áº©n má»i img trong header nhá» hÆ¡n 200px */
+#main-header img[width="150"],
+#main-header img[height="50"],
+#main-header img[height="40"],
+#main-header img[height="30"],
+/* áº¨n báº¥t ká»³ img nĂ o trong header cĂ³ position absolute (watermark pattern) */
+#main-header img[style*="absolute"],
+#main-header img[style*="position: absolute"],
+/* áº¨n div chá»©a text TradingView */
+#main-header > div > img,
+header img:not([src*="logo"]) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    pointer-events: none !important;
+}
+
+/* Che overlay pháº§n gĂ³c pháº£i header (backup method) */
+#main-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 250px;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(6, 15, 30, 0.95) 30%,
+        rgba(6, 15, 30, 1) 100%
+    );
+    z-index: 9999;
+    pointer-events: none;
+}
+
+
+/* ========== KEYFRAME ANIMATIONS ========== */
+
+/* Gradient flow animation - thay áº£nh TradingView xáº¥u */
+@keyframes gradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Float animation cho logo */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Gradient animation cho accent line */
+@keyframes gradient-shift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pulse glow */
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+    }
+}
+
+
+/* ========== HEADER MAIN ========== */
+
+#main-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Gradient background pulse effect */
+#main-header > div:first-child > div:first-child {
+    animation: gradientFlow 15s ease infinite !important;
+}
+
+/* Grid pattern subtle pulse */
+#main-header > div:first-child > div:nth-child(2) {
+    animation: gridPulse 8s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 0.2;
+    }
+}
+
+/* Background overlay hover effect */
+#main-header:hover .background-image {
+    opacity: 0.2 !important;
+    transform: scale(1.05);
+}
+
+
+/* ========== LOGO ========== */
+
+#main-header img {
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+}
+
+#main-header img:hover {
+    transform: translateY(-10px) scale(1.1);
+    filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.6)) !important;
+}
+
+
+/* ========== BRAND TEXT ========== */
+
+/* Gradient text animation on hover */
+#main-header .brand-name {
+    position: relative;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+#main-header .brand-name:hover {
+    transform: scale(1.02);
+}
+
+/* Underline effect */
+#main-header .brand-name::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00d4ff, #0090ff);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+#main-header .brand-name:hover::after {
+    width: 60%;
+}
+
+
+/* ========== TAGLINE ========== */
+
+#main-header .tagline {
+    animation: fadeInUp 0.8s ease-out 0.2s backwards;
+}
+
+
+/* ========== DIVIDER LINE ========== */
+
+#main-header .divider-line {
+    animation: expandWidth 0.6s ease-out 0.4s backwards;
+}
+
+@keyframes expandWidth {
+    from {
+        width: 0;
+    }
+    to {
+        width: 120px;
+    }
+}
+
+
+/* ========== ACCENT LINE ========== */
+
+#main-header + div {
+    background-size: 200% 100%;
+    animation: gradient-shift 4s ease-in-out infinite;
+}
+
+
+/* ========== RESPONSIVE DESIGN ========== */
+
+/* Large Desktop (>= 1400px) */
+@media (min-width: 1400px) {
+    #main-header > div:first-child {
+        height: 200px !important;
+    }
+    
+    #main-header img {
+        height: 70px !important;
+    }
+    
+    #main-header .brand-name span:first-child,
+    #main-header .brand-name span:last-child {
+        font-size: 52px !important;
+    }
+    
+    #main-header .tagline span:last-child {
+        font-size: 18px !important;
+    }
+}
+
+/* Desktop (992px - 1399px) */
+@media (min-width: 992px) and (max-width: 1399px) {
+    #main-header > div:first-child {
+        height: 180px !important;
+    }
+    
+    #main-header img {
+        height: 65px !important;
+    }
+    
+    #main-header .brand-name span {
+        font-size: 48px !important;
+    }
+}
+
+/* Tablet (768px - 991px) */
+@media (max-width: 991px) {
+    #main-header > div:first-child {
+        height: 160px !important;
+    }
+    
+    #main-header img {
+        height: 50px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    #main-header .brand-name span:first-child,
+    #main-header .brand-name span:last-child {
+        font-size: 36px !important;
+    }
+    
+    #main-header .tagline span:last-child {
+        font-size: 14px !important;
+    }
+}
+
+/* Mobile (576px - 767px) */
+@media (max-width: 767px) {
+    #main-header > div:first-child {
+        height: 140px !important;
+    }
+    
+    #main-header img {
+        height: 45px !important;
+        margin-bottom: 12px !important;
+    }
+    
+    #main-header .brand-name span:first-child,
+    #main-header .brand-name span:last-child {
+        font-size: 28px !important;
+        letter-spacing: 1px !important;
+    }
+    
+    #main-header .tagline {
+        display: none !important;
+    }
+    
+    #main-header .divider-line {
+        display: none !important;
+    }
+}
+
+/* Small Mobile (<= 575px) */
+@media (max-width: 575px) {
+    #main-header > div:first-child {
+        height: 120px !important;
+    }
+    
+    #main-header img {
+        height: 38px !important;
+        margin-bottom: 10px !important;
+    }
+    
+    #main-header .brand-name span:first-child {
+        font-size: 24px !important;
+    }
+    
+    #main-header .brand-name span:last-child {
+        font-size: 24px !important;
+        display: block;
+        margin-top: 4px;
+    }
+}
+
+
+/* ========== GLASSMORPHISM EFFECTS ========== */
+
+.glass-overlay {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+
+/* ========== SCROLL EFFECTS ========== */
+
+/* Compact header on scroll */
+#main-header.scrolled {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8) !important;
+}
+
+#main-header.scrolled > div:first-child {
+    height: 80px !important;
+    transition: height 0.3s ease;
+}
+
+#main-header.scrolled img {
+    height: 40px !important;
+}
+
+#main-header.scrolled .brand-name span {
+    font-size: 24px !important;
+}
+
+#main-header.scrolled .tagline,
+#main-header.scrolled .divider-line {
+    display: none !important;
+}
+
+
+/* ========== ACCESSIBILITY ========== */
+
+/* Focus states */
+#main-header a:focus-visible,
+#main-header button:focus-visible {
+    outline: 3px solid #00d4ff;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    #main-header *,
+    #main-header *::before,
+    #main-header *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+/* ========== PRINT STYLES ========== */
+
+@media print {
+    #main-header {
+        position: relative !important;
+        box-shadow: none !important;
+        background: white !important;
+    }
+    
+    #main-header .background-image,
+    #main-header .glass-overlay,
+    #main-header + div {
+        display: none !important;
+    }
+}
+
+
+/* ========== DARK MODE SUPPORT ========== */
+
+@media (prefers-color-scheme: light) {
+    /* Náº¿u cáº§n support light mode */
+    #main-header {
+        /* Custom light mode styles */
+    }
+}
