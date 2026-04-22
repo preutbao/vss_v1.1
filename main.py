@@ -1,4 +1,4 @@
-# main.py — IDX Smart Screener v1.9
+# main.py — VSS Smart Screener v1.1
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point cho cả hai môi trường:
 #   Local dev  :  python main.py
@@ -21,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BƯỚC 0: KIỂM TRA & TỰ ĐỘNG CHUYỂN ĐỔI PARQUET NẾU CẦN
+# BƯỚC 0: KIỂM TRA & TỰ ĐỘNG CHUYỂN ĐỔI PARQUET NẾU
 # ─────────────────────────────────────────────────────────────────────────────
 
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
