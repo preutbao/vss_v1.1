@@ -904,6 +904,9 @@ def calculate_piotroski_metrics(df, df_fin=None):
     # F1. roa_pos (ROA > 0, thay net_income_pos — chặt hơn vì tính tương đối với assets)
     roa_pos = (roa_T.fillna(np.nan) > 0).astype(int)
 
+    # FIX M1: Tính net_income_pos — lợi nhuận ròng dương (tiêu chí F1 gốc Piotroski)
+    net_income_pos = (ni_T.reindex(idx).fillna(np.nan) > 0).astype(int)
+
     # F2. cfo_pos
     cfo_pos = (cfo_T.reindex(idx).fillna(np.nan) > 0).astype(int)
 

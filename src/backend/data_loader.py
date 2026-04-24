@@ -76,6 +76,9 @@ _PRICE_FLOAT_COLS = ["Price Open", "Price High", "Price Low", "Price Close"]
 # ──────────────────────────────────────────────
 _snapshot_lock: threading.Lock = threading.Lock()
 _snapshot_df:   pd.DataFrame   = None   # None = chưa có trong RAM
+# [M2 FIX] Cache BCTC quý — tránh đọc lại từ disk mỗi lần CANSLIM chạy
+_quarterly_df:  pd.DataFrame   = None
+_quarterly_lock: threading.Lock = threading.Lock()
 
 # ── Cache cho filter ranges ──
 _filter_ranges_cache = None
@@ -516,21 +519,27 @@ def load_financial_data(report_type="yearly"):
             logger.info(f"Saved Parquet BCTC {report_type}")
     return df
 
-
 def load_financial_data_nocache(report_type: str = "quarterly") -> pd.DataFrame:
     """
-    [10] Đọc BCTC KHÔNG cache vào RAM — dùng cho tab chi tiết (quarterly).
-
-    Quarterly ~80-100MB. Nếu dùng lru_cache, nó sẽ nằm mãi trong RAM suốt
-    phiên làm việc dù user chỉ mở 1 tab. Hàm này đọc từ Parquet, trả DataFrame,
-    Python GC sẽ giải phóng khi callback kết thúc scope.
+    [M2 FIX] BCTC quý được cache vào RAM lần đầu, các lần sau trả về từ cache.
+    Tránh đọc lại ~2GB parquet mỗi lần user chọn CANSLIM trên free-tier HF.
     """
-    parq_key = "parquet_financial_y" if report_type == "yearly" else "parquet_financial_q"
-    parquet  = os.path.join(PROCESSED_DIR, FILES[parq_key])
+    global _quarterly_df
 
+    # Chỉ cache quarterly — yearly đã có lru_cache riêng
+    if report_type == "yearly":
+        return load_financial_data("yearly")
+
+    with _quarterly_lock:
+        if _quarterly_df is not None:
+            logger.info(f"BCTC quarterly from RAM cache: {len(_quarterly_df):,} dòng")
+            return _quarterly_df
+
+    parquet = os.path.join(PROCESSED_DIR, FILES["parquet_financial_q"])
     if not os.path.exists(parquet):
         logger.warning(f"[nocache] Không tìm thấy {parquet}")
         return pd.DataFrame()
+
     try:
         t0 = time.perf_counter()
         df = pd.read_parquet(parquet)
@@ -539,16 +548,18 @@ def load_financial_data_nocache(report_type: str = "quarterly") -> pd.DataFrame:
                 df["GICS Sector Name"].map(SECTOR_TRANSLATION)
                 .fillna(df["GICS Sector Name"])
             )
-        # Strip đuôi sàn nếu có (BCTC thường không có đuôi, nhưng đảm bảo consistent)
         df = _strip_exchange_suffix(df)
         if 'Ticker' in df.columns:
             df['Ticker'] = df['Ticker'].astype(str)
-        logger.info(f"BCTC {report_type} (no-cache): {len(df):,} dong | {time.perf_counter()-t0:.2f}s")
+
+        with _quarterly_lock:
+            _quarterly_df = df
+
+        logger.info(f"BCTC quarterly loaded & cached: {len(df):,} dòng | {time.perf_counter()-t0:.2f}s")
         return df
     except Exception as e:
-        logger.error(f"Lỗi đọc BCTC {report_type} (no-cache): {e}")
+        logger.error(f"Lỗi đọc BCTC quarterly: {e}")
         return pd.DataFrame()
-
 
 def load_index_data():
     parquet = os.path.join(PROCESSED_DIR, FILES["parquet_index"])
@@ -866,6 +877,8 @@ def invalidate_snapshot_cache():
     global _snapshot_df, _filter_ranges_cache, _auto_update_done
     with _snapshot_lock:
         _snapshot_df = None
+    with _quarterly_lock:                    # ← thêm block này
+        _quarterly_df = None
     with _filter_ranges_lock:
         _filter_ranges_cache = None
     with _auto_update_lock:
