@@ -206,7 +206,7 @@ server = app.server
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LOCAL DEV & PRODUCTION MODE: python main.py
+# LOCAL DEV & PRODUCTION MODE: python main.py test thử cho NCN coi 
 # ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port  = int(os.environ.get("PORT", 8050))
