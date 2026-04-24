@@ -785,6 +785,7 @@ _STRATEGY_FILTERS = {
     Output("save-toast", "is_open"),
     Output("save-toast", "children"),
     Output("filter-unsaved-flag", "data", allow_duplicate=True),  # 10th: unsaved state
+    Output("readonly-filters-store", "data", allow_duplicate=True),  # 11th: readonly filter ids
     Input({"type": "criteria-item", "index": ALL}, "n_clicks"),
     Input({"type": "remove-filter", "index": ALL}, "n_clicks"),
     Input("saved-filters-dropdown", "value"),
@@ -859,12 +860,13 @@ def manage_filter_ui(
     # ── CHỌN TRƯỜNG PHÁI → AUTO ADD FILTER CARDS (display-only, không active) ──
     if trigger_prop == "strategy-preset-dropdown.value":
         if not strategy_selected:
-            return (NO,) * 10
+            return (NO,) * 11
         filt_list = _STRATEGY_FILTERS.get(strategy_selected, [])
         if not filt_list:
-            return (NO,) * 10
+            return (NO,) * 11
         new_af = {}  # ← KHÔNG đưa vào active_filters → không double lọc
         new_ch = []
+        readonly_ids = []          # ← THÊM danh sách này
         ranges = get_filter_ranges()
         for (fid, lbl, default_rng) in filt_list:
             if fid in ranges:
@@ -874,6 +876,7 @@ def manage_filter_ui(
             else:
                 actual_min, actual_max = default_rng[0], default_rng[1]
                 lo, hi = float(default_rng[0]), float(default_rng[1])
+            readonly_ids.append(fid)   # ← THÊM dòng này
             # Dùng card "Tham khảo" thay vì card active
             new_ch.append(create_range_filter_ui_readonly(fid, lbl, actual_min, actual_max, [lo, hi]))
         dirty_opts = [
@@ -888,7 +891,8 @@ def manage_filter_ui(
     if trigger_prop == "btn-reset-ui.n_clicks":
         clean_opts = [{**o, "label": o["label"][2:] if o["label"].startswith("* ") else o["label"]}
                       for o in opts]
-        return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None
+        return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, []  # ← thêm []
+
 
     # ── LƯU BỘ LỌC ─────────────────────────────────────────────────────────
     if trigger_prop == "btn-save.n_clicks":
@@ -921,6 +925,7 @@ def manage_filter_ui(
             [html.I(className="fas fa-check-circle me-2", style={"color": "#3fb950"}),
              f' Đã lưu: "{name}"'],
             False,  # clean
+            NO,   # ← thêm NO cho readonly-filters-store
         )
 
     # ── LOAD BỘ LỌC ĐÃ LƯU ────────────────────────────────────────────────
@@ -928,9 +933,10 @@ def manage_filter_ui(
         if not dd_selected or dd_selected == "default":
             clean_opts = [{**o, "label": o["label"][2:] if o["label"].startswith("* ") else o["label"]}
                           for o in opts]
-            return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None
+            return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, []  # ← thêm []
+
         if dd_selected not in saved:
-            return (NO,) * 10
+            return (NO,) * 11
         snap = saved[dd_selected]
         af2 = snap.get("active_filters", {})
         # Clean * from loaded preset label
@@ -941,6 +947,7 @@ def manage_filter_ui(
             snap.get("strategy", None),
             snap.get("industry", "all"),
             NO, NO, clean_opts, NO, NO, False,
+            [],   # ← reset readonly khi load preset đã lưu
         )
 
     # ── XÓA FILTER ─────────────────────────────────────────────────────────
@@ -957,23 +964,23 @@ def manage_filter_ui(
                                                    and not o["label"].startswith("* ")) else o["label"]}
             for o in opts
         ]
-        return ch, af, NO, NO, NO, NO, dirty_opts, NO, NO, True
+        return ch, af, NO, NO, NO, NO, dirty_opts, NO, NO, True, NO
 
     # ── THÊM FILTER ─────────────────────────────────────────────────────────
     if '"type":"criteria-item"' in trigger_prop:
         # Guard: n_clicks phải > 0, tránh false trigger khi Dash mount component mới
         triggered_val = ctx.triggered[0].get('value', 0)
         if not triggered_val or triggered_val == 0:
-            return (NO,) * 10
+            return (NO,) * 11
 
         idx = json.loads(trigger_prop.split('.')[0])['index']
         criteria_id = idx if idx.startswith("criteria-") else f"criteria-{idx}"
         if criteria_id not in CRITERIA_CONFIG:
-            return (NO,) * 10
+            return (NO,) * 11
         config = CRITERIA_CONFIG[criteria_id]
         filter_id = config['filter_id']
         if filter_id in af:
-            return (NO,) * 10
+            return (NO,) * 11
 
         # Kiểm tra trùng trên cả af VÀ ch (vì af không được set ngay khi thêm card)
         already_in_af = filter_id in af
@@ -984,7 +991,7 @@ def manage_filter_ui(
             for c in ch
         )
         if already_in_af or already_in_ch:
-            return (NO,) * 10
+            return (NO,) * 11
         ranges = get_filter_ranges()
         if config['type'] == 'boolean':
             # KHÔNG set af[filter_id] — chỉ render card, activate khi user click Có/Không
@@ -1000,7 +1007,7 @@ def manage_filter_ui(
                                                        and not o["label"].startswith("* ")) else o["label"]}
                 for o in opts
             ]
-            return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO
+            return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO, NO
         if filter_id in ranges:
             actual_min, actual_max = ranges[filter_id]
             default_val = [actual_min, actual_max]
@@ -1018,9 +1025,9 @@ def manage_filter_ui(
                                                    and not o["label"].startswith("* ")) else o["label"]}
             for o in opts
         ]
-        return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO
+        return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO, NO
 
-    return (NO,) * 10
+    return (NO,) * 11
 
 
 # ============================================================================
@@ -1121,10 +1128,11 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
     State({"type": "range-slider", "filter": ALL}, "max"),
     State("active-filters-store", "data"),
     State("selected-filters-container", "children"),  # ← THÊM
+    State("readonly-filters-store", "data"),    # ← THÊM STATE NÀY
     prevent_initial_call=True
 )
 def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins, 
-                                      slider_maxs, active_filters, filter_children):
+                                      slider_maxs, active_filters, filter_children, readonly_filter_ids):
     """
     Khi user kéo bất kỳ slider nào:
     - Nếu filter đang active → cập nhật value mới vào active_filters_store
@@ -1144,6 +1152,15 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
 
     if not dragged_fid:
         return no_update
+    
+    # ← THÊM ĐOẠN CHẶN NÀY NGAY SAU
+    if dragged_fid in readonly_filter_ids:
+        # Card tham khảo từ trường phái → KHÔNG auto-activate
+        # Chỉ update nếu filter đã tồn tại trong active_filters rồi
+        af = dict(active_filters or {})
+        if dragged_fid not in af:
+            return no_update
+        # Nếu đã active, vẫn update value như bình thường
 
     # Lấy value + min + max của slider vừa trigger
     new_val = s_min = s_max = None

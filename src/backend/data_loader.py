@@ -75,6 +75,8 @@ _PRICE_FLOAT_COLS = ["Price Open", "Price High", "Price Low", "Price Close"]
 #     → tiết kiệm ~3x RAM (float64=8B vs Python float=24B/value)
 # ──────────────────────────────────────────────
 _snapshot_lock: threading.Lock = threading.Lock()
+
+_snapshot_build_lock: threading.Lock = threading.Lock()   # ← THÊM DÒNG NÀY
 _snapshot_df:   pd.DataFrame   = None   # None = chưa có trong RAM
 # [M2 FIX] Cache BCTC quý — tránh đọc lại từ disk mỗi lần CANSLIM chạy
 _quarterly_df:  pd.DataFrame   = None
@@ -779,19 +781,17 @@ def _build_snapshot_df() -> pd.DataFrame:
 
     return df_final
 
-
 def get_snapshot_df() -> pd.DataFrame:
     """
     [9] Trả về snapshot dạng DataFrame — cache trực tiếp, tiết kiệm ~3x RAM.
-
-    Dùng hàm này ở mọi nơi cần convert sang DataFrame ngay (screener, heatmap,
-    portfolio, alert) để tránh roundtrip list[dict] → DataFrame tốn RAM.
+    [C1 FIX] Double-checked locking: _snapshot_build_lock serialise rebuild,
+             tránh 2 thread cùng chạy _build_snapshot_df() song song.
     """
     global _snapshot_df
 
     snap_path = os.path.join(PROCESSED_DIR, FILES["parquet_snapshot"])
 
-    # [3] RAM cache (DataFrame)
+    # ── FAST PATH: RAM cache ─────────────────────────────────────────────
     with _snapshot_lock:
         if _snapshot_df is not None:
             if not os.path.exists(snap_path):
@@ -801,13 +801,12 @@ def get_snapshot_df() -> pd.DataFrame:
                 logger.info(f"Snapshot from memory (DataFrame): {len(_snapshot_df)} ma")
                 return _snapshot_df
 
-    # [2] Disk cache
+    # ── DISK CACHE (không cần build lock vì chỉ đọc) ────────────────────
     if not _snapshot_stale():
         try:
             t0 = time.perf_counter()
             df = pd.read_parquet(snap_path)
 
-            # FIX: Phát hiện snapshot cũ — cột Exchange tồn tại nhưng toàn rỗng
             if 'Exchange' not in df.columns or df['Exchange'].astype(str).str.strip().eq('').all():
                 logger.warning("[Exchange] Snapshot thiếu/rỗng cột Exchange → xóa cache để rebuild!")
                 try:
@@ -824,42 +823,63 @@ def get_snapshot_df() -> pd.DataFrame:
         except Exception as e:
             logger.warning(f"Khong doc duoc snapshot Parquet: {e}")
 
-    # Full recalculate
-    logger.info("Tinh lai Snapshot (full pipeline)...")
-    t0 = time.perf_counter()
+    # ── REBUILD — chỉ 1 thread được chạy, các thread khác CHỜ ───────────
+    logger.info("Chờ _snapshot_build_lock để rebuild snapshot...")
+    with _snapshot_build_lock:
+        # ── Double-check sau khi lấy được build lock ─────────────────────
+        # Thread khác có thể đã rebuild xong trong lúc thread này chờ lock
+        with _snapshot_lock:
+            if _snapshot_df is not None:
+                logger.info(f"[C1 FIX] Snapshot đã được thread khác build xong: {len(_snapshot_df)} ma")
+                return _snapshot_df
 
-    df_final = _build_snapshot_df()
-    if df_final.empty:
-        return pd.DataFrame()
+        # Kiểm tra lại disk cache (thread khác có thể đã lưu parquet)
+        if not _snapshot_stale():
+            try:
+                df = pd.read_parquet(snap_path)
+                if 'Exchange' in df.columns and not df['Exchange'].astype(str).str.strip().eq('').all():
+                    with _snapshot_lock:
+                        _snapshot_df = df
+                    logger.info(f"[C1 FIX] Snapshot load từ Parquet sau khi chờ: {len(df)} ma")
+                    return df
+            except Exception:
+                pass
 
-    # Lưu Parquet (copy để tránh mutate df_final khi ép kiểu object→str)
-    try:
-        os.makedirs(PROCESSED_DIR, exist_ok=True)
-        df_save = df_final.copy()
-        for col in df_save.select_dtypes(include=['object']).columns:
-            df_save[col] = df_save[col].astype(str)
-        df_save.to_parquet(snap_path, index=False)
-        del df_save
-        logger.info(f"Saved snapshot ({len(df_final)} ma)")
-    except Exception as e:
-        logger.warning(f"Khong luu duoc snapshot: {e}")
+        # ── Thực sự rebuild ──────────────────────────────────────────────
+        logger.info("Tinh lai Snapshot (full pipeline)...")
+        t0 = time.perf_counter()
 
-    with _snapshot_lock:
-        _snapshot_df = df_final
+        df_final = _build_snapshot_df()
+        if df_final.empty:
+            return pd.DataFrame()
 
-    # Reset filter ranges cache khi snapshot tái tính
-    global _filter_ranges_cache
-    with _filter_ranges_lock:
-        _filter_ranges_cache = None
+        # Lưu Parquet
+        try:
+            os.makedirs(PROCESSED_DIR, exist_ok=True)
+            df_save = df_final.copy()
+            for col in df_save.select_dtypes(include=['object']).columns:
+                df_save[col] = df_save[col].astype(str)
+            df_save.to_parquet(snap_path, index=False)
+            del df_save
+            logger.info(f"Saved snapshot ({len(df_final)} ma)")
+        except Exception as e:
+            logger.warning(f"Khong luu duoc snapshot: {e}")
 
-    if not df_final.empty:
-        perf_cols = sorted(c for c in df_final.columns if c.startswith("Perf_"))
-        logger.info(f"[DEBUG] Perf columns: {perf_cols}")
-        logger.info(f"[DEBUG] Total columns: {len(df_final.columns)}")
+        with _snapshot_lock:
+            _snapshot_df = df_final
 
-    logger.info(f"Snapshot xong: {len(df_final)} ma | {time.perf_counter()-t0:.1f}s")
-    return df_final
+        # Reset filter ranges cache
+        global _filter_ranges_cache
+        with _filter_ranges_lock:
+            _filter_ranges_cache = None
 
+        if not df_final.empty:
+            perf_cols = sorted(c for c in df_final.columns if c.startswith("Perf_"))
+            logger.info(f"[DEBUG] Perf columns: {perf_cols}")
+            logger.info(f"[DEBUG] Total columns: {len(df_final.columns)}")
+
+        logger.info(f"Snapshot xong: {len(df_final)} ma | {time.perf_counter()-t0:.1f}s")
+        return df_final
 
 def get_latest_snapshot(df_price=None) -> list:
     """
@@ -870,7 +890,6 @@ def get_latest_snapshot(df_price=None) -> list:
     if df is None or df.empty:
         return []
     return df.to_dict("records")
-
 
 def invalidate_snapshot_cache():
     """Gọi sau khi thay file dữ liệu mới để buộc tái tính."""
