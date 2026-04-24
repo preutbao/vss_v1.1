@@ -1113,7 +1113,6 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
 
     return store_outputs + [unsaved_out]
 
-
 @app.callback(
     Output("active-filters-store", "data", allow_duplicate=True),
     Input({"type": "range-slider", "filter": ALL}, "value"),
@@ -1121,9 +1120,11 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
     State({"type": "range-slider", "filter": ALL}, "min"),
     State({"type": "range-slider", "filter": ALL}, "max"),
     State("active-filters-store", "data"),
+    State("selected-filters-container", "children"),  # ← THÊM
     prevent_initial_call=True
 )
-def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins, slider_maxs, active_filters):
+def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins, 
+                                      slider_maxs, active_filters, filter_children):
     """
     Khi user kéo bất kỳ slider nào:
     - Nếu filter đang active → cập nhật value mới vào active_filters_store
@@ -1172,6 +1173,26 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins, sli
     else:
         # Filter đang active → cập nhật value mới để trigger callback chính
         af[dragged_fid]["value"] = new_val
+
+    # Kiểm tra card có phải "Tham khảo" không
+    # Card tham khảo có borderLeft: "3px solid #f59e0b" (amber)
+    # Card thường có borderLeft: "3px solid #3fb950" (green)
+    is_readonly_card = False
+    if filter_children and dragged_fid not in af:
+        for c in filter_children:
+            try:
+                card_id = c.get('props', {}).get('id', {})
+                if isinstance(card_id, dict) and card_id.get('index') == dragged_fid:
+                    style = c.get('props', {}).get('style', {})
+                    border_left = style.get('borderLeft', '')
+                    if '#f59e0b' in border_left:
+                        is_readonly_card = True
+                    break
+            except Exception:
+                pass
+
+    if is_readonly_card:
+        return no_update  # ← Không auto-activate card tham khảo.
 
     return af
 
