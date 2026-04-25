@@ -549,6 +549,7 @@ layout = html.Div(
                                         {"label": "Công Thức Kỳ Diệu (Greenblatt)", "value": "STRAT_MAGIC"},
                                     ],
                                     placeholder="Chọn chiến lược đầu tư...",
+                                    clearable=False,
                                     className="ssi-dropdown-custom",
                                     style={"minWidth": "220px", "flex": "1"},
                                 ),

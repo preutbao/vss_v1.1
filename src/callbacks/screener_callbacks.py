@@ -2208,24 +2208,31 @@ def update_metrics_tab(selected_rows, period):
     Output("filter-offcanvas", "is_open"),
     [Input("toggle-filter-btn", "n_clicks"),
      Input("btn-filter", "n_clicks"),
-     Input("strategy-preset-dropdown", "value")],
+     Input("strategy-preset-dropdown", "value"),
+     Input("selected-filters-container", "children"),   # ← THÊM
+    ],
     [State("filter-offcanvas", "is_open")],
     prevent_initial_call=True
 )
-def toggle_filter_offcanvas(n_clicks_open, n_clicks_apply, strategy_val, is_open):
-    from dash import ctx
-    triggered_id = ctx.triggered_id
+def toggle_filter_offcanvas(n_clicks_open, n_clicks_apply, strategy_val,
+                             filter_children,   # ← THÊM tham số
+                             is_open):
+    from dash import ctx as dash_ctx
+    triggered_id = dash_ctx.triggered_id
 
     if triggered_id == "strategy-preset-dropdown":
-        # Chọn trường phái → tự động mở panel bộ lọc
         return True if strategy_val else is_open
+    elif triggered_id == "selected-filters-container":
+        # Nếu có card được thêm vào, mở panel để user thấy
+        if filter_children and len(filter_children) > 0:
+            return True
+        return is_open
     elif triggered_id == "toggle-filter-btn":
         return not is_open
     elif triggered_id == "btn-filter":
         return False
 
     return is_open
-
 
 # ============================================================================
 # CALLBACK: HIỂN THỊ THÔNG TIN TRƯỜNG PHÁI ĐẦU TƯ (INFO OFFCANVAS)

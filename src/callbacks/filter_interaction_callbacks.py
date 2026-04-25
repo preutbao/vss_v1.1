@@ -811,7 +811,7 @@ def manage_filter_ui(
 
     ctx = callback_context
     if not ctx.triggered:
-        return (no_update,) * 10
+        return (no_update,) * 11
 
     trigger_prop = ctx.triggered[0]['prop_id']
 
@@ -864,7 +864,6 @@ def manage_filter_ui(
         filt_list = _STRATEGY_FILTERS.get(strategy_selected, [])
         if not filt_list:
             return (NO,) * 11
-        new_af = {}  # ← KHÔNG đưa vào active_filters → không double lọc
         new_ch = []
         readonly_ids = []          # ← THÊM danh sách này
         ranges = get_filter_ranges()
@@ -885,7 +884,7 @@ def manage_filter_ui(
                                                    and not o["label"].startswith("* ")) else o["label"]}
             for o in opts
         ]
-        return new_ch, new_af, NO, NO, NO, NO, dirty_opts, NO, NO, True
+        return new_ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, True, readonly_ids
 
     # ── RESET ──────────────────────────────────────────────────────────────
     if trigger_prop == "btn-reset-ui.n_clicks":
@@ -1088,35 +1087,41 @@ _ALL_FILTER_STORE_IDS = [
     "filter-canslim",
 ]
 
-
 @app.callback(
     [Output(fid, "data", allow_duplicate=True) for fid in _ALL_FILTER_STORE_IDS]
     + [Output("filter-unsaved-flag", "data", allow_duplicate=True)],
     Input({"type": "range-slider", "filter": ALL}, "value"),
     State({"type": "range-slider", "filter": ALL}, "id"),
-    State({"type": "range-slider", "filter": ALL}, "min"),  # ← THÊM
-    State({"type": "range-slider", "filter": ALL}, "max"),  # ← THÊM
+    State({"type": "range-slider", "filter": ALL}, "min"),
+    State({"type": "range-slider", "filter": ALL}, "max"),
     State("saved-filters-dropdown", "value"),
+    State("readonly-filters-store", "data"),   # ← THÊM
     prevent_initial_call=True
 )
-def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs, current_dd_val):
+def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
+                             current_dd_val, readonly_filter_ids):   # ← THÊM tham số
     ctx = callback_context
     if not ctx.triggered:
         return [no_update] * (len(_ALL_FILTER_STORE_IDS) + 1)
 
+    readonly_ids = readonly_filter_ids or []
+
     slider_map = {}
     for val, id_spec, smin, smax in zip(slider_values, slider_ids, slider_mins, slider_maxs):
         if isinstance(id_spec, dict) and 'filter' in id_spec:
-            # Bỏ qua nếu value == [min, max] → slider chỉ mới mount, chưa kéo
+            fid = id_spec['filter']
+            # Bỏ qua slider readonly (card Tham khảo)
+            if fid in readonly_ids:
+                continue
+            # Bỏ qua nếu value == [min, max] → slider chỉ mới mount
             if val and len(val) == 2 and val[0] == smin and val[1] == smax:
                 continue
-            slider_map[id_spec['filter']] = val
+            slider_map[fid] = val
 
     store_outputs = [slider_map.get(fid, no_update) for fid in _ALL_FILTER_STORE_IDS]
 
-    # Đánh dấu dirty nếu đang có preset được load (kể cả preset trường phái)
     has_saved = bool(current_dd_val and current_dd_val != "default")
-    unsaved_out = True if has_saved else no_update
+    unsaved_out = True if has_saved and slider_map else no_update
 
     return store_outputs + [unsaved_out]
 
@@ -1127,19 +1132,13 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
     State({"type": "range-slider", "filter": ALL}, "min"),
     State({"type": "range-slider", "filter": ALL}, "max"),
     State("active-filters-store", "data"),
-    State("selected-filters-container", "children"),  # ← THÊM
-    State("readonly-filters-store", "data"),    # ← THÊM STATE NÀY
+    State("selected-filters-container", "children"),
+    State("readonly-filters-store", "data"),
     prevent_initial_call=True
 )
-def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins, 
-                                      slider_maxs, active_filters, filter_children, readonly_filter_ids):
-    """
-    Khi user kéo bất kỳ slider nào:
-    - Nếu filter đang active → cập nhật value mới vào active_filters_store
-      (callback chính đọc từ store này, không còn listen trực tiếp slider nữa)
-    - Nếu filter là card 'Tham khảo' (chưa active) → tự động activate
-    - Nếu value == [min, max] (chỉ khởi tạo, không phải kéo) → bỏ qua
-    """
+def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
+                                      slider_maxs, active_filters, filter_children,
+                                      readonly_filter_ids):
     ctx = callback_context
     if not ctx.triggered:
         return no_update
@@ -1152,15 +1151,6 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
 
     if not dragged_fid:
         return no_update
-    
-    # ← THÊM ĐOẠN CHẶN NÀY NGAY SAU
-    if dragged_fid in readonly_filter_ids:
-        # Card tham khảo từ trường phái → KHÔNG auto-activate
-        # Chỉ update nếu filter đã tồn tại trong active_filters rồi
-        af = dict(active_filters or {})
-        if dragged_fid not in af:
-            return no_update
-        # Nếu đã active, vẫn update value như bình thường
 
     # Lấy value + min + max của slider vừa trigger
     new_val = s_min = s_max = None
@@ -1172,15 +1162,25 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
     if new_val is None:
         return no_update
 
-    # Nếu value == [min, max] → slider chỉ mới khởi tạo, không phải user kéo
+    # Guard 1: slider mới mount (value == [min, max]) → bỏ qua
     if s_min is not None and s_max is not None:
         if new_val[0] == s_min and new_val[1] == s_max:
             return no_update
 
     af = dict(active_filters or {})
+    readonly_ids = readonly_filter_ids or []
 
+    # Guard 2: card "Tham khảo" → KHÔNG auto-activate, chỉ update nếu đã active
+    if dragged_fid in readonly_ids:
+        if dragged_fid not in af:
+            return no_update   # ← Return hẳn, không fall-through
+        # Đã active rồi (user thêm tay trùng với strategy) → update value
+        af[dragged_fid]["value"] = new_val
+        return af
+
+    # Card thường
     if dragged_fid not in af:
-        # Card "Tham khảo" → auto-activate
+        # Auto-activate khi user kéo lần đầu
         label = dragged_fid
         for cfg in CRITERIA_CONFIG.values():
             if cfg.get("filter_id") == dragged_fid:
@@ -1188,28 +1188,7 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
                 break
         af[dragged_fid] = {"label": label, "type": "range", "value": new_val}
     else:
-        # Filter đang active → cập nhật value mới để trigger callback chính
         af[dragged_fid]["value"] = new_val
-
-    # Kiểm tra card có phải "Tham khảo" không
-    # Card tham khảo có borderLeft: "3px solid #f59e0b" (amber)
-    # Card thường có borderLeft: "3px solid #3fb950" (green)
-    is_readonly_card = False
-    if filter_children and dragged_fid not in af:
-        for c in filter_children:
-            try:
-                card_id = c.get('props', {}).get('id', {})
-                if isinstance(card_id, dict) and card_id.get('index') == dragged_fid:
-                    style = c.get('props', {}).get('style', {})
-                    border_left = style.get('borderLeft', '')
-                    if '#f59e0b' in border_left:
-                        is_readonly_card = True
-                    break
-            except Exception:
-                pass
-
-    if is_readonly_card:
-        return no_update  # ← Không auto-activate card tham khảo.
 
     return af
 
