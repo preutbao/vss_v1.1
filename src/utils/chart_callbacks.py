@@ -212,8 +212,8 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
         total_rows = len(df_ticker)
         start_idx = 0  # Toàn bộ khoảng đã lọc
         end_idx = total_rows - 1
-
-        fig.update_xaxes(range=[start_idx, end_idx])
+        # Thêm 0.5 padding mỗi đầu để khớp với cách Plotly render category axis
+        fig.update_xaxes(range=[-0.5, total_rows - 0.5])
         # Đặt công cụ mặc định là Pan
         fig.update_layout(dragmode='pan')
 

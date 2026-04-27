@@ -309,7 +309,7 @@ def create_fireant_candlestick(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor=colors['chart_bg'],
         font=dict(color=colors['text_secondary'], family="JetBrains Mono"),
-        hovermode='x unified',
+        hovermode='closest',
         showlegend=False,
         xaxis_rangeslider_visible=False,
         hoverlabel=dict(

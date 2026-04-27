@@ -1,0 +1,47 @@
+name: VSS Daily Data Update
+
+# Lên lịch chạy tự động (Cronjob)
+on:
+  schedule:
+    # 5h chiều VN (GMT+7) tương đương với 10h sáng giờ UTC.
+    # Cấu trúc: Phút Giờ Ngày Tháng Thứ. (1-5 nghĩa là từ Thứ 2 đến Thứ 6)
+    - cron: '0 10 * * 1-5'
+  
+  # Cho phép bạn bấm nút chạy thủ công trên web GitHub để test
+  workflow_dispatch: 
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest # Chạy trên máy ảo Linux miễn phí của GitHub
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Cài đặt thư viện (Dependencies)
+        run: |
+          python -m pip install --upgrade pip
+          # Liệt kê các thư viện script của bạn cần
+          pip install pandas pyarrow requests vnstock3
+
+      - name: Chạy Script Daily Updater
+        run: python daily_updater.py
+
+      - name: Lưu file Parquet mới và đẩy lên GitHub
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Thêm các file Parquet vừa được script cập nhật
+          git add data/processed/*.parquet
+          
+          # Lưu (commit) với thông báo, bỏ qua lỗi nếu hôm đó không có dữ liệu mới
+          git commit -m "Auto-update market data [skip ci]" || echo "No changes to commit"
+          
+          # Đẩy ngược lại lên kho chứa
+          git push

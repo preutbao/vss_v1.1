@@ -718,13 +718,7 @@ def _build_snapshot_df() -> pd.DataFrame:
         logger.info(f"[Exchange] Fallback từ df_price: {len(_exchange_map)} ticker")
 
     try:
-        raw_max  = df_price["Date"].max()
-        df_price = df_price[df_price["Date"] < raw_max].copy()
-        raw_max  = df_price["Date"].max()
-        df_price = df_price[df_price["Date"] < raw_max].copy()
-        raw_max  = df_price["Date"].max()
-        df_price = df_price[df_price["Date"] < raw_max].copy()
-        logger.info(f"Loai ngay co the loi: {raw_max} → chot {df_price['Date'].max()}")
+
         global _data_cutoff_date
         try:
             _data_cutoff_date = df_price["Date"].max().strftime("%d/%m/%Y")
