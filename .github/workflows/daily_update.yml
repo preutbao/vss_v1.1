@@ -20,12 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Quan trọng để lấy toàn bộ lịch sử code
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
+          fetch-depth: 0 # Quan trọng để lấy toàn bộ lịch sử codee
 
       - name: Cài đặt thư viện
         run: |
