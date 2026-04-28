@@ -7,10 +7,6 @@ on:
   
   # 2. Cho phép bấm chạy bằng tay trên web
   workflow_dispatch: 
-  
-  # 3. MỚI: Tự động chạy mỗi khi bạn code xong và bấm Sync (push) từ VS Code lên nhánh main
-  push:
-    branches: [ main ]
 
 jobs:
   update-and-sync:
@@ -25,7 +21,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Quan trọng để lấy toàn bộ lịch sử codee
+          fetch-depth: 0 # Quan trọng để lấy toàn bộ lịch sử cod
+          lfs: true
 
       - name: Cài đặt thư viện
         run: |

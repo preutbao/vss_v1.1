@@ -302,6 +302,37 @@ def trigger_snapshot_rebuild():
     except Exception as e:
         logger.error(f"Lỗi rebuild snapshot: {e}")
 
+def check_if_up_to_date() -> bool:
+    logger.info("Đang kiểm tra xem dữ liệu có cần cập nhật không...")
+    if not PRICES_PARQUET.exists():
+        return False
+        
+    try:
+        # 1. Đọc đúng 1 cột Date trong máy để tiết kiệm RAM
+        df_saved = pd.read_parquet(PRICES_PARQUET, columns=["Date"])
+        latest_saved_date = pd.to_datetime(df_saved["Date"]).max().tz_localize(None)
+        
+        # 2. Cử "trinh sát" FPT đi dò ngày mới nhất trên thị trường
+        end_dt = datetime.today()
+        start_dt = end_dt - timedelta(days=7) # Quét 1 tuần gần nhất
+        df_market = get_market_data_robust("FPT", start_dt, end_dt)
+        
+        if df_market.empty:
+            return False # Mạng chập chờn, cứ chạy hàm chính cho an toàn
+            
+        latest_market_date = pd.to_datetime(df_market["Date"]).max().tz_localize(None)
+        
+        logger.info(f"↳ Dữ liệu trong máy: {latest_saved_date.date()}")
+        logger.info(f"↳ Dữ liệu thị trường: {latest_market_date.date()}")
+        
+        # Nếu máy đã có dữ liệu của ngày mới nhất -> Không cần chạy lại
+        if latest_saved_date >= latest_market_date:
+            return True
+    except Exception as e:
+        logger.warning(f"Lỗi kiểm tra trước: {e}")
+        
+    return False
+
 # ═════════════════════════════════════════════════════════════════════════════
 # PHẦN 5: MAIN PIPELINE
 # ═════════════════════════════════════════════════════════════════════════════
@@ -310,6 +341,12 @@ def run_update(rebuild_snapshot: bool = False) -> bool:
     logger.info("=" * 70)
     logger.info("VSS DAILY UPDATER (SSI/VND API) — BẮT ĐẦU")
     logger.info("=" * 70)
+
+    # CHÈN LỚP PHÒNG NGỰ VÀO ĐÂY
+    if check_if_up_to_date():
+        logger.info("✅ Dữ liệu đã là mới nhất! BỎ QUA quá trình tải 1500 mã.")
+        logger.info("=" * 70)
+        return True # Trả về thành công và thoát ngay lập tức
 
     df_meta = get_ticker_list_from_parquet()
     if df_meta.empty: return False
