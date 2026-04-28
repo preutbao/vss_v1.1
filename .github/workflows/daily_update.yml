@@ -26,7 +26,7 @@ jobs:
 
       - name: Ép tải file LFS gốc (Trị lỗi Corrupted Parquet)
         run: git lfs pull
-
+        
       - name: Cài đặt thư viện
         run: |
           C:/Users/NK/AppData/Local/Microsoft/WindowsApps/python3.12.exe -m pip install --upgrade pip
@@ -60,11 +60,14 @@ jobs:
           # 1. Tạo một nhánh hoàn toàn mới, trống rỗng lịch sử
           git checkout --orphan hf_deploy
           
-          # 2. Add toàn bộ file LFS và code hiện tại (đã sạch rác)
+          # 2. Add toàn bộ file LFS và code hiện tại
           git add .
           
-          # 3. Đóng gói thành một commit duy nhất
+          # 3. BẮT BUỘC GIT PHẢI "NHẢ" THƯ MỤC RAW RA, KHÔNG ĐƯỢC COMMIT
+          git reset data/raw/
+          
+          # 4. Đóng gói thành một commit duy nhất
           git commit -m "Auto-deploy latest clean version"
           
-          # 4. Ép đẩy nhánh hf_deploy này đè thẳng lên nhánh main của Hugging Face
+          # 5. Ép đẩy nhánh hf_deploy này đè thẳng lên nhánh main của Hugging Face
           git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener" hf_deploy:main
