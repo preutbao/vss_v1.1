@@ -684,23 +684,33 @@ def build_template_picker(saved_selection=None):
             style={"display":"flex","flexDirection":"row","padding":"16px 20px","overflowY":"auto","maxHeight":"460px","gap":"0"}),
     ],style={"backgroundColor":"#0c1220","border":"1px solid #21262d","borderRadius":"8px","overflow":"hidden"})
 
-
 @app.callback(
     Output("tab-fin-charts-content", "children"),
     Input("detail-tabs", "active_tab"),
     Input("fin-chart-period-store", "data"),
     State("screener-table", "selectedRows"),
     State("fin-chart-selection-store", "data"),  # ← đọc template đang lưu
+    State("selected-stock-store", "data"),       # ← [MỚI] THÊM VÀO ĐÁY DANH SÁCH CALLBACK
     prevent_initial_call=True,
 )
-def render_fin_charts_tab(active_tab, period, selected_rows, saved_selection):
+def render_fin_charts_tab(active_tab, period, selected_rows, saved_selection, stock_store_data): # ← [MỚI] THÊM VÀO ĐÁY THAM SỐ
     if active_tab != "tab-fin-charts":
         return no_update
-    if not selected_rows:
+        
+    # --- BẮT ĐẦU FIX LỖI LAG CỦA HUGGING FACE ---
+    # Nếu selected_rows bị rỗng do bảng chưa kịp render, lấy ngay data từ store backup
+    if (not selected_rows or len(selected_rows) == 0) and stock_store_data:
+        selected_rows = [stock_store_data]
+    # --------------------------------------------
+
+    # Validation an toàn
+    if not selected_rows or len(selected_rows) == 0:
         return html.P("Chọn một cổ phiếu để xem biểu đồ.",
                       style={"color": "#484f58", "padding": "20px", "textAlign": "center"})
+                      
     ticker = selected_rows[0].get("Ticker", "")
     period = period or "quarterly"
+    
     try:
         from src.backend.data_loader import load_financial_data
         df_all = load_financial_data(period)
@@ -733,7 +743,6 @@ def render_fin_charts_tab(active_tab, period, selected_rows, saved_selection):
         dcc.Store(id="fin-chart-df-ticker", data=ticker),
         dcc.Store(id="fin-chart-df-period", data=period),
     ], style={"padding": "12px 16px"})
-
 
 @app.callback(
     Output("fin-chart-selection-store", "data"),

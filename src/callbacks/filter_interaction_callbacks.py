@@ -865,7 +865,7 @@ def manage_filter_ui(
         if not filt_list:
             return (NO,) * 11
         new_ch = []
-        readonly_ids = []          # ← THÊM danh sách này
+        readonly_info = {}          # ← dict {fid: [lo, hi]} thay vì list
         ranges = get_filter_ranges()
         for (fid, lbl, default_rng) in filt_list:
             if fid in ranges:
@@ -875,22 +875,22 @@ def manage_filter_ui(
             else:
                 actual_min, actual_max = default_rng[0], default_rng[1]
                 lo, hi = float(default_rng[0]), float(default_rng[1])
-            readonly_ids.append(fid)   # ← THÊM dòng này
+            readonly_info[fid] = [lo, hi]   # ← lưu giá trị khởi tạo
             # Dùng card "Tham khảo" thay vì card active
             new_ch.append(create_range_filter_ui_readonly(fid, lbl, actual_min, actual_max, [lo, hi]))
         dirty_opts = [
             {**o, "label": ("* " + o["label"]) if (o.get("value") == dd_selected
-                                                   and dd_selected and dd_selected != "default"
-                                                   and not o["label"].startswith("* ")) else o["label"]}
+                                                and dd_selected and dd_selected != "default"
+                                                and not o["label"].startswith("* ")) else o["label"]}
             for o in opts
         ]
-        return new_ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, True, readonly_ids
+        return new_ch, NO, NO, NO, NO, dirty_opts, NO, NO, NO, True, readonly_info
 
     # ── RESET ──────────────────────────────────────────────────────────────
     if trigger_prop == "btn-reset-ui.n_clicks":
         clean_opts = [{**o, "label": o["label"][2:] if o["label"].startswith("* ") else o["label"]}
                       for o in opts]
-        return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, []  # ← thêm []
+        return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, {}
 
 
     # ── LƯU BỘ LỌC ─────────────────────────────────────────────────────────
@@ -946,7 +946,7 @@ def manage_filter_ui(
             snap.get("strategy", None),
             snap.get("industry", "all"),
             NO, NO, clean_opts, NO, NO, False,
-            [],   # ← reset readonly khi load preset đã lưu
+            {},   # ← reset readonly khi load preset đã lưu
         )
 
     # ── XÓA FILTER ─────────────────────────────────────────────────────────
@@ -1104,14 +1104,18 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
     if not ctx.triggered:
         return [no_update] * (len(_ALL_FILTER_STORE_IDS) + 1)
 
-    readonly_ids = readonly_filter_ids or []
+    # Xử lý cả 2 format (dict mới hoặc list cũ)
+    if isinstance(readonly_filter_ids, dict):
+        readonly_id_set = set(readonly_filter_ids.keys())
+    else:
+        readonly_id_set = set(readonly_filter_ids or [])
 
     slider_map = {}
     for val, id_spec, smin, smax in zip(slider_values, slider_ids, slider_mins, slider_maxs):
         if isinstance(id_spec, dict) and 'filter' in id_spec:
             fid = id_spec['filter']
-            # Bỏ qua slider readonly (card Tham khảo)
-            if fid in readonly_ids:
+            # Bỏ qua slider readonly (card Tham khảo) — chúng dùng riêng active-filters-store
+            if fid in readonly_id_set:
                 continue
             # Bỏ qua nếu value == [min, max] → slider chỉ mới mount
             if val and len(val) == 2 and val[0] == smin and val[1] == smax:
@@ -1168,14 +1172,31 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
             return no_update
 
     af = dict(active_filters or {})
-    readonly_ids = readonly_filter_ids or []
 
-    # Guard 2: card "Tham khảo" → KHÔNG auto-activate, chỉ update nếu đã active
-    if dragged_fid in readonly_ids:
+    # Xử lý cả 2 format của readonly_filter_ids (dict mới hoặc list cũ)
+    if isinstance(readonly_filter_ids, dict):
+        readonly_id_set = set(readonly_filter_ids.keys())
+        readonly_initial = readonly_filter_ids  # {fid: [lo, hi]}
+    else:
+        readonly_id_set = set(readonly_filter_ids or [])
+        readonly_initial = {}
+
+    # Guard 2: card "Tham khảo"
+    if dragged_fid in readonly_id_set:
+        initial_val = readonly_initial.get(dragged_fid)
+        # Nếu value khớp với giá trị khởi tạo → slider vừa mount, bỏ qua
+        if initial_val is not None and list(new_val) == list(initial_val):
+            return no_update
+        # User thực sự kéo slider (value khác initial) → activate filter này
         if dragged_fid not in af:
-            return no_update   # ← Return hẳn, không fall-through
-        # Đã active rồi (user thêm tay trùng với strategy) → update value
-        af[dragged_fid]["value"] = new_val
+            label = dragged_fid
+            for cfg in CRITERIA_CONFIG.values():
+                if cfg.get("filter_id") == dragged_fid:
+                    label = cfg.get("label", dragged_fid)
+                    break
+            af[dragged_fid] = {"label": label, "type": "readonly_range", "value": new_val}
+        else:
+            af[dragged_fid]["value"] = new_val
         return af
 
     # Card thường

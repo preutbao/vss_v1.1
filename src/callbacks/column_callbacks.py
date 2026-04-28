@@ -309,6 +309,12 @@ STRATEGY_FILTER_IDS = {
                      "filter-eps-cagr-5y"],
     "STRAT_MAGIC": ["filter-pe", "filter-roe", "filter-ev-ebitda", "filter-net-margin",
                     "filter-market-cap"],
+    # THÊM MỚI:
+    "STRAT_NCN": [
+        "filter-roe", "filter-roa", "filter-net-margin", "filter-gross-margin",
+        "filter-de", "filter-current-ratio", "filter-rev-cagr-5y",
+        "filter-eps-cagr-5y", "filter-pe", "filter-ebit-margin",
+    ],
 }
 
 # Mapping trường phái → cột đặc trưng riêng (không có filter tương ứng)
