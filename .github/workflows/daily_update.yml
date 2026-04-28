@@ -57,17 +57,28 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Tạo một nhánh hoàn toàn mới, trống rỗng lịch sử
-          git checkout --orphan hf_deploy
+          # 0. Chắc chắn đang đứng ở main
+          git checkout main
           
-          # 2. Add toàn bộ file LFS và code hiện tại
+          # 1. Tạo tên nhánh mới có gắn thời gian để KHÔNG BAO GIỜ bị trùng
+          $branchName = "hf_deploy_" + (Get-Date -Format "yyyyMMdd_HHmmss")
+          git checkout --orphan $branchName
+          
+          # 2. Tẩy não Git: Xóa sạch ký ức về các file cũ để làm mới hoàn toàn
+          git rm -rf --cached .
+          
+          # 3. Gom file lại (Git sẽ tự động chừa các file trong .gitignore ra)
           git add .
           
-          # 3. BẮT BUỘC GIT PHẢI "NHẢ" THƯ MỤC RAW RA, KHÔNG ĐƯỢC COMMIT
+          # 4. Ép "nhả" thư mục raw ra (Lớp phòng ngự thép)
           git reset data/raw/
           
-          # 4. Đóng gói thành một commit duy nhất
-          git commit -m "Auto-deploy latest clean version"
+          # 5. Đóng gói
+          git commit -m "Auto-deploy clean version"
           
-          # 5. Ép đẩy nhánh hf_deploy này đè thẳng lên nhánh main của Hugging Face
-          git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener" hf_deploy:main
+          # 6. Ép đẩy nhánh tạm này đè thẳng lên nhánh main của Hugging Face
+          git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener" "${branchName}:main"
+          
+          # 7. Hủy thi diệt tích: Trở về main và xóa sổ nhánh tạm vừa tạo
+          git checkout main
+          git branch -D $branchName
