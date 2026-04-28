@@ -302,7 +302,6 @@ def trigger_snapshot_rebuild():
     except Exception as e:
         logger.error(f"Lỗi rebuild snapshot: {e}")
 
-
 # ═════════════════════════════════════════════════════════════════════════════
 # PHẦN 5: MAIN PIPELINE
 # ═════════════════════════════════════════════════════════════════════════════
@@ -326,14 +325,26 @@ def run_update(rebuild_snapshot: bool = False) -> bool:
     logger.info("\n─── BƯỚC 4: MERGE & GHI PARQUET ───")
     df_prices_final = merge_prices_into_parquet(df_new_prices, df_meta)
     if not df_prices_final.empty:
-        if PRICES_PARQUET.exists(): PRICES_PARQUET.rename(PRICES_PARQUET.with_suffix(".bak.parquet"))
+        # Fix lỗi WinError 183: Xóa backup cũ trước khi đổi tên
+        backup_prices = PRICES_PARQUET.with_suffix(".bak.parquet")
+        if backup_prices.exists():
+            backup_prices.unlink()
+        if PRICES_PARQUET.exists(): 
+            PRICES_PARQUET.rename(backup_prices)
+            
         df_prices_final.to_parquet(PRICES_PARQUET, index=False)
         logger.info(f"  ✓ Ghi market_prices.parquet: {len(df_prices_final):,} dòng")
 
     if not df_new_index.empty:
         df_index_final = merge_index_into_parquet(df_new_index)
         if not df_index_final.empty:
-            if INDEX_PARQUET.exists(): INDEX_PARQUET.rename(INDEX_PARQUET.with_suffix(".bak.parquet"))
+            # Fix lỗi WinError 183 cho Index
+            backup_index = INDEX_PARQUET.with_suffix(".bak.parquet")
+            if backup_index.exists():
+                backup_index.unlink()
+            if INDEX_PARQUET.exists(): 
+                INDEX_PARQUET.rename(backup_index)
+                
             df_index_final.to_parquet(INDEX_PARQUET, index=False)
             logger.info(f"  ✓ Ghi index.parquet: {len(df_index_final):,} dòng")
 
