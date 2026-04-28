@@ -36,19 +36,23 @@ jobs:
         run: C:/Users/NK/AppData/Local/Microsoft/WindowsApps/python3.12.exe daily_updater.py
 
       - name: Lưu file Parquet mới vào GitHub
-        shell: bash
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add data/processed/*.parquet
-          git commit -m "Auto-update market data [skip ci]" || echo "No changes to commit"
-          git push origin main
+          
+          # Dùng PowerShell để kiểm tra có file thay đổi không
+          $changes = git status --porcelain
+          if ($changes) {
+            git commit -m "Auto-update market data [skip ci]"
+            git push origin main
+          } else {
+            Write-Host "No changes to commit"
+          }
 
       - name: Đồng bộ sang Hugging Face Space
-        shell: bash
         env:
-          # Lấy cái chìa khóa bạn vừa cấu hình ở Bước 2
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # Đẩy toàn bộ code và data mới nhất sang Space VietcapSmartScreener của bạn
-          git push --force https://preut:$HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener main
+          # PowerShell gọi biến môi trường bằng $env:
+          git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener" main
