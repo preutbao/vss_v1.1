@@ -74,101 +74,90 @@ def update_dashboard(selected_ticker):
 
     return f"Phân tích: {selected_ticker}", fig, table
 
-
 # ============================================================================
-# CALLBACK: TOUR GUIDE — 3 bước, hiển thị 1 lần đầu khi vào trang
+# CALLBACK: TOUR GUIDE — 4 bước (Đã thêm Phân loại khách hàng)
 # ============================================================================
 @app.callback(
     Output("hint-modal", "is_open"),
-    Output("hint-modal", "children"),       # swap nội dung theo bước
-    Output("hint-shown-store", "data"),     # Đánh dấu đã xem hay chưa
-    Output("tour-step-store", "data"),      # lưu bước hiện tại
-    Input("hint-modal-ok", "n_clicks"),     # nút Tiếp theo / Bắt đầu
-    Input("hint-modal-close", "n_clicks"),  # nút X — đóng hẳn
-    Input("hint-shown-store", "data"),      # trigger lần đầu load
+    Output("hint-modal", "children"),       
+    Output("hint-shown-store", "data"),     
+    Output("tour-step-store", "data"),      
+    Output("tour-selected-mode", "data"),   # <-- NEW: Lưu kết quả bài test
+    Input("hint-modal-ok", "n_clicks"),     
+    Input("hint-modal-close", "n_clicks"),  
+    Input("hint-shown-store", "data"),      
     State("hint-modal", "is_open"),
     State("tour-step-store", "data"),
+    State("tour-quiz-radio", "value"),      # <-- NEW: Đọc đáp án user chọn
     prevent_initial_call=False,
 )
-def manage_tour(ok_clicks, close_clicks, already_shown, is_open, current_step):
+def manage_tour(ok_clicks, close_clicks, already_shown, is_open, current_step, quiz_value):
     ctx = callback_context
     triggered = ctx.triggered[0]["prop_id"] if ctx.triggered else ""
 
-    # ── Tự động mở khi trang mới load (Chỉ mở nếu session này chưa xem) ──
+    # ── Tự động mở khi trang mới load ──
     if triggered == "hint-shown-store.data" or not triggered:
         if already_shown is True:
-            # Nếu đã xem rồi -> Đóng
-            return False, no_update, True, current_step 
+            return False, no_update, True, current_step, no_update 
         else:
-            # Nếu chưa xem -> Mở lên ở Bước 1
-            return True, _build_tour_step(1), False, 1
+            return True, _build_tour_step(1), False, 1, no_update
 
-    # ── Bấm X → Đóng hẳn và không hiện lại trong session này ──
+    # ── Bấm X → Đóng hẳn ──
     if "hint-modal-close" in triggered:
-        return False, no_update, True, 1
+        return False, no_update, True, 1, no_update
 
     # ── Bấm Tiếp / Kết thúc ──
     if "hint-modal-ok" in triggered:
         step = current_step or 1
         
-        # Nếu đang ở bước cuối (3) mà bấm Ok -> Đóng tour, đánh dấu đã xem
-        if step >= 3:
-            return False, no_update, True, 1 
+        if step == 3:
+            # Từ bước 3 chuyển sang bước 4 (Bài test)
+            return True, _build_tour_step(4), False, 4, no_update
             
-        # Nếu chưa đến bước cuối -> Sang bước tiếp theo
+        elif step >= 4:
+            # Hoàn tất bài test -> Đóng form, đánh dấu đã xem, phát tín hiệu Mode
+            selected_mode = quiz_value if quiz_value else "investing"
+            return False, no_update, True, 1, selected_mode 
+            
+        # Các bước khác -> Sang bước tiếp theo
         next_step = step + 1
-        return True, _build_tour_step(next_step), False, next_step
+        return True, _build_tour_step(next_step), False, next_step, no_update
 
-    return no_update, no_update, no_update, no_update
+    return no_update, no_update, no_update, no_update, no_update
 
 
 def _build_tour_step(step: int):
     """Tạo nội dung Modal theo từng bước tour."""
 
-    # ── Style chung ──────────────────────────────────────────────────────────
-    _dot_active = {
-        "width": "8px", "height": "8px", "borderRadius": "50%",
-        "backgroundColor": "#00d4ff", "display": "inline-block", "margin": "0 3px",
+    # ── Style chung (Đã tối ưu lại chiều cao và chiều ngang) ──
+    modal_style = {
+        "backgroundColor": "#0d1117",
+        "border": "1px solid #21262d",
+        "borderRadius": "12px",
+        "padding": "24px 40px 16px", # Giảm padding dọc, tăng padding ngang
     }
-    _dot_inactive = {
-        "width": "8px", "height": "8px", "borderRadius": "50%",
-        "backgroundColor": "#30363d", "display": "inline-block", "margin": "0 3px",
-    }
+    
+    _dot_active = {"width": "8px", "height": "8px", "borderRadius": "50%", "backgroundColor": "#00d4ff", "display": "inline-block", "margin": "0 3px"}
+    _dot_inactive = {"width": "8px", "height": "8px", "borderRadius": "50%", "backgroundColor": "#30363d", "display": "inline-block", "margin": "0 3px"}
 
     def _dots(active):
-        return html.Div(
-            [html.Span(style=_dot_active if i == active else _dot_inactive)
-             for i in range(1, 4)],
-            style={"textAlign": "center", "marginBottom": "20px"},
-        )
+        return html.Div([html.Span(style=_dot_active if i == active else _dot_inactive) for i in range(1, 5)], style={"textAlign": "center", "marginBottom": "15px"})
 
     def _close_btn():
         return html.Button("×", id="hint-modal-close", n_clicks=0, style={
-            "position": "absolute", "top": "14px", "right": "18px",
-            "background": "none", "border": "none",
-            "color": "#484f58", "fontSize": "22px", "cursor": "pointer",
-            "lineHeight": "1", "padding": "0", "zIndex": "10",
+            "position": "absolute", "top": "14px", "right": "18px", "background": "none", 
+            "border": "none", "color": "#484f58", "fontSize": "22px", "cursor": "pointer", "zIndex": "10",
         })
 
     def _action_row(label, icon="fas fa-arrow-right", is_last=False):
-        """Nút hành động chính."""
-        grad = ("linear-gradient(135deg, #f59e0b, #f97316)"
-                if is_last else "linear-gradient(135deg, #0090ff, #00d4ff)")
+        grad = "linear-gradient(135deg, #f59e0b, #f97316)" if is_last else "linear-gradient(135deg, #0090ff, #00d4ff)"
         text_col = "#1a0800" if is_last else "#001a20"
         return html.Div([
-            dbc.Button(
-                [html.I(className=f"{icon} me-2"), label],
-                id="hint-modal-ok", n_clicks=0,
-                style={
-                    "background": grad, "border": "none",
-                    "borderRadius": "8px",
-                    "fontFamily": "'JetBrains Mono', monospace",
-                    "fontSize": "12px", "fontWeight": "700",
-                    "color": text_col, "letterSpacing": "0.5px",
-                    "padding": "9px 28px",
-                }
+            dbc.Button([html.I(className=f"{icon} me-2"), label], id="hint-modal-ok", n_clicks=0,
+                style={"background": grad, "border": "none", "borderRadius": "8px", "fontFamily": "'JetBrains Mono', monospace",
+                       "fontSize": "13px", "fontWeight": "700", "color": text_col, "padding": "9px 35px"}
             ),
-        ], style={"textAlign": "center", "marginTop": "20px"})
+        ], style={"textAlign": "center", "marginTop": "15px"})
 
     # ════════════════════════════════════════════════════════════════════════
     # BƯỚC 1 – Chào mừng & tổng quan hệ thống
@@ -236,12 +225,7 @@ def _build_tour_step(step: int):
                 _dots(1),
                 _action_row("Tiếp theo →"),
             ]),
-        ], style={
-            "backgroundColor": "#0d1117",
-            "border": "1px solid #21262d",
-            "borderRadius": "12px",
-            "padding": "28px 24px 20px",
-        })
+        ], style=modal_style)
 
     # ════════════════════════════════════════════════════════════════════════
     # BƯỚC 2 – Hướng dẫn sử dụng bộ lọc
@@ -323,7 +307,7 @@ def _build_tour_step(step: int):
     # ════════════════════════════════════════════════════════════════════════
     # BƯỚC 3 – CTA: Khẩu vị phòng thủ NCN K16
     # ════════════════════════════════════════════════════════════════════════
-    else:
+    elif step == 3:
         content = dbc.ModalBody([
             html.Div(style={"position": "relative"}, children=[
                 _close_btn(),
@@ -406,6 +390,40 @@ def _build_tour_step(step: int):
             "borderRadius": "12px",
             "padding": "28px 24px 20px",
         })
+
+    # ════════════════════════════════════════════════════════════════════════
+    # BƯỚC 4 (NEW) – BÀI TEST ĐỊNH VỊ KHÁCH HÀNG
+    # ════════════════════════════════════════════════════════════════════════
+    else:
+        content = dbc.ModalBody([
+            html.Div(style={"position": "relative"}, children=[
+                _close_btn(),
+                html.H5("Định hình Khẩu vị Đầu tư", style={
+                    "color": "#e6edf3", "fontWeight": "700", "textAlign": "center", 
+                    "marginBottom": "8px", "fontFamily": "'Sora', sans-serif"
+                }),
+                html.P("Hệ thống sẽ tự động tối ưu giao diện dựa trên câu trả lời của bạn:", 
+                       style={"fontSize": "13px", "color": "#8b949e", "textAlign": "center", "marginBottom": "24px"}),
+                
+                # Bộ câu hỏi trắc nghiệm
+                html.Div([
+                    dbc.RadioItems(
+                        id="tour-quiz-radio",
+                        options=[
+                            {"label": html.Div(["📊 Chế độ Tích sản", html.Div("Tôi ít thời gian bám bảng, ưu tiên mua giữ trung & dài hạn, an toàn dòng tiền.", style={"fontSize":"11px", "color":"#8b949e", "marginTop":"4px"})], style={"marginLeft": "10px", "marginBottom": "6px"}), "value": "investing"},
+                            {"label": html.Div(["⚡ Chế độ Lướt sóng", html.Div("Tôi thường xuyên xem bảng điện, thích đánh T+, tìm điểm Breakout.", style={"fontSize":"11px", "color":"#8b949e", "marginTop":"4px"})], style={"marginLeft": "10px", "marginBottom": "6px"}), "value": "trading"},
+                            {"label": html.Div(["🌐 Toàn thị trường", html.Div("Tôi là dân chuyên, muốn xem toàn bộ 1.500 mã không qua bộ lọc.", style={"fontSize":"11px", "color":"#8b949e", "marginTop":"4px"})], style={"marginLeft": "10px"}), "value": "all_market"},
+                        ],
+                        value="investing", # Mặc định an toàn
+                        style={"display": "flex", "flexDirection": "column", "gap": "18px"}
+                    )
+                ], style={"backgroundColor": "#010409", "padding": "20px", "borderRadius": "8px", "border": "1px solid #30363d"}),
+                
+                _dots(4),
+                _action_row("Hoàn tất & Bắt đầu", "fas fa-rocket", is_last=True),
+            ]),
+        ], style=modal_style)
+
 
     return content
 

@@ -499,7 +499,7 @@ layout = html.Div(
                                 multi=False,
                                 className="ssi-dropdown-custom ticker-search-dropdown",
                                 style={
-                                    "minWidth": "190px",
+                                    "minWidth": "230px",
                                     "color": "#ffffff",
                                 },
                             ),
@@ -570,12 +570,23 @@ layout = html.Div(
                 html.Div(
                     [
                         html.Span(id="result-count-number", style={"display": "none"}),
-
-                        html.I(className="fas fa-building-columns",
-                               style={"marginRight": "6px", "color": "#a78bfa", "fontSize": "11px"}),
-                        html.Span("Sàn",
-                                  style={"fontSize": "11px", "color": "#6e7681", "fontWeight": "600",
-                                         "marginRight": "8px", "whiteSpace": "nowrap"}),
+                        # Thêm vào đầu nhóm action buttons (trước filter-exchange)
+                        dbc.Button(
+                            id="mode-toggle-btn",
+                            children=[
+                                html.I(className="fas fa-seedling", style={"marginRight": "5px"}),
+                                html.Span("Tích sản", id="mode-toggle-label"),
+                            ],
+                            n_clicks=0,
+                            size="sm",
+                            color="success",
+                            outline=True,
+                            style={
+                                "borderRadius": "20px", "fontSize": "11px",
+                                "padding": "4px 12px", "whiteSpace": "nowrap",
+                                "fontWeight": "600",
+                            },
+                        ),
                         dcc.Dropdown(
                             id="filter-exchange",
                             options=[
@@ -589,12 +600,6 @@ layout = html.Div(
                             className="ssi-dropdown-custom",
                             style={"minWidth": "150px"},
                         ),
-
-                        html.I(className="fas fa-industry",
-                               style={"marginRight": "6px", "color": "#3fb950", "fontSize": "11px"}),
-                        html.Span("Ngành", id="label-industry",
-                                  style={"fontSize": "11px", "color": "#6e7681", "fontWeight": "600",
-                                         "marginRight": "8px", "whiteSpace": "nowrap"}),
 
                         dcc.Dropdown(
                             id="filter-all-industry",

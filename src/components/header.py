@@ -49,7 +49,7 @@ def create_header():
                 ], className="d-flex align-items-center gap-4"),
 
                 # 3. Nút mở tài khoản
-                html.A("Mở tài khoản",
+                html.A("Nhận báo cáo PDF",
                        href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi&utm_source=vietcap_website",
                        target="_blank",
                        className="vietcap-nav-cta")
