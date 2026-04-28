@@ -16,6 +16,11 @@ jobs:
   update-and-sync:
     runs-on: self-hosted
     
+    # THÊM ĐOẠN NÀY VÀO ĐÂY
+    env:
+      PYTHONUTF8: 1
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
