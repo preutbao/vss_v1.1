@@ -777,6 +777,11 @@ _STRATEGY_FILTERS = {
 # (tránh duplicate output conflict)
 # ============================================================================
 
+# ============================================================================
+# Gộp: thêm/xóa filter + load bộ lọc đã lưu + reset
+# (tránh duplicate output conflict)
+# ============================================================================
+
 @app.callback(
     Output("selected-filters-container", "children", allow_duplicate=True),
     Output("active-filters-store", "data", allow_duplicate=True),
@@ -810,7 +815,9 @@ def manage_filter_ui(
         strategy, industry,
         saved_store, saved_options,
 ):
+    import json
     from datetime import datetime
+    from dash import callback_context, no_update
 
     ctx = callback_context
     if not ctx.triggered:
@@ -867,9 +874,11 @@ def manage_filter_ui(
         filt_list = _STRATEGY_FILTERS.get(strategy_selected, [])
         if not filt_list:
             return (NO,) * 11
+            
         new_ch = []
-        readonly_ids = []
+        readonly_ids = {} # <--- SỬA 1: Đổi thành Dict {} tại đây
         ranges = get_filter_ranges()
+        
         for (fid, lbl, default_rng) in filt_list:
             if fid in ranges:
                 actual_min, actual_max = ranges[fid]
@@ -878,38 +887,38 @@ def manage_filter_ui(
             else:
                 actual_min, actual_max = default_rng[0], default_rng[1]
                 lo, hi = float(default_rng[0]), float(default_rng[1])
-            readonly_ids.append(fid)
+                
+            readonly_ids[fid] = [lo, hi] # <--- SỬA 2: Lưu [lo, hi] vào Dict
             new_ch.append(create_range_filter_ui_readonly(fid, lbl, actual_min, actual_max, [lo, hi]))
+            
         dirty_opts = [
             {**o, "label": ("* " + o["label"]) if (o.get("value") == dd_selected
-                                                and dd_selected and dd_selected != "default"
-                                                and not o["label"].startswith("* ")) else o["label"]}
+                                                   and dd_selected and dd_selected != "default"
+                                                   and not o["label"].startswith("* ")) else o["label"]}
             for o in opts
         ]
+        
         # ── QUAN TRỌNG: active-filters-store phải là NO để không trigger screener lần 2 ──
-        # Xóa readonly cũ ra khỏi active_filters nhưng chỉ khi af thực sự có readonly cũ
-        # và chỉ khi af thay đổi thực sự (tránh trigger screener)
         has_old_readonly = any(
             isinstance(v, dict) and v.get("type") in ("readonly_range",)
             for v in af.values()
         )
         if has_old_readonly:
-            # Có readonly cũ → cần xóa → trả về af đã xóa (sẽ trigger screener 1 lần)
-            # Nhưng screener lần này là intentional vì user vừa đổi strategy
+            # Có readonly cũ → cần xóa → trả về af đã xóa
             af_clean = {
                 k: v for k, v in af.items()
                 if not (isinstance(v, dict) and v.get("type") == "readonly_range")
             }
             return new_ch, af_clean, NO, NO, NO, NO, dirty_opts, NO, NO, True, readonly_ids
         else:
-            # Không có readonly cũ → active_filters không thay đổi → NO để tránh double trigger
+            # Không có readonly cũ → active_filters không thay đổi → NO
             return new_ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, True, readonly_ids
 
     # ── RESET ──────────────────────────────────────────────────────────────
     if trigger_prop == "btn-reset-ui.n_clicks":
         clean_opts = [{**o, "label": o["label"][2:] if o["label"].startswith("* ") else o["label"]}
                       for o in opts]
-        return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, {}
+        return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, {} # SỬA 3: Trả về {} ở tham số cuối
 
 
     # ── LƯU BỘ LỌC ─────────────────────────────────────────────────────────
@@ -924,16 +933,16 @@ def manage_filter_ui(
                     True,
                     [html.I(className="fas fa-exclamation-triangle me-2"),
                      "Chưa chọn bộ lọc nào để lưu!"],
-                    NO)
+                    NO, NO)
         name = datetime.now().strftime("%H:%M:%S – %d/%m/%Y")
         saved[name] = {"active_filters": af, "strategy": strategy, "industry": industry}
         base = {"label": "Bộ lọc cá nhân", "value": "default"}
         new_opts = [o for o in opts if o.get("value") != name]
         if not any(o.get("value") == "default" for o in new_opts):
             new_opts = [base] + new_opts
-        # Remove * from all options when saving fresh
         new_opts = [{**o, "label": o["label"][2:] if o["label"].startswith("* ") else o["label"]}
                     for o in new_opts]
+        
         new_opts.append({"label": name, "value": name})
         return (
             NO, NO, NO, NO,
@@ -942,8 +951,8 @@ def manage_filter_ui(
             True,
             [html.I(className="fas fa-check-circle me-2", style={"color": "#3fb950"}),
              f' Đã lưu: "{name}"'],
-            False,  # clean
-            NO,   # ← thêm NO cho readonly-filters-store
+             False,  
+            NO,   
         )
 
     # ── LOAD BỘ LỌC ĐÃ LƯU ────────────────────────────────────────────────
@@ -951,13 +960,12 @@ def manage_filter_ui(
         if not dd_selected or dd_selected == "default":
             clean_opts = [{**o, "label": o["label"][2:] if o["label"].startswith("* ") else o["label"]}
                           for o in opts]
-            return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, []  # ← thêm []
+            return [], {}, None, ["all"], "default", NO, clean_opts, NO, NO, None, {}  # SỬA 4: Trả về {}
 
         if dd_selected not in saved:
             return (NO,) * 11
         snap = saved[dd_selected]
         af2 = snap.get("active_filters", {})
-        # Clean * from loaded preset label
         clean_opts = [{**o, "label": o["label"][2:] if o["label"].startswith("* ") else o["label"]}
                       for o in opts]
         return (
@@ -965,7 +973,7 @@ def manage_filter_ui(
             snap.get("strategy", None),
             snap.get("industry", "all"),
             NO, NO, clean_opts, NO, NO, False,
-            {},   # ← reset readonly khi load preset đã lưu
+            {},   
         )
 
     # ── XÓA FILTER ─────────────────────────────────────────────────────────
@@ -986,7 +994,6 @@ def manage_filter_ui(
 
     # ── THÊM FILTER ─────────────────────────────────────────────────────────
     if '"type":"criteria-item"' in trigger_prop:
-        # Guard: n_clicks phải > 0, tránh false trigger khi Dash mount component mới
         triggered_val = ctx.triggered[0].get('value', 0)
         if not triggered_val or triggered_val == 0:
             return (NO,) * 11
@@ -997,10 +1004,10 @@ def manage_filter_ui(
             return (NO,) * 11
         config = CRITERIA_CONFIG[criteria_id]
         filter_id = config['filter_id']
+        
         if filter_id in af:
             return (NO,) * 11
 
-        # Kiểm tra trùng trên cả af VÀ ch (vì af không được set ngay khi thêm card)
         already_in_af = filter_id in af
         already_in_ch = any(
             isinstance(c, dict)
@@ -1010,9 +1017,9 @@ def manage_filter_ui(
         )
         if already_in_af or already_in_ch:
             return (NO,) * 11
+            
         ranges = get_filter_ranges()
         if config['type'] == 'boolean':
-            # KHÔNG set af[filter_id] — chỉ render card, activate khi user click Có/Không
             if ch and isinstance(ch[0], str): ch = []
             ch.append(create_bool_filter_ui(
                 filter_id, config['label'],
@@ -1026,6 +1033,7 @@ def manage_filter_ui(
                 for o in opts
             ]
             return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO, NO
+            
         if filter_id in ranges:
             actual_min, actual_max = ranges[filter_id]
             default_val = [actual_min, actual_max]
@@ -1033,8 +1041,7 @@ def manage_filter_ui(
             actual_min = config.get('min', 0)
             actual_max = config.get('max', 100)
             default_val = config['default_value']
-        # KHÔNG set af[filter_id] — card chỉ hiện lên, screener không chạy ngay.
-        # activate_readonly_filter_on_drag sẽ activate khi user thực sự kéo slider.
+            
         if ch and isinstance(ch[0], str): ch = []
         ch.append(create_range_filter_ui(filter_id, config['label'], actual_min, actual_max, default_val))
         dirty_opts = [
@@ -1046,7 +1053,6 @@ def manage_filter_ui(
         return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO, NO
 
     return (NO,) * 11
-
 
 # ============================================================================
 # CALLBACK: CẬP NHẬT BADGE ĐẾM MÃ KHI SLIDER THAY ĐỔI (REALTIME)
@@ -1172,9 +1178,11 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
 def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
                                       slider_maxs, active_filters,
                                       readonly_filter_ids):
+    import json
+    from dash import callback_context, no_update
     ctx = callback_context
+    
     # ── DEBUG BLOCK activate_readonly ──────────────────────────────
-    ctx = callback_context
     if ctx.triggered:
         import time as _time
         logger.warning(
@@ -1184,9 +1192,11 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
             f"readonly_ids={str(readonly_filter_ids)[:80]}"
         )
     # ── END DEBUG ──────────────────────────────────────────────────
+    
     if not ctx.triggered:
         return no_update
 
+    # Parse JSON từ Pattern-Matching Callback
     try:
         triggered_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])
         dragged_fid = triggered_id.get("filter")
@@ -1196,6 +1206,7 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
     if not dragged_fid:
         return no_update
 
+    # Lấy giá trị của slider bị kéo thông qua zip
     new_val = s_min = s_max = None
     for val, id_spec, smin, smax in zip(slider_values, slider_ids,
                                          slider_mins, slider_maxs):
@@ -1207,40 +1218,54 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
         return no_update
 
     af = dict(active_filters or {})
-    readonly_ids = readonly_filter_ids or []
 
-    # ── Guard 1: slider mới mount (value == [min, max]) → bỏ qua ──────
-    if s_min is not None and s_max is not None:
+    # =========================================================================
+    # ── GUARD 1 (ĐÃ SỬA): Chống lỗi tự bắn tín hiệu lúc mới Mount ────────────
+    # =========================================================================
+    is_readonly = False
+    
+    # Kịch bản A: Nếu Slider thuộc danh sách Chiến lược (Readonly)
+    if isinstance(readonly_filter_ids, dict) and dragged_fid in readonly_filter_ids:
+        is_readonly = True
+        strategy_range = readonly_filter_ids[dragged_fid]
+        
+        # Nếu slider đang nằm đúng ở khoảng [lo, hi] mặc định của chiến lược
+        # -> Nghĩa là nó vừa tự render, CHỨ KHÔNG PHẢI KHÁCH HÀNG KÉO -> Bỏ qua.
+        if isinstance(strategy_range, list) and len(strategy_range) == 2:
+            if new_val[0] == strategy_range[0] and new_val[1] == strategy_range[1]:
+                return no_update
+                
+    # Kịch bản B: Nếu Slider là card thường (Khách hàng tự thêm)
+    elif s_min is not None and s_max is not None:
+        # Nếu card thường mới mount, value mặc định của nó là max của biên độ data
         if new_val[0] == s_min and new_val[1] == s_max:
             return no_update
+    # =========================================================================
 
-    # ── Guard 2: value không thay đổi so với af hiện tại ──────────────
+    # ── Guard 2: value không thay đổi so với active_filters hiện tại ─────────
     if dragged_fid in af:
         existing_val = af[dragged_fid].get("value") if isinstance(af[dragged_fid], dict) else None
         if existing_val == new_val:
             return no_update
 
-    # ── Xử lý readonly card (thẻ Tham khảo) ──────────────────────────
-    if dragged_fid in readonly_ids:
-        label = dragged_fid
-        for cfg in CRITERIA_CONFIG.values():
-            if cfg.get("filter_id") == dragged_fid:
-                label = cfg.get("label", dragged_fid)
-                break
+    # ── LẤY LABEL TỪ CRITERIA_CONFIG ──────────────────────────────────────────
+    label = dragged_fid
+    for cfg in CRITERIA_CONFIG.values():
+        if cfg.get("filter_id") == dragged_fid:
+            label = cfg.get("label", dragged_fid)
+            break
+
+    # ── Xử lý readonly card (thẻ Tham khảo) ──────────────────────────────────
+    if is_readonly:
         af[dragged_fid] = {
             "label": label,
-            "type": "readonly_range",  # Dùng type riêng để phân biệt
+            "type": "readonly_range",  # Dùng type riêng để phân biệt màu sắc/UI
             "value": new_val
         }
         return af
 
-    # ── Card thường ────────────────────────────────────────────────────
+    # ── Card thường ──────────────────────────────────────────────────────────
     if dragged_fid not in af:
-        label = dragged_fid
-        for cfg in CRITERIA_CONFIG.values():
-            if cfg.get("filter_id") == dragged_fid:
-                label = cfg.get("label", dragged_fid)
-                break
         af[dragged_fid] = {"label": label, "type": "range", "value": new_val}
     else:
         af[dragged_fid] = dict(af[dragged_fid])
