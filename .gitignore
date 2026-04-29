@@ -4,3 +4,4 @@ actions-runner/
 *.bak.parquet
 *copy*
 data/raw/
+.env

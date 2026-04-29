@@ -17,6 +17,7 @@ Chiến lược:
   6. STRAT_PIOTROSKI  – F-Score (Piotroski)
   7. STRAT_CANSLIM    – CANSLIM (William O'Neil)
   8. STRAT_GROWTH     – Tăng trưởng bền vững (Philip Fisher)
+  9. STRAT_NCN        – Khẩu vị phòng thủ (Team TVĐT Vietcap K16)
 """
 
 import pandas as pd
@@ -38,8 +39,8 @@ VALUE_IDX_NET_INCOME_MIN = 5
 VALUE_THRESHOLDS = [
     1.0,  # current_ratio >=
     0.0,  # eps_growth_5y >
-    20.0,  # P/E <=
-    2.5,  # P/B <=
+    15.0, # P/E <= (Vietcap tinh chỉnh: Hạ từ 20 xuống 15 cho phù hợp định giá VN-Index thực tế)
+    1.5,  # P/B <= (Vietcap tinh chỉnh: Hạ từ 2.5 xuống 1.5 để lọc đúng "món hời" thực sự)
     2.0,  # debt_to_wc <
     0.0,  # net_income >
 ]
@@ -62,8 +63,8 @@ QUALITY_IDX_GROSS_MARGIN_MIN = 1
 QUALITY_IDX_RE_GROWTH_MIN = 2
 QUALITY_IDX_FCF_MARGIN_MIN = 3
 QUALITY_THRESHOLDS = [
-    12.0,  # ROE >=
-    15.0,  # gross_margin >=
+    15.0, # ROE >= (Vietcap tinh chỉnh: Nâng từ 12 lên 15 do mặt bằng lãi suất VN cao hơn Mỹ)
+    0.0,  # gross_margin >= (Vietcap tinh chỉnh: Hạ từ 15 xuống 0 để KHÔNG vô tình xóa sổ nhóm Ngân hàng/Chứng khoán)
     5.0,  # re_growth >=
     0.0,  # fcf_margin >
 ]
@@ -79,13 +80,13 @@ GARP_IDX_SGR_MIN_PCT = 6
 GARP_IDX_MC_QUANTILE = 7
 GARP_THRESHOLDS = [
     5.0,  # eps_growth_1y >=
-    40.0,  # eps_growth_1y <=
-    25.0,  # P/E <=
+    40.0, # eps_growth_1y <=
+    25.0, # P/E <=
     0.0,  # peg >=
     1.5,  # peg <=
     1.5,  # d_e_ratio <=
     5.0,  # sgr*100 >= (percent)
-    0.50,  # market cap percentile threshold
+    0.50, # market cap percentile threshold
 ]
 
 # DIVIDEND thresholds
@@ -94,8 +95,8 @@ DIV_IDX_YIELD_MIN = 1
 DIV_IDX_PAYOUT_MAX = 2
 DIVIDEND_THRESHOLDS = [
     0.4,  # Market Cap >= quantile
-    0.04,  # dividend_yield >=
-    0.90,  # payout_ratio <=
+    0.06, # dividend_yield >= (Vietcap tinh chỉnh: Nâng từ 4% lên 6% để hấp dẫn hơn lãi suất gửi tiết kiệm VN)
+    0.90, # payout_ratio <=
 ]
 
 # PIOTROSKI thresholds
@@ -114,15 +115,15 @@ CANSLIM_IDX_AVG_VOL_MIN = 6
 CANSLIM_IDX_QUICK_RATIO_MIN = 7
 CANSLIM_IDX_DEBT_EQUITY_MAX = 8
 CANSLIM_THRESHOLDS = [
-    15.0,  # eps_growth_q >=
-    10.0,  # rev_growth_q >=
-    15.0,  # eps_growth_y >=
-    12.0,  # ROE >=
-    60.0,  # rs_rating >
-    1.1,  # vol > avg_vol *
-    20000,  # avg_vol minimum
-    0.8,  # quick_ratio >
-    2.0,  # debt_equity <
+    15.0,   # eps_growth_q >=
+    10.0,   # rev_growth_q >=
+    15.0,   # eps_growth_y >=
+    15.0,   # ROE >= (Vietcap tinh chỉnh: Nâng từ 12 lên 15 để đảm bảo sinh lời thực sự vượt trội)
+    60.0,   # rs_rating >
+    1.1,    # vol > avg_vol *
+    100000, # avg_vol minimum (Vietcap tinh chỉnh: Nâng từ 20k lên 100k để loại bỏ hàng penny dễ bị làm giá ở VN)
+    0.8,    # quick_ratio >
+    2.0,    # debt_equity <
 ]
 
 # FISHER thresholds
@@ -133,12 +134,12 @@ FISHER_IDX_OPEX_EFF_MAX = 3
 FISHER_IDX_TURNOVER_MIN = 4
 FISHER_IDX_REINVEST_MIN = 5
 FISHER_THRESHOLDS = [
-    7.0,  # rev_growth_5y >
-    5.0,  # dilution_rate <
-    12.0,  # ROE >
-    1.0,  # opex_efficiency <
-    20000,  # turnover_avg_50d >
-    5.0,  # reinvest_rate >
+    7.0,    # rev_growth_5y >
+    5.0,    # dilution_rate <
+    12.0,   # ROE >
+    1.0,    # opex_efficiency <
+    100000, # turnover_avg_50d > (Vietcap tinh chỉnh: Đồng bộ thanh khoản 100k với CANSLIM để an toàn)
+    5.0,    # reinvest_rate >
 ]
 
 # NCN – KHẨU VỊ PHÒNG THỦ (Ngô Cao Nguyên K16)

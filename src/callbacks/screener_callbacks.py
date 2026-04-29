@@ -4,6 +4,7 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import gc
+import dash
 from src.app_instance import app
 from src.backend.data_loader import load_market_data, load_financial_data, get_latest_snapshot, get_snapshot_df, load_financial_data_nocache
 from src.backend.quant_engine import calculate_all_scores
@@ -449,6 +450,24 @@ def update_screener_table(
         gtgd_1w, gtgd_10d, gtgd_1m,
 ):
     try:
+        # ── DEBUG BLOCK — BẮT ĐẦU ──────────────────────────────────────
+        ctx = callback_context
+        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else "NONE"
+        triggered_val = ctx.triggered[0].get('value', '?') if ctx.triggered else '?'
+        import time as _time
+        logger.warning(
+            f"\n{'='*70}\n"
+            f"[SCREENER TRIGGER] @ {_time.strftime('%H:%M:%S')}\n"
+            f"  triggered_id  = {triggered_id}\n"
+            f"  strategy      = {current_strategy}\n"
+            f"  active_filters = {list((active_filters or {}).keys())}\n"
+            f"  val_preview   = {str(triggered_val)[:100]}\n"
+            f"{'='*70}"
+        )
+        # ── DEBUG BLOCK — KẾT THÚC ──────────────────────────────────────
+        # 1. LƯỚI AN TOÀN: Bắt buộc giá trị mặc định là "investing" nếu có lỗi
+        if not trading_mode:
+            trading_mode = "investing"
         ctx = callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
 
@@ -534,13 +553,26 @@ def update_screener_table(
         # 🟢 TẦNG 0: LỌC THEO TỪ KHÓA TÌM KIẾM (Bug #4 fix: tìm cả tên công ty)
         # ================================================================
         if search_text:
-            search_upper = search_text.strip().upper()
-            ticker_match = df_filtered['Ticker'].astype(str).str.upper().str.contains(search_upper, na=False, regex=False)
-            if 'Company Common Name' in df_filtered.columns:
-                name_match = df_filtered['Company Common Name'].astype(str).str.upper().str.contains(search_upper, na=False, regex=False)
-                df_filtered = df_filtered[ticker_match | name_match]
+            search_upper = str(search_text).strip().upper()
+
+            # Vì search-ticker-input là Dropdown → value luôn là ticker code chính xác
+            # (VD: "VIC", không phải "VIC – Vingroup")
+            # Dùng exact match trước, tránh "VIC" khớp "VICG", "SERVICE", v.v.
+            exact_ticker = df_filtered['Ticker'].astype(str).str.upper() == search_upper
+
+            if exact_ticker.any():
+                # Có mã khớp chính xác → chỉ hiện mã đó
+                df_filtered = df_filtered[exact_ticker]
             else:
-                df_filtered = df_filtered[ticker_match]
+                # Không tìm thấy exact → fallback startswith (user đang gõ dở)
+                ticker_startswith = df_filtered['Ticker'].astype(str).str.upper().str.startswith(search_upper, na=False)
+                if 'Company Common Name' in df_filtered.columns:
+                    name_match = df_filtered['Company Common Name'].astype(str).str.upper().str.contains(
+                        search_upper, na=False, regex=False
+                    )
+                    df_filtered = df_filtered[ticker_startswith | name_match]
+                else:
+                    df_filtered = df_filtered[ticker_startswith]
         # ================================================================
         # TẦNG 1: LỌC THEO TRƯỜNG PHÁI (STRATEGY)
         # ================================================================

@@ -1012,7 +1012,7 @@ layout = html.Div([
         is_open=False,
         centered=True,
         backdrop=True,
-        size="lg",
+        size="md",
         style={"fontFamily": "'Sora', sans-serif"},
         contentClassName="bg-transparent border-0 p-0",
     ),
@@ -1063,7 +1063,7 @@ html.Div(children=[
     ),
 
 ], id="zalo-bubble-container", style={
-    "position": "fixed", "bottom": "28px", "right": "28px",
+    "position": "fixed", "bottom": "96px", "right": "28px",
     "zIndex": "10000", "display": "flex", "flexDirection": "column",
     "alignItems": "center",
 }),
@@ -1105,8 +1105,8 @@ html.Div([
                 html.Div("Vietcap Smart Screener", style={
                     "fontSize": "10px", "color": "#8b949e", "marginBottom": "4px"}),
                 html.Div(
-                    "Xin chào! 👋 Tôi là trợ lý tự động của Vietcap Smart Screener. "
-                    "Hãy để lại tin nhắn — đội ngũ tư vấn đầu tư của chúng tôi sẽ liên hệ lại qua Zalo sớm nhất!",
+                    "Xin chào! 👋 Tôi là trợ lý liên lạc tự động của Vietcap Smart Screener. "
+                    "Hãy để lại tin nhắn, tôi sẽ forward tin nhắn trực tiếp vào tin nhắn chờ Zalo của team tư vấn đầu tư. Đội ngũ tư vấn đầu tư của chúng tôi sẽ liên hệ lại qua Zalo sớm nhất!\nTeam tư vấn gồm:\n1. Ngô Cao Nguyên\n2. Phan Đặng Anh Kiệt\n3. Cao Huỳnh Tuyết Trân",
                     style={
                         "backgroundColor": "#1e2d3d",
                         "border": "1px solid #30363d",
