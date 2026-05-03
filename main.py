@@ -107,6 +107,7 @@ from src.app_instance import app
 # ─────────────────────────────────────────────────────────────────────────────
 # IMPORT TẤT CẢ CALLBACKS (thứ tự quan trọng)
 # ─────────────────────────────────────────────────────────────────────────────
+import src.callbacks.auth_callbacks
 import src.callbacks.column_callbacks
 import src.callbacks.screener_callbacks
 import src.callbacks.filter_interaction_callbacks

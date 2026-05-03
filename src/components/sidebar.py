@@ -14,6 +14,35 @@ from src.constants import SECTOR_TRANSLATION
 sector_options = []
 
 
+# ── Premium wrapper helper ────────────────────────────────────────────────────
+# Bao bọc content trong premium-locked div.
+# auth_callbacks.update_premium_gates() toggle className giữa
+#   "premium-wrapper premium-locked" ↔ "premium-wrapper premium-unlocked"
+def _premium_wrap(content, wrapper_id: str, section: str, label: str = "Đăng nhập"):
+    return html.Div(
+        id=wrapper_id,
+        className="premium-wrapper premium-locked",
+        children=[
+            # Nội dung thực — bị blur khi locked
+            html.Div(content, className="premium-content"),
+            # Overlay khóa — click để mở login modal
+            html.Div(
+                id={"type": "premium-overlay-btn", "section": section},
+                n_clicks=0,
+                className="premium-overlay",
+                children=[
+                    html.I(className="fas fa-lock",
+                           style={"fontSize": "10px", "color": "#00a651",
+                                  "marginBottom": "2px"}),
+                    html.Span(label,
+                              style={"fontSize": "9.5px", "fontWeight": "600",
+                                     "color": "#6e7681", "whiteSpace": "nowrap"}),
+                ],
+            ),
+        ],
+    )
+
+
 # ── Lấy min/max thực tế từ parquet để set data cho dcc.Store ──
 def _get_r(ranges, key, fallback):
     return ranges.get(key, fallback)
@@ -260,6 +289,49 @@ _col1_groups = html.Div(
         ),
         html.Div(
             [
+                # Nhóm "momentum" được wrap premium, các nhóm còn lại render bình thường
+                _premium_wrap(
+                    content=html.Div(
+                        [
+                            html.Span(g["label"], style={
+                                "fontSize": "12px", "fontWeight": "600",
+                                "color": "#c9d1d9", "flex": "1",
+                            }),
+                            html.Span(
+                                "0",
+                                id={"type": "wizard-group-badge", "group": g["id"]},
+                                style={
+                                    "fontSize": "10px", "fontWeight": "700",
+                                    "color": "#ff3d57",
+                                    "backgroundColor": "rgba(255,61,87,0.15)",
+                                    "border": "1px solid rgba(255,61,87,0.3)",
+                                    "borderRadius": "10px",
+                                    "padding": "1px 6px",
+                                    "minWidth": "18px",
+                                    "textAlign": "center",
+                                    "display": "none",
+                                },
+                            ),
+                            html.I(className="fas fa-chevron-right",
+                                   style={"fontSize": "9px", "color": "#484f58",
+                                          "marginLeft": "6px"}),
+                        ],
+                        id={"type": "wizard-group-btn", "group": g["id"]},
+                        n_clicks=0,
+                        style={
+                            "display": "flex", "alignItems": "center",
+                            "padding": "9px 14px",
+                            "cursor": "pointer",
+                            "borderBottom": "1px solid #21262d",
+                            "transition": "background 0.15s",
+                            "backgroundColor": "#0d1117",
+                        },
+                        className="wizard-group-item",
+                    ),
+                    wrapper_id="pw-momentum",
+                    section="momentum",
+                    label="Hành vi TT · VIP",
+                ) if g["id"] == "momentum" else
                 html.Div(
                     [
                         html.Span(g["label"], style={
@@ -549,34 +621,39 @@ layout = html.Div(
                             ],
                             style={"display": "flex", "alignItems": "center"},
                         ), 
-                        dbc.InputGroup(
-                            [
-                                dcc.Dropdown(
-                                    id="strategy-preset-dropdown",
-                                    options=[
-                                        {"label": "[Vietcap] Khuyến nghị - Team TVĐT", "value": "STRAT_NCN"},
-                                        {"label": "Đầu tư giá trị (Graham)", "value": "STRAT_VALUE"},
-                                        {"label": "Đầu tư phục hồi (Turnaround)", "value": "STRAT_TURNAROUND"},
-                                        {"label": "Đầu tư chất lượng (Quality)", "value": "STRAT_QUALITY"},
-                                        {"label": "Tăng trưởng giá hợp lý (GARP)", "value": "STRAT_GARP"},
-                                        {"label": "Cổ tức & Thu nhập (Neff)", "value": "STRAT_DIVIDEND"},
-                                        {"label": "Điểm sức khỏe Piotroski", "value": "STRAT_PIOTROSKI"},
-                                        {"label": "Siêu cổ phiếu CANSLIM", "value": "STRAT_CANSLIM"},
-                                        {"label": "Tăng trưởng bền vững (Fisher)", "value": "STRAT_GROWTH"},
-                                        {"label": "Công Thức Kỳ Diệu (Greenblatt)", "value": "STRAT_MAGIC"},
-                                    ],
-                                    placeholder="Chọn chiến lược đầu tư...",
-                                    className="ssi-dropdown-custom",
-                                    style={"minWidth": "220px", "flex": "1"},
-                                ),
-                                dbc.Button(
-                                    html.I(className="fas fa-info-circle"),
-                                    id="btn-strategy-info", color="primary", outline=True,
-                                    size="sm",
-                                    style={"borderLeft": "none", "padding": "0 10px"},
-                                ),
-                            ],
-                            style={"flexWrap": "nowrap"},
+                        _premium_wrap(
+                            content=dbc.InputGroup(
+                                [
+                                    dcc.Dropdown(
+                                        id="strategy-preset-dropdown",
+                                        options=[
+                                            {"label": "[Vietcap] Khuyến nghị - Team TVĐT", "value": "STRAT_NCN"},
+                                            {"label": "Đầu tư giá trị (Graham)", "value": "STRAT_VALUE"},
+                                            {"label": "Đầu tư phục hồi (Turnaround)", "value": "STRAT_TURNAROUND"},
+                                            {"label": "Đầu tư chất lượng (Quality)", "value": "STRAT_QUALITY"},
+                                            {"label": "Tăng trưởng giá hợp lý (GARP)", "value": "STRAT_GARP"},
+                                            {"label": "Cổ tức & Thu nhập (Neff)", "value": "STRAT_DIVIDEND"},
+                                            {"label": "Điểm sức khỏe Piotroski", "value": "STRAT_PIOTROSKI"},
+                                            {"label": "Siêu cổ phiếu CANSLIM", "value": "STRAT_CANSLIM"},
+                                            {"label": "Tăng trưởng bền vững (Fisher)", "value": "STRAT_GROWTH"},
+                                            {"label": "Công Thức Kỳ Diệu (Greenblatt)", "value": "STRAT_MAGIC"},
+                                        ],
+                                        placeholder="Chọn chiến lược đầu tư...",
+                                        className="ssi-dropdown-custom",
+                                        style={"minWidth": "220px", "flex": "1"},
+                                    ),
+                                    dbc.Button(
+                                        html.I(className="fas fa-info-circle"),
+                                        id="btn-strategy-info", color="primary", outline=True,
+                                        size="sm",
+                                        style={"borderLeft": "none", "padding": "0 10px"},
+                                    ),
+                                ],
+                                style={"flexWrap": "nowrap"},
+                            ),
+                            wrapper_id="pw-strategies",
+                            section="strategies",
+                            label="Chiến lược VIP",
                         ),
                     ],
                     style={"display": "flex", "alignItems": "center", "gap": "8px", "flex": "1",

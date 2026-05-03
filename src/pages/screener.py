@@ -778,29 +778,95 @@ layout = html.Div([
                 ], id="btn-heatmap", color="secondary", outline=True, size="sm",
                     style={"borderRadius": "6px", "fontSize": "11px"}),
 
-                # So sánh
-                dbc.Button([
-                    html.I(className="fas fa-code-compare", style={"marginRight": "5px"}),
-                    "So sánh",
-                ], id="btn-compare", color="info", outline=True, size="sm",
-                    style={"borderRadius": "6px", "fontSize": "11px"}),
+                # So sánh — PREMIUM
+                html.Div(
+                    id="pw-compare",
+                    className="premium-wrapper premium-locked",
+                    children=[
+                        html.Div(
+                            dbc.Button([
+                                html.I(className="fas fa-code-compare",
+                                       style={"marginRight": "5px"}),
+                                "So sánh",
+                            ], id="btn-compare", color="info", outline=True, size="sm",
+                                style={"borderRadius": "6px", "fontSize": "11px"}),
+                            className="premium-content",
+                        ),
+                        html.Div(
+                            id={"type": "premium-overlay-btn", "section": "compare"},
+                            n_clicks=0,
+                            className="premium-overlay",
+                            children=[
+                                html.I(className="fas fa-lock",
+                                       style={"fontSize": "10px", "color": "#00a651",
+                                              "marginBottom": "2px"}),
+                                html.Span("VIP",
+                                          style={"fontSize": "9px", "fontWeight": "700",
+                                                 "color": "#6e7681"}),
+                            ],
+                        ),
+                    ],
+                ),
 
-                # Portfolio
-                dbc.Button([
-                    html.I(className="fas fa-briefcase", style={"marginRight": "5px"}),
-                    "Danh mục",
-                ], id="btn-portfolio", color="warning", outline=True, size="sm",
-                    style={"borderRadius": "6px", "fontSize": "11px"}),
+                # Portfolio — PREMIUM
+                html.Div(
+                    id="pw-portfolio",
+                    className="premium-wrapper premium-locked",
+                    children=[
+                        html.Div(
+                            dbc.Button([
+                                html.I(className="fas fa-briefcase",
+                                       style={"marginRight": "5px"}),
+                                "Danh mục",
+                            ], id="btn-portfolio", color="warning", outline=True, size="sm",
+                                style={"borderRadius": "6px", "fontSize": "11px"}),
+                            className="premium-content",
+                        ),
+                        html.Div(
+                            id={"type": "premium-overlay-btn", "section": "portfolio"},
+                            n_clicks=0,
+                            className="premium-overlay",
+                            children=[
+                                html.I(className="fas fa-lock",
+                                       style={"fontSize": "10px", "color": "#00a651",
+                                              "marginBottom": "2px"}),
+                                html.Span("VIP",
+                                          style={"fontSize": "9px", "fontWeight": "700",
+                                                 "color": "#6e7681"}),
+                            ],
+                        ),
+                    ],
+                ),
 
-                # Alerts
-                html.Div([
-                    dbc.Button([
-                        html.I(className="fas fa-bell", style={"marginRight": "5px"}),
-                        "Cảnh báo",
-                    ], id="btn-alerts", color="danger", outline=True, size="sm",
-                        style={"borderRadius": "6px", "fontSize": "11px"}),
-                    html.Span("0", id="alert-badge", style={"display": "none"}),
-                ], style={"position": "relative"}),
+                # Alerts — PREMIUM
+                html.Div(
+                    id="pw-alerts",
+                    className="premium-wrapper premium-locked",
+                    children=[
+                        html.Div([
+                            dbc.Button([
+                                html.I(className="fas fa-bell",
+                                       style={"marginRight": "5px"}),
+                                "Cảnh báo",
+                            ], id="btn-alerts", color="danger", outline=True, size="sm",
+                                style={"borderRadius": "6px", "fontSize": "11px"}),
+                            html.Span("0", id="alert-badge", style={"display": "none"}),
+                        ], style={"position": "relative"}, className="premium-content"),
+                        html.Div(
+                            id={"type": "premium-overlay-btn", "section": "alerts"},
+                            n_clicks=0,
+                            className="premium-overlay",
+                            children=[
+                                html.I(className="fas fa-lock",
+                                       style={"fontSize": "10px", "color": "#00a651",
+                                              "marginBottom": "2px"}),
+                                html.Span("VIP",
+                                          style={"fontSize": "9px", "fontWeight": "700",
+                                                 "color": "#6e7681"}),
+                            ],
+                        ),
+                    ],
+                ),
 
             ], style={"display": "flex", "gap": "8px", "alignItems": "center"}),
         ], style={
