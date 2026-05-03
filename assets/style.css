@@ -1942,3 +1942,7 @@ span[style*="f59e0b"] {
 .btn-filter-shimmer.play-shimmer::after {
     animation-play-state: running;
 }
+
+#screener-scroll-anchor {
+    scroll-margin-top: 60px;  /* = chiều cao header + padding */
+}

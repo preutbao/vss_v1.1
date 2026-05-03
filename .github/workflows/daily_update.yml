@@ -1,0 +1,84 @@
+name: VSS Daily Update & Sync to HF
+
+on:
+  # 1. Chạy tự động lúc 5h chiều (10:00 UTC) từ T2 đến T6
+  schedule:
+    - cron: '0 10 * * 1-5'
+  
+  # 2. Cho phép bấm chạy bằng tay trên web
+  workflow_dispatch: 
+
+jobs:
+  update-and-sync:
+    runs-on: self-hosted
+    
+    # THÊM ĐOẠN NÀY VÀO ĐÂY
+    env:
+      PYTHONUTF8: 1
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Quan trọng để lấy toàn bộ lịch sử cod
+          lfs: true
+
+      - name: Ép tải file LFS gốc (Trị lỗi Corrupted Parquet)
+        run: git lfs pull
+        
+      - name: Cài đặt thư viện
+        run: |
+          C:/Users/NK/AppData/Local/Microsoft/WindowsApps/python3.12.exe -m pip install --upgrade pip
+          C:/Users/NK/AppData/Local/Microsoft/WindowsApps/python3.12.exe -m pip install pandas pyarrow requests
+
+      - name: Chạy Script Daily Updater (Lấy dữ liệu chứng khoán mới)
+        run: C:/Users/NK/AppData/Local/Microsoft/WindowsApps/python3.12.exe daily_updater.py
+
+      - name: Lưu file Parquet mới vào GitHub
+        run: |
+          # Cấp quyền tin tưởng thư mục để sửa lỗi dubious ownership
+          git config --global --add safe.directory '*'
+          
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/processed/*.parquet
+          
+          # Dùng PowerShell để kiểm tra có file thay đổi không
+          $changes = git status --porcelain
+          if ($changes) {
+            git commit -m "Auto-update market data [skip ci]"
+            git push origin main
+          } else {
+            Write-Host "No changes to commit"
+          }
+
+      - name: Đồng bộ sang Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # 0. Chắc chắn đang đứng ở main
+          git checkout main
+          
+          # 1. Tạo tên nhánh mới có gắn thời gian để KHÔNG BAO GIỜ bị trùng
+          $branchName = "hf_deploy_" + (Get-Date -Format "yyyyMMdd_HHmmss")
+          git checkout --orphan $branchName
+          
+          # 2. Tẩy não Git: Xóa sạch ký ức về các file cũ để làm mới hoàn toàn
+          git rm -rf --cached .
+          
+          # 3. Gom file lại (Git sẽ tự động chừa các file trong .gitignore ra)
+          git add .
+          
+          # 4. Ép "nhả" thư mục raw ra (Lớp phòng ngự thép)
+          git reset data/raw/
+          
+          # 5. Đóng gói
+          git commit -m "Auto-deploy clean version"
+          
+          # 6. Ép đẩy nhánh tạm này đè thẳng lên nhánh main của Hugging Face
+          git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener" "${branchName}:main"
+          
+          # 7. Hủy thi diệt tích: Trở về main và xóa sổ nhánh tạm vừa tạo
+          git checkout main
+          git branch -D $branchName

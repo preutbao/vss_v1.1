@@ -8,7 +8,7 @@ ASSETS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'as
 
 # Khởi tạo App với theme CYBORG (Dark theme) + Custom CSS & JS
 app = dash.Dash(
-    __name__, 
+    __name__,
     external_stylesheets=[
         dbc.themes.CYBORG,  # Dark theme chính
         "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",  # Icons
@@ -23,6 +23,29 @@ app = dash.Dash(
     # 🟢 THÊM DÒNG NÀY ĐỂ KHÔNG BỊ CRASH KHI DÙNG TOUR GUIDE
     suppress_callback_exceptions=True
 )
+
+# Thêm SAU dòng khởi tạo app:
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+        <link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico">
+        {%favicon%}
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
 
 server = app.server
 

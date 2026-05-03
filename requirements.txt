@@ -33,3 +33,6 @@ reportlab==4.0.9         # export PDF
 # ── Optional: auto-update giá từ Yahoo Finance ────────────────────────────────
 # Bỏ comment nếu muốn dùng tính năng auto-update trong data_loader.py
 yfinance==0.2.36
+
+openai>=1.0.0
+python-dotenv>=1.0.0

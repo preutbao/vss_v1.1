@@ -714,6 +714,20 @@ layout = html.Div([
                     }),
                     html.Div([
                         html.B("VIETCAP SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
+                            html.Span(
+                                id="mode-indicator-badge",
+                                children="📊 Tích sản",
+                                style={
+                                    "fontSize": "10px", "fontWeight": "700",
+                                    "padding": "2px 10px", "borderRadius": "10px",
+                                    "backgroundColor": "rgba(16,185,129,0.15)",
+                                    "color": "#10b981",
+                                    "border": "1px solid rgba(16,185,129,0.35)",
+                                    "marginLeft": "10px",
+                                    "verticalAlign": "middle",
+                                    "letterSpacing": "0.5px",
+                                }
+                            ),
                         html.Span(id="data-cutoff-label", style={
                             "fontSize": "11px", "color": "#5a8ab0",
                             "fontFamily": "'JetBrains Mono', monospace",
@@ -1064,15 +1078,13 @@ layout = html.Div([
         is_open=False,
         centered=True,
         backdrop=True,
-        size="sm",
+        size="md",
         style={"fontFamily": "'Sora', sans-serif"},
         contentClassName="bg-transparent border-0 p-0",
     ),
 
-    # Store để nhớ đã hiển thị hint chưa (persist qua session)
-    dcc.Store(id="hint-shown-store", storage_type="session", data=False),
-    # 🟢 THÊM DÒNG NÀY: Store để nhớ người dùng đang ở bước mấy của Tour
-    dcc.Store(id="tour-step-store", storage_type="memory", data=1),
+
+
     # Store tạm chứa ticker được chọn — để render modal nhanh trước, load data sau
     dcc.Store(id="selected-ticker-store", data=None),
     dcc.Store(id="selected-stock-store", data=None),   # ← store cho detail modal 2-phase
@@ -1117,7 +1129,7 @@ html.Div(children=[
     ),
 
 ], id="zalo-bubble-container", style={
-    "position": "fixed", "bottom": "28px", "right": "28px",
+    "position": "fixed", "bottom": "96px", "right": "28px",
     "zIndex": "10000", "display": "flex", "flexDirection": "column",
     "alignItems": "center",
 }),
@@ -1159,8 +1171,8 @@ html.Div([
                 html.Div("Vietcap Smart Screener", style={
                     "fontSize": "10px", "color": "#8b949e", "marginBottom": "4px"}),
                 html.Div(
-                    "Xin chào! 👋 Tôi là trợ lý tự động của Vietcap Smart Screener. "
-                    "Hãy để lại tin nhắn — đội ngũ tư vấn đầu tư của chúng tôi sẽ liên hệ lại qua Zalo sớm nhất!",
+                    "Xin chào! 👋 Tôi là trợ lý liên lạc tự động của Vietcap Smart Screener. "
+                    "Hãy để lại tin nhắn, tôi sẽ forward tin nhắn trực tiếp vào tin nhắn chờ Zalo của team tư vấn đầu tư. Đội ngũ tư vấn đầu tư của chúng tôi sẽ liên hệ lại qua Zalo sớm nhất!\nTeam tư vấn gồm:\n1. Ngô Cao Nguyên\n2. Phan Đặng Anh Kiệt\n3. Cao Huỳnh Tuyết Trân",
                     style={
                         "backgroundColor": "#1e2d3d",
                         "border": "1px solid #30363d",

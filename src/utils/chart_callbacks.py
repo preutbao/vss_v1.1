@@ -35,7 +35,6 @@ def _no_data_div(ticker="", reason="Dữ liệu giá của mã này chưa có tr
         "border": "1px solid rgba(239, 68, 68, 0.25)"
     })
 
-
 @app.callback(
     Output("candlestick-chart-container", "children"),
     [Input("screener-table", "selectedRows"),
@@ -52,14 +51,20 @@ def _no_data_div(ticker="", reason="Dữ liệu giá của mã này chưa có tr
      Input("period-1y", "n_clicks"),
      Input("period-ytd", "n_clicks"),
      Input("period-all", "n_clicks"),
-     Input("chart-refresh-store", "data")],
+     Input("chart-refresh-store", "data"),
+     Input("selected-stock-store", "data")], # <--- CHUYỂN NÓ XUỐNG CUỐI CÙNG Ở ĐÂY
     prevent_initial_call=True
 )
 def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, show_macd, show_index, chart_type,
-                             n_1w, n_1m, n_3m, n_6m, n_1y, n_ytd, n_all, _refresh):
+                             n_1w, n_1m, n_3m, n_6m, n_1y, n_ytd, n_all, _refresh, stock_store_data):
     """
     Tạo biểu đồ nến khi người dùng chọn một dòng trong bảng
     """
+    # Xử lý logic Fallback cho HF lag
+    if (not selected_rows or len(selected_rows) == 0) and stock_store_data:
+        selected_rows = [stock_store_data]
+        
+    # Validation an toàn sau khi fallback
     if not selected_rows or len(selected_rows) == 0:
         return html.Div([
             html.I(className="fas fa-chart-line", style={
@@ -81,7 +86,7 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
         })
 
     try:
-        # Lấy ticker đã chọn
+        # Lấy ticker đã chọn (Dashboard code của bạn ở dưới giữ nguyên)
         selected_ticker = selected_rows[0]['Ticker']
         logger.info(f"Creating chart for ticker: {selected_ticker}")
 
@@ -212,8 +217,8 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
         total_rows = len(df_ticker)
         start_idx = 0  # Toàn bộ khoảng đã lọc
         end_idx = total_rows - 1
-
-        fig.update_xaxes(range=[start_idx, end_idx])
+        # Thêm 0.5 padding mỗi đầu để khớp với cách Plotly render category axis
+        fig.update_xaxes(range=[-0.5, total_rows - 0.5])
         # Đặt công cụ mặc định là Pan
         fig.update_layout(dragmode='pan')
 

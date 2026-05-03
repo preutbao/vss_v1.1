@@ -1,2 +1,7 @@
 *.pyc
 __pycache__/*
+actions-runner/
+*.bak.parquet
+*copy*
+data/raw/
+.env

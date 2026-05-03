@@ -494,6 +494,7 @@ def render_idx_mini_chart(is_open):
         fig.update_layout(
             paper_bgcolor="#0d1117",
             plot_bgcolor="#0d1117",
+            hovermode='closest',
             margin=dict(l=6, r=40, t=4, b=20),
             xaxis=dict(
                 showgrid=False, zeroline=False,

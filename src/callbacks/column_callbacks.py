@@ -309,6 +309,12 @@ STRATEGY_FILTER_IDS = {
                      "filter-eps-cagr-5y"],
     "STRAT_MAGIC": ["filter-pe", "filter-roe", "filter-ev-ebitda", "filter-net-margin",
                     "filter-market-cap"],
+    # THÊM MỚI:
+    "STRAT_NCN": [
+        "filter-roe", "filter-roa", "filter-net-margin", "filter-gross-margin",
+        "filter-de", "filter-current-ratio", "filter-rev-cagr-5y",
+        "filter-eps-cagr-5y", "filter-pe", "filter-ebit-margin",
+    ],
 }
 
 # Mapping trường phái → cột đặc trưng riêng (không có filter tương ứng)
@@ -505,3 +511,29 @@ FILTER_TO_COLDEF = {
     },
 
 }
+
+# ── Bộ cột mặc định cho chế độ TÍCH SẢN ──────────────────────────────────
+INVESTING_MODE_COLS = [
+    FILTER_TO_COLDEF["filter-pe"],
+    FILTER_TO_COLDEF["filter-pb"],
+    FILTER_TO_COLDEF["filter-roe"],
+    FILTER_TO_COLDEF["filter-net-margin"],
+    FILTER_TO_COLDEF["filter-rev-growth-yoy"],
+    FILTER_TO_COLDEF["filter-de"],
+    FILTER_TO_COLDEF["filter-div-yield"],
+]
+
+# ── Bộ cột mặc định cho chế độ LƯỚT SÓNG ────────────────────────────────
+TRADING_MODE_COLS = [
+    FILTER_TO_COLDEF["filter-rsi14"],
+    FILTER_TO_COLDEF["filter-macd-hist"],
+    FILTER_TO_COLDEF["filter-vol-vs-sma20"],
+    FILTER_TO_COLDEF["filter-pct-from-high-1y"],
+    FILTER_TO_COLDEF["filter-price-vs-sma20"],
+    FILTER_TO_COLDEF["filter-rs-1m"],
+]
+
+# ── Bộ cột mặc định cho chế độ TOÀN THỊ TRƯỜNG ────────────────────────────
+ALL_MARKET_COLS = [
+
+]

@@ -11,6 +11,8 @@ import os
 import logging
 import dash_bootstrap_components as dbc
 from dash import dcc
+from dotenv import load_dotenv
+load_dotenv()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -113,8 +115,10 @@ import src.callbacks.screener_callbacks
 import src.callbacks.filter_interaction_callbacks
 import src.callbacks.reset_callback
 import src.callbacks.detail_tabs_callbacks
+import src.callbacks.mode_callbacks
 import src.callbacks.home_callbacks
 import src.utils.chart_callbacks
+import src.callbacks.chatbot_callbacks
 import src.callbacks.strategy_callbacks
 import src.callbacks.ticker_search_callbacks
 import src.callbacks.pdf_export_callback
@@ -130,21 +134,29 @@ import src.callbacks.score_breakdown_callbacks
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT (Đã cập nhật giao diện mới)
 # ─────────────────────────────────────────────────────────────────────────────
-from dash import html
+from dash import html, dcc
 from src.pages import screener
 from src.components.header import create_header
+from src.callbacks.chatbot_callbacks import create_chatbot_layout
 
 app.layout = html.Div(
     style={"margin": "0", "padding": "0", "overflowX": "hidden"},
     children=[
-        # ── Header cố định + Hero Banner full màn hình ──
+        # 1. KHAI BÁO CÁC TÚI CHỨA DỮ LIỆU TOÀN CỤC Ở ĐÂY
+        dcc.Store(id="trading-mode-store", storage_type="session", data="investing"), # Luôn có data mặc định
+        dcc.Store(id="tour-selected-mode", storage_type="memory", data="investing"),
+        dcc.Store(id="hint-shown-store", storage_type="memory", data=False), # ← Store để nhớ đã hiển thị hint chưa (chỉ trong session hiện tại), sửa lại local nếu muốn để lên HF
+        dcc.Store(id="tour-step-store", data=1),
+        
+        # 2. Header cố định
         create_header(),
 
-        # ── Screener (cuộn đến khi click "Khám phá ngay") ──
+        # 3. Screener Section
         html.Div(
             id="screener-section",
             children=[screener.layout],
         ),
+        create_chatbot_layout(),   # ← THÊM DÒNG NÀY vào cuối danh sách children
     ],
 )
 

@@ -4,6 +4,7 @@ from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import gc
+import dash
 from src.app_instance import app
 from src.backend.data_loader import load_market_data, load_financial_data, get_latest_snapshot, get_snapshot_df, load_financial_data_nocache
 from src.backend.quant_engine import calculate_all_scores
@@ -30,17 +31,38 @@ import os
 # =====================================================================
 # 1. ĐỌC FILE CSV 1 LẦN DUY NHẤT Ở NGOÀI CALLBACK (Global Scope)
 # =====================================================================
-try:
-    # Đọc file CSV của bạn (chỉnh lại đường dẫn nếu cần)
-    df_comp_info = pd.read_csv("data/raw/COMP INFO.csv")
-    
-    # 🟢 SỬA Ở ĐÂY: Cột mã CK trong file của bạn tên là 'symbol', ta đổi nó thành 'Ticker'
-    if 'symbol' in df_comp_info.columns:
-        df_comp_info.rename(columns={'symbol': 'Ticker'}, inplace=True)
-        
-except Exception as e:
-    print(f"⚠️ Không thể đọc file COMP INFO.csv: {e}")
-    df_comp_info = pd.DataFrame() # Tạo DF rỗng để tránh lỗi code bên dưới
+import os as _os
+
+def _load_comp_info():
+    """Load COMP INFO với multiple path fallback cho cả local và HF."""
+    # Danh sách path thử theo thứ tự ưu tiên
+    _base = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    candidates = [
+        "data/raw/COMP INFO.csv", # Ưu tiên path tương đối (local dev)
+        _os.path.join(_base, "data", "raw", "COMP INFO.csv"),
+        _os.path.join(_base, "data", "raw", "COMP_INFO.csv"),
+        "/data/raw/COMP INFO.csv",          # HF persistent storage
+        "/app/data/raw/COMP INFO.csv",      # HF Docker mount
+    ]
+    for path in candidates:
+        if _os.path.exists(path):
+            try:
+                df = pd.read_csv(path)
+                if 'symbol' in df.columns:
+                    df.rename(columns={'symbol': 'Ticker'}, inplace=True)
+                # Chuẩn hóa Ticker: bỏ đuôi .HM/.HN/.HNO nếu có
+                if 'Ticker' in df.columns:
+                    df['Ticker'] = df['Ticker'].str.replace(
+                        r'\.(HNO|HN|HM)$', '', regex=True
+                    ).str.strip()
+                print(f"✅ Loaded COMP INFO từ: {path} ({len(df)} rows)")
+                return df
+            except Exception as e:
+                print(f"⚠️ Lỗi đọc {path}: {e}")
+    print("⚠️ Không tìm thấy COMP INFO.csv ở bất kỳ path nào — dùng snapshot fallback")
+    return pd.DataFrame()
+
+df_comp_info = _load_comp_info()
 
 # 🟢 IMPORT TOÀN BỘ CÁC THÔNG SỐ TỪ QUANT ENGINE
 from src.backend.quant_engine_strategies import (
@@ -227,13 +249,32 @@ def get_trend_style(current_price, sma_value):
     except:
         return {"color": "#c9d1d9"}, "---"
 
-
-def _build_col_defs(active_filters, strategy_id):
-    """Xây dựng columnDefs từ active_filters + strategy — gộp vào callback chính để tránh double-render."""
+def _build_col_defs(active_filters, strategy_id, trading_mode="investing"):
+    """Xây dựng columnDefs từ active_filters + strategy + trading_mode."""
+    from src.callbacks.column_callbacks import INVESTING_MODE_COLS, TRADING_MODE_COLS
+    
     seen_fields = {c["field"] for c in FIXED_COLS}
     dynamic_cols = []
     af = active_filters or {}
 
+    # Sửa đoạn if not af and not strategy_id: thành thế này:
+    if not af and not strategy_id:
+        from src.callbacks.column_callbacks import INVESTING_MODE_COLS, TRADING_MODE_COLS, ALL_MARKET_COLS # ← Thêm ALL_MARKET_COLS
+        
+        if trading_mode == "trading":
+            default_mode_cols = TRADING_MODE_COLS
+        elif trading_mode == "all_market":
+            default_mode_cols = ALL_MARKET_COLS
+        else:
+            default_mode_cols = INVESTING_MODE_COLS
+            
+        for col in default_mode_cols:
+            if col["field"] not in seen_fields:
+                dynamic_cols.append(col)
+                seen_fields.add(col["field"])
+        return FIXED_COLS + dynamic_cols
+
+    # Nếu có filter/strategy: giữ nguyên logic cũ
     for filter_id in af:
         if filter_id not in FILTER_TO_COLDEF:
             continue
@@ -297,6 +338,7 @@ def _add_forward_pe(df):
         Input("filter-sub-industry",        "value"),
         Input("filter-exchange",             "value"),   # ← lọc theo sàn
         Input("filter-year-store",          "data"),   # ← lọc theo năm
+        Input("trading-mode-store", "data"),   # ← thêm sau filter-year-store
     ],
     [
         # ── STATE: đọc giá trị hiện tại của từng store khi callback chạy ──
@@ -380,7 +422,7 @@ def _add_forward_pe(df):
 )
 def update_screener_table(
         btn_reset, search_text, current_strategy, selected_sectors, active_filters, selected_subs,
-        selected_exchange, filter_year,
+        selected_exchange, filter_year, trading_mode,
         # Tổng quan (State)
         price_range, volume_range, market_cap_range, eps_range, perf_1w_range, perf_1m_range,
         # Định giá
@@ -408,6 +450,24 @@ def update_screener_table(
         gtgd_1w, gtgd_10d, gtgd_1m,
 ):
     try:
+        # ── DEBUG BLOCK — BẮT ĐẦU ──────────────────────────────────────
+        ctx = callback_context
+        triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else "NONE"
+        triggered_val = ctx.triggered[0].get('value', '?') if ctx.triggered else '?'
+        import time as _time
+        logger.warning(
+            f"\n{'='*70}\n"
+            f"[SCREENER TRIGGER] @ {_time.strftime('%H:%M:%S')}\n"
+            f"  triggered_id  = {triggered_id}\n"
+            f"  strategy      = {current_strategy}\n"
+            f"  active_filters = {list((active_filters or {}).keys())}\n"
+            f"  val_preview   = {str(triggered_val)[:100]}\n"
+            f"{'='*70}"
+        )
+        # ── DEBUG BLOCK — KẾT THÚC ──────────────────────────────────────
+        # 1. LƯỚI AN TOÀN: Bắt buộc giá trị mặc định là "investing" nếu có lỗi
+        if not trading_mode:
+            trading_mode = "investing"
         ctx = callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
 
@@ -442,10 +502,50 @@ def update_screener_table(
 
         if triggered_id == 'btn-reset' or triggered_id == 'btn-reset.n_clicks':
             df = _add_forward_pe(df)
-            col_defs = _build_col_defs(active_filters, current_strategy)
+            col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
             return df.to_dict('records'), col_defs, f"📊 Hiển thị tất cả: {total_stocks} mã", ""
 
         df_filtered = df.copy()
+        # ── HARD FILTER khi ở chế độ Lướt sóng ──────────────────────────────────
+        if trading_mode == "trading":
+            # Loại mã thanh khoản thấp (Avg_Vol_20D < 100,000 CP)
+            if "Avg_Vol_20D" in df_filtered.columns:
+                avg_vol = pd.to_numeric(df_filtered["Avg_Vol_20D"], errors="coerce").fillna(0)
+                df_filtered = df_filtered[avg_vol > 100_000]
+                logger.info(f"[Trading Mode] Sau filter Avg_Vol_20D: {len(df_filtered)} mã")
+
+            # Loại mã giá quá thấp (< 200 VND — penny stocks, rủi ro cao)
+            if "Price Close" in df_filtered.columns:
+                price = pd.to_numeric(df_filtered["Price Close"], errors="coerce").fillna(0)
+                df_filtered = df_filtered[price >= 200]
+                logger.info(f"[Trading Mode] Sau filter giá >= 200: {len(df_filtered)} mã")
+
+        elif trading_mode == "investing":
+            # --- BỘ LỌC PHÒNG THỦ MẶC ĐỊNH CHO TÍCH SẢN ---
+            
+            # 1. Lọc Xác Sống (Zombie Stocks): Tích sản thì thanh khoản không cần quá lớn, 
+            # nhưng ít nhất một ngày phải giao dịch > 20.000 cổ phiếu để lúc cần còn bán được.
+            if "Avg_Vol_20D" in df_filtered.columns:
+                df_filtered = df_filtered[
+                    pd.to_numeric(df_filtered["Avg_Vol_20D"], errors="coerce").fillna(0) >= 20_000
+                ]
+                
+            # 2. Lọc Doanh nghiệp Rác (Tránh nguy cơ hủy niêm yết): 
+            # Giá cổ phiếu không được dưới 2.000 VNĐ (loại bỏ mấy con penny nát bét).
+            if "Price Close" in df_filtered.columns:
+                df_filtered = df_filtered[
+                    pd.to_numeric(df_filtered["Price Close"], errors="coerce").fillna(0) >= 2000
+                ]
+                
+            # 3. [Khẩu vị của bạn] Lọc Lợi nhuận Ảo:
+            # P/E > 0 đảm bảo công ty LÀM ĂN CÓ LÃI THẬT SỰ (không hiển thị mấy mã P/E âm/NaN)
+            if "P/E" in df_filtered.columns:
+                pe_series = pd.to_numeric(df_filtered["P/E"], errors="coerce")
+                df_filtered = df_filtered[(pe_series > 0) & (pe_series < 100)] # P/E > 100 cũng ảo, bỏ luôn.
+
+        elif trading_mode == "all_market":
+            # Không có bộ lọc nào. Mở full toàn bộ ~1.500 mã.
+            pass
         # ================================================================
         # 🟢 TẦNG 0: LỌC THEO TỪ KHÓA TÌM KIẾM (SEARCH BAR)
         # ================================================================
@@ -453,13 +553,26 @@ def update_screener_table(
         # 🟢 TẦNG 0: LỌC THEO TỪ KHÓA TÌM KIẾM (Bug #4 fix: tìm cả tên công ty)
         # ================================================================
         if search_text:
-            search_upper = search_text.strip().upper()
-            ticker_match = df_filtered['Ticker'].astype(str).str.upper().str.contains(search_upper, na=False, regex=False)
-            if 'Company Common Name' in df_filtered.columns:
-                name_match = df_filtered['Company Common Name'].astype(str).str.upper().str.contains(search_upper, na=False, regex=False)
-                df_filtered = df_filtered[ticker_match | name_match]
+            search_upper = str(search_text).strip().upper()
+
+            # Vì search-ticker-input là Dropdown → value luôn là ticker code chính xác
+            # (VD: "VIC", không phải "VIC – Vingroup")
+            # Dùng exact match trước, tránh "VIC" khớp "VICG", "SERVICE", v.v.
+            exact_ticker = df_filtered['Ticker'].astype(str).str.upper() == search_upper
+
+            if exact_ticker.any():
+                # Có mã khớp chính xác → chỉ hiện mã đó
+                df_filtered = df_filtered[exact_ticker]
             else:
-                df_filtered = df_filtered[ticker_match]
+                # Không tìm thấy exact → fallback startswith (user đang gõ dở)
+                ticker_startswith = df_filtered['Ticker'].astype(str).str.upper().str.startswith(search_upper, na=False)
+                if 'Company Common Name' in df_filtered.columns:
+                    name_match = df_filtered['Company Common Name'].astype(str).str.upper().str.contains(
+                        search_upper, na=False, regex=False
+                    )
+                    df_filtered = df_filtered[ticker_startswith | name_match]
+                else:
+                    df_filtered = df_filtered[ticker_startswith]
         # ================================================================
         # TẦNG 1: LỌC THEO TRƯỜNG PHÁI (STRATEGY)
         # ================================================================
@@ -660,7 +773,7 @@ def update_screener_table(
         filtered_count = len(df_filtered)
         # Tính Forward P/E và build columnDefs trong cùng 1 lần → AG Grid nhận 1 batch update
         df_filtered = _add_forward_pe(df_filtered)
-        col_defs = _build_col_defs(active_filters, current_strategy)
+        col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
         return (
             df_filtered.to_dict('records'),
             col_defs,
@@ -756,11 +869,23 @@ def open_detail_modal_fast(double_clicked_cell, grid_data):
     ticker       = stock.get('Ticker', 'N/A')
     company_name = stock.get('Company Common Name', '')
 
-    company_name_vn = company_name
+    company_name_vn = company_name   # default = tên tiếng Anh từ snapshot
+
+    # Ưu tiên 1: đọc từ COMP INFO.csv (có tên tiếng Việt)
     if not df_comp_info.empty:
         match = df_comp_info[df_comp_info['Ticker'] == ticker]
-        if not match.empty and 'organ_name' in match.columns:
-            company_name_vn = str(match['organ_name'].values[0])
+        if not match.empty:
+            # Thử nhiều tên cột có thể có trong file
+            for col in ['organ_name', 'company_name_vi', 'ten_cong_ty', 'name_vi']:
+                if col in match.columns:
+                    val = str(match[col].values[0]).strip()
+                    if val and val.lower() not in ('nan', 'none', ''):
+                        company_name_vn = val
+                        break
+
+    # Ưu tiên 2 (fallback): snapshot đã có Company Common Name
+    if company_name_vn == company_name or not company_name_vn:
+        company_name_vn = company_name or ticker
 
     title_text = f"Cổ phiếu {ticker} – {company_name_vn}"
     
@@ -797,8 +922,15 @@ def load_detail_content(stock, period_toggle):
     company_name_vn = company_name
     if not df_comp_info.empty:
         match = df_comp_info[df_comp_info['Ticker'] == ticker]
-        if not match.empty and 'organ_name' in match.columns:
-            company_name_vn = str(match['organ_name'].values[0])
+        if not match.empty:
+            for col in ['organ_name', 'company_name_vi', 'ten_cong_ty', 'name_vi']:
+                if col in match.columns:
+                    val = str(match[col].values[0]).strip()
+                    if val and val.lower() not in ('nan', 'none', ''):
+                        company_name_vn = val
+                        break
+    if not company_name_vn or company_name_vn == company_name:
+        company_name_vn = company_name or ticker
 
     # =========================================================================
     # === TAB 1: OVERVIEW (HỒ SƠ, KPI VÀ SỨC KHỎE TÀI CHÍNH) ===
@@ -2049,7 +2181,6 @@ def load_detail_content(stock, period_toggle):
         cf_row_data, cf_col_defs,
     )
 
-
 @app.callback(
     [Output("metric-table-1", "rowData"), Output("metric-table-1", "columnDefs"),
      Output("metric-table-2", "rowData"), Output("metric-table-2", "columnDefs"),
@@ -2058,13 +2189,16 @@ def load_detail_content(stock, period_toggle):
      Output("metric-table-5", "rowData"), Output("metric-table-5", "columnDefs"),
      Output("metric-table-6", "rowData"), Output("metric-table-6", "columnDefs")],
     [Input("screener-table", "selectedRows"),
-     Input("metrics-period-toggle", "value")],
+     Input("metrics-period-toggle", "value"),
+     Input("selected-stock-store", "data")],   # ← THÊM
     prevent_initial_call=True
 )
-def update_metrics_tab(selected_rows, period):
+def update_metrics_tab(selected_rows, period, stock_store_data):
+    # ── Fallback: HF lag → selectedRows chưa set kịp ──
+    if (not selected_rows or len(selected_rows) == 0) and stock_store_data:
+        selected_rows = [stock_store_data]
     if not selected_rows:
         return ([], []) * 6
-
     ticker = selected_rows[0].get("Ticker")
 
     # Khởi tạo 6 cặp giá trị rỗng
@@ -2208,24 +2342,31 @@ def update_metrics_tab(selected_rows, period):
     Output("filter-offcanvas", "is_open"),
     [Input("toggle-filter-btn", "n_clicks"),
      Input("btn-filter", "n_clicks"),
-     Input("strategy-preset-dropdown", "value")],
+     Input("strategy-preset-dropdown", "value"),
+     Input("selected-filters-container", "children"),   # ← THÊM
+    ],
     [State("filter-offcanvas", "is_open")],
     prevent_initial_call=True
 )
-def toggle_filter_offcanvas(n_clicks_open, n_clicks_apply, strategy_val, is_open):
-    from dash import ctx
-    triggered_id = ctx.triggered_id
+def toggle_filter_offcanvas(n_clicks_open, n_clicks_apply, strategy_val,
+                             filter_children,   # ← THÊM tham số
+                             is_open):
+    from dash import ctx as dash_ctx
+    triggered_id = dash_ctx.triggered_id
 
     if triggered_id == "strategy-preset-dropdown":
-        # Chọn trường phái → tự động mở panel bộ lọc
         return True if strategy_val else is_open
+    elif triggered_id == "selected-filters-container":
+        # Nếu có card được thêm vào, mở panel để user thấy
+        if filter_children and len(filter_children) > 0:
+            return True
+        return is_open
     elif triggered_id == "toggle-filter-btn":
         return not is_open
     elif triggered_id == "btn-filter":
         return False
 
     return is_open
-
 
 # ============================================================================
 # CALLBACK: HIỂN THỊ THÔNG TIN TRƯỜNG PHÁI ĐẦU TƯ (INFO OFFCANVAS)

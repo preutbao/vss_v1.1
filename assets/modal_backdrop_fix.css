@@ -7,9 +7,9 @@
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    /* Bù lại zoom 90%: 100% / 0.9 ≈ 111.2% */
-    width:  111.2vw !important;
-    height: 111.2vh !important;
+    /* Bù lại zoom 90%: 100% / 0.9 ≈ 111.1% */
+    width:  111.1vw !important;
+    height: 111.1vh !important;
     transform-origin: top left;
     background-color: rgba(0, 0, 0, 0.72) !important;
     z-index: 1040 !important;
@@ -19,8 +19,8 @@
 .offcanvas-backdrop {
     position: fixed !important;
     top: 0 !important; left: 0 !important;
-    width:  111.2vw !important;
-    height: 111.2vh !important;
+    width:  111.1vw !important;
+    height: 111.1vh !important;
     background-color: rgba(0, 0, 0, 0.72) !important;
     z-index: 1040 !important;
 }
@@ -30,8 +30,8 @@
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-    width:  111.2vw !important;
-    height: 111.2vh !important;
+    width:  111.1vw !important;
+    height: 111.1vh !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
     z-index: 1055 !important;
