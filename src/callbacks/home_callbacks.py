@@ -463,28 +463,29 @@ def _build_tour_step(step: int):
                     dbc.RadioItems(
                         id="tour-quiz-radio",
                         options=[
-                            # Thẻ 1: Tích sản
-                            {"label": _build_persona_label("📊", "Tích sản — Tầng 1: Căn bản & An toàn", 
-                                "NĐT bận rộn, Buy & Hold trung-dài hạn. Ưu tiên DN cơ bản tốt, nợ thấp, cổ tức đều.", 
-                                "#10b981" # Màu success
-                            ), "value": "investing"},
-                            
-                            # Thẻ 2: Lướt sóng
-                            {"label": _build_persona_label("⚡", "Lướt sóng T+ — Tầng 2: Năng động & Dòng tiền", 
-                                "Canh bảng điện thường xuyên, thích cảm giác mạnh, tìm điểm nổ Volume, Breakout SMA20.", 
-                                "#f59e0b" # Màu warning
-                            ), "value": "trading"},
-                            
-                            # Thẻ 3: Chuyên gia
-                            {"label": _build_persona_label("🌐", "Toàn thị trường — Tầng 3: Chuyên gia & Tự do", 
-                                "Broker, Data Analyst muốn quét thô 1.500 mã để tự build chiến lược riêng.", 
-                                "#a5a7a9" # Màu secondary
+                            # Thẻ 1: Toàn thị trường (chuyển lên đầu)
+                            {"label": _build_persona_label(
+                                "🌐", "Toàn thị trường — Tầng 1: Chuyên gia & Tự do",
+                                "Broker, Data Analyst, nhà đầu tư chuyên nghiệp muốn quét thô toàn bộ ~1.500 mã để tự build chiến lược riêng.",
+                                "#a5a7a9"
                             ), "value": "all_market"},
+
+                            # Thẻ 2: Lướt sóng
+                            {"label": _build_persona_label(
+                                "⚡", "Lướt sóng T+ — Tầng 2: Năng động & Dòng tiền",
+                                "Canh bảng điện thường xuyên, thích cảm giác mạnh, tìm điểm nổ Volume, Breakout SMA20.",
+                                "#f59e0b"
+                            ), "value": "trading"},
+
+                            # Thẻ 3: Tích sản (chuyển xuống cuối)
+                            {"label": _build_persona_label(
+                                "📊", "Tích sản — Tầng 3: Bền vững & An toàn",
+                                "NĐT bận rộn, Buy & Hold trung-dài hạn. Ưu tiên DN cơ bản tốt, nợ thấp, cổ tức đều.",
+                                "#10b981"
+                            ), "value": "investing"},
                         ],
-                        value="investing", # Mặc định
-                        # Style cho container của RadioItems
+                        value="all_market",  # Đổi default thành all_market
                         style={"display": "flex", "flexDirection": "column", "gap": "16px"},
-                        # CHÌA KHÓA: Ép class CSS để biến các Label thành Thẻ Persona Card
                         labelClassName="persona-card-label",
                         inputClassName="persona-card-input",
                     )
@@ -501,16 +502,22 @@ from dash import Input, Output, State, no_update
 @app.callback(
     Output("zalo-chat-window",     "style"),
     Output("zalo-bubble-container","style"),
+    Output("chat-panel",           "style", allow_duplicate=True),  # THÊM
     Input("zalo-icon-btn",    "n_clicks"),
     Input("zalo-chat-close",  "n_clicks"),
     Input("zalo-bubble-close","n_clicks"),
     State("zalo-chat-window",      "style"),
     State("zalo-bubble-container", "style"),
+    State("chat-panel",            "style"),  # THÊM
     prevent_initial_call=True,
 )
-def toggle_zalo(icon_clicks, chat_close, bubble_close, chat_style, bubble_style):
-    from dash import callback_context, no_update
+def toggle_zalo(icon_clicks, chat_close, bubble_close, chat_style, bubble_style, vinance_style):
     triggered = callback_context.triggered[0]["prop_id"]
+    
+    # Style đóng cho VinanceAI
+    vinance_closed = {**vinance_style, 
+                      "transform": "scale(0.85) translateY(20px)",
+                      "opacity": "0", "pointerEvents": "none"}
 
     base_bubble = {
         "position": "fixed", "bottom": "96px", "right": "28px",
@@ -528,9 +535,10 @@ def toggle_zalo(icon_clicks, chat_close, bubble_close, chat_style, bubble_style)
     base_chat_hidden = {**base_chat_shown, "display": "none"}
 
     if "zalo-bubble-close" in triggered:
-        return no_update, {**base_bubble, "display": "none"}
+        return no_update, {**base_bubble, "display": "none"}, no_update
     if "zalo-icon-btn" in triggered:
-        return base_chat_shown, base_bubble
+        # Mở zalo → đóng vinance
+        return base_chat_shown, base_bubble, vinance_closed
     if "zalo-chat-close" in triggered:
-        return base_chat_hidden, base_bubble
-    return no_update, no_update
+        return base_chat_hidden, base_bubble, no_update
+    return no_update, no_update, no_update

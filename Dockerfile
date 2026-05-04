@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Dockerfile — IDX Smart Screener
+# Dockerfile — VSS Smart Screener
 # Target: Hugging Face Spaces (Docker SDK)
 #
 # Lưu ý Hugging Face Spaces:

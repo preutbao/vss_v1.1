@@ -15,118 +15,60 @@ logger = logging.getLogger(__name__)
 
 # ── CẤU HÌNH OPENAI ──────────────────────────────────────────────────────────
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_MODEL   = os.environ.get("OPENAI_MODEL", "gpt-3.5-turbo")
+OPENAI_MODEL   = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")  # Fallback đổi thành gpt-4o-mini
 
 # ── SYSTEM PROMPT VINANCEAI ───────────────────────────────────────────────────
-VINANCE_SYSTEM_PROMPT = """Bạn là **VinanceAI** – chuyên gia tài chính và chứng khoán hàng đầu Việt Nam với hơn 20 năm kinh nghiệm thực chiến. Bạn chuyên sâu về thị trường chứng khoán Việt Nam (HOSE, HNX, UPCOM).
+VINANCE_SYSTEM_PROMPT = """Bạn là VinanceAI – chuyên gia chứng khoán 3 sàn Việt Nam.
 
-Sứ mệnh: Giúp nhà đầu tư Việt Nam – từ F0 đến chuyên nghiệp – đưa ra quyết định đầu tư thông minh, có căn cứ và kiểm soát rủi ro hiệu quả.
+## PHONG CÁCH
+Tiếng Việt, chuyên nghiệp, súc tích (tối đa 250 từ/câu trả lời)
+Dùng emoji: 📊 📈 💰 ⚠️ để phân biệt phần
+Kết thúc phân tích cổ phiếu bằng: ⚠️ Chỉ mang tính tham khảo.
 
-## NGUYÊN TẮC CÁ NHÂN HÓA
-Khi bắt đầu cuộc hội thoại mới, hỏi người dùng:
-1. Trình độ: F0 (mới bắt đầu) / F1 (đã có kinh nghiệm) / Chuyên nghiệp
-2. Mục tiêu: Đầu tư dài hạn / Swing trade / Lướt sóng / Tích lũy cổ tức
-3. Vốn tham khảo: Dưới 50tr / 50–200tr / 200tr–1 tỷ / Trên 1 tỷ
-4. Khẩu vị rủi ro: Thấp / Trung bình / Cao
-→ Dựa trên câu trả lời, cá nhân hóa toàn bộ cách tư vấn.
+## 6 CHIẾN LƯỢC SÀNG LỌC
+1. **Giá Trị (Graham)**: P/E<15, P/B<1.5, ROE>15%, D/E<1, EPS tăng dương
+2. **Tăng trưởng (GARP)**: EPS tăng 10-40%, PEG<1.5, P/E<25, D/E<1.5
+3. **Cổ tức (Neff)**: Yield>6%, Payout 40-70%, FCF dương, trả đều ≥5 năm
+4. **Swing Trade**: Breakout vùng tích lũy, Volume>150% MA20, RSI 45-65
+5. **Lướt sóng T+**: Nến đảo chiều hỗ trợ, RSI<35, Volume≥2x TB10 phiên
+6. **Phòng thủ**: VN30, Beta<0.8, ngành điện/nước/thực phẩm/dược
 
-## 6 CHIẾN LƯỢC SÀNG LỌC CỔ PHIẾU
-Khi người dùng hỏi về chiến lược hoặc lọc cổ phiếu:
-
-**Chiến lược 1 – GIÁ TRỊ (Value Investing):**
-P/E < 15, P/B < 1.5, ROE > 15% liên tục 3 năm, Nợ/VCP < 1, EPS tăng trưởng dương, CFO > 0, cổ tức đều
-
-**Chiến lược 2 – TĂNG TRƯỞNG (Growth Investing):**
-Doanh thu tăng > 20% YoY, EPS tăng > 25% YoY, ROE > 20%, biên LN ròng mở rộng, PEG < 1.5
-
-**Chiến lược 3 – CỔ TỨC (Dividend Investing):**
-Tỷ suất cổ tức > 6%, lịch sử trả đều ≥ 5 năm, Payout Ratio 40–70%, FCF đủ bao phủ, nợ vay thấp
-
-**Chiến lược 4 – SWING TRADE (3–30 ngày):**
-Breakout khỏi vùng tích lũy, Volume > 150% MA20, RSI 45–65, MACD cắt lên, giá trên MA20, Risk/Reward ≥ 1:2
-
-**Chiến lược 5 – LƯỚT SÓNG T+ (1–3 ngày):**
-Nến đảo chiều tại hỗ trợ mạnh, RSI < 35 hoặc bullish divergence, Volume ≥ 2x TB10 phiên, Top 50 HoSE theo giá trị khớp
-
-**Chiến lược 6 – PHÒNG THỦ / RỦI RO THẤP:**
-VN30, Beta < 0.8, ngành điện/nước/thực phẩm/dược, không dùng margin, cổ tức tiền mặt đều đặn
-
-## TÍNH NĂNG TÍNH TOÁN
-Khi người dùng cung cấp số liệu, tự động tính:
-- Position sizing theo % vốn và stop-loss
-- Tỷ lệ Risk/Reward
-- Lãi/lỗ sau phí (0.1% mỗi chiều) và thuế (0.1% khi bán)
-- Định giá theo P/E mục tiêu, tỷ suất cổ tức
-- Lãi kép, Quy tắc 72
-
-## FORMAT TRẢ LỜI
-- Tiếng Việt, chuyên nghiệp nhưng gần gũi
-- Với F0: đơn giản, có ví dụ, giải thích thuật ngữ
-- Với F1/Pro: kỹ thuật, số liệu, đi thẳng vào vấn đề
-- Dùng emoji: 📊 📈 💰 ⚠️ 🎯 để phân biệt phần
-- Tối đa ~300 từ mỗi câu trả lời, trừ khi cần phân tích sâu
-- Kết thúc phân tích cổ phiếu bằng: ⚠️ Chỉ mang tính tham khảo, không phải lời khuyên đầu tư chính thức.
-
-## CHẾ ĐỘ GIẢNG DẠY F0
-Cảnh báo các sai lầm phổ biến:
-- Mua đuổi giá sau tăng mạnh
-- Không đặt stop-loss
-- Dùng margin khi chưa có kinh nghiệm
-- "Yêu cổ phiếu" – không chịu cắt lỗ
-- Đầu tư theo tin đồn, Zalo group
+## TÍNH TOÁN
+Khi user cung cấp số liệu: tính position sizing, Risk/Reward, lãi/lỗ sau phí (0.1%/chiều) + thuế (0.1% khi bán).
 """
 
-
-# ── GỌI OPENAI API ────────────────────────────────────────────────────────────
 def _call_openai(messages: list, stock_context: dict = None, screener_context: str = "") -> str:
-    """Gọi OpenAI ChatCompletion API với retry khi bị rate limit."""
+    """Gọi OpenAI với retry tối giản - max_retries=0 SDK + 1 lần retry code."""
     import time as _time
 
     if not OPENAI_API_KEY:
-        return "⚠️ Chưa cấu hình OPENAI_API_KEY. Vui lòng thêm API key vào biến môi trường."
+        return "⚠️ Chưa cấu hình OPENAI_API_KEY."
 
     try:
         import openai
     except ImportError:
-        return "❌ Thư viện openai chưa được cài. Thêm 'openai>=1.0.0' vào requirements.txt."
+        return "❌ Thư viện openai chưa được cài."
 
-    # ── Xây dựng system prompt ──
+    # ── Rút gọn system prompt để tiết kiệm token ──
     system_text = VINANCE_SYSTEM_PROMPT
 
+    # Chỉ thêm screener context nếu ngắn gọn (tối đa 800 ký tự)
     if screener_context:
-        system_text += screener_context
+        system_text += screener_context[:800]
 
     if stock_context:
         ticker  = stock_context.get('Ticker', 'N/A')
-        company = stock_context.get('Company Common Name', stock_context.get('Name', 'N/A'))
-        sector  = stock_context.get('Sector', 'N/A')
+        price   = stock_context.get('Price Close', 'N/A')
         pe      = stock_context.get('P/E', 'N/A')
-        pb      = stock_context.get('P/B', 'N/A')
-        roe     = stock_context.get('ROE (%)', stock_context.get('ROE', 'N/A'))
-        rsi     = stock_context.get('RSI_14', stock_context.get('RSI', 'N/A'))
+        roe     = stock_context.get('ROE (%)', 'N/A')
         vgm     = stock_context.get('VGM Score', 'N/A')
-        p1w     = stock_context.get('Perf_1W', 'N/A')
-        p1m     = stock_context.get('Perf_1M', 'N/A')
-        price   = stock_context.get('Price Close', stock_context.get('Price', 'N/A'))
-        system_text += f"""
+        system_text += f"\n\n## CỔ PHIẾU ĐANG CHỌN: {ticker} | Giá: {price} | P/E: {pe} | ROE: {roe}% | VGM: {vgm}"
 
-## THÔNG TIN CỔ PHIẾU ĐANG ĐƯỢC CHỌN TRONG SCREENER
-• Mã CK: {ticker}
-• Tên công ty: {company}
-• Ngành: {sector}
-• Giá hiện tại: {price}
-• P/E: {pe} | P/B: {pb}
-• ROE: {roe}% | RSI(14): {rsi}
-• VGM Score: {vgm}
-• Hiệu suất 1 tuần: {p1w}% | 1 tháng: {p1m}%
-
-Khi người dùng hỏi về cổ phiếu mà không chỉ rõ mã, hãy ưu tiên phân tích mã {ticker} này.
-"""
-
-    # ── Chuyển đổi messages từ format Gemini sang OpenAI ──
-    # Gemini dùng role="model", OpenAI dùng role="assistant"
+    # Chuyển messages sang OpenAI format
     openai_messages = [{"role": "system", "content": system_text}]
-    for msg in messages:
+    # Chỉ lấy 6 tin nhắn gần nhất để tránh context quá dài
+    recent_messages = messages[-6:] if len(messages) > 6 else messages
+    for msg in recent_messages:
         role = msg.get("role", "user")
         if role == "model":
             role = "assistant"
@@ -139,47 +81,47 @@ Khi người dùng hỏi về cổ phiếu mà không chỉ rõ mã, hãy ưu ti
         if text:
             openai_messages.append({"role": role, "content": text})
 
-    # ── Retry với exponential backoff ──
-    client = openai.OpenAI(api_key=OPENAI_API_KEY)
-    max_retries = 3
+    # max_retries=0: TẮT HOÀN TOÀN SDK auto-retry
+    client = openai.OpenAI(api_key=OPENAI_API_KEY, max_retries=0)
 
-    for attempt in range(max_retries):
+    for attempt in range(2):  # Chỉ 2 lần: lần đầu + 1 retry
         try:
             resp = client.chat.completions.create(
                 model=OPENAI_MODEL,
                 messages=openai_messages,
-                max_tokens=800,
+                max_tokens=600,       # Giảm xuống để tiết kiệm token
                 temperature=0.7,
             )
             return resp.choices[0].message.content
 
         except openai.RateLimitError:
-            wait = 2 ** attempt
-            logger.warning(f"OpenAI rate limit, thử lại sau {wait}s (lần {attempt+1}/{max_retries})")
-            _time.sleep(wait)
-            continue
+            logger.warning(f"OpenAI rate limit (lần {attempt + 1}/2)")
+            if attempt == 0:
+                _time.sleep(5)  # Chờ 5 giây rồi thử lại 1 lần
+                continue
+            return "⚠️ API đang bận. Vui lòng thử lại sau 30 giây."
 
         except openai.AuthenticationError:
-            return "❌ OPENAI_API_KEY không hợp lệ. Kiểm tra lại trong biến môi trường hoặc Hugging Face Secrets."
+            return "❌ OPENAI_API_KEY không hợp lệ."
 
         except openai.BadRequestError as e:
             logger.error(f"OpenAI BadRequest: {e}")
-            return "❌ Request không hợp lệ. Thử xóa lịch sử chat và hỏi lại."
+            return "❌ Request lỗi. Thử xóa lịch sử chat và hỏi lại."
 
         except openai.APITimeoutError:
-            if attempt < max_retries - 1:
+            if attempt == 0:
                 _time.sleep(2)
                 continue
-            return "⏱️ Kết nối OpenAI quá chậm. Vui lòng thử lại sau."
+            return "⏱️ Kết nối OpenAI timeout. Vui lòng thử lại."
 
         except Exception as e:
-            logger.error(f"OpenAI error (attempt {attempt+1}): {e}")
-            if attempt < max_retries - 1:
+            logger.error(f"OpenAI error attempt {attempt + 1}: {e}")
+            if attempt == 0:
                 _time.sleep(1)
                 continue
-            return f"❌ Lỗi kết nối: {str(e)[:120]}"
+            return f"❌ Lỗi: {str(e)[:100]}"
 
-    return "⏳ OpenAI đang quá tải. Vui lòng đợi 10-15 giây rồi thử lại."
+    return "⏳ Không thể kết nối OpenAI. Vui lòng thử lại sau."
 
 
 # ── DỮ LIỆU SCREENER CHO CHATBOT (cached, rebuild mỗi 5 phút) ────────────────
@@ -232,7 +174,10 @@ def _build_screener_context() -> str:
                 if roe_col:   parts.append(f"ROE={row.get(roe_col,'')}%")
                 if rsi_col:   parts.append(f"RSI={row.get(rsi_col,'')}")
                 rows.append("|".join(parts))
+                if len(rows) >= 8:  # Chỉ lấy top 8 thay vì 15
+                    break
             lines.append("Top15VGM: " + "; ".join(rows))
+
 
         if sect_col and score_col:
             df_sector = df.copy()
@@ -242,7 +187,7 @@ def _build_screener_context() -> str:
             lines.append("Ngành(avgVGM): " + ", ".join(stats))
 
         lines.append("Dùng dữ liệu trên khi trả lời câu hỏi về thị trường.")
-        result = "\n".join(lines)
+        result = "\n".join(lines)[:600]  # Giới hạn 600 ký tự
 
         _screener_context_cache["text"] = result
         _screener_context_cache["ts"]   = now
@@ -578,28 +523,33 @@ def create_chatbot_layout():
 # FIX: toggle_chat_panel CHỈ điều khiển chat-panel, KHÔNG output zalo-chat-window
 # Tránh duplicate output conflict với toggle_zalo trong home_callbacks.py
 @app.callback(
-    Output("chat-panel", "style"),
+    Output("chat-panel",       "style"),
+    Output("zalo-chat-window", "style", allow_duplicate=True),  # THÊM
     Input("chat-toggle-btn",   "n_clicks"),
     Input("chat-close-btn",    "n_clicks"),
     State("chat-panel",        "style"),
+    State("zalo-chat-window",  "style"),  # THÊM
     prevent_initial_call=True,
 )
-def toggle_chat_panel(n_open, n_close, chat_style):
+def toggle_chat_panel(n_open, n_close, chat_style, zalo_style):
     ctx = callback_context
-    if not ctx.triggered:
-        return no_update
-
     is_chat_closed = (chat_style.get("opacity", "0") in ("0", 0) or
                       chat_style.get("pointerEvents") == "none")
 
+    zalo_hidden = {**(zalo_style or {}), "display": "none"}
+    
     style_open   = {**chat_style, "transform": "scale(1) translateY(0)",
                     "opacity": "1", "pointerEvents": "auto"}
     style_closed = {**chat_style, "transform": "scale(0.85) translateY(20px)",
                     "opacity": "0", "pointerEvents": "none"}
 
     if "chat-toggle-btn" in ctx.triggered[0]["prop_id"]:
-        return style_open if is_chat_closed else style_closed
-    return style_closed
+        if is_chat_closed:
+            # Mở vinance → đóng zalo
+            return style_open, zalo_hidden
+        else:
+            return style_closed, no_update
+    return style_closed, no_update
 
 
 @app.callback(
@@ -731,9 +681,15 @@ def handle_chat(n_send, n_enter, pending_msg, n_clear, user_input,
     message = ""
     if "chat-pending-msg-store" in trigger:
         if isinstance(pending_msg, dict) and pending_msg.get("msg"):
+            # Guard: tránh replay pending message cũ khi user gõ text mới
+            msg_ts = pending_msg.get("ts", "")
+            if msg_ts and msg_ts == getattr(handle_chat, "_last_pending_ts", ""):
+                return no_update, no_update, no_update, no_update
+            handle_chat._last_pending_ts = msg_ts
             message = pending_msg["msg"]
-    elif user_input and user_input.strip():
-        message = user_input.strip()
+    elif "chat-send-btn" in trigger or "chat-input" in trigger:
+        if user_input and user_input.strip():
+            message = user_input.strip()
 
     if not message:
         return no_update, no_update, no_update, no_update

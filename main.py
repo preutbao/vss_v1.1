@@ -173,7 +173,7 @@ from src.backend.data_loader import (
 
 def preload_data():
     logger.info("=" * 60)
-    logger.info("🚀 IDX SMART SCREENER — Pre-loading data...")
+    logger.info("🚀 VSS SMART SCREENER — Pre-loading data...")
     logger.info("=" * 60)
 
     try:

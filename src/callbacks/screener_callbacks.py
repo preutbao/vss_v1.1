@@ -506,45 +506,73 @@ def update_screener_table(
             return df.to_dict('records'), col_defs, f"📊 Hiển thị tất cả: {total_stocks} mã", ""
 
         df_filtered = df.copy()
-        # ── HARD FILTER khi ở chế độ Lướt sóng ──────────────────────────────────
+
+        # ── HARD FILTER theo chế độ đầu tư ──────────────────────────────────────────
         if trading_mode == "trading":
-            # Loại mã thanh khoản thấp (Avg_Vol_20D < 100,000 CP)
+            # === CHẾ ĐỘ LƯỚT SÓNG T+ ===
+            # Mục tiêu: Cổ phiếu có thanh khoản đủ để vào/ra nhanh, có momentum
+
+            # 1. Thanh khoản tối thiểu — cần đủ để mua/bán không bị trượt giá
             if "Avg_Vol_20D" in df_filtered.columns:
                 avg_vol = pd.to_numeric(df_filtered["Avg_Vol_20D"], errors="coerce").fillna(0)
-                df_filtered = df_filtered[avg_vol > 100_000]
-                logger.info(f"[Trading Mode] Sau filter Avg_Vol_20D: {len(df_filtered)} mã")
+                df_filtered = df_filtered[avg_vol >= 200_000]  # 200K CP/ngày
 
-            # Loại mã giá quá thấp (< 200 VND — penny stocks, rủi ro cao)
+            # 2. Giá tối thiểu — loại penny stock, dễ bị làm giá
             if "Price Close" in df_filtered.columns:
                 price = pd.to_numeric(df_filtered["Price Close"], errors="coerce").fillna(0)
-                df_filtered = df_filtered[price >= 200]
-                logger.info(f"[Trading Mode] Sau filter giá >= 200: {len(df_filtered)} mã")
+                df_filtered = df_filtered[price >= 5_000]  # >= 5,000 VNĐ
+
+            # 3. Vốn hóa tối thiểu — loại cổ siêu nhỏ dễ bị thao túng
+            if "Market Cap" in df_filtered.columns:
+                mc = pd.to_numeric(df_filtered["Market Cap"], errors="coerce").fillna(0)
+                df_filtered = df_filtered[mc >= 500_000_000_000]  # >= 500 tỷ VNĐ
+
+            # 4. Không bị giảm sàn liên tục (RSI không quá thấp — không bắt dao rơi)
+            if "RSI_14" in df_filtered.columns:
+                rsi = pd.to_numeric(df_filtered["RSI_14"], errors="coerce")
+                df_filtered = df_filtered[rsi.isna() | (rsi >= 25)]  # RSI >= 25
+
+            # 5. Momentum dương — giá không thấp hơn 30% so với đỉnh 1 năm
+            if "Pct_From_High_1Y" in df_filtered.columns:
+                pct_h = pd.to_numeric(df_filtered["Pct_From_High_1Y"], errors="coerce")
+                df_filtered = df_filtered[pct_h.isna() | (pct_h >= -40)]
+
+            logger.info(f"[Trading Mode] Sau hard filter: {len(df_filtered)} mã")
 
         elif trading_mode == "investing":
-            # --- BỘ LỌC PHÒNG THỦ MẶC ĐỊNH CHO TÍCH SẢN ---
-            
-            # 1. Lọc Xác Sống (Zombie Stocks): Tích sản thì thanh khoản không cần quá lớn, 
-            # nhưng ít nhất một ngày phải giao dịch > 20.000 cổ phiếu để lúc cần còn bán được.
+            # === CHẾ ĐỘ TÍCH SẢN ===
+            # Mục tiêu: Doanh nghiệp thật sự hoạt động, có lợi nhuận, không rủi ro mất vốn
+
+            # 1. Thanh khoản tối thiểu — đủ để thoát khi cần
             if "Avg_Vol_20D" in df_filtered.columns:
-                df_filtered = df_filtered[
-                    pd.to_numeric(df_filtered["Avg_Vol_20D"], errors="coerce").fillna(0) >= 20_000
-                ]
-                
-            # 2. Lọc Doanh nghiệp Rác (Tránh nguy cơ hủy niêm yết): 
-            # Giá cổ phiếu không được dưới 2.000 VNĐ (loại bỏ mấy con penny nát bét).
+                avg_vol = pd.to_numeric(df_filtered["Avg_Vol_20D"], errors="coerce").fillna(0)
+                df_filtered = df_filtered[avg_vol >= 30_000]  # 30K CP/ngày
+
+            # 2. Giá tối thiểu — loại cổ dưới mệnh giá (nguy cơ hủy niêm yết)
             if "Price Close" in df_filtered.columns:
-                df_filtered = df_filtered[
-                    pd.to_numeric(df_filtered["Price Close"], errors="coerce").fillna(0) >= 2000
-                ]
-                
-            # 3. [Khẩu vị của bạn] Lọc Lợi nhuận Ảo:
-            # P/E > 0 đảm bảo công ty LÀM ĂN CÓ LÃI THẬT SỰ (không hiển thị mấy mã P/E âm/NaN)
+                price = pd.to_numeric(df_filtered["Price Close"], errors="coerce").fillna(0)
+                df_filtered = df_filtered[price >= 3_000]  # >= 3,000 VNĐ (mệnh giá 10,000đ)
+
+            # 3. Doanh nghiệp có lợi nhuận — loại công ty thua lỗ
             if "P/E" in df_filtered.columns:
-                pe_series = pd.to_numeric(df_filtered["P/E"], errors="coerce")
-                df_filtered = df_filtered[(pe_series > 0) & (pe_series < 100)] # P/E > 100 cũng ảo, bỏ luôn.
+                pe = pd.to_numeric(df_filtered["P/E"], errors="coerce")
+                # P/E dương = có lãi; P/E > 150 = bất thường
+                df_filtered = df_filtered[pe.isna() | ((pe > 0) & (pe <= 150))]
+
+            # 4. Vốn hóa tối thiểu — không đầu tư vào cổ siêu nhỏ (< 200 tỷ)
+            if "Market Cap" in df_filtered.columns:
+                mc = pd.to_numeric(df_filtered["Market Cap"], errors="coerce").fillna(0)
+                df_filtered = df_filtered[mc >= 200_000_000_000]  # >= 200 tỷ
+
+            # 5. Không đang trong tình trạng thua lỗ nặng (ROE không quá âm)
+            if "ROE (%)" in df_filtered.columns:
+                roe = pd.to_numeric(df_filtered["ROE (%)"], errors="coerce")
+                df_filtered = df_filtered[roe.isna() | (roe >= -20)]  # ROE >= -20%
+
+            logger.info(f"[Investing Mode] Sau hard filter: {len(df_filtered)} mã")
 
         elif trading_mode == "all_market":
-            # Không có bộ lọc nào. Mở full toàn bộ ~1.500 mã.
+            # Không lọc gì — hiển thị toàn bộ ~1,500 mã
             pass
         # ================================================================
         # 🟢 TẦNG 0: LỌC THEO TỪ KHÓA TÌM KIẾM (SEARCH BAR)
@@ -1910,7 +1938,7 @@ def load_detail_content(stock, period_toggle):
                         html.Div([
                             html.Div([
                                 html.Div(style={"flex":"1","height":"1px","background":"linear-gradient(90deg,rgba(0,255,200,0.3),transparent)"}),
-                                html.Span("SIGNAL METER", style={"fontSize":"8px","letterSpacing":"0.3em","color":"rgba(0,255,200,0.5)","fontWeight":"700","padding":"0 10px"}),
+                                html.Span("TỔNG HỢP", style={"fontSize":"8px","letterSpacing":"0.3em","color":"rgba(0,255,200,0.5)","fontWeight":"700","padding":"0 10px"}),
                                 html.Div(style={"flex":"1","height":"1px","background":"linear-gradient(90deg,transparent,rgba(0,255,200,0.3))"}),
                             ], style={"display":"flex","alignItems":"center","marginBottom":"12px","width":"100%"}),
 
@@ -3182,11 +3210,10 @@ def export_csv(n_clicks, row_data):
         'Revenue Growth YoY (%)', 'EPS Growth YoY (%)',
         'D/E', 'Current Ratio', 'Dividend Yield (%)',
         'RSI_14', 'MACD_Histogram', 'Beta', 'Alpha',
-        'RS_1M', 'RS_3M', 'RS_1Y',
-        'Value Score', 'Growth Score', 'Momentum Score', 'VGM Score', 'CANSLIM Score'
+        'RS_1M', 'RS_3M', 'RS_1Y'
     ] if c in df.columns]
     from datetime import datetime
-    filename = f"IDX_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    filename = f"VSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     return dcc.send_data_frame(df[export_cols].to_csv, filename, index=False, encoding='utf-8-sig')
 
 
@@ -3215,8 +3242,7 @@ def export_excel(n_clicks, row_data):
             'Revenue Growth YoY (%)', 'EPS Growth YoY (%)',
             'D/E', 'Current Ratio', 'Dividend Yield (%)',
             'RSI_14', 'MACD_Histogram', 'Beta', 'Alpha',
-            'RS_1M', 'RS_3M', 'RS_1Y',
-            'Value Score', 'Growth Score', 'Momentum Score', 'VGM Score', 'CANSLIM Score'
+            'RS_1M', 'RS_3M', 'RS_1Y'
         ] if c in df.columns]
 
         df_export = df[export_cols].copy()
@@ -3224,11 +3250,11 @@ def export_excel(n_clicks, row_data):
         # Viết Excel vào buffer
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine='openpyxl') as writer:
-            df_export.to_excel(writer, index=False, sheet_name='IDX Screener')
+            df_export.to_excel(writer, index=False, sheet_name='VSS Screener')
 
             # Style cơ bản
             wb = writer.book
-            ws = writer.sheets['IDX Screener']
+            ws = writer.sheets['VSS Screener']
 
             from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
             from openpyxl.utils import get_column_letter
@@ -3274,7 +3300,7 @@ def export_excel(n_clicks, row_data):
             ws.sheet_properties.tabColor = "00D4FF"
 
         buf.seek(0)
-        filename = f"IDX_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        filename = f"VSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
         return dcc.send_bytes(buf.read(), filename)
 
     except Exception as e:

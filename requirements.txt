@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# requirements.txt — IDX Smart Screener
+# requirements.txt — VSS Smart Screener
 # Pinned versions để đảm bảo reproducibility khi deploy
 # ─────────────────────────────────────────────────────────────────────────────
 
