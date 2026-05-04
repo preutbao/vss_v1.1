@@ -10,12 +10,13 @@ import logging
 from datetime import datetime
 from dash import Input, Output, State, html, dcc, no_update, callback_context, ALL
 from src.app_instance import app
+import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
-# ── CẤU HÌNH OPENAI ──────────────────────────────────────────────────────────
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_MODEL   = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")  # Fallback đổi thành gpt-4o-mini
+# ── CẤU HÌNH GEMINI ──────────────────────────────────────────────────────────
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL   = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
 # ── SYSTEM PROMPT VINANCEAI ───────────────────────────────────────────────────
 VINANCE_SYSTEM_PROMPT = """Bạn là VinanceAI – chuyên gia chứng khoán 3 sàn Việt Nam.
@@ -37,91 +38,107 @@ Kết thúc phân tích cổ phiếu bằng: ⚠️ Chỉ mang tính tham khảo
 Khi user cung cấp số liệu: tính position sizing, Risk/Reward, lãi/lỗ sau phí (0.1%/chiều) + thuế (0.1% khi bán).
 """
 
-def _call_openai(messages: list, stock_context: dict = None, screener_context: str = "") -> str:
-    """Gọi OpenAI với retry tối giản - max_retries=0 SDK + 1 lần retry code."""
-    import time as _time
-
-    if not OPENAI_API_KEY:
-        return "⚠️ Chưa cấu hình OPENAI_API_KEY."
+def _call_gemini(messages: list, stock_context: dict = None, screener_context: str = "") -> str:
+    """Gọi Gemini API — đơn giản, không double-retry."""
+    if not GEMINI_API_KEY:
+        return "⚠️ Chưa cấu hình GEMINI_API_KEY."
 
     try:
-        import openai
+        import google.generativeai as genai
     except ImportError:
-        return "❌ Thư viện openai chưa được cài."
+        return "❌ Chưa cài google-generativeai. Chạy: pip install google-generativeai"
 
-    # ── Rút gọn system prompt để tiết kiệm token ──
+    # ── Xây dựng system prompt ──
     system_text = VINANCE_SYSTEM_PROMPT
 
-    # Chỉ thêm screener context nếu ngắn gọn (tối đa 800 ký tự)
     if screener_context:
-        system_text += screener_context[:800]
+        system_text += screener_context
 
     if stock_context:
         ticker  = stock_context.get('Ticker', 'N/A')
-        price   = stock_context.get('Price Close', 'N/A')
+        company = stock_context.get('Company Common Name', 'N/A')
+        sector  = stock_context.get('Sector', 'N/A')
         pe      = stock_context.get('P/E', 'N/A')
+        pb      = stock_context.get('P/B', 'N/A')
         roe     = stock_context.get('ROE (%)', 'N/A')
+        rsi     = stock_context.get('RSI_14', 'N/A')
         vgm     = stock_context.get('VGM Score', 'N/A')
-        system_text += f"\n\n## CỔ PHIẾU ĐANG CHỌN: {ticker} | Giá: {price} | P/E: {pe} | ROE: {roe}% | VGM: {vgm}"
+        p1w     = stock_context.get('Perf_1W', 'N/A')
+        p1m     = stock_context.get('Perf_1M', 'N/A')
+        price   = stock_context.get('Price Close', 'N/A')
+        system_text += f"""
 
-    # Chuyển messages sang OpenAI format
-    openai_messages = [{"role": "system", "content": system_text}]
-    # Chỉ lấy 6 tin nhắn gần nhất để tránh context quá dài
-    recent_messages = messages[-6:] if len(messages) > 6 else messages
-    for msg in recent_messages:
+## CỔ PHIẾU ĐANG CHỌN TRONG SCREENER
+- Mã: {ticker} | Tên: {company} | Ngành: {sector}
+- Giá: {price} | P/E: {pe} | P/B: {pb} | ROE: {roe}%
+- RSI(14): {rsi} | VGM Score: {vgm}
+- Hiệu suất: 1W={p1w}% | 1M={p1m}%
+Ưu tiên phân tích mã {ticker} khi user hỏi về cổ phiếu.
+"""
+
+    # ── Chuyển đổi history sang format Gemini ──
+    # Gemini dùng role "user" / "model", không có "system"
+    # → Ghép system prompt vào tin nhắn đầu tiên của user
+    gemini_history = []
+    for i, msg in enumerate(messages):
         role = msg.get("role", "user")
-        if role == "model":
-            role = "assistant"
-        text = ""
+        if role == "assistant":
+            role = "model"
+        
         parts = msg.get("parts", [])
         if parts and isinstance(parts, list):
             text = parts[0].get("text", "")
-        elif isinstance(msg.get("content"), str):
-            text = msg["content"]
-        if text:
-            openai_messages.append({"role": role, "content": text})
+        else:
+            text = str(msg.get("content", ""))
+        
+        if not text:
+            continue
+            
+        # Ghép system prompt vào message user đầu tiên
+        if i == 0 and role == "user":
+            text = f"{system_text}\n\n---\n\nCâu hỏi của người dùng: {text}"
+        
+        gemini_history.append({
+            "role": role,
+            "parts": [{"text": text}]
+        })
 
-    # max_retries=0: TẮT HOÀN TOÀN SDK auto-retry
-    client = openai.OpenAI(api_key=OPENAI_API_KEY, max_retries=0)
+    if not gemini_history:
+        return "Vui lòng nhập câu hỏi."
 
-    for attempt in range(2):  # Chỉ 2 lần: lần đầu + 1 retry
-        try:
-            resp = client.chat.completions.create(
-                model=OPENAI_MODEL,
-                messages=openai_messages,
-                max_tokens=600,       # Giảm xuống để tiết kiệm token
-                temperature=0.7,
-            )
-            return resp.choices[0].message.content
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            generation_config={
+                "max_output_tokens": 800,
+                "temperature": 0.7,
+            }
+        )
 
-        except openai.RateLimitError:
-            logger.warning(f"OpenAI rate limit (lần {attempt + 1}/2)")
-            if attempt == 0:
-                _time.sleep(5)  # Chờ 5 giây rồi thử lại 1 lần
-                continue
-            return "⚠️ API đang bận. Vui lòng thử lại sau 30 giây."
+        # Tách message cuối cùng ra để gửi
+        last_message = gemini_history[-1]
+        history_to_send = gemini_history[:-1]
+        
+        # Tạo chat session với history
+        if history_to_send:
+            chat = model.start_chat(history=history_to_send)
+        else:
+            chat = model.start_chat(history=[])
+        
+        response = chat.send_message(last_message["parts"][0]["text"])
+        return response.text
 
-        except openai.AuthenticationError:
-            return "❌ OPENAI_API_KEY không hợp lệ."
-
-        except openai.BadRequestError as e:
-            logger.error(f"OpenAI BadRequest: {e}")
-            return "❌ Request lỗi. Thử xóa lịch sử chat và hỏi lại."
-
-        except openai.APITimeoutError:
-            if attempt == 0:
-                _time.sleep(2)
-                continue
-            return "⏱️ Kết nối OpenAI timeout. Vui lòng thử lại."
-
-        except Exception as e:
-            logger.error(f"OpenAI error attempt {attempt + 1}: {e}")
-            if attempt == 0:
-                _time.sleep(1)
-                continue
-            return f"❌ Lỗi: {str(e)[:100]}"
-
-    return "⏳ Không thể kết nối OpenAI. Vui lòng thử lại sau."
+    except Exception as e:
+        print(f"🔴 Lỗi Gemini API: {e}") # Thêm dòng này để debug
+        err = str(e).lower()
+        if "quota" in err or "429" in err or "resource" in err:
+            return "⚠️ Gemini API đang bận. Vui lòng thử lại sau 10 giây."
+        if "api_key" in err or "invalid" in err:
+            return "❌ GEMINI_API_KEY không hợp lệ. Kiểm tra lại."
+        logger.error(f"Gemini error: {e}")
+        return f"❌ Lỗi kết nối Gemini: {str(e)[:100]}"
 
 
 # ── DỮ LIỆU SCREENER CHO CHATBOT (cached, rebuild mỗi 5 phút) ────────────────
@@ -604,35 +621,34 @@ def update_stock_context_bar(selected_rows):
     })
 
 
-# ── CALLBACK 1: Quick button → ghi vào store (KHÔNG gọi API) ─────────────────
-@app.callback(
-    Output("chat-pending-msg-store", "data"),
-    Input({"type": "chat-quick-btn", "index": ALL}, "n_clicks"),
-    State("chat-quick-prompts-store", "data"),
-    prevent_initial_call=True,
-)
-def stage_quick_message(quick_clicks, quick_prompts_list):
-    """Chỉ ghi message vào store — KHÔNG gọi API."""
-    ctx = callback_context
-    if not ctx.triggered or not any(c for c in (quick_clicks or []) if c):
-        return no_update
+# # ── CALLBACK 1: Quick button → ghi vào store (KHÔNG gọi API) ─────────────────
+# @app.callback(
+#     Output("chat-pending-msg-store", "data"),
+#     Input({"type": "chat-quick-btn", "index": ALL}, "n_clicks"),
+#     State("chat-quick-prompts-store", "data"),
+#     prevent_initial_call=True,
+# )
+# def stage_quick_message(quick_clicks, quick_prompts_list):
+#     """Chỉ ghi message vào store — KHÔNG gọi API."""
+#     ctx = callback_context
+#     if not ctx.triggered or not any(c for c in (quick_clicks or []) if c):
+#         return no_update
 
-    trigger = ctx.triggered[0]["prop_id"]
-    if "chat-quick-btn" not in trigger:
-        return no_update
+#     trigger = ctx.triggered[0]["prop_id"]
+#     if "chat-quick-btn" not in trigger:
+#         return no_update
 
-    try:
-        idx = json.loads(trigger.split(".")[0])["index"]
-        if 0 <= idx < len(quick_prompts_list or []):
-            return {
-                "msg": quick_prompts_list[idx],
-                "ts":  datetime.now().isoformat(),
-            }
-    except Exception:
-        pass
+#     try:
+#         idx = json.loads(trigger.split(".")[0])["index"]
+#         if 0 <= idx < len(quick_prompts_list or []):
+#             return {
+#                 "msg": quick_prompts_list[idx],
+#                 "ts":  datetime.now().isoformat(),
+#             }
+#     except Exception:
+#         pass
 
-    return no_update
-
+#     return no_update
 
 # ── CALLBACK 2: Xử lý chat chính — gọi OpenAI ────────────────────────────────
 @app.callback(
@@ -642,15 +658,16 @@ def stage_quick_message(quick_clicks, quick_prompts_list):
     Output("chat-typing-indicator", "children"),
     Input("chat-send-btn",          "n_clicks"),
     Input("chat-input",             "n_submit"),
-    Input("chat-pending-msg-store", "data"),
     Input("chat-clear-btn",         "n_clicks"),
+    Input({"type": "chat-quick-btn", "index": ALL}, "n_clicks"), # THÊM VÀO ĐÂY
     State("chat-input",             "value"),
     State("chat-history-store",     "data"),
     State("screener-table",         "selectedRows"),
+    State("chat-quick-prompts-store", "data"), # THÊM VÀO ĐÂY ĐỂ LẤY TEXT
     prevent_initial_call=True,
 )
-def handle_chat(n_send, n_enter, pending_msg, n_clear, user_input,
-                history, selected_rows):
+def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
+                history, selected_rows, quick_prompts_list):
     ctx = callback_context
     if not ctx.triggered:
         return no_update, no_update, no_update, no_update
@@ -661,36 +678,34 @@ def handle_chat(n_send, n_enter, pending_msg, n_clear, user_input,
     # ── Xóa lịch sử ──
     if "chat-clear-btn" in trigger:
         welcome = html.Div([
-            html.Div("V", style={
-                "width": "32px", "height": "32px", "borderRadius": "50%",
-                "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                "display": "flex", "alignItems": "center", "justifyContent": "center",
-                "fontSize": "14px", "fontWeight": "900", "color": "#fff", "flexShrink": "0",
-            }),
-            html.Div("Đã xóa lịch sử 🗑️ Tôi có thể giúp gì cho bạn?", style={
-                "background": "#1e293b", "padding": "10px 14px",
-                "borderRadius": "4px 18px 18px 18px",
-                "fontSize": "13px", "color": "#cbd5e1",
-                "fontFamily": "'Inter', sans-serif",
-                "border": "1px solid rgba(148,163,184,0.1)",
-            }),
-        ], style={"display": "flex", "gap": "10px", "alignItems": "flex-start", "padding": "16px 14px"})
+            # ... (Giữ nguyên phần vẽ UI welcome của bạn) ...
+            html.Div("Đã xóa lịch sử 🗑️ Tôi có thể giúp gì cho bạn?", style={"color": "#cbd5e1"})
+        ])
         return [welcome], [], "", []
 
-    # ── Xác định message ──
     message = ""
-    if "chat-pending-msg-store" in trigger:
-        if isinstance(pending_msg, dict) and pending_msg.get("msg"):
-            # Guard: tránh replay pending message cũ khi user gõ text mới
-            msg_ts = pending_msg.get("ts", "")
-            if msg_ts and msg_ts == getattr(handle_chat, "_last_pending_ts", ""):
-                return no_update, no_update, no_update, no_update
-            handle_chat._last_pending_ts = msg_ts
-            message = pending_msg["msg"]
-    elif "chat-send-btn" in trigger or "chat-input" in trigger:
+
+    # ── Xử lý khi nhấn nút gửi hoặc Enter ──
+    if "chat-send-btn" in trigger or "chat-input" in trigger:
         if user_input and user_input.strip():
             message = user_input.strip()
 
+    # ── Xử lý khi nhấn Quick Prompt ──
+    elif "chat-quick-btn" in trigger:
+        # Kiểm tra xem có click thật sự không, tránh auto-trigger lúc mount
+        if not any(c for c in (quick_clicks or []) if c):
+            return no_update, no_update, no_update, no_update
+            
+        try:
+            # Lấy index của nút vừa nhấn
+            idx = json.loads(trigger.split(".")[0])["index"]
+            if 0 <= idx < len(quick_prompts_list or []):
+                message = quick_prompts_list[idx]
+        except Exception as e:
+            logger.error(f"Lỗi đọc Quick Prompt: {e}")
+            return no_update, no_update, no_update, no_update
+
+    # Nếu không có tin nhắn hợp lệ thì không làm gì cả
     if not message:
         return no_update, no_update, no_update, no_update
 
@@ -707,7 +722,7 @@ def handle_chat(n_send, n_enter, pending_msg, n_clear, user_input,
         {"role": m["role"], "parts": m["parts"]}
         for m in history if m["role"] in ("user", "model")
     ]
-    ai_text = _call_openai(api_msgs, stock_context, screener_ctx)
+    ai_text = _call_gemini(history[:-1], stock_context, screener_ctx)
 
     # ── Thêm AI response ──
     history.append({"role": "model", "parts": [{"text": ai_text}], "time": datetime.now().strftime("%H:%M")})

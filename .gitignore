@@ -5,3 +5,8 @@ actions-runner/
 *copy*
 data/raw/
 .env
+.vscode/
+.idea/
+myenv/
+venv/
+env/

@@ -92,7 +92,7 @@ def _create_login_modal():
                 html.A(
                     [html.I(className="fas fa-external-link-alt",
                              style={"marginRight": "6px", "fontSize": "11px"}),
-                     "Mở tài khoản Vietcap miễn phí"],
+                     "Mở tài khoản Vietcap ngay!"],
                     href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi&utm_source=vss",
                     target="_blank",
                     className="login-open-account-link",
