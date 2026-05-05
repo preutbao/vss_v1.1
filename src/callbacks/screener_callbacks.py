@@ -3638,13 +3638,26 @@ def auto_update_dropdowns(_):
 
 @app.callback(
     Output("data-cutoff-label", "children"),
-    Input("screener-table", "id"),   # trigger 1 lần khi DOM sẵn sàng
+    Input("screener-table", "rowData"),
     prevent_initial_call=False,
 )
-def update_cutoff_label(_):
+def update_cutoff_label(row_data):
     try:
         from src.backend.data_loader import get_data_cutoff_date
         d = get_data_cutoff_date()
-        return f"(Cập nhật {d})" if d else ""
+        if d:
+            return f"(Cập nhật {d})"
+        # Fallback: đọc thẳng từ parquet nếu global var chưa set
+        import os, pandas as pd
+        parquet = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "data", "processed", "market_prices.parquet"
+        )
+        if os.path.exists(parquet):
+            df_tmp = pd.read_parquet(parquet, columns=["Date"])
+            max_date = pd.to_datetime(df_tmp["Date"]).max()
+            if pd.notna(max_date):
+                return f"(Cập nhật {max_date.strftime('%d/%m/%Y')})"
+        return ""
     except Exception:
         return ""
