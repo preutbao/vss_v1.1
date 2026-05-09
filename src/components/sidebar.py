@@ -663,6 +663,24 @@ layout = html.Div(
                                 "fontWeight": "600",
                             },
                         ),
+                        dbc.Button(
+                            id="btn-investor-profile",
+                            children=[
+                                html.I(className="fas fa-user-circle",
+                                       style={"marginRight": "5px", "color": "#00a651"}),
+                                html.Span("Hồ sơ NĐT", id="profile-btn-label"),
+                            ],
+                            n_clicks=0,
+                            size="sm",
+                            color="primary",
+                            outline=True,
+                            style={
+                                "borderRadius": "20px", "fontSize": "11px",
+                                "padding": "4px 12px", "whiteSpace": "nowrap",
+                                "fontWeight": "600",
+                                "borderColor": "#00a651", "color": "#00a651",
+                            },
+                        ),
                         dcc.Dropdown(
                             id="filter-exchange",
                             options=[
@@ -904,6 +922,17 @@ layout = html.Div(
         dcc.Store(id='filter-gtgd-1m', data=_get_r(_DR, 'filter-gtgd-1m', [0, 500000000000])),
 
         dcc.Store(id='active-filters-store', data={}),
+        # Investor profile store — lưu vĩnh viễn trong localStorage
+        dcc.Store(id='investor-profile-store', storage_type='local', data={
+            "level":    "F1",
+            "capital":  "500m-1b",
+            "horizon":  "3m-1y",
+            "risk":     3,
+            "strategy": ["defensive", "growth"],
+            "stop_loss": 7,
+            "position_size": 20,
+        }),
+        dcc.Store(id='profile-setup-done', storage_type='local', data=False),
         dcc.Store(id='filter-unsaved-flag', data=None),
         dcc.Store(id='filter-year-store', data='all'),
         dcc.Store(id='chart-refresh-store', data=0),

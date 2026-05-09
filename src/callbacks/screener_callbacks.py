@@ -318,6 +318,42 @@ def _add_forward_pe(df):
     except Exception:
         pass
     return df
+def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
+    risk       = profile.get("risk", 3)
+    strategies = profile.get("strategy", [])
+    score      = pd.Series(0, index=df.index)
+
+    if "ROE (%)" in df.columns:
+        roe    = pd.to_numeric(df["ROE (%)"], errors="coerce").fillna(0)
+        score += (roe >= 15).astype(int) * 2
+        score -= (roe < 0).astype(int) * 3
+
+    if "D/E" in df.columns:
+        de     = pd.to_numeric(df["D/E"], errors="coerce").fillna(999)
+        score += (de <= 1.5).astype(int)
+        score -= (de > 3).astype(int) * 2
+
+    if "VGM Score" in df.columns:
+        score += df["VGM Score"].map(
+            {"A": 3, "B": 2, "C": 1, "D": 0, "F": -1}
+        ).fillna(0)
+
+    if risk <= 2 and "RSI_14" in df.columns:
+        rsi    = pd.to_numeric(df["RSI_14"], errors="coerce").fillna(50)
+        score -= (rsi > 70).astype(int)
+
+    if "trading" in strategies and "Perf_1M" in df.columns:
+        p1m    = pd.to_numeric(df["Perf_1M"], errors="coerce").fillna(0)
+        score += (p1m > 0).astype(int)
+
+    df["_profile_match"] = pd.cut(
+        score,
+        bins=[-999, 1, 4, 999],
+        labels=["✗", "✓", "✓✓"]
+    ).astype(str)
+    df.loc[df["_profile_match"] == "nan", "_profile_match"] = "–"
+    return df
+
 
 
 # ============================================================================
@@ -339,6 +375,8 @@ def _add_forward_pe(df):
         Input("filter-exchange",             "value"),   # ← lọc theo sàn
         Input("filter-year-store",          "data"),   # ← lọc theo năm
         Input("trading-mode-store", "data"),   # ← thêm sau filter-year-store
+        Input("investor-profile-store", "data"),
+
     ],
     [
         # ── STATE: đọc giá trị hiện tại của từng store khi callback chạy ──
@@ -422,7 +460,7 @@ def _add_forward_pe(df):
 )
 def update_screener_table(
         btn_reset, search_text, current_strategy, selected_sectors, active_filters, selected_subs,
-        selected_exchange, filter_year, trading_mode,
+        selected_exchange, filter_year, trading_mode, investor_profile,
         # Tổng quan (State)
         price_range, volume_range, market_cap_range, eps_range, perf_1w_range, perf_1m_range,
         # Định giá
@@ -508,6 +546,32 @@ def update_screener_table(
         df_filtered = df.copy()
 
         # ── HARD FILTER theo chế độ đầu tư ──────────────────────────────────────────
+        # ── HARD FILTER theo hồ sơ nhà đầu tư (ưu tiên cao hơn mode mặc định) ──────
+        if investor_profile and investor_profile.get("auto_filters"):
+            af = investor_profile["auto_filters"]
+            min_vol   = af.get("min_vol",   30_000)
+            min_cap   = af.get("min_cap",   200_000_000_000)
+            min_price = af.get("min_price", 3_000)
+
+            if "Avg_Vol_20D" in df_filtered.columns:
+                df_filtered = df_filtered[
+                    pd.to_numeric(df_filtered["Avg_Vol_20D"],
+                                errors="coerce").fillna(0) >= min_vol
+                ]
+            if "Market Cap" in df_filtered.columns:
+                df_filtered = df_filtered[
+                    pd.to_numeric(df_filtered["Market Cap"],
+                                errors="coerce").fillna(0) >= min_cap
+                ]
+            if "Price Close" in df_filtered.columns:
+                df_filtered = df_filtered[
+                    pd.to_numeric(df_filtered["Price Close"],
+                                errors="coerce").fillna(0) >= min_price
+                ]
+
+            logger.info(f"[Profile Filter] Vốn={investor_profile.get('capital')} "
+                        f"→ vol≥{min_vol:,}, cap≥{min_cap/1e9:.0f}tỷ, "
+                        f"price≥{min_price:,} → còn {len(df_filtered)} mã")
         if trading_mode == "trading":
             # === CHẾ ĐỘ LƯỚT SÓNG T+ ===
             # Mục tiêu: Cổ phiếu có thanh khoản đủ để vào/ra nhanh, có momentum
@@ -801,6 +865,8 @@ def update_screener_table(
         filtered_count = len(df_filtered)
         # Tính Forward P/E và build columnDefs trong cùng 1 lần → AG Grid nhận 1 batch update
         df_filtered = _add_forward_pe(df_filtered)
+        if investor_profile and not df_filtered.empty:
+            df_filtered = _add_profile_match_col(df_filtered, investor_profile)
         col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
         return (
             df_filtered.to_dict('records'),

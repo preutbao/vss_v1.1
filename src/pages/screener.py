@@ -969,6 +969,7 @@ layout = html.Div([
     portfolio_modal,
     alert_modal,
 
+
     # ── Hint Modal — gợi ý double-click ──────────────────────────────────
     dbc.Modal([
         dbc.ModalBody([

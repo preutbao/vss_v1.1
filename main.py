@@ -1,4 +1,4 @@
-# main.py — VSS Smart Screener v1.1
+# main.py — VSS Smart Screener v1.1 (updated: IPS onboarding page)
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point cho cả hai môi trường:
 #   Local dev  :  python main.py
@@ -10,7 +10,7 @@ import sys
 import os
 import logging
 import dash_bootstrap_components as dbc
-from dash import dcc
+from dash import dcc, Input, Output, no_update
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,7 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BƯỚC 0: KIỂM TRA & TỰ ĐỘNG CHUYỂN ĐỔI PARQUET NẾU
+# BƯỚC 0: KIỂM TRA & TỰ ĐỘNG CHUYỂN ĐỔI PARQUET NẾU CẦN
 # ─────────────────────────────────────────────────────────────────────────────
 
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
@@ -39,7 +39,6 @@ _REQUIRED_PARQUETS = {
 
 
 def _check_parquets():
-    """Trả về danh sách tên file Parquet còn thiếu."""
     return [
         fname for fname in _REQUIRED_PARQUETS
         if not os.path.exists(os.path.join(PROCESSED_DIR, fname))
@@ -47,10 +46,6 @@ def _check_parquets():
 
 
 def _ensure_parquets():
-    """
-    Kiểm tra 4 file Parquet bắt buộc. Nếu thiếu bất kỳ file nào,
-    tự động chạy convert_to_parquet.py để chuyển đổi từ raw data.
-    """
     missing = _check_parquets()
     if not missing:
         logger.info("✅ Đủ 4 file Parquet — bỏ qua bước chuyển đổi.")
@@ -61,7 +56,6 @@ def _ensure_parquets():
     if not os.path.exists(RAW_DIR) or not os.listdir(RAW_DIR):
         logger.error(
             "❌ Thư mục data/raw/ rỗng hoặc không tồn tại. "
-            "Không thể chạy convert_to_parquet.py. "
             "Hãy upload dữ liệu raw trước khi deploy."
         )
         return
@@ -74,7 +68,6 @@ def _ensure_parquets():
     logger.info("=" * 60)
     logger.info("🔄 Đang chạy convert_to_parquet.py ...")
     logger.info(f"   Thiếu: {[_REQUIRED_PARQUETS[f] for f in missing]}")
-    logger.info("   (Quá trình này có thể mất 5-15 phút lần đầu)")
     logger.info("=" * 60)
 
     os.makedirs(PROCESSED_DIR, exist_ok=True)
@@ -83,31 +76,30 @@ def _ensure_parquets():
     result = subprocess.run(
         [sys.executable, convert_script],
         cwd=BASE_DIR,
-        capture_output=False,   # in thẳng ra stdout/stderr để thấy progress
+        capture_output=False,
         text=True,
     )
 
     if result.returncode != 0:
-        logger.error(f"❌ convert_to_parquet.py kết thúc với lỗi (code {result.returncode})")
+        logger.error(f"❌ convert_to_parquet.py lỗi (code {result.returncode})")
     else:
         still_missing = _check_parquets()
         if still_missing:
-            logger.warning(f"⚠️  Vẫn còn thiếu sau khi convert: {still_missing}")
+            logger.warning(f"⚠️  Vẫn còn thiếu: {still_missing}")
         else:
-            logger.info("✅ Chuyển đổi hoàn tất — đủ 4 file Parquet.")
+            logger.info("✅ Chuyển đổi hoàn tất.")
 
 
-# Chạy kiểm tra ngay khi module được import (trước cả Dash app)
 _ensure_parquets()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# IMPORT APP — phải sau _ensure_parquets() để data sẵn sàng
+# IMPORT APP
 # ─────────────────────────────────────────────────────────────────────────────
 from src.app_instance import app
 
 # ─────────────────────────────────────────────────────────────────────────────
-# IMPORT TẤT CẢ CALLBACKS (thứ tự quan trọng)
+# IMPORT CALLBACKS
 # ─────────────────────────────────────────────────────────────────────────────
 import src.callbacks.auth_callbacks
 import src.callbacks.column_callbacks
@@ -130,35 +122,90 @@ import src.callbacks.compare_callbacks
 import src.callbacks.portfolio_callbacks
 import src.callbacks.alert_callbacks
 import src.callbacks.score_breakdown_callbacks
+import src.callbacks.investor_profile_callbacks
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BUILD LAYOUT (Đã cập nhật giao diện mới)
+# BUILD LAYOUT — hai section: onboarding ↔ main app
 # ─────────────────────────────────────────────────────────────────────────────
 from dash import html, dcc
-from src.pages import screener
+from src.pages import screener, onboarding
 from src.components.header import create_header
 from src.callbacks.chatbot_callbacks import create_chatbot_layout
 
 app.layout = html.Div(
     style={"margin": "0", "padding": "0", "overflowX": "hidden"},
     children=[
-        # 1. KHAI BÁO CÁC TÚI CHỨA DỮ LIỆU TOÀN CỤC Ở ĐÂY
-        dcc.Store(id="trading-mode-store", storage_type="session", data="investing"), # Luôn có data mặc định
-        dcc.Store(id="tour-selected-mode", storage_type="memory", data="investing"),
-        dcc.Store(id="hint-shown-store", storage_type="memory", data=False), # ← Store để nhớ đã hiển thị hint chưa (chỉ trong session hiện tại), sửa lại local nếu muốn để lên HF
-        dcc.Store(id="tour-step-store", data=1),
-        
-        # 2. Header cố định
-        create_header(),
+        # ── 1. GLOBAL STORES ──────────────────────────────────────────────
+        dcc.Store(id="trading-mode-store",   storage_type="session",  data="investing"),
+        dcc.Store(id="tour-selected-mode",   storage_type="memory",   data="investing"),
+        dcc.Store(id="hint-shown-store",     storage_type="memory",   data=False),
+        dcc.Store(id="tour-step-store",      data=1),
 
-        # 3. Screener Section
+        # Hồ sơ nhà đầu tư — lưu localStorage để persist qua session
+        dcc.Store(id="investor-profile-store", storage_type="local",  data=None),
+        dcc.Store(id="profile-setup-done",     storage_type="local",  data=False),
+
+        # ── 2. ONBOARDING PAGE ────────────────────────────────────────────
+        # Hiển thị khi profile-setup-done = False (lần đầu vào / chưa setup)
         html.Div(
-            id="screener-section",
-            children=[screener.layout],
+            id="onboarding-page",
+            children=[onboarding.layout],
+            # style mặc định: hiện — callback sẽ ẩn đi sau khi setup xong
         ),
-        create_chatbot_layout(),   # ← THÊM DÒNG NÀY vào cuối danh sách children
+
+        # ── 3. MAIN APP ───────────────────────────────────────────────────
+        # Ẩn cho đến khi profile-setup-done = True
+        html.Div(
+            id="main-app-page",
+            style={"display": "none"},
+            children=[
+                create_header(),
+                html.Div(
+                    id="screener-section",
+                    children=[screener.layout],
+                ),
+                create_chatbot_layout(),
+            ],
+        ),
     ],
 )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CALLBACK: Chuyển trang dựa trên profile-setup-done
+# ─────────────────────────────────────────────────────────────────────────────
+@app.callback(
+    Output("onboarding-page", "style"),
+    Output("main-app-page",   "style"),
+    Input("profile-setup-done", "data"),
+)
+def toggle_pages(setup_done):
+    """
+    - setup_done = False (hoặc None) → hiển thị onboarding, ẩn main app
+    - setup_done = True              → ẩn onboarding, hiển thị main app
+    """
+    if setup_done:
+        return {"display": "none"}, {"display": "block"}
+    return {"display": "block"}, {"display": "none"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CALLBACK: Nút "Hồ sơ" trong header → quay về onboarding để chỉnh sửa
+# ─────────────────────────────────────────────────────────────────────────────
+@app.callback(
+    Output("profile-setup-done", "data", allow_duplicate=True),
+    Input("btn-investor-profile", "n_clicks"),
+    prevent_initial_call=True,
+)
+def reopen_onboarding(n_clicks):
+    """
+    Khi user click nút "Hồ sơ" ở header → reset profile-setup-done về False
+    để toggle_pages() hiển thị lại trang onboarding.
+    """
+    if n_clicks:
+        return False
+    return no_update
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PRE-LOAD DATA
@@ -213,27 +260,20 @@ def preload_data():
 preload_data()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# WSGI entrypoint: gunicorn main:server
+# WSGI entrypoint
 # ─────────────────────────────────────────────────────────────────────────────
 server = app.server
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# LOCAL DEV & PRODUCTION MODE: python main.py
-# ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port  = int(os.environ.get("PORT", 8050))
-    
-    # BƯỚC 1: Gán cứng biến debug thành False 
     debug = False
 
-    logger.info(f"🌐 Trạng thái máy chủ: http://127.0.0.1:{port}  |  debug={debug}")
+    logger.info(f"🌐 Server: http://127.0.0.1:{port}  |  debug={debug}")
 
     app.run(
         debug=debug,
         host="0.0.0.0",
         port=port,
-        # BƯỚC 2: Tắt sạch mọi công cụ hỗ trợ của Dash để giải phóng tài nguyên
         dev_tools_ui=False,
-        dev_tools_hot_reload=False, 
+        dev_tools_hot_reload=False,
     )

@@ -202,6 +202,25 @@ FIXED_COLS = [
         "cellStyle": _ssi_pct_style(),
     },
     {
+        "field": "_profile_match",
+        "headerName": "HỒ SƠ",
+        "headerTooltip": "Mức độ phù hợp với hồ sơ nhà đầu tư cá nhân",
+        "width": 80,
+        "sortable": True,
+        "cellRenderer": "agAnimateShowChangeCellRenderer",
+        "cellStyle": {
+            "function": """
+                const v = params.value;
+                if (!v) return {'color':'#484f58','textAlign':'center'};
+                if (v === '✓✓') return {'color':'#10b981','fontWeight':'700',
+                                        'textAlign':'center','fontSize':'14px'};
+                if (v === '✓')  return {'color':'#f59e0b','fontWeight':'600',
+                                        'textAlign':'center'};
+                return {'color':'#ef4444','textAlign':'center'};
+            """
+        },
+    },
+    {
         "field": "Perf_1W",
         "headerName": "%1T",
         "type": "rightAligned",
