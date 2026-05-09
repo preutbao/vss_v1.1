@@ -723,19 +723,44 @@ layout = html.Div([
                     }),
                     html.Div([
                         html.B("VIETCAP SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
-                            html.Span(
-                                id="mode-indicator-badge",
-                                children="📊 Tích sản",
+                            
+
+                            # Nút Tích sản (giữ nguyên của bạn)
+                            dbc.Button(
+                                id="mode-toggle-btn",
+                                children=[
+                                    html.I(className="fas fa-globe", style={"marginRight": "5px"}),
+                                    html.Span("Toàn TT", id="mode-toggle-label"),
+                                ],
+                                n_clicks=0,
+                                size="sm",
+                                color="secondary",
+                                outline=True,
                                 style={
-                                    "fontSize": "10px", "fontWeight": "700",
-                                    "padding": "2px 10px", "borderRadius": "10px",
-                                    "backgroundColor": "rgba(16,185,129,0.15)",
-                                    "color": "#10b981",
-                                    "border": "1px solid rgba(16,185,129,0.35)",
-                                    "marginLeft": "10px",
-                                    "verticalAlign": "middle",
-                                    "letterSpacing": "0.5px",
-                                }
+                                    "borderRadius": "20px", "fontSize": "11px",
+                                    "padding": "4px 12px", "whiteSpace": "nowrap",
+                                    "fontWeight": "600", "marginLeft": "10px", # THÊM DÒNG NÀY ĐỂ CÁCH TIÊU ĐỀ 30PX
+                                },
+                            ),
+
+                            # NÂNG CẤP TOOLTIP
+                            dbc.Tooltip(
+                                children=[
+                                    html.Div([
+                                        html.I(className="fas fa-bolt", style={"marginRight": "6px", "color": "#00f0ff"}),
+                                        html.B("Chế độ Tích sản", style={"color": "#00f0ff", "fontSize": "14px", "letterSpacing": "0.5px"}),
+                                    ], style={"marginBottom": "6px", "borderBottom": "1px solid rgba(0, 240, 255, 0.2)", "paddingBottom": "4px"}),
+                                    
+                                    html.Div(
+                                        "Bật chế độ này để lọc và hiển thị các chỉ số định giá phù hợp cho chiến lược gom cổ phiếu dài hạn.", 
+                                        style={"color": "#e2e8f0", "lineHeight": "1.5"}
+                                    ),
+                                ],
+                                id="mode-toggle-tooltip",
+                                target="mode-toggle-btn",
+                                placement="bottom",
+                                className="cyber-tooltip", # Gọi class CSS tùy chỉnh
+                                delay={"show": 200, "hide": 50}, # Thêm độ trễ nhẹ cho mượt mà
                             ),
                         html.Span(id="data-cutoff-label", style={
                             "fontSize": "11px", "color": "#5a8ab0",
@@ -763,135 +788,152 @@ layout = html.Div([
                 ], style={"display": "flex", "alignItems": "center"}),
             ], style={"flex": "1"}),
 
-            # Action buttons
+            # === BẮT ĐẦU THAY THẾ KHU VỰC ACTION BUTTONS ===
             html.Div([
-
-                # Export CSV
-                dbc.Button(
-                    [html.I(className="fas fa-download", style={"marginRight": "5px"}),
-                     html.Span("CSV", id="label-export-btn")],
-                    id="btn-export-csv",
-                    color="success", outline=True, size="sm",
-                    style={"borderRadius": "6px", "fontSize": "11px",
-                           "padding": "4px 10px", "whiteSpace": "nowrap"},
-                ),
-                # Export Excel
-                dbc.Button(
-                    [html.I(className="fas fa-file-excel", style={"marginRight": "5px"}),
-                     "Excel"],
-                    id="btn-export-excel",
-                    color="success", outline=True, size="sm",
-                    style={"borderRadius": "6px", "fontSize": "11px",
-                           "padding": "4px 10px", "whiteSpace": "nowrap",
-                           "borderColor": "#1D6F42", "color": "#1D6F42"},
-                ),
-                # Watchlist
-                dbc.Button(
-                    [html.I(className="fas fa-eye", style={"marginRight": "5px"}),
-                     html.Span("Watchlist", id="label-watchlist-btn")],
-                    id="btn-watchlist",
-                    color="warning", outline=True, size="sm",
-                    style={"borderRadius": "6px", "fontSize": "11px",
-                           "padding": "4px 10px", "whiteSpace": "nowrap"},
-                ),
-                # Heatmap
-                dbc.Button([
-                    html.I(className="fas fa-th-large", style={"marginRight": "5px"}),
-                    "Heatmap",
-                ], id="btn-heatmap", color="secondary", outline=True, size="sm",
-                    style={"borderRadius": "6px", "fontSize": "11px"}),
-
-                # So sánh — PREMIUM
+                # 1. Container chứa các nút (Mặc định được ẩn đi bằng display: none)
                 html.Div(
-                    id="pw-compare",
-                    className="premium-wrapper premium-locked",
+                    id="action-buttons-container",
+                    style={"display": "none", "gap": "8px", "alignItems": "center"},
                     children=[
-                        html.Div(
-                            dbc.Button([
-                                html.I(className="fas fa-code-compare",
-                                       style={"marginRight": "5px"}),
-                                "So sánh",
-                            ], id="btn-compare", color="info", outline=True, size="sm",
-                                style={"borderRadius": "6px", "fontSize": "11px"}),
-                            className="premium-content",
+                        # Export CSV
+                        dbc.Button(
+                            [html.I(className="fas fa-download", style={"marginRight": "5px"}),
+                             html.Span("CSV", id="label-export-btn")],
+                            id="btn-export-csv",
+                            color="success", outline=True, size="sm",
+                            style={"borderRadius": "6px", "fontSize": "11px",
+                                   "padding": "4px 10px", "whiteSpace": "nowrap"},
                         ),
+                        # Export Excel
+                        dbc.Button(
+                            [html.I(className="fas fa-file-excel", style={"marginRight": "5px"}),
+                             "Excel"],
+                            id="btn-export-excel",
+                            color="success", outline=True, size="sm",
+                            style={"borderRadius": "6px", "fontSize": "11px",
+                                   "padding": "4px 10px", "whiteSpace": "nowrap",
+                                   "borderColor": "#1D6F42", "color": "#1D6F42"},
+                        ),
+                        # Watchlist
+                        dbc.Button(
+                            [html.I(className="fas fa-eye", style={"marginRight": "5px"}),
+                             html.Span("Watchlist", id="label-watchlist-btn")],
+                            id="btn-watchlist",
+                            color="warning", outline=True, size="sm",
+                            style={"borderRadius": "6px", "fontSize": "11px",
+                                   "padding": "4px 10px", "whiteSpace": "nowrap"},
+                        ),
+                        # Heatmap
+                        dbc.Button([
+                            html.I(className="fas fa-th-large", style={"marginRight": "5px"}),
+                            "Heatmap",
+                        ], id="btn-heatmap", color="secondary", outline=True, size="sm",
+                            style={"borderRadius": "6px", "fontSize": "11px"}),
+
+                        # So sánh — PREMIUM
                         html.Div(
-                            id={"type": "premium-overlay-btn", "section": "compare"},
-                            n_clicks=0,
-                            className="premium-overlay",
+                            id="pw-compare",
+                            className="premium-wrapper premium-locked",
                             children=[
-                                html.I(className="fas fa-lock",
-                                       style={"fontSize": "10px", "color": "#00a651",
-                                              "marginBottom": "2px"}),
-                                html.Span("VIP",
-                                          style={"fontSize": "9px", "fontWeight": "700",
-                                                 "color": "#6e7681"}),
+                                html.Div(
+                                    dbc.Button([
+                                        html.I(className="fas fa-code-compare",
+                                               style={"marginRight": "5px"}),
+                                        "So sánh",
+                                    ], id="btn-compare", color="info", outline=True, size="sm",
+                                        style={"borderRadius": "6px", "fontSize": "11px"}),
+                                    className="premium-content",
+                                ),
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "compare"},
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(className="fas fa-lock",
+                                               style={"fontSize": "10px", "color": "#00a651",
+                                                      "marginBottom": "2px"}),
+                                        html.Span("VIP",
+                                                  style={"fontSize": "9px", "fontWeight": "700",
+                                                         "color": "#6e7681"}),
+                                    ],
+                                ),
                             ],
                         ),
-                    ],
-                ),
 
-                # Portfolio — PREMIUM
-                html.Div(
-                    id="pw-portfolio",
-                    className="premium-wrapper premium-locked",
-                    children=[
+                        # Portfolio — PREMIUM
                         html.Div(
-                            dbc.Button([
-                                html.I(className="fas fa-briefcase",
-                                       style={"marginRight": "5px"}),
-                                "Danh mục",
-                            ], id="btn-portfolio", color="warning", outline=True, size="sm",
-                                style={"borderRadius": "6px", "fontSize": "11px"}),
-                            className="premium-content",
-                        ),
-                        html.Div(
-                            id={"type": "premium-overlay-btn", "section": "portfolio"},
-                            n_clicks=0,
-                            className="premium-overlay",
+                            id="pw-portfolio",
+                            className="premium-wrapper premium-locked",
                             children=[
-                                html.I(className="fas fa-lock",
-                                       style={"fontSize": "10px", "color": "#00a651",
-                                              "marginBottom": "2px"}),
-                                html.Span("VIP",
-                                          style={"fontSize": "9px", "fontWeight": "700",
-                                                 "color": "#6e7681"}),
+                                html.Div(
+                                    dbc.Button([
+                                        html.I(className="fas fa-briefcase",
+                                               style={"marginRight": "5px"}),
+                                        "Danh mục",
+                                    ], id="btn-portfolio", color="warning", outline=True, size="sm",
+                                        style={"borderRadius": "6px", "fontSize": "11px"}),
+                                    className="premium-content",
+                                ),
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "portfolio"},
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(className="fas fa-lock",
+                                               style={"fontSize": "10px", "color": "#00a651",
+                                                      "marginBottom": "2px"}),
+                                        html.Span("VIP",
+                                                  style={"fontSize": "9px", "fontWeight": "700",
+                                                         "color": "#6e7681"}),
+                                    ],
+                                ),
                             ],
                         ),
-                    ],
-                ),
 
-                # Alerts — PREMIUM
-                html.Div(
-                    id="pw-alerts",
-                    className="premium-wrapper premium-locked",
-                    children=[
-                        html.Div([
-                            dbc.Button([
-                                html.I(className="fas fa-bell",
-                                       style={"marginRight": "5px"}),
-                                "Cảnh báo",
-                            ], id="btn-alerts", color="danger", outline=True, size="sm",
-                                style={"borderRadius": "6px", "fontSize": "11px"}),
-                            html.Span("0", id="alert-badge", style={"display": "none"}),
-                        ], style={"position": "relative"}, className="premium-content"),
+                        # Alerts — PREMIUM
                         html.Div(
-                            id={"type": "premium-overlay-btn", "section": "alerts"},
-                            n_clicks=0,
-                            className="premium-overlay",
+                            id="pw-alerts",
+                            className="premium-wrapper premium-locked",
                             children=[
-                                html.I(className="fas fa-lock",
-                                       style={"fontSize": "10px", "color": "#00a651",
-                                              "marginBottom": "2px"}),
-                                html.Span("VIP",
-                                          style={"fontSize": "9px", "fontWeight": "700",
-                                                 "color": "#6e7681"}),
+                                html.Div([
+                                    dbc.Button([
+                                        html.I(className="fas fa-bell",
+                                               style={"marginRight": "5px"}),
+                                        "Cảnh báo",
+                                    ], id="btn-alerts", color="danger", outline=True, size="sm",
+                                        style={"borderRadius": "6px", "fontSize": "11px"}),
+                                    html.Span("0", id="alert-badge", style={"display": "none"}),
+                                ], style={"position": "relative"}, className="premium-content"),
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "alerts"},
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(className="fas fa-lock",
+                                               style={"fontSize": "10px", "color": "#00a651",
+                                                      "marginBottom": "2px"}),
+                                        html.Span("VIP",
+                                                  style={"fontSize": "9px", "fontWeight": "700",
+                                                         "color": "#6e7681"}),
+                                    ],
+                                ),
                             ],
                         ),
-                    ],
+
+                    ]
                 ),
 
-            ], style={"display": "flex", "gap": "8px", "alignItems": "center"}),
+                # 2. Nút Mở rộng / Thu gọn (Toggle Button)
+                dbc.Button(
+                    html.I(id="toggle-actions-icon", className="fas fa-angles-left"), # Icon mặc định là <<<
+                    id="btn-toggle-actions",
+                    color="secondary", outline=True, size="sm",
+                    style={"borderRadius": "6px", "padding": "4px 8px", "marginLeft": "10px"}
+                )
+
+            ], style={"display": "flex", "alignItems": "center", "justifyContent": "flex-end"}),
+            # === KẾT THÚC THAY THẾ ===
+
         ], style={
             "display": "flex", "alignItems": "center", "justifyContent": "space-between",
             "padding": "12px 0 10px 2px",
@@ -979,6 +1021,7 @@ layout = html.Div([
     compare_modal,
     portfolio_modal,
     alert_modal,
+
 
     # ── Hint Modal — gợi ý double-click ──────────────────────────────────
     dbc.Modal([
@@ -1140,8 +1183,9 @@ html.Div(children=[
     ),
 
 ], id="zalo-bubble-container", style={
+    "display": "none", # <--- Dòng mới thêm vào: Ẩn mặc định khi load trang, MAC DINH LA ẨN ĐI BONG BONG ZALO, CHỈ HIỆN KHI CÓ TIN NHẮN MỚI
     "position": "fixed", "bottom": "96px", "right": "28px",
-    "zIndex": "10000", "display": "flex", "flexDirection": "column",
+    "zIndex": "10000", "flexDirection": "column",
     "alignItems": "center",
 }),
 

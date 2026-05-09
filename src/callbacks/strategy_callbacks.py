@@ -1,10 +1,12 @@
 # src/callbacks/strategy_callbacks.py
-from dash import Input, Output, State, html, no_update
+from dash import Input, Output, State, html, no_update, callback_context
 import pandas as pd
 from src.app_instance import app
 from src.backend.data_loader import get_latest_snapshot, load_financial_data
 from src.backend.quant_engine_strategies import run_strategy, STRATEGY_META
 import logging
+import json
+from dash import ALL
 
 logger = logging.getLogger(__name__)
 
@@ -97,3 +99,74 @@ def sync_result_count_sidebar(strategy_id, current_row_data):
 )
 def reset_strategy_dropdown(n_clicks):
     return None if n_clicks else no_update
+
+from src.components.sidebar import _STRATEGY_LABEL_MAP, _STRATEGY_GROUPS
+
+
+# ── Bấm vào strategy item → cập nhật hidden dropdown + đóng popover ───────
+@app.callback(
+    Output("strategy-preset-dropdown",   "value",    allow_duplicate=True),
+    Output("strategy-accordion-popover", "is_open",  allow_duplicate=True),
+    Output("strategy-display-label",     "children", allow_duplicate=True),
+    Input({"type": "strategy-item", "value": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+def select_strategy_from_accordion(n_clicks_list):
+    ctx = callback_context
+    if not ctx.triggered or not any(n for n in (n_clicks_list or []) if n):
+        return no_update, no_update, no_update
+    try:
+        strat_val   = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])["value"]
+        strat_label = _STRATEGY_LABEL_MAP.get(strat_val, strat_val)
+        return strat_val, False, strat_label
+    except Exception:
+        return no_update, no_update, no_update
+
+
+# ── Toggle từng group accordion ───────────────────────────────────────────
+@app.callback(
+    [Output(f"strategy-grp-collapse-{g['id']}", "is_open") for g in _STRATEGY_GROUPS]
+    + [Output(f"strategy-grp-icon-{g['id']}", "className") for g in _STRATEGY_GROUPS],
+    [Input(f"strategy-grp-hdr-{g['id']}", "n_clicks") for g in _STRATEGY_GROUPS],
+    [State(f"strategy-grp-collapse-{g['id']}", "is_open") for g in _STRATEGY_GROUPS],
+    prevent_initial_call=True,
+)
+def toggle_strategy_group(*args):
+    n = len(_STRATEGY_GROUPS)
+    n_clicks_list = args[:n]
+    states        = args[n:]
+
+    ctx = callback_context
+    if not ctx.triggered:
+        return [no_update] * (n * 2)
+
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    new_opens = list(states)
+    for i, group in enumerate(_STRATEGY_GROUPS):
+        if triggered_id == f"strategy-grp-hdr-{group['id']}":
+            new_opens[i] = not states[i]
+            break
+
+    icons = [
+        "fas fa-minus" if is_open else "fas fa-plus"
+        for is_open in new_opens
+    ]
+    icon_classes = [
+        f"{icon} strategy-grp-icon"
+        for icon in icons
+    ]
+
+    return new_opens + icon_classes
+
+
+# ── Sync display label khi dropdown value thay đổi từ nguồn ngoài ─────────
+@app.callback(
+    Output("strategy-display-label", "children", allow_duplicate=True),
+    Input("strategy-preset-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def sync_strategy_display_label(value):
+    if not value:
+        return "Chọn chiến lược đầu tư..."
+    return _STRATEGY_LABEL_MAP.get(value, value)

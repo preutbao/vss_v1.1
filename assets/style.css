@@ -1946,3 +1946,88 @@ span[style*="f59e0b"] {
 #screener-scroll-anchor {
     scroll-margin-top: 60px;  /* = chiều cao header + padding */
 }
+
+/* Custom Font hiện đại cho toàn hệ thống (nếu bạn chưa có) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+/* --- CYBER TOOLTIP STYLING --- */
+
+/* Tùy chỉnh khối nội dung chính của tooltip */
+.cyber-tooltip .tooltip-inner {
+    background-color: #0b0f19 !important; /* Nền đen sâu (Dark Space) */
+    border: 1px solid #00f0ff !important; /* Viền xanh Cyber Blue */
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3) !important; /* Hiệu ứng phát sáng Glow */
+    border-radius: 8px !important;
+    padding: 12px 14px !important;
+    font-family: 'Inter', sans-serif !important; /* Font chữ hiện đại */
+    text-align: left !important;
+    max-width: 280px !important;
+    opacity: 1 !important; /* Đảm bảo không bị mờ do mặc định của Bootstrap */
+}
+
+/* Tùy chỉnh màu của "mũi tên" trỏ lên nút để đồng bộ với viền */
+.cyber-tooltip[data-popper-placement^="top"] .tooltip-arrow::before {
+    border-bottom-color: #00f0ff !important;
+}
+
+/* Xóa viền đen mặc định của mũi tên ẩn phía sau */
+.cyber-tooltip .tooltip-arrow::after {
+    display: none !important;
+}
+
+/* --- SỬA LỖI POPUP / MODAL BỊ TO --- */
+
+/* Đảm bảo nội dung bên trong Popup kế thừa font chữ 90% */
+.modal-content {
+    font-size: 1rem; 
+    border-radius: 12px; /* Tùy chỉnh bo góc cho hiện đại hơn */
+}
+
+/* Thu nhỏ chiều rộng tối đa của các loại Popup theo tỷ lệ 90% */
+/* Modal mặc định (trước đây 500px -> giờ ~450px) */
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 450px !important;
+    }
+}
+
+/* Modal lớn (lg) (trước đây 800px -> giờ ~720px) */
+@media (min-width: 992px) {
+    .modal-lg, .modal-xl {
+        max-width: 720px !important;
+    }
+}
+
+/* Modal cực lớn (xl) (trước đây 1140px -> giờ ~1020px) */
+@media (min-width: 1200px) {
+    .modal-xl {
+        max-width: 1020px !important;
+    }
+}
+
+/* Tinh chỉnh lại khoảng cách bên trong cho cân đối */
+.modal-header, .modal-body, .modal-footer {
+    padding: 1.25rem !important; 
+}
+
+/* Ép Modal/Popup luôn cố định theo toàn bộ cửa sổ trình duyệt (Viewport) */
+.modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    transform: none !important; /* Xóa bỏ mọi tàn dư transform */
+}
+
+/* Sửa lỗi lệch cho Tooltip và Popover của Popper.js */
+.tooltip, .popover {
+    /* Đảm bảo chúng không bị dính transform của thẻ cha */
+    transform-origin: center !important; 
+    margin: 0 !important;
+}
+
+/* Nếu bạn có dùng Box hướng dẫn (Tour guide / Joyride) */
+.react-joyride__spotlight, .__floater {
+    transform: none !important;
+}
