@@ -1,13 +1,19 @@
-/* zoom_lock.css — Force 90% render scale globally */
-html {
-    zoom: 90%;                /* Chrome, Edge, Safari */
-    -moz-transform: scale(0.9);    /* Firefox fallback */
-    -moz-transform-origin: 0 0;
-}
-/* Prevent text-size-adjust on mobile */
-body {
+/* --- THAY THẾ CHO ZOOM LOCK --- */
+html, body {
+    /* Mặc định là 16px. Chỉnh xuống 14.4px (tương đương 90%) hoặc 14px */
+    font-size: 14.4px; 
+    
+    /* Các cài đặt chống zoom trên mobile giữ nguyên */
     -webkit-text-size-adjust: none;
     -moz-text-size-adjust: none;
     text-size-adjust: none;
-    touch-action: pan-x pan-y;  /* disable pinch-zoom CSS level */
+    touch-action: pan-x pan-y;
+}
+
+/* Nếu bạn có các thẻ div bọc ngoài cùng (container), 
+   hãy giới hạn max-width thay vì zoom */
+.container-fluid {
+    max-width: 100%;
+    padding-left: 2%; /* Tạo không gian thở thay vì ép nhỏ trang */
+    padding-right: 2%;
 }

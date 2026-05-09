@@ -2,3 +2,16 @@
     0%, 100% { opacity: 1; transform: scale(1); }
     50%       { opacity: 0.6; transform: scale(1.2); }
 }
+
+/* Strategy dropdown group headers */
+.ssi-dropdown-custom .Select-option[aria-disabled="true"],
+.ssi-dropdown-custom .VirtualizedSelectOption[aria-disabled="true"] {
+    color: #58a6ff !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+    background-color: #0d1117 !important;
+    cursor: default !important;
+    padding-top: 10px !important;
+    border-top: 1px solid #21262d !important;
+}

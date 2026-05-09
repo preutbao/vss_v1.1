@@ -16,14 +16,13 @@ logger = logging.getLogger(__name__)
 
 # ── CẤU HÌNH GEMINI ──────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL   = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+GEMINI_MODEL   = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 # ── SYSTEM PROMPT VINANCEAI ───────────────────────────────────────────────────
 VINANCE_SYSTEM_PROMPT = """Bạn là VinanceAI – chuyên gia chứng khoán 3 sàn Việt Nam.
 
 ## PHONG CÁCH
 Tiếng Việt, chuyên nghiệp, súc tích (tối đa 250 từ/câu trả lời)
-Dùng emoji: 📊 📈 💰 ⚠️ để phân biệt phần
 Kết thúc phân tích cổ phiếu bằng: ⚠️ Chỉ mang tính tham khảo.
 
 ## 6 CHIẾN LƯỢC SÀNG LỌC
@@ -33,11 +32,7 @@ Kết thúc phân tích cổ phiếu bằng: ⚠️ Chỉ mang tính tham khảo
 4. **Swing Trade**: Breakout vùng tích lũy, Volume>150% MA20, RSI 45-65
 5. **Lướt sóng T+**: Nến đảo chiều hỗ trợ, RSI<35, Volume≥2x TB10 phiên
 6. **Phòng thủ**: VN30, Beta<0.8, ngành điện/nước/thực phẩm/dược
-
-## TÍNH TOÁN
-Khi user cung cấp số liệu: tính position sizing, Risk/Reward, lãi/lỗ sau phí (0.1%/chiều) + thuế (0.1% khi bán).
 """
-
 def _call_gemini(messages: list, stock_context: dict = None, screener_context: str = "") -> str:
     """Gọi Gemini API — đơn giản, không double-retry."""
     if not GEMINI_API_KEY:
@@ -112,7 +107,7 @@ def _call_gemini(messages: list, stock_context: dict = None, screener_context: s
         model = genai.GenerativeModel(
             model_name=GEMINI_MODEL,
             generation_config={
-                "max_output_tokens": 800,
+                "max_output_tokens": 600,
                 "temperature": 0.7,
             }
         )
@@ -191,7 +186,7 @@ def _build_screener_context() -> str:
                 if roe_col:   parts.append(f"ROE={row.get(roe_col,'')}%")
                 if rsi_col:   parts.append(f"RSI={row.get(rsi_col,'')}")
                 rows.append("|".join(parts))
-                if len(rows) >= 8:  # Chỉ lấy top 8 thay vì 15
+                if len(rows) >= 15:  # Chỉ lấy top 15 thay vì 8
                     break
             lines.append("Top15VGM: " + "; ".join(rows))
 
@@ -365,14 +360,14 @@ def create_chatbot_layout():
                         "boxShadow": "0 2px 8px rgba(14,165,233,0.4)", "flexShrink": "0",
                     }),
                     html.Div([
-                        html.Div("VinanceAI", style={
+                        html.Div("VinanceAI - Chuyên gia đầu tư tự động", style={
                             "fontSize": "15px", "fontWeight": "700", "color": "#f1f5f9",
                             "fontFamily": "'Inter', 'Segoe UI', sans-serif",
                             "letterSpacing": "-0.3px",
                         }),
                         html.Div([
                             html.Span(className="vinance-status-dot"),
-                            html.Span("Chuyên gia đầu tư Việt Nam", style={
+                            html.Span("Mọi thông tin chỉ mang tính tham khảo!", style={
                                 "fontSize": "11px", "color": "#64748b",
                                 "fontFamily": "'Inter', sans-serif",
                             }),
@@ -655,22 +650,58 @@ def update_stock_context_bar(selected_rows):
     Output("chat-messages-area",    "children"),
     Output("chat-history-store",    "data"),
     Output("chat-input",            "value"),
-    Output("chat-typing-indicator", "children"),
+    # XOÁ Output("chat-typing-indicator", "children") ở đây, vì 'running' sẽ quản lý nó
+
     Input("chat-send-btn",          "n_clicks"),
     Input("chat-input",             "n_submit"),
     Input("chat-clear-btn",         "n_clicks"),
-    Input({"type": "chat-quick-btn", "index": ALL}, "n_clicks"), # THÊM VÀO ĐÂY
+    Input({"type": "chat-quick-btn", "index": ALL}, "n_clicks"),
     State("chat-input",             "value"),
     State("chat-history-store",     "data"),
     State("screener-table",         "selectedRows"),
-    State("chat-quick-prompts-store", "data"), # THÊM VÀO ĐÂY ĐỂ LẤY TEXT
+    State("chat-quick-prompts-store", "data"),
+    
+    # --- CẤU HÌNH BACKGROUND CALLBACK ---
+    background=True,
+    running=[
+        # 1. Disable nút gửi (để user ko bấm liên tục)
+        (Output("chat-send-btn", "disabled"), True, False),
+        
+        # 2. Disable ô nhập liệu
+        (Output("chat-input", "disabled"), True, False),
+        
+        # 3. Hiện bong bóng "Đang gõ..." trong khi chờ, và xoá đi khi xong
+        (
+            Output("chat-typing-indicator", "children"),
+            html.Div([
+                html.Div("V", style={
+                    "width": "32px", "height": "32px", "borderRadius": "50%",
+                    "background": "linear-gradient(135deg, #475569, #334155)",
+                    "display": "flex", "alignItems": "center", "justifyContent": "center",
+                    "fontSize": "14px", "fontWeight": "900", "color": "#fff",
+                    "flexShrink": "0",
+                }),
+                html.Div(
+                    "VinanceAI đang suy nghĩ...", 
+                    style={
+                        "background": "#1e293b", "padding": "10px 14px",
+                        "borderRadius": "4px 18px 18px 18px", "fontSize": "13px",
+                        "color": "#94a3b8", "fontStyle": "italic"
+                    }
+                )
+            ], style={"display": "flex", "gap": "10px", "alignItems": "flex-start", "padding": "0 14px 12px 14px", "animation": "pulse 2s infinite"}),
+            [] # Trả về list rỗng (ẩn đi) khi callback hoàn thành
+        )
+    ],
     prevent_initial_call=True,
 )
 def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
                 history, selected_rows, quick_prompts_list):
+    
+    # --- (GIỮ NGUYÊN TOÀN BỘ LOGIC BÊN TRONG CỦA BẠN) ---
     ctx = callback_context
     if not ctx.triggered:
-        return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update
 
     trigger = ctx.triggered[0]["prop_id"]
     history = history or []
@@ -681,7 +712,7 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
             # ... (Giữ nguyên phần vẽ UI welcome của bạn) ...
             html.Div("Đã xóa lịch sử 🗑️ Tôi có thể giúp gì cho bạn?", style={"color": "#cbd5e1"})
         ])
-        return [welcome], [], "", []
+        return [welcome], [], ""
 
     message = ""
 
@@ -722,7 +753,7 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
         {"role": m["role"], "parts": m["parts"]}
         for m in history if m["role"] in ("user", "model")
     ]
-    ai_text = _call_gemini(history[:-1], stock_context, screener_ctx)
+    ai_text = _call_gemini(history, stock_context, screener_ctx)
 
     # ── Thêm AI response ──
     history.append({"role": "model", "parts": [{"text": ai_text}], "time": datetime.now().strftime("%H:%M")})
@@ -734,4 +765,4 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
             if (el) el.scrollTop = el.scrollHeight;
         }, 80);
     """)
-    return bubbles + [auto_scroll], history, "", []
+    return bubbles + [auto_scroll], history, ""
