@@ -2,13 +2,21 @@
 import dash
 import dash_bootstrap_components as dbc
 import os
+# THAY ĐỔI CÁCH IMPORT Ở 2 DÒNG NÀY:
+from diskcache import Cache
+from dash import DiskcacheManager 
 
 # Đường dẫn thư mục assets
 ASSETS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets')
 
+# Khởi tạo cache trực tiếp từ Class
+cache = Cache(os.path.join(os.path.dirname(__file__), "..", "cache"))
+background_callback_manager = DiskcacheManager(cache)
+
 # Khởi tạo App với theme CYBORG (Dark theme) + Custom CSS & JS
 app = dash.Dash(
     __name__,
+    background_callback_manager=background_callback_manager,
     external_stylesheets=[
         dbc.themes.CYBORG,  # Dark theme chính
         "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",  # Icons

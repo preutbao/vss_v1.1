@@ -327,7 +327,10 @@ def _add_forward_pe(df):
     [Output("screener-table", "rowData",    allow_duplicate=True),
      Output("screener-table", "columnDefs", allow_duplicate=True),
      Output("result-count",   "children"),
-     Output("filter-stats",   "children")],
+     Output("filter-stats",   "children"),
+     # >>> THÊM 2 OUTPUT NÀY CHO TOAST CẢNH BÁO <<<
+     Output("api-error-toast", "is_open"),
+     Output("api-error-toast", "children")],
     [
         # ── TRIGGERS chính (thay đổi những thứ này → chạy filter) ──
         Input("btn-reset",                  "n_clicks"),
@@ -339,6 +342,7 @@ def _add_forward_pe(df):
         Input("filter-exchange",             "value"),   # ← lọc theo sàn
         Input("filter-year-store",          "data"),   # ← lọc theo năm
         Input("trading-mode-store", "data"),   # ← thêm sau filter-year-store
+        Input("filter-index", "value"),# >>> THÊM INPUT CỦA DROPDOWN CHỈ SỐ <<<
     ],
     [
         # ── STATE: đọc giá trị hiện tại của từng store khi callback chạy ──
@@ -422,7 +426,7 @@ def _add_forward_pe(df):
 )
 def update_screener_table(
         btn_reset, search_text, current_strategy, selected_sectors, active_filters, selected_subs,
-        selected_exchange, filter_year, trading_mode,
+        selected_exchange, filter_year, trading_mode, filter_index,
         # Tổng quan (State)
         price_range, volume_range, market_cap_range, eps_range, perf_1w_range, perf_1m_range,
         # Định giá
@@ -601,6 +605,25 @@ def update_screener_table(
                     df_filtered = df_filtered[ticker_startswith | name_match]
                 else:
                     df_filtered = df_filtered[ticker_startswith]
+                
+        from src.backend.data_loader import fetch_index_constituents
+    
+        # Khởi tạo trạng thái của Toast
+        toast_is_open = False
+        toast_msg = ""
+
+        # ── 1. LỌC THEO CHỈ SỐ THỊ TRƯỜNG (VN30, HNX30...) ──
+        if filter_index and filter_index != "all":
+            tickers_list, api_error = fetch_index_constituents(filter_index)
+            
+            if api_error:
+                # Nếu gọi API thất bại -> Bật Toast cảnh báo
+                toast_is_open = True
+                toast_msg = api_error
+            elif tickers_list is not None:
+                # Nếu gọi API thành công -> Lọc data chồng lên df_filtered hiện tại
+                df_filtered = df_filtered[df_filtered["Ticker"].isin(tickers_list)]
+
         # ================================================================
         # TẦNG 1: LỌC THEO TRƯỜNG PHÁI (STRATEGY)
         # ================================================================
@@ -802,18 +825,22 @@ def update_screener_table(
         # Tính Forward P/E và build columnDefs trong cùng 1 lần → AG Grid nhận 1 batch update
         df_filtered = _add_forward_pe(df_filtered)
         col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
+        # [CẬP NHẬT] Trả về thêm 2 tham số của Toast cảnh báo ở cuối
         return (
             df_filtered.to_dict('records'),
             col_defs,
             f"Tìm thấy {filtered_count} / {total_stocks} mã phù hợp",
-            f"Lọc: {filtered_count} mã | Tổng: {total_stocks} mã"
+            f"Lọc: {filtered_count} mã | Tổng: {total_stocks} mã",
+            toast_is_open,  # Output("api-error-toast", "is_open")
+            toast_msg       # Output("api-error-toast", "children")
         )
 
     except Exception as e:
         logger.error(f"Error in update_screener_table: {e}")
         import traceback;
         traceback.print_exc()
-        return [], FIXED_COLS, f"❌ Lỗi: {str(e)}", "Vui lòng thử lại"
+        # [CẬP NHẬT] Xử lý lỗi cũng phải trả đủ số lượng return (6 Outputs)
+        return [], FIXED_COLS, f"❌ Lỗi: {str(e)}", "Vui lòng thử lại", True, "Lỗi hệ thống khi tải dữ liệu."
 
 
 
@@ -3661,3 +3688,22 @@ def update_cutoff_label(row_data):
         return ""
     except Exception:
         return ""
+
+@app.callback(
+    [Output("action-buttons-container", "style"),
+     Output("toggle-actions-icon", "className")],
+    [Input("btn-toggle-actions", "n_clicks")],
+    [State("action-buttons-container", "style")],
+    prevent_initial_call=True
+)
+def toggle_action_buttons(n_clicks, current_style):
+    base_style = {"gap": "8px", "alignItems": "center"}
+    
+    if current_style and current_style.get("display") == "none":
+        # Mở rộng (hiện dải nút)
+        base_style["display"] = "flex"
+        return base_style, "fas fa-angles-right"
+    else:
+        # Thu gọn lại
+        base_style["display"] = "none"
+        return base_style, "fas fa-angles-left"

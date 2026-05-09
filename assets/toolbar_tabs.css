@@ -1,0 +1,112 @@
+/* ── Toolbar Tab Bar ─────────────────────────────────────── */
+.toolbar-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    cursor: pointer;
+    min-width: 76px;
+    height: 100%;
+    background-color: transparent;
+    border-bottom: 2px solid transparent;
+    border-right: 1px solid #21262d;
+    transition: all 0.15s ease;
+    user-select: none;
+    flex-shrink: 0;
+    overflow: visible;
+}
+.toolbar-tab:hover {
+    background-color: rgba(88, 166, 255, 0.06);
+}
+.toolbar-tab:hover .toolbar-tab-icon { color: #58a6ff !important; }
+.toolbar-tab:hover .toolbar-tab-label { color: #c9d1d9 !important; }
+
+/* Non-active — CSS kiểm soát màu, không dùng inline style */
+.toolbar-tab .toolbar-tab-icon {
+    font-size: 13px;
+    margin-bottom: 3px;
+    color: #6e7681;
+    transition: color 0.15s;
+}
+.toolbar-tab .toolbar-tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: #6e7681;
+    transition: color 0.15s;
+    letter-spacing: 0.2px;
+}
+
+/* Active state */
+.toolbar-tab-active {
+    background-color: #0d1117 !important;
+    border-bottom: 2px solid #3b82f6 !important;
+}
+.toolbar-tab-active .toolbar-tab-icon { color: #58a6ff !important; }
+.toolbar-tab-active .toolbar-tab-label { color: #e6edf3 !important; }
+
+/* ── Panels ───────────────────────────────────────────────── */
+.toolbar-panel {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    padding: 0 14px;
+    overflow: visible !important;   /* ← key fix cho dropdown */
+    height: 100%;
+}
+.toolbar-panel-hidden {
+    display: none !important;
+}
+
+/* ── Dropdown z-index fix ─────────────────────────────────── */
+/* Dash dcc.Dropdown dùng react-select, menu cần float trên toolbar */
+.toolbar-panel .Select-menu-outer {
+    z-index: 9999 !important;
+    position: absolute !important;
+}
+.toolbar-panel .VirtualizedSelectOption { z-index: 9999 !important; }
+/* Dash 2.x react-select v5+ selector */
+.toolbar-panel div[class$="-menu"],
+.toolbar-panel div[class*="-menu "] {
+    z-index: 9999 !important;
+}
+.ticker-search-dropdown .Select-menu-outer { z-index: 9999 !important; }
+
+/* ── Strategy accordion ───────────────────────────────────── */
+.strategy-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    cursor: pointer;
+    background-color: #0d1117;
+    border-bottom: 1px solid #21262d;
+    font-size: 11px;
+    font-weight: 700;
+    color: #7fa8cc;
+    letter-spacing: 0.4px;
+    user-select: none;
+    transition: background 0.12s;
+}
+.strategy-group-header:hover { background-color: #161b22; }
+.strategy-item-row {
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #c9d1d9;
+    border-bottom: 1px solid #0e2540;
+    transition: background 0.12s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.strategy-item-row:hover {
+    background-color: rgba(88, 166, 255, 0.1);
+    color: #e6edf3;
+}
+.strategy-item-selected {
+    color: #58a6ff !important;
+    background-color: rgba(59, 130, 246, 0.08) !important;
+}
