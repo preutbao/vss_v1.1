@@ -50,7 +50,7 @@ def update_dashboard(selected_ticker):
 
     fig.update_layout(
         title=f"Diễn biến giá {selected_ticker}",
-        yaxis_title="Giá (IDR)",
+        yaxis_title="Giá (VND)",
         xaxis_rangeslider_visible=False, # Tắt thanh trượt dưới cho gọn
         template="plotly_white",
         margin=dict(l=0, r=0, t=30, b=0)
@@ -81,7 +81,7 @@ def update_dashboard(selected_ticker):
 # CALLBACK 1: ĐIỀU PHỐI CÁC BƯỚC CỦA TOUR GUIDE
 # ============================================================================
 @app.callback(
-    Output("hint-modal", "is_open"),
+    # Output("hint-modal", "is_open"), # tat modal khi bấm X hoặc hoàn tất
     Output("hint-modal", "children"),       
     Output("hint-shown-store", "data"),     
     Output("tour-step-store", "data"),      

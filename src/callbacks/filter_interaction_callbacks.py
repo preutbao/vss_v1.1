@@ -525,7 +525,7 @@ def create_range_filter_ui_readonly(filter_id, label, min_val=0, max_val=100, cu
 
 CRITERIA_CONFIG = {
     # ── TỔNG QUAN ──
-    "criteria-price": {"label": "Giá hiện tại (IDR)", "filter_id": "filter-price", "type": "range", "min": 0,
+    "criteria-price": {"label": "Giá hiện tại (VND)", "filter_id": "filter-price", "type": "range", "min": 0,
                        "max": 50000, "default_value": [0, 50000]},
     "criteria-volume": {"label": "Khối lượng giao dịch", "filter_id": "filter-volume", "type": "range", "min": 0,
                         "max": 10000000, "default_value": [0, 10000000]},
@@ -699,7 +699,7 @@ _STRATEGY_FILTERS = {
         ("filter-de", "D/E (Nợ / VCSH)", [0, 1.5]),
         ("filter-rev-growth-yoy", "% Tăng trưởng DT 1 năm", [5, 200]),
         ("filter-net-margin", "Biên LN ròng (%)", [5, 50]),
-        ("filter-market-cap", "Vốn hoá (IDR)", [500000000000, 500000000000000]),
+        ("filter-market-cap", "Vốn hoá (VND)", [500000000000, 500000000000000]),
     ],
     "STRAT_DIVIDEND": [
         ("filter-div-yield", "Tỷ suất Cổ tức (%)", [3, 25]),
@@ -708,7 +708,7 @@ _STRATEGY_FILTERS = {
         ("filter-current-ratio", "Thanh toán hiện hành", [1.0, 10]),
         ("filter-de", "D/E (Nợ / VCSH)", [0, 2]),
         ("filter-eps-growth-yoy", "% Tăng trưởng EPS 1 năm", [0, 300]),
-        ("filter-market-cap", "Vốn hoá (IDR)", [1000000000000, 500000000000000]),
+        ("filter-market-cap", "Vốn hoá (VND)", [1000000000000, 500000000000000]),
     ],
     "STRAT_PIOTROSKI": [
         ("filter-roe", "ROE (%)", [5, 100]),
@@ -748,7 +748,7 @@ _STRATEGY_FILTERS = {
         ("filter-ebit-margin", "Biên EBIT (%)", [10, 100]),
         ("filter-ev-ebitda", "EV/EBITDA", [0, 15]),
         ("filter-pe", "P/E Ratio", [0, 20]),
-        ("filter-market-cap", "Vốn hoá (IDR)", [700000000000, 500000000000000]),
+        ("filter-market-cap", "Vốn hoá (VND)", [700000000000, 500000000000000]),
     ],
 
     # ── NCN K16: Khẩu Vị Phòng Thủ ──────────────────────────────────────────
@@ -1618,3 +1618,17 @@ def normalize_exchange_filter(val):
     if not [v for v in val if v != "all"]:
         return ["all"]
     return val
+
+from dash import Input, Output, no_update
+from src.app_instance import app
+
+@app.callback(
+    Output("filter-index", "value"),
+    Input("filter-index", "value"),
+    prevent_initial_call=True
+)
+def auto_reset_index_dropdown(val):
+    # Nếu người dùng bấm dấu X để xóa lựa chọn -> Ép về lại Toàn thị trường
+    if not val:
+        return "all"
+    return no_update

@@ -13,6 +13,66 @@ from src.constants import SECTOR_TRANSLATION
 # Không hardcode 11 ngành GICS lớn vì VN data dùng cấp sub-industry.
 sector_options = []
 
+def _toolbar_tab(tab_id, icon_cls, label):
+    """Tạo tab button — màu sắc do CSS class kiểm soát hoàn toàn."""
+    return html.Div(
+        [
+            html.I(className=f"{icon_cls} toolbar-tab-icon"),
+            html.Span(label, className="toolbar-tab-label"),
+        ],
+        id=f"toolbar-tab-{tab_id}",
+        n_clicks=0,
+        className="toolbar-tab",   # ← không is_active ở Python nữa
+    )
+
+_STRATEGY_GROUPS = [
+    {
+        "id": "grp-vietcap",
+        "label": "🏆  Vietcap Khuyến nghị",
+        "strategies": [
+            ("STRAT_NCN", "🛡️  Khẩu Vị Phòng Thủ — Team TVĐT"),
+        ],
+    },
+    {
+        "id": "grp-value",
+        "label": "📦  Đầu tư Giá trị",
+        "strategies": [
+            ("STRAT_VALUE",      "Đầu tư giá trị (Benjamin Graham)"),
+            ("STRAT_QUALITY",    "Đầu tư chất lượng (Munger / Terry Smith)"),
+            ("STRAT_MAGIC",      "Công Thức Kỳ Diệu (Joel Greenblatt)"),
+            ("STRAT_TURNAROUND", "Đầu tư phục hồi (Sir John Templeton)"),
+        ],
+    },
+    {
+        "id": "grp-growth",
+        "label": "🚀  Đầu tư Tăng trưởng",
+        "strategies": [
+            ("STRAT_GARP",    "Tăng trưởng giá hợp lý — GARP (Peter Lynch)"),
+            ("STRAT_GROWTH",  "Tăng trưởng bền vững (Philip A. Fisher)"),
+            ("STRAT_CANSLIM", "Siêu cổ phiếu CANSLIM (William J. O'Neil)"),
+        ],
+    },
+    {
+        "id": "grp-income",
+        "label": "💰  Thu nhập & Phòng thủ",
+        "strategies": [
+            ("STRAT_DIVIDEND", "Cổ tức & Thu nhập (John Neff)"),
+        ],
+    },
+    {
+        "id": "grp-quant",
+        "label": "📊  Phân tích Định lượng",
+        "strategies": [
+            ("STRAT_PIOTROSKI", "Piotroski F-Score (Prof. Joseph Piotroski)"),
+        ],
+    },
+]
+
+_STRATEGY_LABEL_MAP = {
+    val: label
+    for g in _STRATEGY_GROUPS
+    for val, label in g["strategies"]
+}
 
 # ── Premium wrapper helper ────────────────────────────────────────────────────
 # Bao bọc content trong premium-locked div.
@@ -542,208 +602,308 @@ layout = html.Div(
     [
         html.Div(id="screener-scroll-anchor", style={"height": "0", "overflow": "hidden"}),
 
-        # ── ALWAYS-VISIBLE HEADER BAR ──────────────────────────────────────
-        html.Div(
-            [
-                html.Div(
-                    [
-                        html.Div([
-                            html.I(
-                                className="fas fa-search",
+        # ── ALWAYS-VISIBLE HEADER BAR (4 Tabs) ──────────────────────────────────
+        html.Div([
+
+            # ── Kết quả hidden (giữ ID cho callbacks) ───────────────────────────
+            html.Span(id="result-count-number", style={"display": "none"}),
+
+            # ── TRÁI: 4 Tab buttons ─────────────────────────────────────────────
+            html.Div([
+                _toolbar_tab("search",   "fas fa-search",      "Tìm mã"),
+                _toolbar_tab("strategy", "fas fa-chess-queen", "Chiến lược"),
+                _toolbar_tab("scope",    "fas fa-filter",      "Phạm vi"),
+                _toolbar_tab("personal", "fas fa-user-circle", "Cá nhân"),
+            ], style={
+                "display": "flex",
+                "flexDirection": "row",
+                "alignItems": "stretch",
+                "flexShrink": "0",
+                "height": "100%",
+                "overflow": "visible",
+            }),
+
+            # ── PHẢI: Content panels ─────────────────────────────────────────────
+            html.Div([
+
+                # ── PANEL 1: Tìm mã ─────────────────────────────────────────────
+                html.Div([
+                    html.Div([
+                        html.I(className="fas fa-search", style={
+                            "position": "absolute", "left": "10px", "top": "50%",
+                            "transform": "translateY(-50%)", "color": "#8b949e",
+                            "fontSize": "12px", "zIndex": "10", "pointerEvents": "none",
+                        }),
+                        dcc.Dropdown(
+                            id="search-ticker-input",
+                            options=[],
+                            value=None,
+                            placeholder="Tìm mã (VD: FPT)",
+                            searchable=True,
+                            clearable=True,
+                            multi=False,
+                            className="ssi-dropdown-custom ticker-search-dropdown",
+                            style={"minWidth": "260px", "color": "#ffffff"},
+                        ),
+                    ], style={
+                        "position": "relative",
+                        "display": "flex",
+                        "alignItems": "center",
+                        "overflow": "visible",
+                    }),
+                    # Tooltip mode (target cần tồn tại trong DOM)
+                    dbc.Tooltip(
+                        id="mode-toggle-tooltip",
+                        target="mode-toggle-btn",
+                        placement="bottom",
+                        style={
+                            "maxWidth": "280px",
+                            "backgroundColor": "#161b22",
+                            "border": "1px solid #30363d",
+                            "borderRadius": "8px",
+                            "padding": "0",
+                            "fontSize": "12px",
+                        },
+                    ),
+                ], id="toolbar-panel-search", className="toolbar-panel"),
+
+                # ── PANEL 2: Chiến lược đầu tư ──────────────────────────────────
+                html.Div([
+                    # Nút BỘ LỌC (giữ id cho toggle_filter_offcanvas callback)
+                    dbc.Button(
+                        [html.I(className="fas fa-filter", style={"marginRight": "6px"}),
+                        html.Span("BỘ LỌC", id="label-filter-btn",
+                                className="btn-filter-shimmer")],
+                        id="toggle-filter-btn",
+                        color="primary", outline=True, size="sm",
+                        style={"borderRadius": "20px", "fontSize": "12px",
+                            "padding": "4px 14px", "flexShrink": "0"},
+                    ),
+                    html.Span("Trường phái", id="label-strategy", style={
+                        "fontSize": "11px", "color": "#6e7681",
+                        "fontWeight": "600", "whiteSpace": "nowrap", "flexShrink": "0",
+                    }),
+                    # Strategy picker (premium wrapped)
+                    _premium_wrap(
+                        content=html.Div([
+                            # Trigger button hiển thị lựa chọn hiện tại
+                            html.Div([
+                                dbc.Button(
+                                    [
+                                        html.Span(
+                                            "Chọn chiến lược đầu tư...",
+                                            id="strategy-display-label",
+                                            style={
+                                                "flex": "1", "textAlign": "left",
+                                                "overflow": "hidden",
+                                                "textOverflow": "ellipsis",
+                                                "whiteSpace": "nowrap",
+                                                "fontSize": "12px",
+                                            },
+                                        ),
+                                        html.I(
+                                            className="fas fa-chevron-down",
+                                            id="strategy-chevron",
+                                            style={"fontSize": "9px", "color": "#6e7681",
+                                                "flexShrink": "0", "marginLeft": "8px",
+                                                "transition": "transform 0.2s"},
+                                        ),
+                                    ],
+                                    id="strategy-accordion-trigger",
+                                    color="secondary", outline=True, size="sm",
+                                    style={
+                                        "minWidth": "220px", "maxWidth": "300px",
+                                        "display": "flex", "alignItems": "center",
+                                        "justifyContent": "space-between",
+                                        "borderColor": "#30363d",
+                                    },
+                                ),
+                                # Popover accordion
+                                dbc.Popover(
+                                    dbc.PopoverBody(
+                                        html.Div(
+                                            id="strategy-accordion-body",
+                                            children=[
+                                                # Render từng nhóm
+                                                html.Div([
+                                                    # Header nhóm
+                                                    html.Div([
+                                                        html.Span(
+                                                            group["label"],
+                                                            style={"flex": "1"},
+                                                        ),
+                                                        html.I(
+                                                            className="fas fa-plus",
+                                                            id=f"strategy-grp-icon-{group['id']}",
+                                                            style={"fontSize": "10px",
+                                                                "color": "#6e7681"},
+                                                        ),
+                                                    ],
+                                                        id=f"strategy-grp-hdr-{group['id']}",
+                                                        n_clicks=0,
+                                                        className="strategy-group-header",
+                                                    ),
+                                                    # Children items (ẩn ban đầu)
+                                                    dbc.Collapse(
+                                                        html.Div([
+                                                            html.Div(
+                                                                strat_label,
+                                                                id={"type": "strategy-item",
+                                                                    "value": strat_val},
+                                                                n_clicks=0,
+                                                                className="strategy-item-row",
+                                                            )
+                                                            for strat_val, strat_label
+                                                            in group["strategies"]
+                                                        ]),
+                                                        id=f"strategy-grp-collapse-{group['id']}",
+                                                        is_open=False,
+                                                    ),
+                                                ])
+                                                for group in _STRATEGY_GROUPS
+                                            ],
+                                            style={"backgroundColor": "#0d1117",
+                                                "minWidth": "300px"},
+                                        ),
+                                        style={"padding": "0", "backgroundColor": "#0d1117",
+                                            "border": "none"},
+                                    ),
+                                    target="strategy-accordion-trigger",
+                                    trigger="click",
+                                    placement="bottom-start",
+                                    id="strategy-accordion-popover",
+                                    style={
+                                        "zIndex": "9999",
+                                        "border": "1px solid #30363d",
+                                        "borderRadius": "8px",
+                                        "boxShadow": "0 8px 24px rgba(0,0,0,0.6)",
+                                        "backgroundColor": "#0d1117",
+                                        "padding": "0",
+                                    },
+                                ),
+                            ], style={"position": "relative"}),
+                            # ← HIDDEN dropdown — giữ nguyên ID, mọi callback cũ hoạt động
+                            dcc.Dropdown(
+                                id="strategy-preset-dropdown",
+                                options=[
+                                    {"label": v, "value": k}
+                                    for k, v in _STRATEGY_LABEL_MAP.items()
+                                ],
+                                value=None,
+                                style={"display": "none"},
+                            ),
+                            # Nút info
+                            dbc.Button(
+                                html.I(className="fas fa-info-circle"),
+                                id="btn-strategy-info",
+                                color="primary", outline=True, size="sm",
+                                style={"padding": "0 8px", "flexShrink": "0"},
+                            ),
+                        ], style={"display": "flex", "alignItems": "center", "gap": "6px"}),
+                        wrapper_id="pw-strategies",
+                        section="strategies",
+                        label="Chiến lược VIP",
+                    ),
+                ], id="toolbar-panel-strategy", className="toolbar-panel toolbar-panel-hidden"),
+
+                # ── PANEL 3: Lọc theo phạm vi ────────────────────────────────────
+                html.Div([
+                    html.Span(
+                                id="mode-indicator-badge",
+                                children="📊 Tích sản",
                                 style={
-                                    "position": "absolute",
-                                    "left": "10px",
-                                    "top": "50%",
-                                    "transform": "translateY(-50%)",
-                                    "color": "#8b949e",
-                                    "fontSize": "12px",
-                                    "zIndex": "10",
-                                    "pointerEvents": "none",
+                                    "fontSize": "10px", "fontWeight": "700",
+                                    "padding": "2px 10px", "borderRadius": "10px",
+                                    "backgroundColor": "rgba(16,185,129,0.15)",
+                                    "color": "#10b981",
+                                    "border": "1px solid rgba(16,185,129,0.35)",
+                                    "marginLeft": "10px",
+                                    "verticalAlign": "middle",
+                                    "letterSpacing": "0.5px",
                                 }
                             ),
-                            dcc.Dropdown(
-                                id="search-ticker-input",
-                                options=[],
-                                value=None,
-                                placeholder="Tìm mã (VD: FPT)",
-                                searchable=True,
-                                clearable=True,
-                                multi=False,
-                                className="ssi-dropdown-custom ticker-search-dropdown",
-                                style={
-                                    "minWidth": "230px",
-                                    "color": "#ffffff",
-                                },
-                            ),
-                        ], style={
-                            "position": "relative",
-                            "display": "flex",
-                            "alignItems": "center",
-                            "marginLeft": "10px",
-                        }),
-                        dbc.Button(
-                            [html.I(className="fas fa-filter", style={"marginRight": "6px"}),
-                             html.Span("BỘ LỌC", id="label-filter-btn", className="btn-filter-shimmer")],
-                            id="toggle-filter-btn",
-                            color="primary", outline=True, size="sm",
-                            style={"borderRadius": "20px", "fontSize": "12px", "padding": "4px 14px"},
-                        ),
-                    ],
-                    style={"display": "flex", "alignItems": "center", "gap": "16px"},
-                ),
+                    
+                    dcc.Dropdown(
+                        id="filter-exchange",
+                        options=[
+                            {"label": "Tất cả sàn", "value": "all"},
+                            {"label": "HOSE",        "value": "HOSE"},
+                            {"label": "HNX",         "value": "HNX"},
+                            {"label": "UPCOM",       "value": "UPCOM"},
+                        ],
+                        value=["all"], multi=True,
+                        placeholder="Chọn sàn...",
+                        className="ssi-dropdown-custom",
+                        style={"minWidth": "145px"},
+                    ),
+                    dcc.Dropdown(
+                        id="filter-all-industry",
+                        options=[{"label": "Tất cả ngành", "value": "all"}] + sector_options,
+                        value=["all"], multi=True,
+                        placeholder="Chọn ngành...",
+                        className="ssi-dropdown-custom",
+                        style={"minWidth": "155px"},
+                    ),
+                    dcc.Dropdown(
+                        id="filter-sub-industry",
+                        options=[{"label": "Tất cả ngành con", "value": "all"}],
+                        value=["all"], multi=True,
+                        placeholder="Ngành con...",
+                        className="ssi-dropdown-custom",
+                        style={"minWidth": "155px", "maxWidth": "240px"},
+                    ),
+                    dcc.Dropdown(
+                        id="filter-index",
+                        options=[
+                            {"label": "Toàn thị trường", "value": "all"},
+                            {"label": "VN30", "value": "VN30"},
+                            {"label": "VN100", "value": "VN100"},
+                            {"label": "HNX30", "value": "HNX30"},
+                        ],
+                        value="all", # Mặc định là Toàn thị trường
+                        clearable=True, # Cho phép hiện dấu X để xóa
+                        className="ssi-dropdown-custom",
+                        style={"minWidth": "155px", "maxWidth": "240px"},
+                    ),
+                ], id="toolbar-panel-scope", className="toolbar-panel toolbar-panel-hidden"),
 
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.I(className="fas fa-crown",
-                                       style={"marginRight": "6px", "color": "#ffca28", "fontSize": "11px"}),
-                                html.Span("Trường phái", id="label-strategy",
-                                          style={"fontSize": "11px", "color": "#6e7681", "fontWeight": "600",
-                                                 "marginRight": "8px", "whiteSpace": "nowrap"}),
-                            ],
-                            style={"display": "flex", "alignItems": "center"},
-                        ), 
-                        _premium_wrap(
-                            content=dbc.InputGroup(
-                                [
-                                    dcc.Dropdown(
-                                        id="strategy-preset-dropdown",
-                                        options=[
-                                            {"label": "[Vietcap] Khuyến nghị - Team TVĐT", "value": "STRAT_NCN"},
-                                            {"label": "Đầu tư giá trị (Graham)", "value": "STRAT_VALUE"},
-                                            {"label": "Đầu tư phục hồi (Turnaround)", "value": "STRAT_TURNAROUND"},
-                                            {"label": "Đầu tư chất lượng (Quality)", "value": "STRAT_QUALITY"},
-                                            {"label": "Tăng trưởng giá hợp lý (GARP)", "value": "STRAT_GARP"},
-                                            {"label": "Cổ tức & Thu nhập (Neff)", "value": "STRAT_DIVIDEND"},
-                                            {"label": "Điểm sức khỏe Piotroski", "value": "STRAT_PIOTROSKI"},
-                                            {"label": "Siêu cổ phiếu CANSLIM", "value": "STRAT_CANSLIM"},
-                                            {"label": "Tăng trưởng bền vững (Fisher)", "value": "STRAT_GROWTH"},
-                                            {"label": "Công Thức Kỳ Diệu (Greenblatt)", "value": "STRAT_MAGIC"},
-                                        ],
-                                        placeholder="Chọn chiến lược đầu tư...",
-                                        className="ssi-dropdown-custom",
-                                        style={"minWidth": "220px", "flex": "1"},
-                                    ),
-                                    dbc.Button(
-                                        html.I(className="fas fa-info-circle"),
-                                        id="btn-strategy-info", color="primary", outline=True,
-                                        size="sm",
-                                        style={"borderLeft": "none", "padding": "0 10px"},
-                                    ),
-                                ],
-                                style={"flexWrap": "nowrap"},
-                            ),
-                            wrapper_id="pw-strategies",
-                            section="strategies",
-                            label="Chiến lược VIP",
-                        ),
-                    ],
-                    style={"display": "flex", "alignItems": "center", "gap": "8px", "flex": "1",
-                           "maxWidth": "420px"},
-                ),
+                # ── PANEL 4: Cá nhân ─────────────────────────────────────────────
+                html.Div([
+                    dcc.Dropdown(
+                        id="saved-filters-dropdown",
+                        options=[{"label": "Bộ lọc mặc định", "value": "default"}],
+                        value="default",
+                        placeholder="Bộ lọc đã lưu...",
+                        clearable=False,
+                        className="ssi-dropdown-custom",
+                        style={"minWidth": "200px"},
+                    ),
+                    dbc.Button(
+                        html.Span("VI", style={"fontSize": "11px", "fontWeight": "700"}),
+                        id="btn-lang-toggle",
+                        n_clicks=0,
+                        style={"display": "none"},
+                    ),
+                ], id="toolbar-panel-personal", className="toolbar-panel toolbar-panel-hidden"),
 
-                html.Div(
-                    [
-                        html.Span(id="result-count-number", style={"display": "none"}),
-                        # Thêm vào đầu nhóm action buttons (trước filter-exchange)
-                        dbc.Button(
-                            id="mode-toggle-btn",
-                            children=[
-                                html.I(className="fas fa-seedling", style={"marginRight": "5px"}),
-                                html.Span("Tích sản", id="mode-toggle-label"),
-                            ],
-                            n_clicks=0,
-                            size="sm",
-                            color="success",
-                            outline=True,
-                            style={
-                                "borderRadius": "20px", "fontSize": "11px",
-                                "padding": "4px 12px", "whiteSpace": "nowrap",
-                                "fontWeight": "600",
-                            },
-                        ),
-                        dbc.Button(
-                            id="btn-investor-profile",
-                            children=[
-                                html.I(className="fas fa-user-circle",
-                                       style={"marginRight": "5px", "color": "#00a651"}),
-                                html.Span("Hồ sơ NĐT", id="profile-btn-label"),
-                            ],
-                            n_clicks=0,
-                            size="sm",
-                            color="primary",
-                            outline=True,
-                            style={
-                                "borderRadius": "20px", "fontSize": "11px",
-                                "padding": "4px 12px", "whiteSpace": "nowrap",
-                                "fontWeight": "600",
-                                "borderColor": "#00a651", "color": "#00a651",
-                            },
-                        ),
-                        dcc.Dropdown(
-                            id="filter-exchange",
-                            options=[
-                                {"label": "Tất cả sàn", "value": "all"},
-                                {"label": "HOSE", "value": "HOSE"},
-                                {"label": "HNX", "value": "HNX"},
-                                {"label": "UPCOM", "value": "UPCOM"},
-                            ],
-                            value=["all"], multi=True,
-                            placeholder="Chọn sàn...",
-                            className="ssi-dropdown-custom",
-                            style={"minWidth": "150px"},
-                        ),
-
-                        dcc.Dropdown(
-                            id="filter-all-industry",
-                            options=[{"label": "Tất cả ngành", "value": "all"}] + sector_options,
-                            value=["all"], multi=True,
-                            placeholder="Chọn ngành...",
-                            className="ssi-dropdown-custom",
-                            style={"minWidth": "160px"},
-                        ),
-
-                        dcc.Dropdown(
-                            id="filter-sub-industry",
-                            options=[{"label": "Tất cả ngành con", "value": "all"}],
-                            value=["all"], multi=True,
-                            placeholder="Ngành con...",
-                            className="ssi-dropdown-custom",
-                            style={"minWidth": "160px", "maxWidth": "260px"},
-                        ),
-
-                        dcc.Dropdown(
-                            id="saved-filters-dropdown",
-                            options=[{"label": "Bộ lọc mặc định", "value": "default"}],
-                            value="default",
-                            placeholder="Bộ lọc đã lưu...",
-                            clearable=False,
-                            className="ssi-dropdown-custom",
-                            style={"minWidth": "160px"},
-                        ),
-
-                        dbc.Button(
-                            [html.Span("VI", style={"fontSize": "11px", "fontWeight": "700"})],
-                            id="btn-lang-toggle",
-                            n_clicks=0,
-                            style={"display": "none"},
-                        ),
-                    ],
-                    style={"display": "flex", "alignItems": "center", "gap": "8px", "flexWrap": "nowrap"},
-                ),
-            ],
-            style={
+            ], style={
+                "flex": "1",
                 "display": "flex",
                 "alignItems": "center",
-                "justifyContent": "space-between",
-                "padding": "10px 20px",
-                "backgroundColor": "#161b22",
-                "borderBottom": "2px solid #21262d",
-                "flexWrap": "wrap",
-                "gap": "10px",
-            },
-        ),
+                "overflow": "visible",   # ← critical
+                "height": "100%",
+                "position": "relative",
+            }),
+
+        ], style={
+            "display": "flex",
+            "alignItems": "stretch",
+            "height": "52px",
+            "backgroundColor": "#161b22",
+            "borderBottom": "2px solid #21262d",
+            "position": "relative",
+            "overflow": "visible",       # ← critical: cho phép dropdown menu float ra ngoài
+        }),
 
         # ── COLLAPSIBLE FILTER BODY ──────────────────────────────────────
         dbc.Collapse(
@@ -957,6 +1117,15 @@ layout = html.Div(
                 "border": "1px solid #3fb950",
                 "borderLeft": "4px solid #3fb950",
             },
+        ),
+
+        dbc.Toast(
+            id="api-error-toast",
+            header="Cảnh báo hệ thống",
+            icon="danger",
+            duration=4000,
+            is_open=False,
+            style={"position": "fixed", "top": 80, "right": 20, "width": 350, "zIndex": 9999},
         ),
 
         dcc.Store(id={"type": "filter-store-updater", "filter": "filter-value-score"}, data=[]),

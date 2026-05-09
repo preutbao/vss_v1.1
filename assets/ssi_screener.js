@@ -106,7 +106,7 @@ const CRITERIA_CONFIG = {
         label: 'Giá hiện tại',
         type: 'range',
         storeId: 'filter-price',
-        unit: ' IDR',
+        unit: ' VND',
         min: 0,
         max: 50000,
         step: 100,

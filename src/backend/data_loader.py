@@ -1229,3 +1229,37 @@ def get_ticker_list() -> list:
 
     options.sort(key=lambda x: x['value'])
     return options
+
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
+
+def fetch_index_constituents(index_code):
+    """
+    Gọi API của SSI để lấy danh sách mã cổ phiếu theo chỉ số.
+    Trả về tuple: (list_tickers, error_message)
+    """
+    if not index_code or index_code == "all":
+        return None, None
+        
+    url = f"https://iboard-query.ssi.com.vn/stock/group/{index_code.upper()}"
+    try:
+        # Giả mạo User-Agent để tránh bị SSI block request (403 Forbidden)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=2) # Timeout 2s tránh treo web
+        response.raise_for_status()
+        
+        data = response.json()
+        if data.get("code") == "SUCCESS":
+            # Duyệt qua mảng data, lấy ra trường 'stockSymbol'
+            tickers = [item["stockSymbol"] for item in data.get("data", [])]
+            return tickers, None
+        else:
+            return [], f"Lỗi từ SSI: {data.get('message')}"
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Lỗi fetch API SSI cho {index_code}: {e}")
+        return [], "Không thể kết nối máy chủ dữ liệu. Vui lòng thử lại sau."
