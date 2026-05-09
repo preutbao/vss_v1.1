@@ -884,6 +884,24 @@ layout = html.Div(
                         n_clicks=0,
                         style={"display": "none"},
                     ),
+                    dbc.Button(
+                            id="btn-investor-profile",
+                            children=[
+                                html.I(className="fas fa-user-circle",
+                                       style={"marginRight": "5px", "color": "#00a651"}),
+                                html.Span("Hồ sơ NĐT", id="profile-btn-label"),
+                            ],
+                            n_clicks=0,
+                            size="sm",
+                            color="primary",
+                            outline=True,
+                            style={
+                                "borderRadius": "20px", "fontSize": "11px",
+                                "padding": "4px 12px", "whiteSpace": "nowrap",
+                                "fontWeight": "600",
+                                "borderColor": "#00a651", "color": "#00a651",
+                            },
+                        ),
                 ], id="toolbar-panel-personal", className="toolbar-panel toolbar-panel-hidden"),
 
             ], style={
