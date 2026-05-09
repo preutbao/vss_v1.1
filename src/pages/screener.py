@@ -190,6 +190,15 @@ columnDefs = [
     {"field": "VGM Score", "headerName": "VGM", "headerTooltip": _TOOLTIPS["VGM"], "width": 85, "sortable": True,
      "cellStyle": _GRADE_STYLE},
     {
+    "field": "Star_Rating",
+    "headerName": "⭐ SAO",
+    "headerTooltip": "1–5 sao (từ VGM Score). Mã bị phạt phòng thủ (CFO âm / thanh khoản thấp) tối đa 2 sao.",
+    "width": 110,
+    "sortable": True,
+    "cellRenderer": "function(params) { return params.value ? '⭐'.repeat(params.value) : '–'; }",
+    "cellStyle": {"textAlign": "center", "fontSize": "13px"},
+    },
+    {
         "field": "Perf_3M",
         "headerName": "%3TH",
         "headerTooltip": _TOOLTIPS["%3TH"],
@@ -943,10 +952,12 @@ layout = html.Div([
                         "animateRows": True,
                         "enableCellChangeFlash": False,
                         "rowHeight": 45,
-                        # ── THÊM: Sort mặc định theo Volume giảm dần ──
                         "initialState": {
                             "sort": {
-                                "sortModel": [{"colId": "Volume", "sort": "desc"}]
+                                "sortModel": [
+                                    {"colId": "Star_Rating",    "sort": "desc"},
+                                    {"colId": "VSS_Smart_Rank", "sort": "desc"},
+                                ]
                             }
                         },
                         "getRowStyle": _ROW_STYLE,

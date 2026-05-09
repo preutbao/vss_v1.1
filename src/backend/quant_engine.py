@@ -529,15 +529,16 @@ def calculate_value_score(df):
             score_num += grade_series.map(grade_map).fillna(1) * w
 
         df['Value_Score_Num'] = score_num
+        # Dùng percentile rank thực tế thay vì bins cứng
+        pct_rank = score_num.rank(pct=True, na_option='bottom')
         df['Value Score'] = pd.cut(
-            score_num,
-            bins=[0, 1.5, 2.5, 3.5, 4.5, 6],
+            pct_rank,
+            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
             labels=['F', 'D', 'C', 'B', 'A']
         ).astype(str)
+        df.loc[score_num.isna(), 'Value Score'] = 'F'
 
-        a_count = (df['Value Score'] == 'A').sum()
-        logger.info(f"   ✅ Value Score xong — {a_count} mã đạt A")
-        return df
+        return df # bạn thêm dòng này vào đây nhé
 
     except Exception as e:
         logger.error(f"Lỗi tính Value Score: {e}")
@@ -654,11 +655,13 @@ def calculate_growth_score(df):
                 logger.warning(f"   ⚠️ Sector adjustment failed: {e}")
 
         df['Growth_Score_Num'] = score_num
+        pct_rank = score_num.rank(pct=True, na_option='bottom')
         df['Growth Score'] = pd.cut(
-            score_num,
-            bins=[0, 1.5, 2.5, 3.5, 4.5, 6],
+            pct_rank,
+            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
             labels=['F', 'D', 'C', 'B', 'A']
         ).astype(str)
+        df.loc[score_num.isna(), 'Growth Score'] = 'F'
 
         a_count = (df['Growth Score'] == 'A').sum()
         logger.info(f"   ✅ Growth Score xong — {a_count} mã đạt A")
@@ -738,9 +741,10 @@ def calculate_momentum_score(df):
             score_num += grade_series.map(grade_map).fillna(3) * w
 
         df['Momentum_Score_Num'] = score_num
+        pct_rank = score_num.rank(pct=True, na_option='bottom')
         df['Momentum Score'] = pd.cut(
-            score_num,
-            bins=[0, 1.5, 2.5, 3.5, 4.5, 6],
+            pct_rank,
+            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
             labels=['F', 'D', 'C', 'B', 'A']
         ).astype(str)
 
@@ -809,11 +813,14 @@ def calculate_vgm_score(df):
         else:
             df['VGM_Score_Num'] = v_points * w_v + g_points * w_g + m_points * w_m
 
+        # Phân vị theo rank thực tế — đảm bảo luôn có ~20% mỗi grade
+        pct_rank_vgm = df['VGM_Score_Num'].rank(pct=True, na_option='bottom')
         df['VGM Score'] = pd.cut(
-            df['VGM_Score_Num'],
-            bins=[0, 1.5, 2.5, 3.5, 4.5, 6],
+            pct_rank_vgm,
+            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
             labels=['F', 'D', 'C', 'B', 'A']
         ).astype(str)
+        df.loc[df['VGM_Score_Num'].isna(), 'VGM Score'] = 'F'
 
         dist = df['VGM Score'].value_counts().to_dict()
         logger.info(f"   ✅ VGM Score xong — phân bổ: {dist}")
@@ -1117,6 +1124,8 @@ def calculate_all_scores(df_price, df_financial):
         df = calculate_momentum_score(df)
         df = calculate_vgm_score(df)
         df = calculate_canslim_score(df)
+        df = calculate_star_rating(df)      # ← THÊM
+        df = calculate_vss_smart_rank(df)   # ← THÊM
 
         logger.info(f"✅ Hoàn tất chấm điểm cho {len(df)} mã.")
 
@@ -1214,3 +1223,68 @@ def calculate_all_scores(df_price, df_financial):
         traceback.print_exc()
         return pd.DataFrame()
     calculate_all_strategies = calculate_all_scores
+    
+# ==============================================================================
+# 5. STAR RATING & VSS SMART RANK
+# ==============================================================================
+
+def calculate_star_rating(df):
+    """
+    Chuyển VGM Score (A-F) → 1–5 sao.
+    Hard Rule phòng thủ: CFO âm hoặc GTGD_20D < 5 tỷ → bị ép tối đa 2 sao.
+    """
+    star_mapping = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
+    df['Star_Rating'] = df['VGM Score'].map(star_mapping).fillna(1).astype(int)
+
+    # Hard Rule: CFO âm (dùng fcf làm proxy) hoặc GTGD_20D < 5 tỷ
+    cfo_penalty = pd.Series(False, index=df.index)
+    if 'fcf' in df.columns:
+        cfo_penalty = cfo_penalty | (pd.to_numeric(df['fcf'], errors='coerce').fillna(0) < 0)
+
+    gtgd_penalty = pd.Series(False, index=df.index)
+    if 'GTGD_20D' in df.columns:
+        gtgd_penalty = pd.to_numeric(df['GTGD_20D'], errors='coerce').fillna(0) < 5_000_000_000
+    elif 'Avg_Vol_20D' in df.columns and 'Price Close' in df.columns:
+        # Fallback: tính GTGD từ KL TB × Giá
+        gtgd_est = (pd.to_numeric(df['Avg_Vol_20D'], errors='coerce').fillna(0)
+                    * pd.to_numeric(df['Price Close'], errors='coerce').fillna(0))
+        gtgd_penalty = gtgd_est < 5_000_000_000
+
+    penalty_mask = cfo_penalty | gtgd_penalty
+    df.loc[penalty_mask, 'Star_Rating'] = df.loc[penalty_mask, 'Star_Rating'].clip(upper=2)
+
+    logger.info(f"   ✅ Star Rating xong — phân bổ: {df['Star_Rating'].value_counts().sort_index().to_dict()}")
+    return df
+
+
+def calculate_vss_smart_rank(df):
+    """
+    VSS Smart Rank = điểm tổng hợp để làm Tie-breaker trong cùng nhóm Star.
+    Trọng số: Size 30% + Liq 20% + Valuation 20% + Quality (Star) 30%
+    Giá trị từ 0.0 → 1.0 (càng cao càng tốt).
+    """
+    df['_Rank_Size'] = pd.to_numeric(df.get('Market Cap', 0), errors='coerce').fillna(0).rank(pct=True)
+    df['_Rank_Liq']  = pd.to_numeric(df.get('GTGD_20D',
+                       df.get('Avg_Vol_20D', pd.Series(0, index=df.index))),
+                       errors='coerce').fillna(0).rank(pct=True)
+
+    # Valuation: P/E càng thấp (dương) → rank càng cao
+    pe = pd.to_numeric(df.get('P/E', np.nan), errors='coerce')
+    df['_Rank_Val'] = (1 / pe.where(pe > 0)).rank(pct=True, na_option='bottom')
+
+    # Quality: dùng Star_Rating đã tính
+    df['_Rank_Quality'] = (pd.to_numeric(df.get('Star_Rating', 1), errors='coerce').fillna(1) / 5)
+
+    df['VSS_Smart_Rank'] = (
+        df['_Rank_Size']    * 0.30 +
+        df['_Rank_Liq']     * 0.20 +
+        df['_Rank_Val']     * 0.20 +
+        df['_Rank_Quality'] * 0.30
+    ).round(4)
+
+    # Dọn cột tạm
+    df.drop(columns=['_Rank_Size', '_Rank_Liq', '_Rank_Val', '_Rank_Quality'],
+            inplace=True, errors='ignore')
+
+    logger.info(f"   ✅ VSS Smart Rank xong — min={df['VSS_Smart_Rank'].min():.3f} max={df['VSS_Smart_Rank'].max():.3f}")
+    return df

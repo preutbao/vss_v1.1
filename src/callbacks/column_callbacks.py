@@ -246,7 +246,7 @@ FIXED_COLS = [
             var base = {
                 fontFamily: "'Roboto Mono', monospace",
                 fontSize: '12px',
-                fontVariantNumeric: 'tabular-nums',
+                fontVariantNumeric: 'tabular-snums',
             };
             if (!params.value) return Object.assign({}, base, {color: '#484f58'});
             if (params.value < 10) return Object.assign({}, base, {color: '#4ade80', fontWeight: '600'});
@@ -255,6 +255,15 @@ FIXED_COLS = [
         """},
         "headerTooltip": "Forward P/E ước tính = Giá / (EPS × (1 + EPS Growth)). Chỉ mang tính tham khảo.",
     },
+    {
+    "field": "Star_Rating",
+    "headerName": "XẾP HẠNG",
+    "headerTooltip": "1–5 sao tổng hợp. Hard Rule: CFO âm / GTGD < 5 tỷ → tối đa 2 sao.",
+    "width": 120, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
+    "sortable": True,
+    "cellRenderer": "CustomStarRating", # <--- Gọi tên Component đã đăng ký ở file JS
+    "cellStyle": {"textAlign": "center", "fontSize": "16px"},
+}
 ]
 # Các cột đặc trưng được tính bởi calculate_*_metrics cho từng trường phái
 _FSCORE_COL = {

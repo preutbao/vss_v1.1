@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Header gồm:
 #   - Sticky navbar (có nút Đăng nhập / User menu)
-#   - Hero banner slideshow
+#   - Hero banner (typography-forward, không dùng ảnh nền)
 #   - Login modal
 #   - dcc.Store auth-store (localStorage)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -22,7 +22,7 @@ def _login_field(label, input_id, input_type="text", placeholder=""):
             type=input_type,
             placeholder=placeholder,
             className="login-input",
-            n_submit=0,          # cho phép bấm Enter để submit
+            n_submit=0,
             debounce=False,
             autocomplete="off" if input_type == "password" else "username",
         ),
@@ -43,7 +43,6 @@ def _create_login_modal():
                 id="btn-close-login",
                 style={"border": "none", "paddingBottom": "0"},
                 children=html.Div([
-                    # Icon + Tiêu đề
                     html.Div([
                         html.Div([
                             html.I(className="fas fa-chart-line",
@@ -64,31 +63,20 @@ def _create_login_modal():
                 ]),
             ),
             dbc.ModalBody([
-                # Username
                 _login_field("Tên đăng nhập", "login-username",
                               placeholder="Nhập tên đăng nhập..."),
-
-                # Password
                 _login_field("Mật khẩu", "login-password",
                               input_type="password", placeholder="Nhập mật khẩu..."),
-
-                # Error message (ẩn mặc định)
                 html.Div(id="login-error-msg", style={"display": "none"}),
-
-                # Submit
                 dbc.Button("Đăng nhập",
                            id="login-submit-btn",
                            n_clicks=0,
                            className="btn-login-submit",
                            style={"marginTop": "8px"}),
-
-                # Divider
                 html.Div([
                     html.Div(className="login-divider",
                              children="hoặc chưa có tài khoản?"),
                 ]),
-
-                # Mở tài khoản Vietcap
                 html.A(
                     [html.I(className="fas fa-external-link-alt",
                              style={"marginRight": "6px", "fontSize": "11px"}),
@@ -97,8 +85,6 @@ def _create_login_modal():
                     target="_blank",
                     className="login-open-account-link",
                 ),
-
-                # Demo hint
                 html.Div([
                     html.I(className="fas fa-info-circle",
                            style={"color": "#3b82f6", "fontSize": "10px",
@@ -127,33 +113,31 @@ def _create_login_modal():
 def create_header():
     return html.Div(id="vietcap-master-header", children=[
 
-        # ── Auth store (localStorage — persist qua sessions) ──────────────
+        # ── Auth store ────────────────────────────────────────────────────────
         dcc.Store(id='auth-store', storage_type='local', data={"logged_in": False}),
 
-        # ── Login modal ───────────────────────────────────────────────────
+        # ── Login modal ───────────────────────────────────────────────────────
         _create_login_modal(),
 
         # ================================================================
         # TẦNG 1: STICKY NAVBAR
         # ================================================================
-        html.Div([
-            html.Div([
-                # 1. Logo
+        html.Div(id="vss-sticky-nav", children=[
+            html.Div(className="vss-nav-inner", children=[
+
+                # Logo
                 html.A([
-                    html.Span("Vietcap", style={
-                        "fontSize": "20px", "fontWeight": "800",
-                        "color": "white", "letterSpacing": "-0.5px",
-                        "fontFamily": sys_font,
-                    }),
-                    html.Span("▲", style={
-                        "color": "#00a651", "fontSize": "11px",
-                        "marginLeft": "2px", "transform": "translateY(-6px)",
-                        "display": "inline-block",
-                    })
+                    html.Span([
+                        html.Span("Vietcap", className="vss-logo-text"),
+                        html.Span("▲", className="vss-logo-accent", style={
+                            "fontSize": "10px", "marginLeft": "1px",
+                            "verticalAlign": "super", "fontStyle": "normal",
+                        }),
+                    ], style={"textDecoration": "none"}),
                 ], href="https://www.vietcap.com.vn", target="_blank",
                    style={"textDecoration": "none", "display": "flex", "alignItems": "center"}),
 
-                # 2. Nav links
+                # Nav links
                 html.Div([
                     html.A("Về Vietcap",
                            href="https://www.vietcap.com.vn/ve-vietcap",
@@ -170,9 +154,8 @@ def create_header():
                            className="vietcap-nav-link vietcap-nav-screener"),
                 ], className="d-flex align-items-center gap-4"),
 
-                # 3. Right: Auth area
+                # Right: Auth area
                 html.Div([
-                    # ── Trạng thái chưa đăng nhập: nút Đăng nhập ──
                     dbc.Button(
                         [html.I(className="fas fa-sign-in-alt",
                                 style={"marginRight": "5px"}),
@@ -182,13 +165,10 @@ def create_header():
                         className="vietcap-nav-login-btn",
                         style={},
                     ),
-
-                    # ── Trạng thái đã đăng nhập: User menu ──
                     html.Div(
                         id="btn-logout-wrap",
-                        style={"display": "none"},     # callback sẽ show
+                        style={"display": "none"},
                         children=[
-                            # Tên + badge
                             html.Div(
                                 id="navbar-user-name",
                                 style={
@@ -197,7 +177,6 @@ def create_header():
                                     "color": "#c9d1d9",
                                 },
                             ),
-                            # Nút Đăng xuất
                             dbc.Button(
                                 [html.I(className="fas fa-sign-out-alt",
                                         style={"marginRight": "4px", "fontSize": "11px"}),
@@ -215,108 +194,81 @@ def create_header():
                             ),
                         ],
                     ),
-
-                    # Nút mở tài khoản (luôn hiện)
                     html.A("Mở tài khoản",
                            href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi",
                            target="_blank",
                            className="vietcap-nav-cta",
-                           style={"marginLeft": "8px"}),
+                           style={"marginLeft": "8px", "display": "none"}),
                 ], style={"display": "flex", "alignItems": "center", "gap": "8px"}),
 
-            ], style={
-                "width": "100%", "maxWidth": "1200px", "margin": "0 auto",
-                "display": "flex", "alignItems": "center",
-                "justifyContent": "space-between", "padding": "0 20px",
-            })
-        ], style={
-            "position": "fixed", "top": "0", "left": "0",
-            "width": "100%", "height": "56px",
-            "backgroundColor": "rgba(6, 15, 30, 0.92)",
-            "backdropFilter": "blur(16px)",
-            "WebkitBackdropFilter": "blur(16px)",
-            "borderBottom": "1px solid rgba(0,166,81,0.18)",
-            "boxShadow": "0 1px 0 rgba(0,166,81,0.08), 0 4px 32px rgba(0,0,0,0.5)",
-            "zIndex": "9999",
-            "display": "flex", "alignItems": "center",
-        }),
+            ])
+        ]),
 
-        # Hidden placeholder (navbar-user-menu referenced by callback)
+        # Hidden placeholder
         html.Div(id="navbar-user-menu", style={"display": "none"}),
 
         # ================================================================
-        # TẦNG 2: HERO BANNER
+        # TẦNG 2: HERO BANNER — Typography-forward, no images
         # ================================================================
-        html.Div([
-            dbc.Carousel(
-                items=[
-                    {"key": "1", "src": "/assets/anh1.png", "img_style": {
-                        "width": "100%", "height": "400px",
-                        "objectFit": "cover", "filter": "brightness(0.55)"}},
-                    {"key": "2", "src": "/assets/anh2.png", "img_style": {
-                        "width": "100%", "height": "400px",
-                        "objectFit": "cover", "filter": "brightness(0.55)"}},
-                    {"key": "3", "src": "/assets/anh3.png", "img_style": {
-                        "width": "100%", "height": "400px",
-                        "objectFit": "cover", "filter": "brightness(0.55)"}},
-                ],
-                controls=False, indicators=False, interval=3000,
-                style={"position": "absolute", "top": "0", "left": "0",
-                       "width": "100%", "height": "100%", "zIndex": "1"}
-            ),
-            html.Div(style={
-                "position": "absolute", "inset": "0",
-                "background": "linear-gradient(to bottom, rgba(6,15,30,0.65) 0%, rgba(6,15,30,0.15) 40%, rgba(6,15,30,0.85) 85%, #0a0e14 100%)",
-                "zIndex": "2",
-            }),
-            html.Div([
-                html.P("NỀN TẢNG PHÂN TÍCH CỔ PHIẾU CHUYÊN NGHIỆP", style={
-                    "fontSize": "11px", "fontWeight": "600", "letterSpacing": "2.5px",
-                    "color": "rgba(160,210,180,0.75)", "marginBottom": "14px",
-                    "textTransform": "uppercase", "fontFamily": sys_font,
-                }),
-                html.H1([
-                    html.Span("Vietcap ", style={
-                        "color": "#00c85a", "fontWeight": "800",
-                        "fontFamily": "'Sora', " + sys_font,
-                        "textShadow": "0 0 40px rgba(0,200,90,0.35)",
-                    }),
-                    html.Span("Smart Screener", style={
-                        "color": "#f0f6ff", "fontWeight": "300",
-                        "fontFamily": "'Sora', " + sys_font,
-                    }),
-                ], style={"fontSize": "clamp(36px, 5vw, 56px)", "marginBottom": "20px",
-                          "letterSpacing": "-1.5px", "lineHeight": "1.1"}),
-                html.Div(style={
-                    "width": "56px", "height": "2px",
-                    "background": "linear-gradient(90deg, transparent, #00a651, transparent)",
-                    "margin": "0 auto 28px auto", "opacity": "0.7",
-                }),
-                html.A("Khám phá ngay ↓",
-                       href="#screener-scroll-anchor",
-                       className="vietcap-btn-explore-glass",
-                       style={
-                           "display": "inline-block",
-                           "background": "rgba(0,166,81,0.14)",
-                           "border": "1px solid rgba(0,166,81,0.45)",
-                           "color": "#00e676", "padding": "11px 32px",
-                           "borderRadius": "30px", "textDecoration": "none",
-                           "fontWeight": "600", "fontSize": "13px",
-                           "fontFamily": sys_font,
-                           "backdropFilter": "blur(8px)",
-                           "WebkitBackdropFilter": "blur(8px)",
-                           "boxShadow": "0 4px 20px rgba(0,0,0,0.25)",
-                           "transition": "all 0.3s ease", "letterSpacing": "0.3px",
-                       })
-            ], style={
-                "position": "relative", "zIndex": "3",
-                "textAlign": "center", "color": "white", "padding": "0 20px",
-            })
-        ], style={
+        html.Div(id="vss-hero", style={
             "marginTop": "56px",
-            "position": "relative", "width": "100%", "height": "400px",
-            "overflow": "hidden",
-            "display": "flex", "alignItems": "center", "justifyContent": "center",
-            "backgroundColor": "#050a0f",
-        })
+            "width": "100%",
+            "height": "400px",
+        }, children=[
+
+            # Layered background
+            html.Div(id="vss-hero-bg"),
+            html.Div(id="vss-hero-grid"),
+            html.Div(id="vss-orb-1"),
+            html.Div(id="vss-orb-2"),
+
+            # Content
+            html.Div(id="vss-hero-content", children=[
+
+                # Eyebrow
+                html.Div(className="vss-eyebrow", children=[
+                    html.Span(className="vss-eyebrow-dot"),
+                    "Nền tảng phân tích cổ phiếu chuyên nghiệp",
+                ]),
+
+                # Headline
+                html.H1(className="vss-headline", children=[
+                    html.Span("Vietcap", className="vss-headline-brand"),
+                    html.Span("Smart Screener", className="vss-headline-sub"),
+                ]),
+
+                # Thin rule
+                html.Div(className="vss-rule"),
+
+                # Stat pills
+                html.Div(className="vss-stats", children=[
+                    html.Span(className="vss-stat-pill", children=[
+                        html.Strong("1,500+"), " mã niêm yết"
+                    ]),
+                    html.Span("·", className="vss-stat-sep"),
+                    html.Span(className="vss-stat-pill", children=[
+                        html.Strong("165+"), " chỉ số định lượng"
+                    ]),
+                    html.Span("·", className="vss-stat-sep"),
+                    html.Span(className="vss-stat-pill", children=[
+                        html.Strong("10"), " trường phái đầu tư"
+                    ]),
+                    html.Span("·", className="vss-stat-sep"),
+                    html.Span(className="vss-stat-pill", children=[
+                        "HOSE · HNX · UPCoM"
+                    ]),
+                ]),
+
+                # CTA
+                html.A(
+                    [
+                        "Khám phá ngay",
+                        html.Span("↓", className="vss-cta-arrow"),
+                    ],
+                    href="#screener-scroll-anchor",
+                    className="vss-cta",
+                ),
+
+            ]),
+        ]),
     ])
