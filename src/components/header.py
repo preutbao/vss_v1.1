@@ -221,7 +221,7 @@ def create_header():
                            href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi",
                            target="_blank",
                            className="vietcap-nav-cta",
-                           style={"marginLeft": "8px"}),
+                           style={"marginLeft": "8px", "display": "none"}),
                 ], style={"display": "flex", "alignItems": "center", "gap": "8px"}),
 
             ], style={
