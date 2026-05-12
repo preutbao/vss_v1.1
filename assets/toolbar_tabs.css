@@ -110,3 +110,12 @@
     color: #58a6ff !important;
     background-color: rgba(59, 130, 246, 0.08) !important;
 }
+
+/* Trạng thái Active cho Tab Icon và Label */
+.toolbar-tab.active .toolbar-tab-icon {
+    color: #58a6ff; /* Màu sáng (ví dụ: xanh lam) */
+}
+.toolbar-tab.active .toolbar-tab-label {
+    color: #c9d1d9; /* Màu chữ sáng hơn */
+    font-weight: bold;
+}

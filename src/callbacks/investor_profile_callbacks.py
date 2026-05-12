@@ -270,13 +270,11 @@ def build_ips_filter_settings(risk_profile: str, goal: str,
 # HELPER: Build active-filters-store dict từ filter settings
 # ────────────────────────────────────────────────────────────────────────────
 def build_active_filters(filter_settings: dict, existing_af: dict) -> dict:
-    """
-    Merge IPS filters vào active-filters-store (giữ lại các filter hiện tại).
-    active-filters-store = {filter_id: True/value, ...}
-    """
     af = existing_af.copy() if existing_af else {}
-    for filter_id in filter_settings:
-        af[filter_id] = True
+    for filter_id, rng in filter_settings.items():
+        # Store with value so screener can read it
+        label = filter_id.replace("filter-", "").replace("-", " ").title()
+        af[filter_id] = {"label": label, "type": "range", "value": rng}
     return af
 
 
@@ -824,6 +822,7 @@ def render_final_summary(step, goal, will, pct_savings, emergency,
     Output("investor-profile-store",   "data"),
     Output("profile-setup-done",       "data"),
     Output("active-filters-store",     "data"),
+    Output("selected-filters-container", "children", allow_duplicate=True),  # ADD THIS
     # Individual filter stores (range)
     Output("filter-roe",               "data"),
     Output("filter-pe",                "data"),
@@ -980,10 +979,44 @@ def apply_ips_profile(
         f"Active filters count={len(new_af)}"
     )
 
+    # Find the end of apply_ips_profile where it returns. Before the return, add this code to build slider cards
+    # Build slider UI cards for IPS filters
+    ips_slider_cards = []
+    if apply_filters and filter_settings:
+        from src.callbacks.filter_interaction_callbacks import create_range_filter_ui, get_filter_ranges, CRITERIA_CONFIG
+        ranges = get_filter_ranges()
+        
+        # Label map for IPS filter IDs
+        ips_label_map = {
+            "filter-roe":            "ROE (%)",
+            "filter-pe":             "P/E Ratio",
+            "filter-pb":             "P/B Ratio",
+            "filter-de":             "D/E (Nợ / VCSH)",
+            "filter-current-ratio":  "Thanh toán hiện hành",
+            "filter-div-yield":      "Tỷ suất Cổ tức (%)",
+            "filter-rev-growth-yoy": "% Tăng trưởng DT 1 năm",
+            "filter-eps-growth-yoy": "% Tăng trưởng EPS 1 năm",
+            "filter-rs-3m":          "RS 3 tháng",
+            "filter-net-margin":     "Biên LN ròng (%)",
+        }
+        
+        for fid, rng in filter_settings.items():
+            if not isinstance(rng, list) or len(rng) != 2:
+                continue
+            label = ips_label_map.get(fid, fid.replace("filter-", "").replace("-", " ").title())
+            if fid in ranges:
+                actual_min, actual_max = ranges[fid]
+            else:
+                actual_min, actual_max = float(rng[0]), float(rng[1])
+            ips_slider_cards.append(
+                create_range_filter_ui(fid, label, actual_min, actual_max, rng)
+            )
+
     return (
         full_profile,     # investor-profile-store
-        True,             # profile-setup-done → toggle_pages() trong main.py tự chuyển trang
+        True,             # profile-setup-done
         new_af,           # active-filters-store
+        ips_slider_cards if apply_filters else [],  # selected-filters-container  ← ADD
         # Range filters
         new_roe, new_pe, new_pb, new_de, new_cr, new_div,
         new_rev, new_eps_g, new_rs3m, new_nm,

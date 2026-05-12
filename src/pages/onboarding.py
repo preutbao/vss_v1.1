@@ -8,6 +8,7 @@
 
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+from src.components.header import create_topbar
 
 _BG_PAGE  = "#080d16"
 _BG_CARD  = "#0d1117"
@@ -297,7 +298,6 @@ def _step5():
         }),
     ])
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # LAYOUT
 # ─────────────────────────────────────────────────────────────────────────────
@@ -305,6 +305,7 @@ layout = html.Div(
     id="ips-onboarding-wrapper",
     style={
         "minHeight": "100vh",
+        "paddingTop": "60px",  # <--- THÊM padding-top ĐỂ KHÔNG BỊ TOPBAR ĐÈ
         "backgroundColor": _BG_PAGE,
         "backgroundImage": (
             "radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.06) 0%, transparent 60%),"
@@ -312,6 +313,9 @@ layout = html.Div(
         ),
     },
     children=[
+        # ── GỌI TOPBAR RA ĐÂY ──────────────────────────────────────────────
+        create_topbar(),
+
         _hero_section(),
 
         html.Div(

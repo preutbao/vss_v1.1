@@ -13,8 +13,13 @@ from src.constants import SECTOR_TRANSLATION
 # Không hardcode 11 ngành GICS lớn vì VN data dùng cấp sub-industry.
 sector_options = []
 
-def _toolbar_tab(tab_id, icon_cls, label):
+def _toolbar_tab(tab_id, icon_cls, label, is_active=False):
     """Tạo tab button — màu sắc do CSS class kiểm soát hoàn toàn."""
+    # Thêm class 'active' nếu is_active = True
+    base_class = "toolbar-tab"
+    if is_active:
+        base_class += " active"
+
     return html.Div(
         [
             html.I(className=f"{icon_cls} toolbar-tab-icon"),
@@ -22,7 +27,7 @@ def _toolbar_tab(tab_id, icon_cls, label):
         ],
         id=f"toolbar-tab-{tab_id}",
         n_clicks=0,
-        className="toolbar-tab",   # ← không is_active ở Python nữa
+        className=base_class,   # Dùng class đã được gộp
     )
 
 _STRATEGY_GROUPS = [
@@ -611,7 +616,7 @@ layout = html.Div(
             # ── TRÁI: 4 Tab buttons ─────────────────────────────────────────────
             html.Div([
                 _toolbar_tab("search",   "fas fa-search",      "Tìm mã"),
-                _toolbar_tab("strategy", "fas fa-chess-queen", "Chiến lược"),
+                _toolbar_tab("strategy", "fas fa-chess-queen", "Chiến lược", is_active=True), # <--- THÊM is_active=True VÀO ĐÂY
                 _toolbar_tab("scope",    "fas fa-filter",      "Phạm vi"),
                 _toolbar_tab("personal", "fas fa-user-circle", "Cá nhân"),
             ], style={
@@ -652,20 +657,20 @@ layout = html.Div(
                         "overflow": "visible",
                     }),
                     # Tooltip mode (target cần tồn tại trong DOM)
-                    dbc.Tooltip(
-                        id="mode-toggle-tooltip",
-                        target="mode-toggle-btn",
-                        placement="bottom",
-                        style={
-                            "maxWidth": "280px",
-                            "backgroundColor": "#161b22",
-                            "border": "1px solid #30363d",
-                            "borderRadius": "8px",
-                            "padding": "0",
-                            "fontSize": "12px",
-                        },
-                    ),
-                ], id="toolbar-panel-search", className="toolbar-panel"),
+                    # dbc.Tooltip(
+                    #    id="mode-toggle-tooltip",
+                    #    target="mode-toggle-btn",
+                    #    placement="bottom",
+                    #    style={
+                    #        "maxWidth": "280px",
+                    #        "backgroundColor": "#161b22",
+                    #        "border": "1px solid #30363d",
+                    #        "borderRadius": "8px",
+                    #        "padding": "0",
+                    #        "fontSize": "12px",
+                    #    },
+                    #),
+                ], id="toolbar-panel-search", className="toolbar-panel toolbar-panel-hidden"),
 
                 # ── PANEL 2: Chiến lược đầu tư ──────────────────────────────────
                 html.Div([
@@ -804,7 +809,7 @@ layout = html.Div(
                         section="strategies",
                         label="Chiến lược VIP",
                     ),
-                ], id="toolbar-panel-strategy", className="toolbar-panel toolbar-panel-hidden"),
+                ], id="toolbar-panel-strategy", className="toolbar-panel"),
 
                 # ── PANEL 3: Lọc theo phạm vi ────────────────────────────────────
                 html.Div([
@@ -1101,16 +1106,7 @@ layout = html.Div(
 
         dcc.Store(id='active-filters-store', data={}),
         # Investor profile store — lưu vĩnh viễn trong localStorage
-        dcc.Store(id='investor-profile-store', storage_type='local', data={
-            "level":    "F1",
-            "capital":  "500m-1b",
-            "horizon":  "3m-1y",
-            "risk":     3,
-            "strategy": ["defensive", "growth"],
-            "stop_loss": 7,
-            "position_size": 20,
-        }),
-        dcc.Store(id='profile-setup-done', storage_type='local', data=False),
+        # Trạng thái đã setup xong profile chưa, dùng để quyết định có show hint tour khi bấm vào btn-investor-profile lần đầu hay không
         dcc.Store(id='filter-unsaved-flag', data=None),
         dcc.Store(id='filter-year-store', data='all'),
         dcc.Store(id='chart-refresh-store', data=0),

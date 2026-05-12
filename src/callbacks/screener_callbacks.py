@@ -552,7 +552,7 @@ def update_screener_table(
 
         # ── HARD FILTER theo chế độ đầu tư ──────────────────────────────────────────
         # ── HARD FILTER theo hồ sơ nhà đầu tư (ưu tiên cao hơn mode mặc định) ──────
-        if investor_profile and investor_profile.get("auto_filters"):
+        if trading_mode != "all_market" and investor_profile and investor_profile.get("auto_filters"):
             af = investor_profile["auto_filters"]
             min_vol   = af.get("min_vol",   30_000)
             min_cap   = af.get("min_cap",   200_000_000_000)

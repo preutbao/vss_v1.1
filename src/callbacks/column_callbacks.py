@@ -201,25 +201,7 @@ FIXED_COLS = [
         },
         "cellStyle": _ssi_pct_style(),
     },
-    {
-        "field": "_profile_match",
-        "headerName": "HỒ SƠ",
-        "headerTooltip": "Mức độ phù hợp với hồ sơ nhà đầu tư cá nhân",
-        "width": 80,
-        "sortable": True,
-        "cellRenderer": "agAnimateShowChangeCellRenderer",
-        "cellStyle": {
-            "function": """
-                const v = params.value;
-                if (!v) return {'color':'#484f58','textAlign':'center'};
-                if (v === '✓✓') return {'color':'#10b981','fontWeight':'700',
-                                        'textAlign':'center','fontSize':'14px'};
-                if (v === '✓')  return {'color':'#f59e0b','fontWeight':'600',
-                                        'textAlign':'center'};
-                return {'color':'#ef4444','textAlign':'center'};
-            """
-        },
-    },
+    
     {
         "field": "Perf_1W",
         "headerName": "%1T",
@@ -255,29 +237,28 @@ FIXED_COLS = [
         },
     },
     {
-        "field": "Forward P/E *",
-        "headerName": "FWD P/E*",
-        "type": "rightAligned",
+        "field": "_profile_match",
+        "headerName": "HỒ SƠ",
+        "headerTooltip": "Mức độ phù hợp với hồ sơ nhà đầu tư cá nhân",
+        "width": 80,
         "sortable": True,
-        "width": 100,
-        "valueFormatter": {"function": "params.value != null ? d3.format('.2f')(params.value) : '–'"},
-        "cellStyle": {"function": """
-            var base = {
-                fontFamily: "'Roboto Mono', monospace",
-                fontSize: '12px',
-                fontVariantNumeric: 'tabular-snums',
-            };
-            if (!params.value) return Object.assign({}, base, {color: '#484f58'});
-            if (params.value < 10) return Object.assign({}, base, {color: '#4ade80', fontWeight: '600'});
-            if (params.value > 30) return Object.assign({}, base, {color: '#f87171'});
-            return Object.assign({}, base, {color: '#cbd5e1'});
-        """},
-        "headerTooltip": "Forward P/E ước tính = Giá / (EPS × (1 + EPS Growth)). Chỉ mang tính tham khảo.",
+        "cellRenderer": "agAnimateShowChangeCellRenderer",
+        "cellStyle": {
+            "function": """
+                const v = params.value;
+                if (!v) return {'color':'#484f58','textAlign':'center'};
+                if (v === '✓✓') return {'color':'#10b981','fontWeight':'700',
+                                        'textAlign':'center','fontSize':'14px'};
+                if (v === '✓')  return {'color':'#f59e0b','fontWeight':'600',
+                                        'textAlign':'center'};
+                return {'color':'#ef4444','textAlign':'center'};
+            """
+        },
     },
     {
     "field": "Star_Rating",
     "headerName": "XẾP HẠNG",
-    "headerTooltip": "1–5 sao tổng hợp. Hard Rule: CFO âm / GTGD < 5 tỷ → tối đa 2 sao.",
+    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao. Hệ thống tự động kích hoạt màng lọc phòng thủ: Giới hạn tối đa 2 sao đối với doanh nghiệp rỗng dòng tiền hoặc thanh khoản yếu.",
     "width": 120, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
     "sortable": True,
     "cellRenderer": "CustomStarRating", # <--- Gọi tên Component đã đăng ký ở file JS

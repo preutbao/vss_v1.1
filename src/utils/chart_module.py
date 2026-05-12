@@ -303,7 +303,7 @@ def create_fireant_candlestick(
     # ====================================================================
     fig.update_layout(
         title=None,
-        template="plotly_dark=" if theme == 'dark' else "plotly_white",
+        template="plotly_dark" if theme == 'dark' else "plotly_white",
         height=800 if rows > 2 else 580,
         margin=dict(l=10, r=65, t=12, b=20),
         paper_bgcolor='rgba(0,0,0,0)',

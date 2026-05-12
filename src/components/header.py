@@ -108,11 +108,9 @@ def _create_login_modal():
         ],
     )
 
-
-# ── Main header builder ───────────────────────────────────────────────────────
-def create_header():
-    return html.Div(id="vietcap-master-header", children=[
-
+# ── TÁCH PHẦN 1: TOPBAR (Dùng được ở mọi nơi) ──────────────────────────────────
+def create_topbar():
+    return html.Div(id="vietcap-topbar-only", children=[
         # ── Auth store ────────────────────────────────────────────────────────
         dcc.Store(id='auth-store', storage_type='local', data={"logged_in": False}),
 
@@ -206,69 +204,77 @@ def create_header():
 
         # Hidden placeholder
         html.Div(id="navbar-user-menu", style={"display": "none"}),
+    ])
 
-        # ================================================================
-        # TẦNG 2: HERO BANNER — Typography-forward, no images
-        # ================================================================
-        html.Div(id="vss-hero", style={
-            "marginTop": "56px",
-            "width": "100%",
-            "height": "400px",
-        }, children=[
 
-            # Layered background
-            html.Div(id="vss-hero-bg"),
-            html.Div(id="vss-hero-grid"),
-            html.Div(id="vss-orb-1"),
-            html.Div(id="vss-orb-2"),
+# ── TÁCH PHẦN 2: HERO BANNER (Chỉ dùng cho trang chủ) ─────────────────────────
+def create_banner():
+    return html.Div(id="vss-hero", style={
+        "marginTop": "56px", # Giữ nguyên khoảng trống để không đè Topbar
+        "width": "100%",
+        "height": "400px",
+    }, children=[
 
-            # Content
-            html.Div(id="vss-hero-content", children=[
+        # Layered background
+        html.Div(id="vss-hero-bg"),
+        html.Div(id="vss-hero-grid"),
+        html.Div(id="vss-orb-1"),
+        html.Div(id="vss-orb-2"),
 
-                # Eyebrow
-                html.Div(className="vss-eyebrow", children=[
-                    html.Span(className="vss-eyebrow-dot"),
-                    "Nền tảng phân tích cổ phiếu chuyên nghiệp",
-                ]),
+        # Content
+        html.Div(id="vss-hero-content", children=[
 
-                # Headline
-                html.H1(className="vss-headline", children=[
-                    html.Span("Vietcap", className="vss-headline-brand"),
-                    html.Span("Smart Screener", className="vss-headline-sub"),
-                ]),
-
-                # Thin rule
-                html.Div(className="vss-rule"),
-
-                # Stat pills
-                html.Div(className="vss-stats", children=[
-                    html.Span(className="vss-stat-pill", children=[
-                        html.Strong("1,500+"), " mã niêm yết"
-                    ]),
-                    html.Span("·", className="vss-stat-sep"),
-                    html.Span(className="vss-stat-pill", children=[
-                        html.Strong("165+"), " chỉ số định lượng"
-                    ]),
-                    html.Span("·", className="vss-stat-sep"),
-                    html.Span(className="vss-stat-pill", children=[
-                        html.Strong("10"), " trường phái đầu tư"
-                    ]),
-                    html.Span("·", className="vss-stat-sep"),
-                    html.Span(className="vss-stat-pill", children=[
-                        "HOSE · HNX · UPCoM"
-                    ]),
-                ]),
-
-                # CTA
-                html.A(
-                    [
-                        "Khám phá ngay",
-                        html.Span("↓", className="vss-cta-arrow"),
-                    ],
-                    href="#screener-scroll-anchor",
-                    className="vss-cta",
-                ),
-
+            # Eyebrow
+            html.Div(className="vss-eyebrow", children=[
+                html.Span(className="vss-eyebrow-dot"),
+                "Nền tảng phân tích cổ phiếu chuyên nghiệp",
             ]),
+
+            # Headline
+            html.H1(className="vss-headline", children=[
+                html.Span("Vietcap", className="vss-headline-brand"),
+                html.Span("Smart Screener", className="vss-headline-sub"),
+            ]),
+
+            # Thin rule
+            html.Div(className="vss-rule"),
+
+            # Stat pills
+            html.Div(className="vss-stats", children=[
+                html.Span(className="vss-stat-pill", children=[
+                    html.Strong("1,500+"), " mã niêm yết"
+                ]),
+                html.Span("·", className="vss-stat-sep"),
+                html.Span(className="vss-stat-pill", children=[
+                    html.Strong("165+"), " chỉ số định lượng"
+                ]),
+                html.Span("·", className="vss-stat-sep"),
+                html.Span(className="vss-stat-pill", children=[
+                    html.Strong("10"), " trường phái đầu tư"
+                ]),
+                html.Span("·", className="vss-stat-sep"),
+                html.Span(className="vss-stat-pill", children=[
+                    "HOSE · HNX · UPCoM"
+                ]),
+            ]),
+
+            # CTA
+            html.A(
+                [
+                    "Khám phá ngay",
+                    html.Span("↓", className="vss-cta-arrow"),
+                ],
+                href="#screener-scroll-anchor",
+                className="vss-cta",
+            ),
+
         ]),
+    ])
+
+
+# ── TÁCH PHẦN 3: HEADER CHÍNH (Gộp cả Topbar và Banner cho trang Screener) ────
+def create_header():
+    return html.Div(id="vietcap-master-header", children=[
+        create_topbar(),
+        create_banner()
     ])

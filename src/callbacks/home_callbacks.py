@@ -101,9 +101,14 @@ def manage_tour(ok_clicks, close_clicks, already_shown, is_open, current_step):
     # ── Tự động mở khi trang mới load ──
     if triggered == "hint-shown-store.data" or not triggered:
         if already_shown is True:
-            return False, no_update, True, current_step 
+            # return False, no_update, True, current_step 
+            return no_update, True, current_step 
         else:
-            return True, _build_tour_step(1), False, 1
+            # Nếu trước đây là:
+            # return True, _build_tour_step(1), False, 1
+
+            # Sửa lại thành 3 giá trị (Ví dụ loại bỏ giá trị True ban đầu vốn dành cho 'is_open'):
+            return _build_tour_step(1), False, 1
 
     # ── Bấm X → Đóng hẳn ──
     if "hint-modal-close" in triggered:
