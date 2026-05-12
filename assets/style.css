@@ -2635,3 +2635,7 @@ span[style*="f59e0b"] {
   .nav-bar { padding: 20px 0 8px; }
   .btn { padding: 11px 20px; }
 }
+.ips-choice-card.selected {
+    border-color: #3b82f6 !important;
+    background-color: rgba(59, 130, 246, 0.1) !important;
+}

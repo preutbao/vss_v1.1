@@ -22,7 +22,6 @@ from dash import Input, Output, State, html, dcc, no_update, callback_context, c
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from src.app_instance import app
-
 logger = logging.getLogger(__name__)
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -398,8 +397,7 @@ def _metric_card(label: str, value: str, color: str = _TEXT_PRI):
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# CALLBACK 1: Điều hướng wizard (Prev / Next / Finish)
-#   — Validate trước khi cho phép Next
+# CALLBACK 1: Điều hướng wizard (Prev / Next) - Đã sửa gộp 3 bước
 # ════════════════════════════════════════════════════════════════════════════
 @app.callback(
     Output("ips-current-step", "data"),
@@ -415,48 +413,40 @@ def _metric_card(label: str, value: str, color: str = _TEXT_PRI):
     State("ips-liq-store",           "data"),
     prevent_initial_call=True,
 )
-def navigate_wizard(next_clicks, prev_clicks,
-                    current_step,
-                    goal, will, time_h, liq):
+def navigate_wizard(next_clicks, prev_clicks, current_step, goal, will, time_h, liq):
     ctx = callback_context
-    if not ctx.triggered:
-        raise PreventUpdate
-
+    if not ctx.triggered: raise PreventUpdate
     triggered = ctx.triggered[0]["prop_id"].split(".")[0]
     step = current_step or 1
 
-    # ── Prev: không cần validate ──────────────────────────────────────────
     if triggered == "ips-btn-prev":
-        new_step = max(1, step - 1)
-        return new_step, "", "", ""
+        # Từ bước 4 hoặc 5 → quay về bước 3 (hiện cùng 1,2,3)
+        if step >= 4:
+            return 3, "", "", ""
+        # Bước 1,2,3 đang hiện cùng nhau → không có "trước" nữa
+        return step, "", "", ""
 
-    # ── Next: validate step hiện tại trước khi cho đi ────────────────────
     if triggered == "ips-btn-next":
-        if step == 1:
-            if not goal:
-                return (step, "⚠ Vui lòng chọn mục tiêu đầu tư trước khi tiếp tục.",
-                        "", "")
-        elif step == 2:
-            if not will:
-                return (step, "",
-                        "⚠ Vui lòng chọn phản ứng khi danh mục giảm 20%.",
-                        "")
-        elif step == 3:
-            if not time_h:
-                return (step, "", "",
-                        "⚠ Vui lòng chọn thời gian đầu tư.")
-            if not liq:
-                return (step, "", "",
-                        "⚠ Vui lòng chọn nhu cầu thanh khoản.")
-
-        new_step = min(TOTAL_STEPS, step + 1)
-        return new_step, "", "", ""
-
+        if step <= 3:
+            # Bước 1-3 hiện cùng lúc → validate cả 3
+            e1 = "⚠ Vui lòng chọn mục tiêu đầu tư." if not goal else ""
+            e2 = "⚠ Vui lòng chọn phản ứng rủi ro." if not will else ""
+            e3 = ("⚠ Vui lòng chọn đủ thời gian & thanh khoản."
+                  if not time_h or not liq else "")
+            if e1 or e2 or e3:
+                return step, e1, e2, e3
+            # Đủ hết → sang bước 4
+            return 4, "", "", ""
+        elif step == 4:
+            return 5, "", "", ""
+        else:
+            # step == 5 → apply_ips_profile callback tự xử lý
+            return step, "", "", ""
     raise PreventUpdate
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# CALLBACK 2: Hiện/ẩn đúng step + cập nhật progress bar + button labels
+# CALLBACK 2: Hiện/ẩn đúng step - Đã sửa gộp 3 bước
 # ════════════════════════════════════════════════════════════════════════════
 @app.callback(
     Output("ips-step-1",      "style"),
@@ -473,76 +463,63 @@ def navigate_wizard(next_clicks, prev_clicks,
 )
 def render_step_visibility(current_step):
     step = current_step or 1
-
-    # Hiện/ẩn
     show = {"display": "block"}
     hide = {"display": "none"}
-    styles = [show if i + 1 == step else hide for i in range(TOTAL_STEPS)]
 
-    # Progress bar
-    step_labels = ["Mục tiêu", "Rủi ro", "Ràng buộc", "Chiến lược", "Xác nhận"]
-    badges = []
-    for i, label in enumerate(step_labels):
-        n = i + 1
-        done   = n < step
-        active = n == step
-        if done:
-            bg, color, icon_html = "#0f3d22", _GREEN, html.I(className="fas fa-check", style={"marginRight": "4px"})
-            border_color = "#065f46"
-        elif active:
-            bg, color, icon_html = "#0d2137", _BLUE, html.Span(f"{n}", style={"marginRight": "4px", "fontFamily": _FONT_MONO, "fontWeight": "700"})
-            border_color = "#1d4ed8"
-        else:
-            bg, color, icon_html = _BG_CARD2, _TEXT_MUT, html.Span(f"{n}", style={"marginRight": "4px", "fontFamily": _FONT_MONO})
-            border_color = _BORDER
-
-        badge = html.Div([icon_html, html.Span(label)], style={
-            "display":        "flex",
-            "alignItems":     "center",
-            "padding":        "5px 9px",
-            "borderRadius":   "6px",
-            "backgroundColor": bg,
-            "border":         f"1px solid {border_color}",
-            "fontSize":       "11px",
-            "color":          color,
-            "fontFamily":     _FONT_INTER,
-            "whiteSpace":     "nowrap",
-        })
-        badges.append(badge)
-        if i < len(step_labels) - 1:
-            badges.append(html.Div("→", style={
-                "color": _TEXT_MUT, "fontSize": "12px", "flexShrink": "0"}))
-
-    progress = html.Div(badges, style={
-        "display": "flex", "alignItems": "center",
-        "gap": "6px", "overflowX": "auto",
-        "paddingBottom": "4px", "marginBottom": "20px",
-    })
-
-    # Prev button
-    prev_disabled = (step == 1)
-    prev_style = {
-        "backgroundColor": _BG_CARD2,
-        "border": f"1px solid {_BORDER}",
-        "color": _TEXT_MUT if prev_disabled else _TEXT_SEC,
-        "borderRadius": "6px",
-        "fontFamily": _FONT_INTER,
-        "fontSize": "12px",
-        "opacity": "0.4" if prev_disabled else "1",
-    }
-
-    # Next button label
-    if step == TOTAL_STEPS:
-        next_label = [html.I(className="fas fa-check", style={"marginRight": "6px"}),
-                      "Lưu & Áp dụng"]
+    # Bẻ khóa logic: Ép bước 1, 2, 3 hiện cùng lúc
+    if step <= 3:
+        s1, s2, s3, s4, s5 = show, show, show, hide, hide
+        d_step = 1
+    elif step == 4:
+        s1, s2, s3, s4, s5 = hide, hide, hide, show, hide
+        d_step = 4
     else:
-        next_label = ["Tiếp theo ",
-                      html.I(className="fas fa-arrow-right", style={"marginLeft": "6px"})]
+        s1, s2, s3, s4, s5 = hide, hide, hide, hide, show
+        d_step = 5
 
-    counter = f"Bước {step} / {TOTAL_STEPS}"
+    # Cập nhật thanh Progress bar
+    labels = ["Mục tiêu", "Rủi ro", "Ràng buộc", "Chiến lược", "Xác nhận"]
+    badges = []
+    for i, label in enumerate(labels):
+        n = i + 1
+        done   = n < d_step
+        active = (n <= 3 and d_step == 1) or (n == d_step)
+        
+        if done:
+            bg, color, icon_html = "#0f3d22", "#10b981", html.I(className="fas fa-check", style={"marginRight": "4px"})
+            bc = "#065f46"
+        elif active:
+            bg, color, icon_html = "#0d2137", "#3b82f6", html.Span(f"{n}", style={"marginRight": "4px", "fontWeight": "700"})
+            bc = "#1d4ed8"
+        else:
+            bg, color, icon_html = "#161b22", "#484f58", html.Span(f"{n}", style={"marginRight": "4px"})
+            bc = "#21262d"
 
-    return (*styles, progress, prev_disabled, prev_style, next_label, counter)
+        badges.append(html.Div([icon_html, html.Span(label)], style={
+            "display": "flex", "alignItems": "center", "padding": "5px 9px", "borderRadius": "6px",
+            "backgroundColor": bg, "border": f"1px solid {bc}", "fontSize": "11px", "color": color
+        }))
+        if i < 4:
+            badges.append(html.Div("→", style={"color": "#484f58", "fontSize": "12px", "flexShrink": "0"}))
 
+    progress = html.Div(badges, style={"display": "flex", "alignItems": "center", "gap": "6px", "overflowX": "auto", "paddingBottom": "4px", "marginBottom": "20px"})
+    
+    # Nút bấm — disabled khi đang ở nhóm bước 1-3 (không có step trước)
+    prev_dis = (d_step == 1)
+    prev_st = {
+        "backgroundColor": "#161b22", "border": "1px solid #21262d",
+        "color": "#484f58" if prev_dis else "#8b949e",
+        "borderRadius": "6px", "fontSize": "12px",
+        "opacity": "0.4" if prev_dis else "1",
+    }
+    nxt_btn = (
+        [html.I(className="fas fa-check", style={"marginRight": "6px"}), "Lưu & Áp dụng"]
+        if d_step == 5
+        else ["Tiếp theo ", html.I(className="fas fa-arrow-right", style={"marginLeft": "6px"})]
+    )
+    counter = "Bước 1–3 / 5" if d_step == 1 else f"Bước {d_step} / 5"
+
+    return s1, s2, s3, s4, s5, progress, prev_dis, prev_st, nxt_btn, counter
 
 # ════════════════════════════════════════════════════════════════════════════
 # CALLBACK 3: Render step 4 — Profile Preview (chạy khi vào step 4)
@@ -911,7 +888,8 @@ def apply_ips_profile(
     Sau khi profile-setup-done = True, callback toggle_pages() trong main.py
     tự động ẩn trang onboarding và hiện giao diện screener chính.
     """
-    if current_step != TOTAL_STEPS or not next_clicks:
+    # Chạy khi user bấm Next ở bước 5 (current_step == 5)
+    if (current_step or 0) < TOTAL_STEPS or not next_clicks:
         raise PreventUpdate
 
     unique_flags  = unique_flags  or []
