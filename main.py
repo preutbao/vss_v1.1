@@ -128,7 +128,7 @@ import src.callbacks.tab_dot_callbacks
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT — hai section: onboarding ↔ main app
 # ─────────────────────────────────────────────────────────────────────────────
-from dash import html, dcc
+from dash import Dash, html, dcc, Input, Output, State
 from src.pages import screener, onboarding
 from src.components.header import create_header, create_topbar, create_banner
 from src.callbacks.chatbot_callbacks import create_chatbot_layout
@@ -150,6 +150,11 @@ app.layout = html.Div(
         # thì bạn PHẢI XÓA CHÚNG Ở ĐÂY (hoặc xóa ở sidebar.py). Chỉ giữ lại 1 nơi duy nhất!
         dcc.Store(id="investor-profile-store", storage_type="local",  data=None),
         dcc.Store(id="profile-setup-done",     storage_type="local",  data=False),
+        dcc.Store(id="has-seen-tour", storage_type="local", data=False),
+        dcc.Store(id="tour-active-step", storage_type="memory", data=None),
+
+        # 🛠 THÊM DÒNG NÀY VÀO ĐỂ KHÔNG BỊ LỖI CALLBACK
+        dcc.Store(id="tour-finish-trigger", data=False),
 
         # ── 2. ONBOARDING PAGE ────────────────────────────────────────────
         # Hiển thị khi profile-setup-done = False (lần đầu vào / chưa setup)
@@ -167,6 +172,23 @@ app.layout = html.Div(
             children=[
                 # THAY create_header() BẰNG create_banner() ĐỂ KHÔNG BỊ TRÙNG TOPBAR
                 create_banner(), 
+                # Tour Guide Overlay
+                html.Div(id="tour-overlay-container", children=[
+                    # Overlay tối
+                    html.Div(id="tour-backdrop", style={
+                        "position": "fixed", "inset": "0",
+                        "zIndex": "10000", "pointerEvents": "none",
+                    }),
+                    # Tooltip box
+                    html.Div(id="tour-tooltip", style={
+                        "position": "fixed",
+                        "zIndex": "10001",
+                        "display": "none",
+                        "width": "320px",
+                    }, children=[
+                        html.Div(id="tour-tooltip-inner"),
+                    ]),
+                ], style={"display": "none"}),
                 html.Div(
                     id="screener-section",
                     children=[screener.layout],
@@ -263,6 +285,62 @@ def preload_data():
     logger.info("✅ Pre-load xong — server sẵn sàng nhận request")
     logger.info("=" * 60)
 
+# ============================================================
+# [BƯỚC 4] CLIENTSIDE CALLBACKS CHO TOUR GUIDE
+# ============================================================
+
+# 1. TRIGGER TOUR GUIDE TỰ ĐỘNG (LẦN ĐẦU)
+app.clientside_callback(
+    """
+    function(setup_done, has_seen) {
+        // Chỉ chạy khi đã xong onboarding (setup_done) VÀ chưa từng xem tour (has_seen == false)
+        if (!setup_done || has_seen === true) {
+            return window.dash_clientside.no_update;
+        }
+
+        // Kích hoạt tour
+        setTimeout(function() {
+            if (window.VssTour) {
+                window.VssTour.start();
+            }
+        }, 1500);
+
+        // Trả về True để lưu vào dcc.Store(storage_type='local') 
+        return true; 
+    }
+    """,
+    Output("has-seen-tour", "data"),
+    Input("profile-setup-done", "data"),
+    State("has-seen-tour", "data"),
+    prevent_initial_call=False,
+)
+
+# 2. LƯU TRẠNG THÁI HOÀN TẤT
+app.clientside_callback(
+    """
+    function(n) {
+        return true;
+    }
+    """,
+    Output("has-seen-tour", "data", allow_duplicate=True),
+    Input("tour-finish-trigger", "data"),
+    prevent_initial_call=True,
+)
+
+# 3. KÍCH HOẠT THỦ CÔNG (KHI BẤM NÚT << HƯỚNG DẪN)
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (n_clicks && window.VssTour) {
+            window.VssTour.start();
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("btn-start-tour", "children"), # Output giả để Dash chấp nhận
+    Input("btn-start-tour", "n_clicks"),
+    prevent_initial_call=True,
+)
 
 preload_data()
 

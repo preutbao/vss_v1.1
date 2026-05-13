@@ -18,6 +18,108 @@
   // ── Inject enhanced hero typography styles ───────────────────────────────
   const heroStyle = document.createElement('style');
   heroStyle.textContent = `
+    #hero-section {
+      height: 720px !important; /* Giả sử chiều cao cũ là 720px hoặc 100vh, bạn chỉnh lại con số này */
+      min-height: 720px !important;
+    }
+    .hero-slide {
+      height: 720px !important;
+    }
+      .cyber-cta-container {
+      margin-top: 20px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.6s 0.5s ease, transform 0.6s 0.5s ease !important;
+    }
+    .hero-slide.active .cyber-cta-container { opacity:1 !important; transform:translateY(0) !important; }
+
+    .cyber-btn {
+      display: inline-block;
+      padding: 12px 25px;
+      background: rgba(0, 229, 255, 0.05);
+      border: none;
+      color: #00e5ff;
+      font-family: 'DM Mono', monospace !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      position: relative;
+      cursor: pointer;
+      /* Cắt góc kiểu Cyberpunk */
+      clip-path: polygon(0% 0%, 90% 0%, 100% 30%, 100% 100%, 10% 100%, 0% 70%);
+      transition: all 0.3s ease;
+    }
+
+    .cyber-btn:hover {
+      background: #00e5ff;
+      color: #080d18;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+      transform: scale(1.05);
+    }
+
+    .cyber-btn::before {
+      content: ">>";
+      margin-right: 8px;
+      font-size: 10px;
+    }
+    
+    /* ĐÃ TRẢ VỀ NGUYÊN BẢN CỦA BẠN VÀ CHỈ KHÓA CHUYỂN ĐỘNG */
+    .hero-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0; 
+      bottom: 100px !important; 
+      pointer-events: none;
+      z-index: 0;
+      /* Giữ lại thuộc tính để hiện hình ảnh mờ */
+      background-size: cover; 
+      background-position: center right; 
+      filter: blur(6px);
+      /* Chặn đứng hiệu ứng pan/zoom */
+      transform: scale(1.05) !important;
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; 
+      bottom: 75px !important; 
+      pointer-events: none;
+      z-index: 1;
+      /* Gradient đen mờ để hiện chữ */
+      background: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0) 100%);
+    }
+
+    /* 2. Đưa nội dung chữ lên trên lớp mờ */
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      pointer-events: none; /* Để không chặn click vào các nút điều hướng bên dưới */
+    }
+    
+    /* Cho phép các nút trong nội dung (như nút Thiết lập hồ sơ) vẫn bấm được */
+    .hero-content button, .cyber-btn {
+      pointer-events: auto;
+    }
+
+    /* 3. Nâng toàn bộ các nút điều khiển, số thứ tự và phím tắt lên trên cùng */
+    #hero-prev, #hero-next, .hero-counter, .hero-keys, .hero-credit, #hero-progress-container {
+      z-index: 100 !important;
+      position: relative; /* Đảm bảo z-index có tác dụng */
+    }
+
+    /* Đảm bảo khu vực chứa Era Tabs và Timeline nằm dưới cùng không bị hình ảnh đè */
+    /* Đảm bảo dải ô giai đoạn nổi lên mà KHÔNG làm vỡ vị trí gốc */
+    #hero-eras, #hero-timeline, #hero-legend {
+      z-index: 100 !important;
+    }
+    
+    .era-tab {
+      position: relative;
+      z-index: 100 !important;
+    }
+    
     .hero-year {
       font-family: 'Syne', 'Montserrat', sans-serif !important;
       font-size: clamp(88px, 13vw, 168px) !important;
@@ -32,6 +134,7 @@
       transition: opacity 0.7s 0.08s cubic-bezier(0.22,1,0.36,1),
                   transform 0.7s 0.08s cubic-bezier(0.22,1,0.36,1) !important;
     }
+                  
     .hero-slide.active .hero-year { opacity:1 !important; transform:translateY(0) !important; }
 
     .hero-tagline {
@@ -110,6 +213,7 @@
       desc:'Chuyển sang kinh tế thị trường. Đây là bước ngoặt tạo ra các doanh nghiệp tư nhân cốt lõi — nền tảng cho việc phân tích chỉ số tài chính (BCTC) sau này.',
       move:'Khởi nguyên', moveCls:'stat-neut', coverage:'Lịch sử vĩ mô · Mở cửa',
       bgColor:'#080d18', credit:'', dot:'#00e5ff', eraIdx:0,
+      bgImage:'assets/slideshow_bg/slide_bg1.png',
     },
     {
       year:'1993', era:'doi-moi', badge:'policy', badgeDate:'11/07',
@@ -117,6 +221,7 @@
       desc:'FDI bùng nổ. Trong hệ thống điểm VGM, đây là giai đoạn các chỉ số Tăng trưởng (Growth) như Doanh thu & EPS bắt đầu có ý nghĩa thực tiễn.',
       move:'FDI+', moveCls:'stat-pos', coverage:'Dữ liệu tăng trưởng · Đầy đủ',
       bgColor:'#08100d', credit:'', dot:'#00e676', eraIdx:0,
+      bgImage:'assets/slideshow_bg/slide_bg2.png',
     },
     {
       year:'1997', era:'khung-hoang', badge:'panic', badgeDate:'02/07',
@@ -124,6 +229,7 @@
       desc:'Cú sốc tỷ giá chứng minh tầm quan trọng của chiến lược "Phòng thủ". Bộ lọc VSS sẽ đánh rớt đài (1 Sao) ngay lập tức những mã có nợ vay ngoại tệ cao.',
       move:'Rủi ro nợ', moveCls:'stat-neg', coverage:'Dữ liệu Cờ Đỏ (Red Flag)',
       bgColor:'#100a00', credit:'', dot:'#ffb703', eraIdx:1,
+      bgImage:'assets/slideshow_bg/slide_bg3.png',
     },
     {
       year:'2000', era:'ttck', badge:'boom', badgeDate:'20/07',
@@ -131,6 +237,7 @@
       desc:'Khởi điểm của chuỗi Data chứng khoán. Nền tảng để thuật toán quét thanh khoản và xây dựng các bộ chỉ số định giá P/E, P/B trong thời gian thực.',
       move:'VNI 100', moveCls:'stat-pos', coverage:'Chuỗi Time-series · Bắt đầu',
       bgColor:'#081208', credit:'', dot:'#00e676', eraIdx:2,
+      bgImage:'assets/slideshow_bg/slide_bg4.png',
     },
     {
       year:'2007', era:'ttck', badge:'mania', badgeDate:'12/03',
@@ -138,6 +245,7 @@
       desc:'Bong bóng định giá toàn dân. Nếu VSS tồn tại lúc này, ma trận Điểm Giá Trị (Value) sẽ liên tục cảnh báo đỏ vì P/E thị trường vượt xa mức an toàn.',
       move:'P/E > 30', moveCls:'stat-pos', coverage:'Phễu định giá · Cảnh báo',
       bgColor:'#0d0a14', credit:'', dot:'#b388ff', eraIdx:2,
+      bgImage:'assets/slideshow_bg/slide_bg5.png',
     },
     {
       year:'2008', era:'khung-hoang', badge:'crash', badgeDate:'28/02',
@@ -145,6 +253,7 @@
       desc:'Thị trường bốc hơi 76%. Chỉ những doanh nghiệp có Dòng tiền HĐKD (CFO) dương mới sống sót. Tư duy "Tiền mặt là Vua" lên ngôi.',
       move:'−76%', moveCls:'stat-neg', coverage:'Bộ lọc Dòng tiền · Kích hoạt',
       bgColor:'#140808', credit:'', dot:'#ff3d57', eraIdx:1,
+      bgImage:'assets/slideshow_bg/slide_bg6.png',
     },
     {
       year:'2012', era:'tai-co-cau', badge:'policy', badgeDate:'01/06',
@@ -152,6 +261,7 @@
       desc:'Sàng lọc khắc nghiệt. Tiêu chí Chất lượng tài sản (NPL, Tỷ lệ bao phủ nợ xấu LLR) trở thành kim chỉ nam để né bẫy báo cáo tài chính tô hồng.',
       move:'Bẫy Nợ', moveCls:'stat-neut', coverage:'Chấm điểm Chất lượng · Bắt buộc',
       bgColor:'#0c0d08', credit:'', dot:'#ffb703', eraIdx:3,
+      bgImage:'assets/slideshow_bg/slide_bg7.png',
     },
     {
       year:'2020', era:'covid', badge:'crash', badgeDate:'24/03',
@@ -159,6 +269,7 @@
       desc:'Thị trường hoảng loạn rớt 33%. Thuật toán VSS lúc này sẽ giúp bạn quét ra các "viên kim cương" bị bán tháo (Điểm VGM 5-Sao) chỉ trong 30 giây.',
       move:'−33%', moveCls:'stat-neg', coverage:'Screener săn sale · Tối ưu',
       bgColor:'#080a10', credit:'', dot:'#ff3d57', eraIdx:4,
+      bgImage:'assets/slideshow_bg/slide_bg8.png',
     },
     {
       year:'2021', era:'covid', badge:'boom', badgeDate:'25/11',
@@ -166,6 +277,7 @@
       desc:'Thanh khoản tỷ USD. Bộ lọc Lướt sóng & Động lượng (Momentum) của VSS phát huy sức mạnh bám theo dòng tiền lớn, tối đa hóa hiệu suất ngắn hạn.',
       move:'+68%', moveCls:'stat-pos', coverage:'Chỉ số Động lượng · Đỉnh điểm',
       bgColor:'#081208', credit:'', dot:'#00e676', eraIdx:4,
+      bgImage:'assets/slideshow_bg/slide_bg9.png',
     },
     {
       year:'2026', era:'covid', badge:'policy', badgeDate:'HÔM NAY',
@@ -173,6 +285,7 @@
       desc:'Không còn dò dẫm thủ công bằng cảm xúc. Hệ thống Vietcap Smart Screener đang quét 165+ chỉ số. Xác định DNA đầu tư của bạn và để AI bốc thuốc ngay.',
       move:'LỌC NGAY', moveCls:'stat-pos', coverage:'Daily · Sẵn sàng',
       bgColor:'#040d18', credit:'', dot:'#00e5ff', eraIdx:4,
+      bgImage:'assets/slideshow_bg/slide_bg10.png',
     },
   ];
 
@@ -199,13 +312,23 @@
     slide.dataset.index = i;
     const isLast = i === EVENTS.length - 1;
     slide.innerHTML = `
-      <div class="hero-bg" style="background-color:${ev.bgColor}"></div>
+      <div class="hero-bg" style="background-image: url('${ev.bgImage}');"></div>
+      
       <div class="hero-overlay"></div>
+      
       <div class="hero-content">
+        
+        <div class="cyber-cta-container">
+          <div class="cyber-btn" onclick="window.location.href='#learn-more'">
+            TẠI SAO DÙNG VIETCAP SMART SCREENER?
+          </div>
+        </div>
+
         <div class="hero-badge badge-${ev.badge}">${ev.badge.toUpperCase()} &nbsp;·&nbsp; ${ev.badgeDate}</div>
         <div class="hero-year">${ev.year}</div>
         <div class="hero-tagline">${ev.tagline}</div>
         <div class="hero-desc">${ev.desc}</div>
+
         <div class="hero-stats">
           <div class="hero-stat-group">
             <div class="stat-label">Biến động</div>

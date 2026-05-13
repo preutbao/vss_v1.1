@@ -795,6 +795,16 @@ layout = html.Div([
                     id="action-buttons-container",
                     style={"display": "none", "gap": "8px", "alignItems": "center"},
                     children=[
+                        # 🛠 THÊM NÚT HƯỚNG DẪN TẠI ĐÂY (Cạnh nút CSV)
+                        # Nút Hướng dẫn (Chạy Tour Guide)
+                        dbc.Button(
+                            [html.I(className="fas fa-play-circle", style={"marginRight": "5px"}),
+                             html.Span("Hướng dẫn", id="label-start-tour-btn")],
+                            id="btn-start-tour",
+                            color="info", outline=True, size="sm",
+                            style={"borderRadius": "6px", "fontSize": "11px",
+                                   "padding": "4px 10px", "whiteSpace": "nowrap"},
+                        ),
                         # Export CSV
                         dbc.Button(
                             [html.I(className="fas fa-download", style={"marginRight": "5px"}),
@@ -828,7 +838,8 @@ layout = html.Div([
                             html.I(className="fas fa-th-large", style={"marginRight": "5px"}),
                             "Heatmap",
                         ], id="btn-heatmap", color="secondary", outline=True, size="sm",
-                            style={"borderRadius": "6px", "fontSize": "11px"}),
+                            style={"borderRadius": "6px", "fontSize": "11px", 
+                                   "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
 
                         # So sánh — PREMIUM
                         html.Div(
@@ -837,11 +848,11 @@ layout = html.Div([
                             children=[
                                 html.Div(
                                     dbc.Button([
-                                        html.I(className="fas fa-code-compare",
-                                               style={"marginRight": "5px"}),
+                                        html.I(className="fas fa-code-compare", style={"marginRight": "5px"}),
                                         "So sánh",
                                     ], id="btn-compare", color="info", outline=True, size="sm",
-                                        style={"borderRadius": "6px", "fontSize": "11px"}),
+                                        style={"borderRadius": "6px", "fontSize": "11px", 
+                                               "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
                                     className="premium-content",
                                 ),
                                 html.Div(
@@ -850,28 +861,25 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651",
-                                                      "marginBottom": "2px"}),
-                                        html.Span("VIP",
-                                                  style={"fontSize": "9px", "fontWeight": "700",
-                                                         "color": "#6e7681"}),
+                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
                             ],
                         ),
 
-                        # Portfolio — PREMIUM
+                        # Danh mục — PREMIUM
                         html.Div(
                             id="pw-portfolio",
                             className="premium-wrapper premium-locked",
                             children=[
                                 html.Div(
                                     dbc.Button([
-                                        html.I(className="fas fa-briefcase",
-                                               style={"marginRight": "5px"}),
+                                        html.I(className="fas fa-briefcase", style={"marginRight": "5px"}),
                                         "Danh mục",
                                     ], id="btn-portfolio", color="warning", outline=True, size="sm",
-                                        style={"borderRadius": "6px", "fontSize": "11px"}),
+                                        style={"borderRadius": "6px", "fontSize": "11px", 
+                                               "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
                                     className="premium-content",
                                 ),
                                 html.Div(
@@ -880,28 +888,25 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651",
-                                                      "marginBottom": "2px"}),
-                                        html.Span("VIP",
-                                                  style={"fontSize": "9px", "fontWeight": "700",
-                                                         "color": "#6e7681"}),
+                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
                             ],
                         ),
 
-                        # Alerts — PREMIUM
+                        # Cảnh báo — PREMIUM
                         html.Div(
                             id="pw-alerts",
                             className="premium-wrapper premium-locked",
                             children=[
                                 html.Div([
                                     dbc.Button([
-                                        html.I(className="fas fa-bell",
-                                               style={"marginRight": "5px"}),
+                                        html.I(className="fas fa-bell", style={"marginRight": "5px"}),
                                         "Cảnh báo",
                                     ], id="btn-alerts", color="danger", outline=True, size="sm",
-                                        style={"borderRadius": "6px", "fontSize": "11px"}),
+                                        style={"borderRadius": "6px", "fontSize": "11px", 
+                                               "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
                                     html.Span("0", id="alert-badge", style={"display": "none"}),
                                 ], style={"position": "relative"}, className="premium-content"),
                                 html.Div(
@@ -910,11 +915,8 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651",
-                                                      "marginBottom": "2px"}),
-                                        html.Span("VIP",
-                                                  style={"fontSize": "9px", "fontWeight": "700",
-                                                         "color": "#6e7681"}),
+                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
                             ],

@@ -257,6 +257,10 @@ def create_banner():
                 html.Span(className="vss-stat-pill", children=[
                     "HOSE · HNX · UPCoM"
                 ]),
+                html.Span("·", className="vss-stat-sep"),
+                html.Span(className="vss-stat-pill", children=[
+                    "Data cập nhật", html.Strong("hàng ngày")
+                ]),
             ]),
 
             # CTA

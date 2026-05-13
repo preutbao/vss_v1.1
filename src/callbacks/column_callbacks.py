@@ -258,7 +258,7 @@ FIXED_COLS = [
     {
     "field": "Star_Rating",
     "headerName": "XẾP HẠNG",
-    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao. Hệ thống tự động kích hoạt màng lọc phòng thủ: Giới hạn tối đa 2 sao đối với doanh nghiệp rỗng dòng tiền hoặc thanh khoản yếu.",
+    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao. Hệ thống tự động kích hoạt màng lọc giới hạn tối đa 2 sao đối với doanh nghiệp rỗng dòng tiền hoặc thanh khoản yếu.",
     "width": 120, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
     "sortable": True,
     "cellRenderer": "CustomStarRating", # <--- Gọi tên Component đã đăng ký ở file JS

@@ -3765,7 +3765,7 @@ def update_cutoff_label(row_data):
             df_tmp = pd.read_parquet(parquet, columns=["Date"])
             max_date = pd.to_datetime(df_tmp["Date"]).max()
             if pd.notna(max_date):
-                return f"(Cập nhật {max_date.strftime('%d/%m/%Y')})"
+                return f"Cập nhật {max_date.strftime('%d/%m/%Y')}"
         return ""
     except Exception:
         return ""
