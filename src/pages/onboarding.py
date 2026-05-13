@@ -313,8 +313,8 @@ layout = html.Div(
         ),
     },
     children=[
-        # ── GỌI TOPBAR RA ĐÂY ──────────────────────────────────────────────
-        create_topbar(),
+        
+        # XÓA DÒNG create_topbar() Ở ĐÂY ĐI
 
         _hero_section(),
 
@@ -436,6 +436,26 @@ layout = html.Div(
                             "alignItems": "center",
                             "padding": "14px 22px",
                             "borderTop": f"1px solid {_BORDER}",
+                            "backgroundColor": _BG_CARD2,
+                        }),
+                        # ← THÊM MỚI NGAY SAU DIV FOOTER TRÊN:
+                        html.Div([
+                            html.Span(
+                                "Bỏ qua khảo sát",
+                                id="btn-skip-onboarding",
+                                n_clicks=0,
+                                style={
+                                    "color": "rgba(200,200,200,0.3)",
+                                    "fontSize": "12px",
+                                    "cursor": "pointer",
+                                    "textDecoration": "underline",
+                                    "fontFamily": _FONT_INTER,
+                                    "userSelect": "none",
+                                }
+                            )
+                        ], style={
+                            "textAlign": "center",
+                            "padding": "4px 22px 16px",
                             "backgroundColor": _BG_CARD2,
                         }),
                     ],

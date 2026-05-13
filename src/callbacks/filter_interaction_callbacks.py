@@ -950,7 +950,7 @@ def manage_filter_ui(
             saved, new_opts,
             True,
             [html.I(className="fas fa-check-circle me-2", style={"color": "#3fb950"}),
-             f' Đã lưu: "{name}"'],
+             f' Vào tab "Cá nhân" để xem bộ lọc đã lưu: "{name}"'],
              False,  
             NO,   
         )

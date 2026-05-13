@@ -123,25 +123,31 @@ import src.callbacks.portfolio_callbacks
 import src.callbacks.alert_callbacks
 import src.callbacks.score_breakdown_callbacks
 import src.callbacks.investor_profile_callbacks
+import src.callbacks.tab_dot_callbacks
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT — hai section: onboarding ↔ main app
 # ─────────────────────────────────────────────────────────────────────────────
 from dash import html, dcc
 from src.pages import screener, onboarding
-from src.components.header import create_header
+from src.components.header import create_header, create_topbar, create_banner
 from src.callbacks.chatbot_callbacks import create_chatbot_layout
+
 
 app.layout = html.Div(
     style={"margin": "0", "padding": "0", "overflowX": "hidden"},
     children=[
+        # ── 0. THANH TOPBAR LUÔN HIỂN THỊ Ở MỌI TRANG ─────────────────────
+        create_topbar(),
+
         # ── 1. GLOBAL STORES ──────────────────────────────────────────────
         dcc.Store(id="trading-mode-store",   storage_type="session",  data="investing"),
         dcc.Store(id="tour-selected-mode",   storage_type="memory",   data="investing"),
         dcc.Store(id="hint-shown-store",     storage_type="memory",   data=False),
         dcc.Store(id="tour-step-store",      data=1),
 
-        # Hồ sơ nhà đầu tư — lưu localStorage để persist qua session
+        # LƯU Ý QUAN TRỌNG: Nếu bạn đã khai báo 2 Store này ở file sidebar.py, 
+        # thì bạn PHẢI XÓA CHÚNG Ở ĐÂY (hoặc xóa ở sidebar.py). Chỉ giữ lại 1 nơi duy nhất!
         dcc.Store(id="investor-profile-store", storage_type="local",  data=None),
         dcc.Store(id="profile-setup-done",     storage_type="local",  data=False),
 
@@ -159,7 +165,8 @@ app.layout = html.Div(
             id="main-app-page",
             style={"display": "none"},
             children=[
-                create_header(),
+                # THAY create_header() BẰNG create_banner() ĐỂ KHÔNG BỊ TRÙNG TOPBAR
+                create_banner(), 
                 html.Div(
                     id="screener-section",
                     children=[screener.layout],

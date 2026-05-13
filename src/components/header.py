@@ -109,8 +109,9 @@ def _create_login_modal():
     )
 
 # ── TÁCH PHẦN 1: TOPBAR (Dùng được ở mọi nơi) ──────────────────────────────────
-def create_topbar():
-    return html.Div(id="vietcap-topbar-only", children=[
+def create_topbar(id_suffix=""):
+    wrapper_id = f"vietcap-topbar{id_suffix}" if id_suffix else "vietcap-topbar-only"
+    return html.Div(id=wrapper_id, children=[
         # ── Auth store ────────────────────────────────────────────────────────
         dcc.Store(id='auth-store', storage_type='local', data={"logged_in": False}),
 

@@ -14,22 +14,83 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+from dash import Input, Output, State, ctx
+from dash.exceptions import PreventUpdate
+from src.backend.data_loader import get_ticker_list # Import hàm sinh data của bạn
 
+# 1. CALLBACK: NẠP DATA CHO DROPDOWN (GỘP LỊCH SỬ + TẤT CẢ)
 @app.callback(
     Output("search-ticker-input", "options"),
-    Input("screener-table", "id"),          # trigger 1 lần duy nhất khi DOM sẵn sàng
-    prevent_initial_call=False,
+    Input("recent-searches-store", "data") # Tự động chạy khi mở web hoặc khi lịch sử đổi
 )
-def populate_ticker_dropdown(_table_id):
-    """
-    Nạp toàn bộ danh sách mã + tên công ty vào Dropdown tìm kiếm.
-    Chạy 1 lần khi page load. get_ticker_list() dùng snapshot đã có trong RAM
-    nên cực nhanh (<5ms sau lần khởi động đầu tiên).
-    """
-    try:
-        options = get_ticker_list()
-        logger.info(f"Ticker search dropdown: {len(options)} mã")
-        return options
-    except Exception as e:
-        logger.error(f"Lỗi nạp ticker list: {e}")
+def populate_dropdown_with_history(recent_tickers):
+    recent_tickers = recent_tickers or []
+    full_list = get_ticker_list()
+    
+    if not full_list:
         return []
+        
+    lookup = {item['value']: item for item in full_list}
+    options = []
+    
+    # --- PHẦN LỊCH SỬ (YOUTUBE STYLE) ---
+    if recent_tickers:
+        for ticker in recent_tickers:
+            if ticker in lookup:
+                hist_item = lookup[ticker].copy()
+                hist_item['label'] = "🕒 " + hist_item['label'] # Thêm icon đồng hồ
+                options.append(hist_item)
+        
+        # Thêm vạch phân cách giả (không bấm được)
+        options.append({
+            'label': '────────── Tất cả mã ──────────', 
+            'value': 'divider', 
+            'disabled': True
+        })
+        
+    # --- PHẦN TẤT CẢ MÃ ---
+    for item in full_list:
+        # Ẩn bớt những mã đã xuất hiện ở phần lịch sử cho đỡ trùng lặp
+        if item['value'] not in recent_tickers:
+            options.append(item)
+            
+    return options
+
+# 2. CALLBACK: CẬP NHẬT LỊCH SỬ MỖI KHI NGƯỜI DÙNG CHỌN MÃ
+@app.callback(
+    Output("recent-searches-store", "data"),
+    Input("search-ticker-input", "value"),
+    State("recent-searches-store", "data"),
+    prevent_initial_call=True
+)
+def save_recent_search(selected_ticker, current_history):
+    if not selected_ticker or selected_ticker == 'divider':
+        raise PreventUpdate
+        
+    current_history = current_history or []
+    
+    # Nếu mã đã có trong lịch sử thì xóa đi để đưa lên đầu
+    if selected_ticker in current_history:
+        current_history.remove(selected_ticker)
+        
+    current_history.insert(0, selected_ticker)
+    
+    # Chỉ giữ tối đa 5 mã tìm kiếm gần nhất
+    return current_history[:5]
+
+# 3. CALLBACK: BẤM VÀO CHIP NỔI BẬT THÌ TỰ NHẢY VÀO Ô SEARCH
+@app.callback(
+    Output("search-ticker-input", "value", allow_duplicate=True),
+    [Input("trend-chip-FPT", "n_clicks"),
+     Input("trend-chip-VIC", "n_clicks"),
+     Input("trend-chip-SSI", "n_clicks"),
+     Input("trend-chip-VCB", "n_clicks")],
+    prevent_initial_call=True
+)
+def click_trending_chip(n1, n2, n3, n4):
+    if not ctx.triggered:
+        raise PreventUpdate
+    
+    button_id = ctx.triggered_id
+    ticker = button_id.split("-")[-1] # Lấy đuôi FPT, VIC...
+    return ticker

@@ -405,10 +405,9 @@ df_price (latest snapshot/ticker)
 
 | Vai trò | Thành viên |
 |---|---|
-| **Kiến trúc & Backend** | Ngô Cao Nguyên (Lead Developer) |
-| **Chiến lược đầu tư** | Ngô Cao Nguyên (K16 · Vietcap TVĐT) |
-| **Chiến lược đầu tư** | Phan Đặng Anh Kiệt (K16 · Vietcap TVĐT) |
-| **Chiến lược đầu tư** | Cao Huỳnh Tuyết Trân (K16 · Vietcap TVĐT) |
+| **Kiến trúc & Backend** | Ngô Cao Nguyên (Lead Developer - K16 Vietcap) |
+| **Chiến lược đầu tư** | Phan Đặng Anh Kiệt (Customer Experience - K16 Vietcap) |
+| **Chiến lược đầu tư** | Cao Huỳnh Tuyết Trân (UI/UX Developer - K16 Vietcap) |
 
 > **Liên hệ tư vấn đầu tư:** 0946 700 605 (Zalo/SMS)
 

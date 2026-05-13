@@ -1134,17 +1134,15 @@ def get_filter_ranges() -> dict:
     }
 
     try:
-        with _snapshot_lock:
-            df = _snapshot_df.copy() if _snapshot_df is not None else None
+        # Gọi hàm get_snapshot_df() để tự động quản lý: RAM -> Disk -> Rebuild
+        df = get_snapshot_df()
 
-        if df is None:
-            snap_path = os.path.join(PROCESSED_DIR, FILES["parquet_snapshot"])
-            if not os.path.exists(snap_path):
-                logger.warning("snapshot_cache.parquet chưa tồn tại → dùng fallback ranges")
-                with _filter_ranges_lock:
-                    _filter_ranges_cache = ranges
-                return ranges
-            df = pd.read_parquet(snap_path)
+        # Chỉ dùng fallback khi hệ thống thực sự lỗi, không thể build nổi dữ liệu
+        if df is None or df.empty:
+            logger.error("CRITICAL: Không thể tạo hoặc đọc snapshot_cache → Hệ thống rỗng, dùng fallback ranges")
+            with _filter_ranges_lock:
+                _filter_ranges_cache = ranges
+            return ranges
 
         logger.info(f"Tính filter ranges từ snapshot: {len(df)} mã, {len(df.columns)} cột")
 
@@ -1204,28 +1202,54 @@ def get_filter_ranges() -> dict:
 
     return ranges
 
-
 def get_ticker_list() -> list:
-    """
-    Trả về list of dict [{'label': 'BBCA – Bank Central Asia', 'value': 'BBCA'}, ...]
-    """
     records = get_latest_snapshot()
     if not records:
         return []
 
-    seen    = set()
+    # 1. Load bản đồ tên tiếng Việt từ file CSV
+    vn_names = {}
+    try:
+        import os, pandas as pd
+        # Đường dẫn tới file COMP INFO.csv
+        csv_path = os.path.join(BASE_DIR, "data", "raw", "COMP INFO.csv")
+        if os.path.exists(csv_path):
+            df_info = pd.read_csv(csv_path)
+            # Ánh xạ Ticker -> Tên tiếng Việt
+            for _, r in df_info.iterrows():
+                symbol = str(r.get('symbol', r.get('Ticker', ''))).replace('.HM','').replace('.HN','').strip()
+                name_vi = str(r.get('company_name_vi', r.get('organ_name', ''))).strip()
+                if symbol and name_vi:
+                    vn_names[symbol] = name_vi
+    except Exception as e:
+        logger.warning(f"Không thể load tên tiếng Việt: {e}")
+
+    # 2. Xây dựng options với label đầy đủ 3 thành phần
+    seen = set()
     options = []
     for row in records:
         ticker = str(row.get('Ticker', '')).strip()
         if not ticker or ticker in seen:
             continue
         seen.add(ticker)
-        company = str(row.get('Company Common Name', '')).strip()
-        if company.lower() in ('nan', 'none', '', '0'):
-            label = ticker
-        else:
-            label = f"{ticker} – {company}"
-        options.append({'label': label, 'value': ticker})
+        
+        name_en = str(row.get('Company Common Name', '')).strip()
+        if name_en.lower() in ('nan', 'none', '', '0'): name_en = ""
+        
+        name_vi = vn_names.get(ticker, "")
+        
+        # Tạo chuỗi hiển thị: TICKER - Tên Việt - Tên Anh
+        label_parts = [ticker]
+        if name_vi: label_parts.append(name_vi)
+        if name_en and name_en != name_vi: label_parts.append(name_en)
+        
+        full_label = " - ".join(label_parts)
+
+        options.append({
+            'label': full_label, 
+            'value': ticker,
+            'title': full_label # Hiển thị tooltip khi di chuột vào
+        })
 
     options.sort(key=lambda x: x['value'])
     return options

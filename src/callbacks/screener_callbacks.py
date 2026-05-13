@@ -650,26 +650,42 @@ def update_screener_table(
         # 🟢 TẦNG 0: LỌC THEO TỪ KHÓA TÌM KIẾM (Bug #4 fix: tìm cả tên công ty)
         # ================================================================
         if search_text:
-            search_upper = str(search_text).strip().upper()
+            # search_text có thể là ticker thuần (value từ Dropdown) hoặc chuỗi tên
+            # Dropdown.value luôn là ticker (vd "FPT"), nhưng giữ logic search tên phòng khi
+            # người dùng xoá rồi gõ tay
+            search_val = str(search_text).strip()
+            search_upper = search_val.upper()
 
-            # Vì search-ticker-input là Dropdown → value luôn là ticker code chính xác
-            # (VD: "VIC", không phải "VIC – Vingroup")
-            # Dùng exact match trước, tránh "VIC" khớp "VICG", "SERVICE", v.v.
+            # Exact match theo ticker trước
             exact_ticker = df_filtered['Ticker'].astype(str).str.upper() == search_upper
-
             if exact_ticker.any():
-                # Có mã khớp chính xác → chỉ hiện mã đó
                 df_filtered = df_filtered[exact_ticker]
             else:
-                # Không tìm thấy exact → fallback startswith (user đang gõ dở)
-                ticker_startswith = df_filtered['Ticker'].astype(str).str.upper().str.startswith(search_upper, na=False)
+                # Tìm theo ticker startswith + tên tiếng Anh + tên tiếng Việt (từ COMP INFO)
+                ticker_match = df_filtered['Ticker'].astype(str).str.upper().str.startswith(search_upper, na=False)
+                name_en_match = pd.Series([False] * len(df_filtered), index=df_filtered.index)
+                name_vi_match = pd.Series([False] * len(df_filtered), index=df_filtered.index)
+
                 if 'Company Common Name' in df_filtered.columns:
-                    name_match = df_filtered['Company Common Name'].astype(str).str.upper().str.contains(
-                        search_upper, na=False, regex=False
-                    )
-                    df_filtered = df_filtered[ticker_startswith | name_match]
-                else:
-                    df_filtered = df_filtered[ticker_startswith]
+                    name_en_match = df_filtered['Company Common Name'].astype(str).str.upper().str.contains(
+                        search_upper, na=False, regex=False)
+
+                # Load tên tiếng Việt từ COMP INFO và match
+                try:
+                    if not df_comp_info.empty:
+                        # df_comp_info đã được load global ở đầu screener_callbacks.py
+                        vn_col = next((c for c in ['organ_name','company_name_vi','ten_cong_ty','name_vi']
+                                    if c in df_comp_info.columns), None)
+                        if vn_col:
+                            vn_map = df_comp_info.set_index('Ticker')[vn_col].to_dict()
+                            df_filtered['_vn_name'] = df_filtered['Ticker'].map(vn_map).fillna('')
+                            name_vi_match = df_filtered['_vn_name'].str.upper().str.contains(
+                                search_upper, na=False, regex=False)
+                            df_filtered = df_filtered.drop(columns=['_vn_name'])
+                except Exception:
+                    pass
+
+                df_filtered = df_filtered[ticker_match | name_en_match | name_vi_match]
                 
         from src.backend.data_loader import fetch_index_constituents
     
@@ -2465,24 +2481,22 @@ def update_metrics_tab(selected_rows, period, stock_store_data):
     [Input("toggle-filter-btn", "n_clicks"),
      Input("btn-filter", "n_clicks"),
      Input("strategy-preset-dropdown", "value"),
-     Input("selected-filters-container", "children"),   # ← THÊM
+     
+     # Input("selected-filters-container", "children"),   # ← THÊM # COMMENTED OUT  to FIX Panel bộ lọc tự mở sau onboarding
     ],
     [State("filter-offcanvas", "is_open")],
     prevent_initial_call=True
 )
 def toggle_filter_offcanvas(n_clicks_open, n_clicks_apply, strategy_val,
-                             filter_children,   # ← THÊM tham số
+                             # filter_children,   # Xóa tham số filter_children ở hàm def toggle_filter_offcanvas().
                              is_open):
     from dash import ctx as dash_ctx
     triggered_id = dash_ctx.triggered_id
 
     if triggered_id == "strategy-preset-dropdown":
         return True if strategy_val else is_open
-    elif triggered_id == "selected-filters-container":
-        # Nếu có card được thêm vào, mở panel để user thấy
-        if filter_children and len(filter_children) > 0:
-            return True
-        return is_open
+    # elif triggered_id == "selected-filters-container":
+    #   Xóa đoạn elif triggered_id == "selected-filters-container": ở bên dưới.
     elif triggered_id == "toggle-filter-btn":
         return not is_open
     elif triggered_id == "btn-filter":

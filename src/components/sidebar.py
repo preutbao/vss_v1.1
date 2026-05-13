@@ -14,8 +14,6 @@ from src.constants import SECTOR_TRANSLATION
 sector_options = []
 
 def _toolbar_tab(tab_id, icon_cls, label, is_active=False):
-    """Tạo tab button — màu sắc do CSS class kiểm soát hoàn toàn."""
-    # Thêm class 'active' nếu is_active = True
     base_class = "toolbar-tab"
     if is_active:
         base_class += " active"
@@ -24,10 +22,17 @@ def _toolbar_tab(tab_id, icon_cls, label, is_active=False):
         [
             html.I(className=f"{icon_cls} toolbar-tab-icon"),
             html.Span(label, className="toolbar-tab-label"),
+            # ── THÊM ĐOẠN NÀY ──
+            html.Span(
+                id=f"tab-dot-{tab_id}",
+                className="tab-change-dot",
+                style={"display": "none"},   # ẩn mặc định
+            ),
         ],
         id=f"toolbar-tab-{tab_id}",
         n_clicks=0,
-        className=base_class,   # Dùng class đã được gộp
+        className=base_class,
+        style={"position": "relative"},     # cần để dot định vị được
     )
 
 _STRATEGY_GROUPS = [
@@ -505,13 +510,13 @@ _col3_filters = html.Div(
 
                 dcc.Dropdown(
                     id="filter-year-dropdown",
-                    options=[{"label": "Toàn bộ", "value": "all"}]
+                    options=[{"label": "Toàn bộ năm", "value": "all"}]
                            + [{"label": str(y), "value": y} for y in range(2019, 2025)],
                     value="all",
                     clearable=False,
                     searchable=False,
                     style={
-                        "width": "88px",
+                        "width": "123px",
                         "fontSize": "11px",
                         "color": "#c9d1d9",
                         "flexShrink": "0",
@@ -531,18 +536,11 @@ _col3_filters = html.Div(
                                "backgroundColor": "transparent",
                                "border": "1px solid #30363d", "color": "#8b949e", "display": "none"},
                     ),
-                    dbc.Button(
-                        [html.I(className="fas fa-times",
-                                style={"fontSize": "10px", "marginRight": "4px"}),
-                         "Xoá tất cả"],
-                        id="btn-reset-ui", color="secondary", outline=True,
-                        n_clicks=0, size="sm",
-                        style={"fontSize": "10px", "padding": "3px 8px"},
-                    ),
+                    # NÚT "XÓA TẤT CẢ" ĐÃ ĐƯỢC XÓA KHỎI ĐÂY
                     dbc.Button(
                         [html.I(className="fas fa-save", style={"fontSize": "10px", "marginRight": "4px"}),
                          "Lưu bộ lọc"],
-                        id="btn-save", color="secondary", outline=True,
+                        id="btn-save", color="primary", outline=True,
                         n_clicks=0, size="sm",
                         style={"fontSize": "10px", "padding": "3px 8px"},
                     ),
@@ -631,46 +629,43 @@ layout = html.Div(
             # ── PHẢI: Content panels ─────────────────────────────────────────────
             html.Div([
 
+                # ── BỘ NHỚ LƯU LỊCH SỬ TÌM KIẾM DƯỚI LOCALSTORAGE ───────────────
+                dcc.Store(id="recent-searches-store", storage_type="local", data=[]),
+
                 # ── PANEL 1: Tìm mã ─────────────────────────────────────────────
                 html.Div([
+                    # Thanh search
+                    dcc.Dropdown(
+                        id="search-ticker-input",
+                        options=[],
+                        value=None,
+                        placeholder="Tìm mã hoặc tên công ty (Tiếng Việt/Anh)...",
+                        searchable=True,
+                        clearable=True,
+                        multi=False,
+                        className="ssi-dropdown-custom ticker-search-dropdown",
+                        style={"minWidth": "800px", "color": "#ffffff"},
+                        optionHeight=50,
+                    ),
+                    
+                    # Cụm Mã Nổi Bật (Trending Chips)
                     html.Div([
-                        html.I(className="fas fa-search", style={
-                            "position": "absolute", "left": "10px", "top": "50%",
-                            "transform": "translateY(-50%)", "color": "#8b949e",
-                            "fontSize": "12px", "zIndex": "10", "pointerEvents": "none",
+                        html.Span("Hot:", style={
+                            "fontSize": "11px", "color": "#6e7681", 
+                            "marginRight": "4px", "fontWeight": "600"
                         }),
-                        dcc.Dropdown(
-                            id="search-ticker-input",
-                            options=[],
-                            value=None,
-                            placeholder="Tìm mã (VD: FPT)",
-                            searchable=True,
-                            clearable=True,
-                            multi=False,
-                            className="ssi-dropdown-custom ticker-search-dropdown",
-                            style={"minWidth": "260px", "color": "#ffffff"},
-                        ),
+                        html.Span("FPT", className="trending-chip", id="trend-chip-FPT", n_clicks=0),
+                        html.Span("VIC", className="trending-chip", id="trend-chip-VIC", n_clicks=0),
+                        html.Span("SSI", className="trending-chip", id="trend-chip-SSI", n_clicks=0),
+                        html.Span("VCB", className="trending-chip", id="trend-chip-VCB", n_clicks=0),
                     ], style={
-                        "position": "relative",
-                        "display": "flex",
-                        "alignItems": "center",
-                        "overflow": "visible",
+                        "display": "flex", "alignItems": "center", 
+                        "gap": "6px", "marginLeft": "12px", "flexWrap": "nowrap"
                     }),
-                    # Tooltip mode (target cần tồn tại trong DOM)
-                    # dbc.Tooltip(
-                    #    id="mode-toggle-tooltip",
-                    #    target="mode-toggle-btn",
-                    #    placement="bottom",
-                    #    style={
-                    #        "maxWidth": "280px",
-                    #        "backgroundColor": "#161b22",
-                    #        "border": "1px solid #30363d",
-                    #        "borderRadius": "8px",
-                    #        "padding": "0",
-                    #        "fontSize": "12px",
-                    #    },
-                    #),
-                ], id="toolbar-panel-search", className="toolbar-panel toolbar-panel-hidden"),
+
+                ], id="toolbar-panel-search", className="toolbar-panel toolbar-panel-hidden",
+                   style={"display": "flex", "alignItems": "center"} # Ép 2 khối nằm ngang
+                ),
 
                 # ── PANEL 2: Chiến lược đầu tư ──────────────────────────────────
                 html.Div([
@@ -684,10 +679,6 @@ layout = html.Div(
                         style={"borderRadius": "20px", "fontSize": "12px",
                             "padding": "4px 14px", "flexShrink": "0"},
                     ),
-                    html.Span("Trường phái", id="label-strategy", style={
-                        "fontSize": "11px", "color": "#6e7681",
-                        "fontWeight": "600", "whiteSpace": "nowrap", "flexShrink": "0",
-                    }),
                     # Strategy picker (premium wrapped)
                     _premium_wrap(
                         content=html.Div([
@@ -717,8 +708,10 @@ layout = html.Div(
                                     id="strategy-accordion-trigger",
                                     color="secondary", outline=True, size="sm",
                                     style={
-                                        "minWidth": "220px", "maxWidth": "300px",
-                                        "display": "flex", "alignItems": "center",
+                                        "minWidth": "350px",  # Tăng từ 220px lên 350px
+                                        "maxWidth": "500px",  # Tăng từ 300px lên 500px
+                                        "display": "flex", 
+                                        "alignItems": "center",
                                         "justifyContent": "space-between",
                                         "borderColor": "#30363d",
                                     },
@@ -809,7 +802,32 @@ layout = html.Div(
                         section="strategies",
                         label="Chiến lược VIP",
                     ),
-                ], id="toolbar-panel-strategy", className="toolbar-panel"),
+                    # ── NÚT "XÓA TẤT CẢ" MỚI ĐƯỢC CHÈN VÀO ĐÂY ──
+                    dbc.Button(
+                        [html.I(className="fas fa-times", style={"marginRight": "6px"}),
+                         "Xoá tất cả"],
+                        id="btn-reset-ui",
+                        color="secondary", outline=True, size="sm",
+                        style={
+                            "borderRadius": "20px", 
+                            "fontSize": "12px",
+                            "padding": "4px 14px", 
+                            "marginLeft": "8px", 
+                            "flexShrink": "0"
+                        },
+                    ),
+
+                ], 
+                   id="toolbar-panel-strategy", 
+                   className="toolbar-panel toolbar-panel-hidden",
+                   # THÊM STYLE DƯỚI ĐÂY ĐỂ CĂN LỀ TRÁI VÀ TẠO KHOẢNG CÁCH CỐ ĐỊNH
+                   style={
+                       "display": "flex", 
+                       "alignItems": "center", 
+                       "gap": "10px",              # Khoảng cách giữa các nút là 10px
+                       "justifyContent": "flex-start" # Ép các nút dồn về bên trái, không giãn cách xa
+                   }
+                ),
 
                 # ── PANEL 3: Lọc theo phạm vi ────────────────────────────────────
                 html.Div([
@@ -894,7 +912,7 @@ layout = html.Div(
                             children=[
                                 html.I(className="fas fa-user-circle",
                                        style={"marginRight": "5px", "color": "#00a651"}),
-                                html.Span("Hồ sơ NĐT", id="profile-btn-label"),
+                                html.Span("Thay đổi hồ sơ NĐT", id="profile-btn-label"),
                             ],
                             n_clicks=0,
                             size="sm",

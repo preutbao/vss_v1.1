@@ -1944,7 +1944,7 @@ span[style*="f59e0b"] {
 }
 
 #screener-scroll-anchor {
-    scroll-margin-top: 60px;  /* = chiều cao header + padding */
+    scroll-margin-top: 66px;  /* = chiều cao header + padding */
 }
 
 /* Custom Font hiện đại cho toàn hệ thống (nếu bạn chưa có) */
@@ -2638,4 +2638,72 @@ span[style*="f59e0b"] {
 .ips-choice-card.selected {
     border-color: #3b82f6 !important;
     background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* ============================================================================
+   FIX Z-INDEX: ÉP TOÀN BỘ POPUP/MODAL HIỆN LÊN TRÊN TOPBAR (Z-INDEX > 9999)
+   ============================================================================ */
+
+/* 1. Lớp phủ đen (Backdrop) của Modal và Offcanvas */
+.modal-backdrop, 
+.offcanvas-backdrop {
+    z-index: 10000 !important; 
+}
+
+/* 2. Khung cửa sổ Modal và Offcanvas (nơi chứa nội dung và nút X) */
+.modal, 
+.offcanvas {
+    z-index: 10005 !important; 
+}
+
+/* 3. Các thông báo nhỏ (Toast) góc màn hình */
+.toast-container,
+.toast-notification,
+.toast {
+    z-index: 10010 !important;
+}
+
+/* 4. Các hướng dẫn khi hover (Tooltip, Popover) */
+.tooltip, 
+.popover, 
+.cyber-tooltip {
+    z-index: 10015 !important;
+}
+
+/* ============================================================================
+   GIAO DIỆN MÃ NỔI BẬT (TRENDING CHIPS)
+   ============================================================================ */
+.trending-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #8b949e;
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trending-chip:hover {
+    color: #00d4ff;
+    border-color: #00d4ff;
+    background-color: rgba(0, 212, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+/* ============================================================================
+   TÙY CHỈNH DÒNG PHÂN CÁCH TRONG DROPDOWN LỊCH SỬ
+   ============================================================================ */
+.Select-option.is-disabled {
+    text-align: center !important;
+    color: #484f58 !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 2px !important;
+    padding: 8px 0 !important;
+    background-color: #091526 !important;
+    cursor: default !important;
 }

@@ -212,11 +212,11 @@ def calculate_technical_indicators(df_price, df_index=None):
             idx = df_index.copy()
             idx['Date'] = pd.to_datetime(idx['Date'], errors='coerce')
             idx = idx.dropna(subset=['Date','JCI_Close']).set_index('Date')['JCI_Close'].sort_index()
-            jci_ret = idx.pct_change()
+            jci_ret = idx.pct_change(fill_method=None) # <--- Thêm fill_method=None để tránh fill forward NaN bằng 0
 
             price_wide = df.pivot_table(index='Date', columns='Ticker', values=price_col, aggfunc='last')
             price_wide = price_wide.sort_index()
-            ret_wide   = price_wide.pct_change()
+            ret_wide   = price_wide.pct_change(fill_method=None) # <--- Thêm fill_method=None
 
             common = ret_wide.index.intersection(jci_ret.index)
             if len(common) >= 30:

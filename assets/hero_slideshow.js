@@ -102,76 +102,76 @@
   `;
   document.head.appendChild(heroStyle);
 
-  // ── DỮ LIỆU SỰ KIỆN TÀI CHÍNH VIỆT NAM ────────────────────────────────
+  // ── DỮ LIỆU SỰ KIỆN TÀI CHÍNH VIỆT NAM (GÓC NHÌN ĐỊNH LƯỢNG - SMART SCREENER) ────────────────────────────────
   const EVENTS = [
     {
       year:'1986', era:'doi-moi', badge:'policy', badgeDate:'18/12',
-      tagline:'Đổi Mới — Việt Nam <span class="hl-blue">mở cửa</span> nền kinh tế.',
-      desc:'Đại hội VI quyết định chuyển từ kinh tế kế hoạch hoá sang kinh tế thị trường định hướng XHCN. Nền tảng cho toàn bộ thị trường vốn sau này.',
-      move:'Reform', moveCls:'stat-neut', coverage:'Lưu trữ hàng tháng · Một phần',
+      tagline:'Đổi Mới - Khởi nguồn <span class="hl-blue">dữ liệu cơ bản</span>.',
+      desc:'Chuyển sang kinh tế thị trường. Đây là bước ngoặt tạo ra các doanh nghiệp tư nhân cốt lõi — nền tảng cho việc phân tích chỉ số tài chính (BCTC) sau này.',
+      move:'Khởi nguyên', moveCls:'stat-neut', coverage:'Lịch sử vĩ mô · Mở cửa',
       bgColor:'#080d18', credit:'', dot:'#00e5ff', eraIdx:0,
     },
     {
       year:'1993', era:'doi-moi', badge:'policy', badgeDate:'11/07',
-      tagline:'Mỹ <span class="hl-blue">bỏ cấm vận</span>. Dòng vốn ngoại bắt đầu chảy vào.',
-      desc:'Mỹ bình thường hoá quan hệ và dỡ lệnh cấm vận 18 năm. FDI tăng đột biến, kỷ nguyên hội nhập kinh tế mới bắt đầu.',
-      move:'FDI+', moveCls:'stat-pos', coverage:'Lưu trữ hàng tháng · Đầy đủ',
+      tagline:'Mỹ bỏ cấm vận - Động lực <span class="hl-blue">Tăng trưởng (G)</span>.',
+      desc:'FDI bùng nổ. Trong hệ thống điểm VGM, đây là giai đoạn các chỉ số Tăng trưởng (Growth) như Doanh thu & EPS bắt đầu có ý nghĩa thực tiễn.',
+      move:'FDI+', moveCls:'stat-pos', coverage:'Dữ liệu tăng trưởng · Đầy đủ',
       bgColor:'#08100d', credit:'', dot:'#00e676', eraIdx:0,
     },
     {
       year:'1997', era:'khung-hoang', badge:'panic', badgeDate:'02/07',
-      tagline:'Khủng hoảng châu Á — <span class="hl">đồng tiền</span> Đông Nam Á sụp đổ.',
-      desc:'Đồng baht Thái phá giá kéo theo làn sóng tháo chạy vốn khắp khu vực. Việt Nam chịu tác động gián tiếp nhưng tránh thảm hoạ nhờ kiểm soát vốn chặt.',
-      move:'−40%', moveCls:'stat-neg', coverage:'Lưu trữ hàng ngày · Một phần',
+      tagline:'Khủng hoảng châu Á - Bài học <span class="hl">Phòng thủ</span>.',
+      desc:'Cú sốc tỷ giá chứng minh tầm quan trọng của chiến lược "Phòng thủ". Bộ lọc VSS sẽ đánh rớt đài (1 Sao) ngay lập tức những mã có nợ vay ngoại tệ cao.',
+      move:'Rủi ro nợ', moveCls:'stat-neg', coverage:'Dữ liệu Cờ Đỏ (Red Flag)',
       bgColor:'#100a00', credit:'', dot:'#ffb703', eraIdx:1,
     },
     {
       year:'2000', era:'ttck', badge:'boom', badgeDate:'20/07',
-      tagline:'HOSE khai trương — <span class="hl-green">chứng khoán</span> Việt Nam ra đời.',
-      desc:'Trung tâm Giao dịch Chứng khoán TP.HCM mở phiên giao dịch đầu tiên với 2 mã REE và SAM. VNIndex khởi đầu tại mốc 100 điểm.',
-      move:'VNI 100', moveCls:'stat-pos', coverage:'Dữ liệu phiên · Đầy đủ',
+      tagline:'HOSE khai trương - Kỷ nguyên <span class="hl-green">Dữ liệu thị trường</span>.',
+      desc:'Khởi điểm của chuỗi Data chứng khoán. Nền tảng để thuật toán quét thanh khoản và xây dựng các bộ chỉ số định giá P/E, P/B trong thời gian thực.',
+      move:'VNI 100', moveCls:'stat-pos', coverage:'Chuỗi Time-series · Bắt đầu',
       bgColor:'#081208', credit:'', dot:'#00e676', eraIdx:2,
     },
     {
       year:'2007', era:'ttck', badge:'mania', badgeDate:'12/03',
-      tagline:'VNIndex <span class="hl-purple">lên đỉnh</span> 1.170 điểm. Cơn sốt chứng khoán toàn dân.',
-      desc:'Sau khi gia nhập WTO, hàng triệu tài khoản mở mới chỉ trong vài tháng. VNIndex tăng 145% từ đầu năm, tạo bong bóng lịch sử.',
-      move:'+145%', moveCls:'stat-pos', coverage:'Dữ liệu 1 phút · Đầy đủ',
+      tagline:'Đỉnh 1.170 - Ảo tưởng <span class="hl-purple">Lợi nhuận giấy</span>.',
+      desc:'Bong bóng định giá toàn dân. Nếu VSS tồn tại lúc này, ma trận Điểm Giá Trị (Value) sẽ liên tục cảnh báo đỏ vì P/E thị trường vượt xa mức an toàn.',
+      move:'P/E > 30', moveCls:'stat-pos', coverage:'Phễu định giá · Cảnh báo',
       bgColor:'#0d0a14', credit:'', dot:'#b388ff', eraIdx:2,
     },
     {
       year:'2008', era:'khung-hoang', badge:'crash', badgeDate:'28/02',
-      tagline:'VNIndex <span class="hl">rơi tự do</span> về 286 điểm. Bong bóng vỡ.',
-      desc:'Từ đỉnh 1.170 xuống đáy 286 điểm, mất gần 76% trong 12 tháng. Lạm phát phi mã 23%, tín dụng bị siết, hàng vạn nhà đầu tư thua lỗ nặng.',
-      move:'−76%', moveCls:'stat-neg', coverage:'Dữ liệu 1 phút · Đầy đủ',
+      tagline:'Vỡ bong bóng - Lưới lọc <span class="hl">Cổ phiếu rác</span>.',
+      desc:'Thị trường bốc hơi 76%. Chỉ những doanh nghiệp có Dòng tiền HĐKD (CFO) dương mới sống sót. Tư duy "Tiền mặt là Vua" lên ngôi.',
+      move:'−76%', moveCls:'stat-neg', coverage:'Bộ lọc Dòng tiền · Kích hoạt',
       bgColor:'#140808', credit:'', dot:'#ff3d57', eraIdx:1,
     },
     {
       year:'2012', era:'tai-co-cau', badge:'policy', badgeDate:'01/06',
-      tagline:'Tái cơ cấu ngân hàng — <span class="hl-amber">nợ xấu</span> phủ bóng thị trường.',
-      desc:'NHNN khởi động hợp nhất, sáp nhập ngân hàng. VAMC ra đời mua nợ xấu. VNIndex lình xình vùng 350–470 điểm suốt 3 năm, thanh khoản sụt giảm mạnh.',
-      move:'Sideways', moveCls:'stat-neut', coverage:'Dữ liệu 1 phút · Đầy đủ',
+      tagline:'Khủng hoảng Ngân hàng - Bóng ma <span class="hl-amber">Nợ xấu</span>.',
+      desc:'Sàng lọc khắc nghiệt. Tiêu chí Chất lượng tài sản (NPL, Tỷ lệ bao phủ nợ xấu LLR) trở thành kim chỉ nam để né bẫy báo cáo tài chính tô hồng.',
+      move:'Bẫy Nợ', moveCls:'stat-neut', coverage:'Chấm điểm Chất lượng · Bắt buộc',
       bgColor:'#0c0d08', credit:'', dot:'#ffb703', eraIdx:3,
     },
     {
       year:'2020', era:'covid', badge:'crash', badgeDate:'24/03',
-      tagline:'COVID-19 — VNIndex <span class="hl">mất 33%</span> trong 5 tuần.',
-      desc:'Từ đỉnh 940 điểm xuống đáy 629 điểm khi cả nước giãn cách. Nhưng nhà đầu tư F0 ào ạt mở tài khoản — thanh khoản bùng nổ kỷ lục.',
-      move:'−33%', moveCls:'stat-neg', coverage:'Dữ liệu 1 phút · Đầy đủ',
+      tagline:'Cú sốc COVID-19 - Cơ hội <span class="hl-green">Bắt đáy siêu cổ</span>.',
+      desc:'Thị trường hoảng loạn rớt 33%. Thuật toán VSS lúc này sẽ giúp bạn quét ra các "viên kim cương" bị bán tháo (Điểm VGM 5-Sao) chỉ trong 30 giây.',
+      move:'−33%', moveCls:'stat-neg', coverage:'Screener săn sale · Tối ưu',
       bgColor:'#080a10', credit:'', dot:'#ff3d57', eraIdx:4,
     },
     {
       year:'2021', era:'covid', badge:'boom', badgeDate:'25/11',
-      tagline:'VNIndex <span class="hl-green">chinh phục</span> đỉnh lịch sử 1.500 điểm.',
-      desc:'Hơn 1,5 triệu tài khoản mở mới trong năm 2021 — kỷ lục mọi thời đại. Thanh khoản đạt 30.000–40.000 tỷ đồng mỗi phiên, gấp đôi năm 2020.',
-      move:'+68%', moveCls:'stat-pos', coverage:'Dữ liệu 1 phút · Đầy đủ',
+      tagline:'Đỉnh 1.500 - Trò chơi của <span class="hl-green">Động lượng (M)</span>.',
+      desc:'Thanh khoản tỷ USD. Bộ lọc Lướt sóng & Động lượng (Momentum) của VSS phát huy sức mạnh bám theo dòng tiền lớn, tối đa hóa hiệu suất ngắn hạn.',
+      move:'+68%', moveCls:'stat-pos', coverage:'Chỉ số Động lượng · Đỉnh điểm',
       bgColor:'#081208', credit:'', dot:'#00e676', eraIdx:4,
     },
     {
       year:'2026', era:'covid', badge:'policy', badgeDate:'HÔM NAY',
-      tagline:'Bạn đang <span class="hl-green">giao dịch</span> TTCK Việt Nam trực tiếp.',
-      desc:'Dữ liệu real-time đang streaming. Hệ thống KRX vận hành — thanh toán T+1.5. Mở biểu đồ và bắt đầu giao dịch ngay bây giờ.',
-      move:'LIVE', moveCls:'stat-neut', coverage:'Live · Streaming now',
+      tagline:'Kỷ nguyên <span class="hl-blue">AI & Đầu tư định lượng</span>.',
+      desc:'Không còn dò dẫm thủ công bằng cảm xúc. Hệ thống Vietcap Smart Screener đang quét 165+ chỉ số. Xác định DNA đầu tư của bạn và để AI bốc thuốc ngay.',
+      move:'LỌC NGAY', moveCls:'stat-pos', coverage:'Daily · Sẵn sàng',
       bgColor:'#040d18', credit:'', dot:'#00e5ff', eraIdx:4,
     },
   ];
@@ -220,7 +220,7 @@
           <div class="stat-divider"></div>
           <div class="hero-stat-group">
             <button class="hero-enter"
-              onclick="document.querySelector('.page, #ips-onboarding-wrapper').scrollIntoView({behavior:'smooth'})">
+              onclick="const target = document.getElementById('hero-section').nextElementSibling; if(target) { const y = target.getBoundingClientRect().top + window.scrollY - 30; window.scrollTo({top: y, behavior: 'smooth'}); }">
               Thiết lập Hồ sơ &nbsp;↓
             </button>
           </div>` : ''}

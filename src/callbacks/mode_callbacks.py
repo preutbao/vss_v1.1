@@ -191,11 +191,21 @@ app.clientside_callback(
             'toolbar-panel toolbar-panel-hidden'
         ];
 
+        // ← THÊM MỚI: default khi load trang là Chiến lược
+        const STRATEGY_ACTIVE = [
+            'toolbar-tab', 'toolbar-tab  toolbar-tab-active',
+            'toolbar-tab', 'toolbar-tab',
+            'toolbar-panel toolbar-panel-hidden',
+            'toolbar-panel',
+            'toolbar-panel toolbar-panel-hidden',
+            'toolbar-panel toolbar-panel-hidden'
+        ];
+
         const ctx = dash_clientside.callback_context;
 
-        // ── Lần đầu load trang: luôn activate tab Search ──────────────
+        // ← ĐỔI: SEARCH_ACTIVE → STRATEGY_ACTIVE
         if (!ctx || !ctx.triggered || !ctx.triggered.length) {
-            return SEARCH_ACTIVE;
+            return STRATEGY_ACTIVE;
         }
 
         const triggeredId = ctx.triggered[0].prop_id.split('.')[0];
@@ -206,7 +216,7 @@ app.clientside_callback(
                            'toolbar-panel-scope',  'toolbar-panel-personal'];
 
         const activeIdx = TAB_IDS.indexOf(triggeredId);
-        if (activeIdx === -1) return SEARCH_ACTIVE;
+        if (activeIdx === -1) return STRATEGY_ACTIVE;  // ← ĐỔI từ SEARCH_ACTIVE
 
         const tabClasses = TAB_IDS.map((_, i) =>
             i === activeIdx

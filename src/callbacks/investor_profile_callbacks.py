@@ -1001,6 +1001,15 @@ def apply_ips_profile(
         }
         
         for fid, rng in filter_settings.items():
+            # FIX Lỗi 1: ValueError - VGM/VALUE score là string ['A','B','C'] nhưng code cố convert sang float
+            # Thêm guard: bỏ qua nếu không phải range numeric [lo, hi]
+            if not isinstance(rng, list) or len(rng) != 2:
+                continue
+            try:
+                lo, hi = float(rng[0]), float(rng[1])
+            except (TypeError, ValueError):
+                continue  # Bỏ qua grade filters như ['A','B','C']
+            
             if not isinstance(rng, list) or len(rng) != 2:
                 continue
             label = ips_label_map.get(fid, fid.replace("filter-", "").replace("-", " ").title())
@@ -1187,3 +1196,25 @@ def select_liq(n1, n2, n3):
         return "low", *styles
 
     return no_update
+
+# ════════════════════════════════════════════════════════════════════════════
+# CALLBACK: BỎ QUA KHẢO SÁT → vào thẳng screener với Toàn thị trường
+# ════════════════════════════════════════════════════════════════════════════
+@app.callback(
+    Output("profile-setup-done",   "data",  allow_duplicate=True),
+    Output("trading-mode-store",   "data",  allow_duplicate=True),
+    Output("investor-profile-store","data", allow_duplicate=True),
+    Input("btn-skip-onboarding",   "n_clicks"),
+    prevent_initial_call=True,
+)
+def skip_onboarding(n_clicks):
+    if not n_clicks:
+        raise PreventUpdate
+    # Profile tối thiểu để hệ thống không hỏi lại
+    minimal_profile = {
+        "risk_profile": "moderate",
+        "auto_filters": {"min_vol": 0, "min_cap": 0, "min_price": 0},
+        "skipped": True,
+        "version": 2,
+    }
+    return True, "all_market", minimal_profile
