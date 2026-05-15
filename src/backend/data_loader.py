@@ -273,12 +273,12 @@ def _process_index_file(file_path):
             elif 'VNI100' in cl:
                 rename_map[col] = 'VN100_Close'
             elif 'VNI' in cl:
-                rename_map[col] = 'JCI_Close'
+                rename_map[col] = 'VNINDEX_Close'
         df = df.rename(columns=rename_map)
 
         df["Date"]      = pd.to_datetime(df["Date"], errors="coerce")
-        df["JCI_Close"] = pd.to_numeric(df["JCI_Close"], errors="coerce")
-        df = df.dropna(subset=["Date", "JCI_Close"])
+        df["VNINDEX_Close"] = pd.to_numeric(df["VNINDEX_Close"], errors="coerce")
+        df = df.dropna(subset=["Date", "VNINDEX_Close"])
         return df.drop_duplicates(subset=["Date"]).sort_values("Date")
     except Exception as e:
         logger.error(f"Index file error: {e}")
@@ -616,15 +616,15 @@ def _auto_update_index_from_yfinance(df_existing: pd.DataFrame, parquet_path: st
         df_new['Date'] = pd.to_datetime(df_new['Date']).dt.tz_localize(None).dt.normalize()
 
         col_map = {
-            'Close': 'JCI_Close', 'Open': 'JCI_Open',
-            'High': 'JCI_High',   'Low': 'JCI_Low',
-            'Volume': 'JCI_Volume',
+            'Close': 'VNINDEX_Close', 'Open': 'VNINDEX_Open',
+            'High': 'VNINDEX_High',   'Low': 'VNINDEX_Low',
+            'Volume': 'VNINDEX_Volume',
         }
         df_new = df_new.rename(columns=col_map)
         keep = ['Date'] + [v for v in col_map.values() if v in df_new.columns]
-        df_new = df_new[keep].dropna(subset=['JCI_Close'])
+        df_new = df_new[keep].dropna(subset=['VNINDEX_Close'])
 
-        for col in ['JCI_Open', 'JCI_High', 'JCI_Low', 'JCI_Volume']:
+        for col in ['VNINDEX_Open', 'VNINDEX_High', 'VNINDEX_Low', 'VNINDEX_Volume']:
             if col not in df_existing.columns:
                 df_existing[col] = np.nan
 

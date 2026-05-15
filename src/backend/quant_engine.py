@@ -676,7 +676,7 @@ def calculate_growth_score(df):
 def calculate_momentum_score(df):
     """
     MOMENTUM SCORE: Đánh giá động lượng giá dựa trên RS_1M, RS_3M, Perf_1W, Perf_1M.
-    - RS (Relative Strength) so với JCI: càng cao càng tốt
+    - RS (Relative Strength) so với VNINDEX: càng cao càng tốt
     - Perf ngắn hạn: hỗ trợ thêm
     Dùng percentile rank toàn thị trường — cùng logic với Value/Growth.
     """
@@ -909,6 +909,49 @@ def calculate_canslim_score(df):
         import traceback; traceback.print_exc()
         df['CANSLIM Score'] = 0
         return df
+#Thêm hàm tính điểm vào quant_engine.py
+def calculate_tplus_score(df):
+    """
+    T_PLUS_SCORE (Thang điểm 100): Đánh giá xác suất tăng giá trong T+2.5.
+    Tập trung vào Dòng tiền (Volume), Động lượng (MACD, SMA5), Sức mạnh 3 ngày (RS_3D).
+    """
+    logger.info("⚡ Đang tính T+2.5 Score...")
+    try:
+        df = df.copy()
+        score = pd.Series(0.0, index=df.index)
+
+        # 1. Dòng tiền đột biến — 30 điểm
+        vol_ratio = pd.to_numeric(df.get('Vol_vs_SMA20', 0), errors='coerce').fillna(0)
+        score += np.where(vol_ratio >= 1.5, 30, np.where(vol_ratio >= 1.2, 15, 0))
+
+        # 2. Giá nằm trên SMA5 — 20 điểm
+        p_sma5 = pd.to_numeric(df.get('Price_vs_SMA5', 0), errors='coerce').fillna(0)
+        score += np.where(p_sma5 > 0, 20, 0)
+
+        # 3. MACD Histogram dương — 20 điểm
+        macd_hist = pd.to_numeric(df.get('MACD_Histogram', 0), errors='coerce').fillna(0)
+        score += np.where(macd_hist > 0, 20, 0)
+
+        # 4. RS 3 phiên dương — 20 điểm
+        rs_3d = pd.to_numeric(df.get('RS_3D', 0), errors='coerce').fillna(0)
+        score += np.where(rs_3d > 0, 20, 0)
+
+        # 5. RSI trong vùng 45–65 — 10 điểm
+        rsi = pd.to_numeric(df.get('RSI_14', 50), errors='coerce').fillna(50)
+        score += np.where((rsi > 45) & (rsi < 65), 10, 0)
+
+        # Penalty: cách đỉnh 1Y quá xa
+        pct_from_high = pd.to_numeric(df.get('Pct_From_High_1Y', 0), errors='coerce').fillna(-100)
+        score -= np.where(pct_from_high < -30, 10, 0)
+
+        df['T_Plus_Score'] = score.clip(0, 100)
+        logger.info(f"   ✅ T+2.5 Score xong — {(df['T_Plus_Score'] >= 80).sum()} mã đạt >= 80đ")
+        return df
+
+    except Exception as e:
+        logger.error(f"Lỗi tính T+2.5 Score: {e}")
+        df['T_Plus_Score'] = 0
+        return df
 
 # ==============================================================================
 # 4. HÀM CHÍNH (ORCHESTRATOR) - ENHANCED VERSION
@@ -1126,6 +1169,7 @@ def calculate_all_scores(df_price, df_financial):
         df = calculate_canslim_score(df)
         df = calculate_star_rating(df)      # ← THÊM
         df = calculate_vss_smart_rank(df)   # ← THÊM
+        df = calculate_tplus_score(df)
 
         logger.info(f"✅ Hoàn tất chấm điểm cho {len(df)} mã.")
 
@@ -1202,6 +1246,9 @@ def calculate_all_scores(df_price, df_financial):
 
             # ── Technical: Streak & Pattern ──
             'Consec_Up', 'Consec_Down', 'Candlestick_Pattern',
+
+            # ── Scores ──
+            'T_Plus_Score',
 
         ]
 

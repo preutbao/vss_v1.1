@@ -16,6 +16,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+
 # ── Màu sắc và typography nhất quán với dark theme của VSS ──────────────────
 _BG_MODAL   = "#0c1220"
 _BG_CARD    = "#0d1117"

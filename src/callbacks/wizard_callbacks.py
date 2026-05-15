@@ -376,10 +376,10 @@ def render_idx_mini_chart(is_open):
                     df_yf.columns = [str(c[0]) if isinstance(c, tuple) else str(c)
                                      for c in df_yf.columns]
                     df_yf['Date']      = pd.to_datetime(df_yf['Date']).dt.tz_localize(None)
-                    df_yf['JCI_Close'] = pd.to_numeric(df_yf.get('Close', df_yf.iloc[:, 1]),
+                    df_yf['VNINDEX_Close'] = pd.to_numeric(df_yf.get('Close', df_yf.iloc[:, 1]),
                                                         errors='coerce')
-                    df_yf['JCI_Volume'] = pd.to_numeric(df_yf.get('Volume', 0), errors='coerce')
-                    df_full = df_yf[['Date','JCI_Close','JCI_Volume']].dropna(subset=['JCI_Close'])
+                    df_yf['VNINDEX_Volume'] = pd.to_numeric(df_yf.get('Volume', 0), errors='coerce')
+                    df_full = df_yf[['Date','VNINDEX_Close','VNINDEX_Volume']].dropna(subset=['VNINDEX_Close'])
             except Exception as e2:
                 logger.error(f"[IDX Chart] yfinance fallback lỗi: {e2}")
 
@@ -388,24 +388,24 @@ def render_idx_mini_chart(is_open):
 
         df_full = df_full.sort_values("Date").copy()
         df      = df_full.tail(90)
-        prices  = df["JCI_Close"]
+        prices  = df["VNINDEX_Close"]
         latest  = float(prices.iloc[-1])
         prev    = float(prices.iloc[-2]) if len(prices) >= 2 else latest
 
         # ── Tính các chỉ số ──
         chg_1d  = (latest - prev) / prev * 100
-        p_1w    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=7)]["JCI_Close"]
-        p_1m    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=30)]["JCI_Close"]
-        p_1y    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=365)]["JCI_Close"]
+        p_1w    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=7)]["VNINDEX_Close"]
+        p_1m    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=30)]["VNINDEX_Close"]
+        p_1y    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=365)]["VNINDEX_Close"]
         chg_1w  = (latest - p_1w.iloc[-1]) / p_1w.iloc[-1] * 100 if not p_1w.empty else None
         chg_1m  = (latest - p_1m.iloc[-1]) / p_1m.iloc[-1] * 100 if not p_1m.empty else None
         chg_1y  = (latest - p_1y.iloc[-1]) / p_1y.iloc[-1] * 100 if not p_1y.empty else None
 
-        hi52 = float(df_full.tail(252)["JCI_Close"].max())
-        lo52 = float(df_full.tail(252)["JCI_Close"].min())
+        hi52 = float(df_full.tail(252)["VNINDEX_Close"].max())
+        lo52 = float(df_full.tail(252)["VNINDEX_Close"].min())
         pct_from_hi = (latest - hi52) / hi52 * 100
 
-        vol_col = "JCI_Volume" if "JCI_Volume" in df_full.columns else None
+        vol_col = "VNINDEX_Volume" if "VNINDEX_Volume" in df_full.columns else None
         vol_avg = float(df_full.tail(20)[vol_col].mean()) if vol_col else None
 
         last_date = df_full["Date"].max()
@@ -476,7 +476,7 @@ def render_idx_mini_chart(is_open):
             x=df["Date"], 
             y=prices,
             # Nếu DataFrame của bạn có cột Volume, ta có thể truyền nó vào customdata để dùng trong hover
-            customdata=df["JCI_Volume"] if "JCI_Volume" in df.columns else [None]*len(df),
+            customdata=df["VNINDEX_Volume"] if "VNINDEX_Volume" in df.columns else [None]*len(df),
             mode="lines",
             line=dict(color=color_1d, width=1.8),
             fill="tozeroy",

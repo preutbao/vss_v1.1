@@ -211,19 +211,19 @@ def calculate_technical_indicators(df_price, df_index=None):
         try:
             idx = df_index.copy()
             idx['Date'] = pd.to_datetime(idx['Date'], errors='coerce')
-            idx = idx.dropna(subset=['Date','JCI_Close']).set_index('Date')['JCI_Close'].sort_index()
-            jci_ret = idx.pct_change(fill_method=None) # <--- Thêm fill_method=None để tránh fill forward NaN bằng 0
+            idx = idx.dropna(subset=['Date','VNINDEX_Close']).set_index('Date')['VNINDEX_Close'].sort_index()
+            vnindex_ret = idx.pct_change(fill_method=None) # <--- Thêm fill_method=None để tránh fill forward NaN bằng 0
 
             price_wide = df.pivot_table(index='Date', columns='Ticker', values=price_col, aggfunc='last')
             price_wide = price_wide.sort_index()
             ret_wide   = price_wide.pct_change(fill_method=None) # <--- Thêm fill_method=None
 
-            common = ret_wide.index.intersection(jci_ret.index)
+            common = ret_wide.index.intersection(vnindex_ret.index)
             if len(common) >= 30:
                 r_stocks = ret_wide.loc[common].tail(252)
-                r_jci    = jci_ret.reindex(r_stocks.index)
-                rj_arr   = r_jci.values
-                var_jci  = np.nanvar(rj_arr)
+                r_vnindex    = vnindex_ret.reindex(r_stocks.index)
+                rj_arr   = r_vnindex.values
+                var_vnindex  = np.nanvar(rj_arr)
 
                 betas, alphas = {}, {}
 
@@ -233,7 +233,7 @@ def calculate_technical_indicators(df_price, df_index=None):
                 MIN_ACTIVE_DAYS_PCT = 0.60
                 MIN_OBS = 30
 
-                if var_jci > 0:
+                if var_vnindex > 0:
                     for ticker in r_stocks.columns:
                         rt = r_stocks[ticker].values
                         mask = ~(np.isnan(rt) | np.isnan(rj_arr))
@@ -257,16 +257,16 @@ def calculate_technical_indicators(df_price, df_index=None):
                 snap['Alpha'] = snap['Ticker'].map(alphas)
 
             # RS
-            jci_latest = idx.reindex(price_wide.index, method='ffill').iloc[-1]
+            vnindex_latest = idx.reindex(price_wide.index, method='ffill').iloc[-1]
             def _rs_map(days):
                 target = max_date - pd.Timedelta(days=days)
                 past   = price_wide[price_wide.index <= target]
                 if past.empty:
                     return {}
                 t_chg = ((price_wide.iloc[-1] - past.iloc[-1]) / past.iloc[-1].replace(0, np.nan) * 100)
-                past_jci = idx[idx.index <= target]
-                j_chg = (jci_latest - past_jci.iloc[-1]) / past_jci.iloc[-1] * 100 if not past_jci.empty else 0
-                return (t_chg - j_chg).round(2).to_dict()
+                past_vnindex = idx[idx.index <= target]
+                vnindex_chg = (vnindex_latest - past_vnindex.iloc[-1]) / past_vnindex.iloc[-1] * 100 if not past_vnindex.empty else 0
+                return (t_chg - vnindex_chg).round(2).to_dict()
 
             snap['RS_1M'] = snap['Ticker'].map(_rs_map(30))
             snap['RS_3M'] = snap['Ticker'].map(_rs_map(90))

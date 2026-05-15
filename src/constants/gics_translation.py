@@ -1,7 +1,7 @@
 # src/constants/gics_translation.py
 """
 Mapping translation GICS Industry (Ngành con) từ tiếng Anh sang tiếng Việt
-Cho thị trường chứng khoán Indonesia (IDX)
+Cho thị trường chứng khoán VN
 GICS = Global Industry Classification Standard
 """
 

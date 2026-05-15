@@ -176,7 +176,7 @@ def _header(c, ticker, company, exchange, title: str, stock: dict):
 
     c.setFont("VnFont", 8)
     c.setFillColor(C_TEXT)
-    c.drawString(MARGIN + 145, y_top, "Phân tích cổ phiếu chuyên sâu - Thị trường Indonesia")
+    c.drawString(MARGIN + 145, y_top, "Phân tích cổ phiếu chuyên sâu - Thị trường VN")
 
     # Góc phải: Tên báo cáo & Giờ cập nhật
     c.setFont("VnFont-Bold", 9)

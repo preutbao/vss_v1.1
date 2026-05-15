@@ -345,7 +345,7 @@ python clean_session.py
 - Các sheet `CF_*` — Lưu chuyển tiền tệ
 
 ### INDEX.xlsx
-- Cột `Date` + cột giá đóng cửa VNINDEX (`JCI_Close`) — dùng làm benchmark cho RS, Beta, Alpha
+- Cột `Date` + cột giá đóng cửa VNINDEX (`VNINDEX_Close`) — dùng làm benchmark cho RS, Beta, Alpha
 
 ---
 

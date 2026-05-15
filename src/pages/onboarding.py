@@ -1,69 +1,100 @@
 # src/pages/onboarding.py
 # ─────────────────────────────────────────────────────────────────────────────
-# IPS Onboarding — FIXED
-# Giữ nguyên dict-ID pattern để callbacks trong investor_profile_callbacks.py
-# hoạt động đúng. Bước 4 & 5 được ẩn/hiện hoàn toàn qua Dash callback
-# (render_step_visibility), không dùng JS để hide/show nữa.
+# IPS Onboarding — PREMIUM UI/UX UPGRADE
+# Áp dụng phong cách Institutional Wealth Management
 # ─────────────────────────────────────────────────────────────────────────────
 
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-from src.components.header import create_topbar
 
-_BG_PAGE  = "#080d16"
-_BG_CARD  = "#0d1117"
-_BG_CARD2 = "#161b22"
-_BORDER   = "#21262d"
-_BORDER2  = "#30363d"
-_TEXT_PRI = "#e6edf3"
-_TEXT_SEC = "#8b949e"
-_TEXT_MUT = "#484f58"
+# ── Color Palette (Premium Dark Mode) ────────────────────────────────────────
+_BG_PAGE  = "#05080f"  # Nền trang sâu hơn
+_BG_CARD  = "#0b1018"  # Nền card chính
+_BG_CARD2 = "#111823"  # Nền các khối nhỏ bên trong
+_BORDER   = "#1f2937"
+_BORDER2  = "#374151"
+_TEXT_PRI = "#f9fafb"  # Trắng sáng cho tiêu đề
+_TEXT_SEC = "#9ca3af"  # Xám sáng cho mô tả
+_TEXT_MUT = "#6b7280"  # Xám tối cho ghi chú
 _BLUE     = "#3b82f6"
 _GREEN    = "#10b981"
 _AMBER    = "#f59e0b"
 _RED      = "#ef4444"
-_PURPLE   = "#a78bfa"
+_PURPLE   = "#8b5cf6"
+_CYAN     = "#06b6d4"
+
 _FONT_SORA  = "'Sora', 'Inter', sans-serif"
 _FONT_INTER = "'Inter', sans-serif"
 _FONT_MONO  = "'Roboto Mono', monospace"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# COMPONENTS HELPER
+# ─────────────────────────────────────────────────────────────────────────────
 
-# ── Choice card — dict ID, n_clicks — khớp 100% với callbacks ────────────────
+def _step_header(step_num, title, subtitle, color):
+    """Tiêu đề chuẩn hóa cho mỗi bước với UI cao cấp."""
+    return html.Div([
+        html.Div([
+            html.Span(f"BƯỚC {step_num:02d}", style={
+                "fontFamily": _FONT_MONO, "fontSize": "11px", "fontWeight": "700",
+                "color": color, "letterSpacing": "2px",
+            }),
+            html.Span(" / 05", style={
+                "fontFamily": _FONT_MONO, "fontSize": "11px", "fontWeight": "600",
+                "color": _TEXT_MUT, "letterSpacing": "2px",
+            }),
+        ], style={"marginBottom": "12px", "display": "flex", "alignItems": "center"}),
+        
+        html.H4(title, style={
+            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
+            "fontSize": "24px", "fontWeight": "700", "marginBottom": "8px",
+            "letterSpacing": "-0.5px"
+        }),
+        html.P(subtitle, style={
+            "fontSize": "14px", "color": _TEXT_SEC, "marginBottom": "28px",
+            "lineHeight": "1.6"
+        }),
+    ])
+
 def _choice_card(group, value, icon, label, sub):
-    color_map = {
-        "goal": _BLUE, "will": _AMBER, "time": _GREEN, "liq": _PURPLE
-    }
+    """Card lựa chọn với tỷ lệ đẹp hơn và hiệu ứng hover chìm (thông qua class)."""
+    color_map = {"goal": _BLUE, "will": _AMBER, "time": _GREEN, "liq": _PURPLE}
     c = color_map.get(group, _BLUE)
+    
     return html.Div(
         [
-            html.I(className=icon, style={
-                "fontSize": "22px", "color": c,
-                "marginBottom": "8px", "display": "block",
+            html.Div([
+                html.I(className=icon, style={"fontSize": "22px", "color": c}),
+            ], style={
+                "width": "48px", "height": "48px", "borderRadius": "12px",
+                "backgroundColor": f"{c}15", "display": "flex",
+                "alignItems": "center", "justifyContent": "center",
+                "marginBottom": "16px", "border": f"1px solid {c}30"
             }),
+            
             html.Div(label, style={
-                "fontSize": "14px", "fontWeight": "700",
-                "color": _TEXT_PRI, "marginBottom": "4px",
+                "fontSize": "15px", "fontWeight": "700",
+                "color": _TEXT_PRI, "marginBottom": "6px",
                 "fontFamily": _FONT_SORA,
             }),
             html.Div(sub, style={
-                "fontSize": "12px", "color": _TEXT_SEC,
+                "fontSize": "12px", "color": _TEXT_SEC, "lineHeight": "1.5"
             }),
         ],
-        # ── Dict ID — bắt buộc để callbacks select_goal/will/time/liq chạy ──
         id={"type": "ips-choice", "id": f"{group}-{value}"},
         n_clicks=0,
-        className="choice-card",
+        className="ips-choice-card",
         style={
-            "padding": "16px 12px",
+            "padding": "24px 20px",
             "border": f"1px solid {_BORDER}",
-            "borderRadius": "8px",
-            "backgroundColor": _BG_CARD,
+            "borderRadius": "16px",
+            "backgroundColor": _BG_CARD2,
             "cursor": "pointer",
-            "textAlign": "center",
-            "transition": "all 0.2s",
+            "transition": "all 0.2s ease-in-out",
+            "height": "100%",
+            "display": "flex", "flexDirection": "column"
         },
     )
-
 
 def _hero_section():
     return html.Section(id="hero-section", className="hero", children=[
@@ -83,319 +114,192 @@ def _hero_section():
         ]),
     ])
 
+def _slider_container(title, desc, slider_component):
+    """Gói các slider vào một khối UI sạch sẽ."""
+    return html.Div([
+        html.Div([
+            html.Div(title, style={"fontSize": "14px", "fontWeight": "600", "color": _TEXT_PRI, "marginBottom": "4px"}),
+            html.Div(desc, style={"fontSize": "12px", "color": _TEXT_MUT}),
+        ], style={"marginBottom": "16px"}),
+        slider_component,
+    ], style={
+        "padding": "20px", "backgroundColor": _BG_CARD2,
+        "borderRadius": "12px", "border": f"1px solid {_BORDER}",
+        "marginBottom": "16px"
+    })
 
-# ── STEP 1 ────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# STEPS LAYOUT
+# ─────────────────────────────────────────────────────────────────────────────
+
 def _step1():
     return html.Div(id="ips-step-1", children=[
+        _step_header(1, "Mục tiêu Lợi nhuận (Return Objective)", 
+                     "Xác định Required Return vs. Desired Return để định hình cấu trúc Core-Satellite của danh mục.", _BLUE),
         html.Div([
-            html.Div("BƯỚC 01 / 05", style={
-                "fontFamily": _FONT_MONO, "fontSize": "11px",
-                "color": _BLUE, "letterSpacing": "2px", "marginBottom": "8px",
-            }),
-            html.Div(style={"flex": "1", "height": "1px",
-                            "backgroundColor": _BORDER}),
-        ], style={"display": "flex", "alignItems": "center", "gap": "12px",
-                  "marginBottom": "16px"}),
-        html.H4("Mục tiêu đầu tư chính của bạn là gì?", style={
-            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
-            "fontSize": "clamp(18px,2.5vw,26px)", "fontWeight": "700",
-            "marginBottom": "6px",
-        }),
-        html.P("Câu trả lời này quyết định toàn bộ chiến lược và bộ lọc được áp dụng.", style={
-            "fontSize": "13px", "color": _TEXT_SEC, "marginBottom": "20px",
-        }),
-        html.Div([
-            _choice_card("goal","preserve","fas fa-shield-alt","Bảo toàn vốn","An toàn là ưu tiên số 1"),
-            _choice_card("goal","income",  "fas fa-coins","Tạo dòng tiền","Cổ tức đều đặn hàng quý"),
-            _choice_card("goal","growth",  "fas fa-chart-line","Tăng trưởng tài sản","Tích lũy dài hạn 3–10 năm"),
-            _choice_card("goal","speculate","fas fa-rocket","Lướt sóng sinh lời","Cơ hội ngắn hạn, linh hoạt"),
-        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr",
-                  "gap": "12px", "marginBottom": "12px"}),
-        html.Div(id="ips-step1-error", style={
-            "color": _RED, "fontSize": "12px", "minHeight": "18px",
-        }),
+            _choice_card("goal", "preserve", "fas fa-shield-alt", "Bảo toàn Vốn", "Duy trì sức mua, bù đắp lạm phát. Rủi ro tối thiểu."),
+            _choice_card("goal", "income", "fas fa-hand-holding-usd", "Tối ưu Dòng tiền", "Tập trung Dividend Yield và dòng tiền đều đặn thay vì lãi vốn."),
+            _choice_card("goal", "growth", "fas fa-chart-line", "Tăng trưởng Lãi vốn", "Tối đa hóa giá trị danh mục dài hạn, chấp nhận biến động."),
+            _choice_card("goal", "speculate", "fas fa-chart-network", "Lợi nhuận Tuyệt đối", "Tìm kiếm Alpha qua chiến lược linh hoạt, không phụ thuộc benchmark."),
+        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr", "gap": "16px", "marginBottom": "12px"}),
+        html.Div(id="ips-step1-error", style={"color": _RED, "fontSize": "13px", "minHeight": "20px", "marginTop": "8px"}),
     ])
 
-
-# ── STEP 2 ────────────────────────────────────────────────────────────────────
 def _step2():
     return html.Div(id="ips-step-2", children=[
+        _step_header(2, "Khẩu vị Rủi ro (Risk Tolerance)", 
+                     "Hành vi dự kiến của bạn khi danh mục vi phạm giới hạn Maximum Drawdown (VD: giảm 20% trong 1 tháng).", _AMBER),
         html.Div([
-            html.Div("BƯỚC 02 / 05", style={
-                "fontFamily": _FONT_MONO, "fontSize": "11px",
-                "color": _AMBER, "letterSpacing": "2px", "marginBottom": "8px",
-            }),
-            html.Div(style={"flex": "1", "height": "1px", "backgroundColor": _BORDER}),
-        ], style={"display": "flex", "alignItems": "center", "gap": "12px",
-                  "marginBottom": "16px"}),
-        html.H4("Nếu danh mục giảm 20% trong 1 tháng, bạn làm gì?", style={
-            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
-            "fontSize": "clamp(18px,2.5vw,26px)", "fontWeight": "700",
-            "marginBottom": "6px",
-        }),
-        html.P("Đây là thước đo khẩu vị rủi ro thực sự (CFA L3 — Willingness to Take Risk).", style={
-            "fontSize": "13px", "color": _TEXT_SEC, "marginBottom": "20px",
-        }),
-        html.Div([
-            _choice_card("will","panic","fas fa-exclamation-triangle","Bán cắt lỗ ngay","Không thể chịu thua lỗ"),
-            _choice_card("will","worry","fas fa-mug-hot","Lo lắng, chờ đợi","Theo dõi và chờ tình hình"),
-            _choice_card("will","hold", "fas fa-anchor","Giữ vững kế hoạch","Tin tưởng chiến lược dài hạn"),
-            _choice_card("will","buy",  "fas fa-shopping-cart","Vui mừng mua thêm","Giảm giá = cơ hội mua vào"),
-        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr",
-                  "gap": "12px", "marginBottom": "12px"}),
-        html.Div(id="ips-step2-error", style={
-            "color": _RED, "fontSize": "12px", "minHeight": "18px",
-        }),
+            _choice_card("will", "panic", "fas fa-exclamation-circle", "Bảo vệ vốn tuyệt đối", "Rất nhạy cảm. Hạ tỷ trọng ngay lập tức bằng mọi giá."),
+            _choice_card("will", "worry", "fas fa-balance-scale-left", "Kiểm soát chủ động", "Lo lắng nhưng sẽ rà soát lại yếu tố cơ bản thay vì hoảng loạn."),
+            _choice_card("will", "hold", "fas fa-layer-group", "Tuân thủ kỷ luật", "Giữ nguyên cấu trúc danh mục nếu Thesis đầu tư chưa phá vỡ."),
+            _choice_card("will", "buy", "fas fa-chess-knight", "Contrarian (Đi ngược)", "Sẵn sàng tái cấp vốn (Rebalance) vào tài sản đang bị định giá thấp."),
+        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr", "gap": "16px", "marginBottom": "12px"}),
+        html.Div(id="ips-step2-error", style={"color": _RED, "fontSize": "13px", "minHeight": "20px", "marginTop": "8px"}),
     ])
 
-
-# ── STEP 3 ────────────────────────────────────────────────────────────────────
 def _step3():
     return html.Div(id="ips-step-3", children=[
+        _step_header(3, "Ràng buộc Đầu tư (Constraints)", 
+                     "Cung cấp các biến số TTLLU (Time, Liquidity, Unique) để hệ thống lượng hóa Năng lực tài chính (Ability Score).", _GREEN),
+
+        html.Div("1. Đường cong đầu tư (Time Horizon)", style={"fontSize": "13px", "color": _TEXT_PRI, "fontWeight": "700", "marginBottom": "12px"}),
         html.Div([
-            html.Div("BƯỚC 03 / 05", style={
-                "fontFamily": _FONT_MONO, "fontSize": "11px",
-                "color": _GREEN, "letterSpacing": "2px", "marginBottom": "8px",
-            }),
-            html.Div(style={"flex": "1", "height": "1px", "backgroundColor": _BORDER}),
-        ], style={"display": "flex", "alignItems": "center", "gap": "12px",
-                  "marginBottom": "16px"}),
-        html.H4("Thời gian & ràng buộc tài chính", style={
-            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
-            "fontSize": "clamp(18px,2.5vw,26px)", "fontWeight": "700",
-            "marginBottom": "6px",
-        }),
-        html.P("Giúp VSS xác định Ability to Take Risk (CFA L3 — TTLLU).", style={
-            "fontSize": "13px", "color": _TEXT_SEC, "marginBottom": "20px",
-        }),
+            _choice_card("time", "short", "fas fa-hourglass-start", "Dưới 1 Năm", "Ngắn hạn, chu kỳ quay vòng nhanh."),
+            _choice_card("time", "mid", "fas fa-hourglass-half", "1 – 3 Năm", "Trung hạn, đủ cho 1 chu kỳ kinh doanh."),
+            _choice_card("time", "long", "fas fa-hourglass-end", "Trên 3 Năm", "Dài hạn, tận dụng sức mạnh lãi kép."),
+        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "12px", "marginBottom": "24px"}),
 
-        html.Div("Thời gian đầu tư dự kiến", style={
-            "fontSize": "12px", "color": _TEXT_SEC,
-            "fontWeight": "600", "marginBottom": "10px",
-        }),
+        html.Div("2. Nhu cầu Thanh khoản (Liquidity)", style={"fontSize": "13px", "color": _TEXT_PRI, "fontWeight": "700", "marginBottom": "12px"}),
         html.Div([
-            _choice_card("time","short","fas fa-stopwatch","Dưới 1 Năm","Ngắn hạn linh hoạt"),
-            _choice_card("time","mid","fas fa-calendar-alt","1 – 3 Năm","Trung hạn cân bằng"),
-            _choice_card("time","long","fas fa-infinity","Trên 3 Năm","Dài hạn tích lũy"),
-        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr",
-                  "gap": "10px", "marginBottom": "20px"}),
+            _choice_card("liq", "high", "fas fa-water", "Biến động cao", "Dễ phát sinh rút vốn (Cash outflow) đột xuất."),
+            _choice_card("liq", "mid", "fas fa-sliders-h", "Dự phóng được", "Có kế hoạch rút vốn một phần định kỳ."),
+            _choice_card("liq", "low", "fas fa-lock", "Khóa vốn dài hạn", "Vốn nhàn rỗi hoàn toàn, không áp lực."),
+        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr", "gap": "12px", "marginBottom": "32px"}),
 
-        html.Div("Nhu cầu rút tiền đột xuất (Liquidity)", style={
-            "fontSize": "12px", "color": _TEXT_SEC,
-            "fontWeight": "600", "marginBottom": "10px",
-        }),
-        html.Div([
-            _choice_card("liq","high","fas fa-money-bill-wave","Cao","Cần rút bất cứ lúc nào"),
-            _choice_card("liq","mid", "fas fa-tint","Trung bình","Thỉnh thoảng cần rút"),
-            _choice_card("liq","low", "fas fa-lock","Thấp","Có thể để dài hạn"),
-        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr 1fr",
-                  "gap": "10px", "marginBottom": "20px"}),
-
-        html.Div("% Thu nhập hàng tháng dành cho Chứng khoán:", style={
-            "fontSize": "12px", "color": _TEXT_SEC, "marginBottom": "6px",
-        }),
-        dcc.Slider(0, 100, 10, value=30, id="ips-pct-savings-slider",
-                   tooltip={"placement": "bottom", "always_visible": True}),
-        html.Div(style={"height": "16px"}),
-
-        html.Div("Quỹ dự phòng khẩn cấp (tháng chi tiêu):", style={
-            "fontSize": "12px", "color": _TEXT_SEC, "marginBottom": "6px",
-        }),
-        dcc.Slider(0, 12, 1, value=4, id="ips-emergency-slider",
-                   tooltip={"placement": "bottom", "always_visible": True}),
-        html.Div(style={"height": "16px"}),
-
-        dbc.Checklist(
-            options=[
-                {"label": "Ưu tiên nhận cổ tức đều đặn",        "value": "prefer_dividend"},
-                {"label": "Tránh mua Ngân hàng / BĐS",           "value": "avoid_bank_re"},
-                {"label": "Bật chế độ Người Mới (Beginner Mode)","value": "beginner"},
-            ],
-            value=["beginner"],
-            id="ips-unique-checklist",
-            inline=True,
-            style={"color": _TEXT_PRI, "fontSize": "13px"},
+        html.Div("3. Chỉ số Tài chính Cá nhân", style={"fontSize": "13px", "color": _TEXT_PRI, "fontWeight": "700", "marginBottom": "12px"}),
+        _slider_container(
+            "Tỷ lệ thặng dư thu nhập (Savings Rate)", 
+            "% thu nhập hàng tháng bạn có thể phân bổ vào vốn cổ phần.",
+            dcc.Slider(0, 100, 10, value=30, id="ips-pct-savings-slider", className="custom-slider", tooltip={"placement": "bottom", "always_visible": True})
         ),
-        html.Div(id="ips-step3-error", style={
-            "color": _RED, "fontSize": "12px",
-            "minHeight": "18px", "marginTop": "10px",
-        }),
+        _slider_container(
+            "Đệm thanh khoản (Emergency Buffer)", 
+            "Số tháng chi phí sinh hoạt bạn đã dự phòng tiền mặt ở bên ngoài.",
+            dcc.Slider(0, 12, 1, value=4, id="ips-emergency-slider", className="custom-slider", tooltip={"placement": "bottom", "always_visible": True})
+        ),
+
+        html.Div("4. Ràng buộc đặc thù (Unique Circumstances)", style={"fontSize": "13px", "color": _TEXT_PRI, "fontWeight": "700", "marginBottom": "12px", "marginTop": "24px"}),
+        html.Div([
+            dbc.Checklist(
+                options=[
+                    {"label": "Ưu tiên cấu trúc vốn an toàn & Lợi suất cổ tức cao", "value": "prefer_dividend"},
+                    {"label": "Loại trừ nhóm ngành có rủi ro pháp lý/chu kỳ (BĐS, Ngân hàng)", "value": "avoid_bank_re"},
+                    {"label": "Kích hoạt giao diện giải thích thuật ngữ (Beginner/Tooltip Mode)", "value": "beginner"},
+                ],
+                value=["beginner"],
+                id="ips-unique-checklist",
+                inline=False,
+                className="custom-checklist",
+                style={"color": _TEXT_PRI, "fontSize": "14px", "lineHeight": "2.5"},
+            )
+        ], style={"padding": "16px 20px", "backgroundColor": _BG_CARD2, "borderRadius": "12px", "border": f"1px solid {_BORDER}"}),
+
+        html.Div(id="ips-step3-error", style={"color": _RED, "fontSize": "13px", "minHeight": "20px", "marginTop": "12px"}),
     ])
 
-
-# ── STEP 4 — render bởi callback render_profile_preview ──────────────────────
 def _step4():
     return html.Div(id="ips-step-4", children=[
-        html.Div([
-            html.Div("BƯỚC 04 / 05", style={
-                "fontFamily": _FONT_MONO, "fontSize": "11px",
-                "color": _PURPLE, "letterSpacing": "2px", "marginBottom": "8px",
-            }),
-            html.Div(style={"flex": "1", "height": "1px", "backgroundColor": _BORDER}),
-        ], style={"display": "flex", "alignItems": "center", "gap": "12px",
-                  "marginBottom": "16px"}),
-        html.H4("Hồ sơ đầu tư của bạn", style={
-            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
-            "fontSize": "clamp(18px,2.5vw,26px)", "fontWeight": "700",
-            "marginBottom": "6px",
-        }),
-        html.P("VSS đã tổng hợp hồ sơ IPS dựa trên câu trả lời. Xem lại và xác nhận trước khi áp dụng.", style={
-            "fontSize": "13px", "color": _TEXT_SEC, "marginBottom": "20px",
-        }),
-        # Nội dung được điền bởi callback render_profile_preview
+        _step_header(4, "Hồ sơ Đầu tư (IPS Output)", 
+                     "VSS đã tổng hợp hồ sơ IPS dựa trên lý thuyết hữu dụng. Xem lại các thông số kỹ thuật trước khi áp dụng.", _PURPLE),
         html.Div(id="ips-profile-preview"),
     ])
 
-
-# ── STEP 5 — render bởi callback render_final_summary ────────────────────────
 def _step5():
     return html.Div(id="ips-step-5", children=[
-        html.Div([
-            html.Div("BƯỚC 05 / 05", style={
-                "fontFamily": _FONT_MONO, "fontSize": "11px",
-                "color": _GREEN, "letterSpacing": "2px", "marginBottom": "8px",
-            }),
-            html.Div(style={"flex": "1", "height": "1px", "backgroundColor": _BORDER}),
-        ], style={"display": "flex", "alignItems": "center", "gap": "12px",
-                  "marginBottom": "16px"}),
-        html.H4("Sẵn sàng khám phá thị trường", style={
-            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
-            "fontSize": "clamp(18px,2.5vw,26px)", "fontWeight": "700",
-            "marginBottom": "6px",
-        }),
-        html.P("Lưu hồ sơ và áp dụng bộ lọc thông minh ngay vào Screener.", style={
-            "fontSize": "13px", "color": _TEXT_SEC, "marginBottom": "20px",
-        }),
-        # Nội dung được điền bởi callback render_final_summary
+        _step_header(5, "Xác nhận & Khởi tạo", 
+                     "Lưu hồ sơ và đồng bộ hóa các bộ lọc định lượng vào VSS Smart Screener.", _CYAN),
         html.Div(id="ips-final-summary"),
 
-        dbc.Checklist(
-            options=[{
-                "label": "Tự động cấu hình Bộ Lọc Screener theo Hồ sơ này",
-                "value": "apply_filters",
-            }],
-            value=["apply_filters"],
-            id="ips-apply-options",
-            style={"marginTop": "20px", "color": _GREEN,
-                   "fontWeight": "600", "fontSize": "13px"},
-        ),
-
         html.Div([
-            html.I(className="fas fa-exclamation-triangle",
-                   style={"color": _AMBER, "marginRight": "6px", "fontSize": "11px"}),
-            html.Span(
-                "Toàn bộ gợi ý chỉ mang tính tham khảo, không phải khuyến nghị "
-                "mua/bán. Nhà đầu tư tự chịu trách nhiệm.",
-                style={"fontSize": "11px", "color": _TEXT_MUT, "lineHeight": "1.6"},
+            dbc.Checklist(
+                options=[{"label": "Tự động cấu hình Bộ Lọc Screener theo Hồ sơ IPS này", "value": "apply_filters"}],
+                value=["apply_filters"],
+                id="ips-apply-options",
+                style={"color": _GREEN, "fontWeight": "600", "fontSize": "14px", "marginBottom": "16px"},
             ),
-        ], style={
-            "backgroundColor": "#0c0a00", "border": "1px solid #92400e",
-            "borderRadius": "6px", "padding": "10px 12px", "marginTop": "14px",
-        }),
+            html.Div([
+                html.I(className="fas fa-info-circle", style={"color": _BLUE, "marginRight": "8px", "fontSize": "12px"}),
+                html.Span("Toàn bộ gợi ý chỉ mang tính tham khảo học thuật dựa trên CFA Framework, không phải khuyến nghị mua/bán.", 
+                          style={"fontSize": "12px", "color": _TEXT_SEC}),
+            ], style={"backgroundColor": "rgba(59, 130, 246, 0.1)", "border": "1px solid rgba(59, 130, 246, 0.2)", "borderRadius": "8px", "padding": "12px 16px"}),
+        ], style={"marginTop": "24px", "paddingTop": "24px", "borderTop": f"1px dashed {_BORDER}"}),
 
-        html.Div(id="ips-apply-status", style={
-            "fontSize": "12px", "minHeight": "20px", "marginTop": "10px",
-        }),
+        html.Div(id="ips-apply-status", style={"fontSize": "13px", "minHeight": "24px", "marginTop": "16px"}),
     ])
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LAYOUT
+# MAIN LAYOUT
 # ─────────────────────────────────────────────────────────────────────────────
 layout = html.Div(
     id="ips-onboarding-wrapper",
     style={
         "minHeight": "100vh",
-        "paddingTop": "60px",  # <--- THÊM padding-top ĐỂ KHÔNG BỊ TOPBAR ĐÈ
+        "paddingTop": "80px",
+        "paddingBottom": "80px",
         "backgroundColor": _BG_PAGE,
-        "backgroundImage": (
-            "radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.06) 0%, transparent 60%),"
-            "radial-gradient(ellipse at 80% 20%, rgba(16,185,129,0.04) 0%, transparent 50%)"
-        ),
+        "backgroundImage": "radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.05), transparent 30%), radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 30%)",
+        "fontFamily": _FONT_INTER,
     },
     children=[
-        
-        # XÓA DÒNG create_topbar() Ở ĐÂY ĐI
-
-        _hero_section(),
-
+        _hero_section(),          # ← THÊM DÒNG NÀY VÀO ĐÂY
         html.Div(
-            style={
-                "maxWidth": "680px", "margin": "0 auto",
-                "padding": "48px 24px 80px",
-            },
+            style={"maxWidth": "760px", "margin": "0 auto", "padding": "0 24px"},
             children=[
-                # ── Logo ──────────────────────────────────────────────────
+                # ── Logo & Intro ──────────────────────────────────────────────
                 html.Div([
                     html.Div([
-                        html.I(className="fas fa-chart-line",
-                               style={"color": _BLUE, "fontSize": "24px",
-                                      "marginRight": "10px"}),
-                        html.Span("VSS Smart Screener", style={
-                            "fontSize": "20px", "fontWeight": "800",
-                            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
+                        html.Div([
+                            html.I(className="fas fa-chart-line", style={"color": _BG_PAGE, "fontSize": "16px"}),
+                        ], style={
+                            "width": "32px", "height": "32px", "backgroundColor": _BLUE,
+                            "borderRadius": "8px", "display": "flex", "alignItems": "center",
+                            "justifyContent": "center", "marginRight": "12px",
+                            "boxShadow": f"0 0 15px {_BLUE}40"
                         }),
-                    ], style={"display": "flex", "alignItems": "center",
-                              "justifyContent": "center", "marginBottom": "8px"}),
+                        html.Span("VSS Wealth Management", style={
+                            "fontSize": "22px", "fontWeight": "800",
+                            "color": _TEXT_PRI, "fontFamily": _FONT_SORA,
+                            "letterSpacing": "-0.5px"
+                        }),
+                    ], style={"display": "flex", "alignItems": "center", "justifyContent": "center", "marginBottom": "12px"}),
+                    
                     html.P(
-                        "Trước khi bắt đầu, hãy để VSS hiểu rõ hơn về bạn — "
-                        "chỉ mất 2 phút để thiết lập hồ sơ đầu tư cá nhân.",
-                        style={"fontSize": "13px", "color": _TEXT_SEC,
-                               "textAlign": "center", "lineHeight": "1.7",
-                               "marginBottom": "32px"},
+                        "Thiết lập Investment Policy Statement (IPS) cá nhân hóa.",
+                        style={"fontSize": "15px", "color": _TEXT_SEC, "textAlign": "center", "marginBottom": "40px"},
                     ),
                 ]),
 
-                # ── Progress bar — render bởi callback ───────────────────
+                # ── Progress Bar ─────────────────────────────────────────────
                 html.Div(id="ips-progress-bar", style={"marginBottom": "32px"}),
 
-                # ── Card wrapper ──────────────────────────────────────────
+                # ── Main Wizard Card ──────────────────────────────────────────
                 html.Div(
                     style={
                         "backgroundColor": _BG_CARD,
                         "border": f"1px solid {_BORDER}",
-                        "borderRadius": "16px",
+                        "borderRadius": "24px",
+                        "boxShadow": "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(59, 130, 246, 0.05)",
                         "overflow": "hidden",
-                        "boxShadow": "0 24px 80px rgba(0,0,0,0.5)",
                     },
                     children=[
-                        # Card header
-                        html.Div([
-                            html.Div([
-                                html.I(className="fas fa-user-cog",
-                                       style={"color": _BLUE, "marginRight": "8px"}),
-                                html.Span("Thiết lập Hồ sơ Đầu tư",
-                                          style={"fontSize": "14px", "fontWeight": "700",
-                                                 "color": _TEXT_PRI, "fontFamily": _FONT_SORA}),
-                                html.Span(" — IPS",
-                                          style={"fontSize": "12px", "color": _TEXT_MUT,
-                                                 "fontFamily": _FONT_MONO, "marginLeft": "6px"}),
-                            ], style={"display": "flex", "alignItems": "center"}),
-                            html.Div("Bước 1 / 5", id="ips-step-counter", style={
-                                "fontSize": "11px", "color": _TEXT_MUT,
-                                "fontFamily": _FONT_MONO,
-                                "backgroundColor": "#0d1117",
-                                "border": f"1px solid {_BORDER}",
-                                "padding": "4px 10px", "borderRadius": "20px",
-                            }),
-                        ], style={
-                            "display": "flex", "justifyContent": "space-between",
-                            "alignItems": "center",
-                            "padding": "14px 22px",
-                            "borderBottom": f"1px solid {_BORDER}",
-                            "backgroundColor": _BG_CARD2,
-                        }),
-
-                        # Card body — chứa tất cả steps
+                        # Card Body (Steps Content)
                         html.Div(
-                            style={"padding": "24px", "backgroundColor": "#0c1220"},
+                            style={"padding": "40px 48px", "position": "relative"},
                             children=[
-                                _step1(),
-                                _step2(),
-                                _step3(),
-                                _step4(),
-                                _step5(),
+                                _step1(), _step2(), _step3(), _step4(), _step5(),
 
-                                # Stores
+                                # Hidden Stores
                                 dcc.Store(id="ips-current-step", data=1),
                                 dcc.Store(id="ips-goal-store",   data=None),
                                 dcc.Store(id="ips-will-store",   data=None),
@@ -404,67 +308,53 @@ layout = html.Div(
                             ],
                         ),
 
-                        # Card footer — nav buttons
+                        # Card Footer (Navigation)
                         html.Div([
                             dbc.Button(
-                                [html.I(className="fas fa-arrow-left",
-                                        style={"marginRight": "6px"}), "Quay lại"],
-                                id="ips-btn-prev", size="sm",
+                                [html.I(className="fas fa-arrow-left", style={"marginRight": "8px"}), "Quay lại"],
+                                id="ips-btn-prev", size="md",
                                 style={
-                                    "backgroundColor": _BG_CARD2,
-                                    "border": f"1px solid {_BORDER2}",
-                                    "color": _TEXT_SEC, "borderRadius": "6px",
-                                    "fontFamily": _FONT_INTER, "fontSize": "12px",
-                                    "minWidth": "100px",
+                                    "backgroundColor": _BG_CARD2, "border": f"1px solid {_BORDER2}",
+                                    "color": _TEXT_SEC, "borderRadius": "8px",
+                                    "fontFamily": _FONT_INTER, "fontSize": "14px", "fontWeight": "600",
+                                    "padding": "10px 20px", "transition": "all 0.2s"
                                 },
                             ),
                             dbc.Button(
-                                ["Tiếp theo ",
-                                 html.I(className="fas fa-arrow-right",
-                                        style={"marginLeft": "6px"})],
-                                id="ips-btn-next", size="sm",
+                                ["Tiếp tục ", html.I(className="fas fa-arrow-right", style={"marginLeft": "8px"})],
+                                id="ips-btn-next", size="md",
                                 style={
-                                    "background": "linear-gradient(135deg,#1d4ed8,#2563eb)",
-                                    "border": "none", "color": "#e0f2fe",
-                                    "borderRadius": "6px",
-                                    "fontFamily": _FONT_SORA, "fontSize": "12px",
-                                    "fontWeight": "700", "minWidth": "120px",
+                                    "background": "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                                    "border": "none", "color": "#ffffff", "borderRadius": "8px",
+                                    "fontFamily": _FONT_SORA, "fontSize": "14px", "fontWeight": "700",
+                                    "padding": "10px 28px", "boxShadow": "0 4px 14px 0 rgba(37, 99, 235, 0.39)",
+                                    "transition": "all 0.2s"
                                 },
                             ),
                         ], style={
-                            "display": "flex", "justifyContent": "space-between",
-                            "alignItems": "center",
-                            "padding": "14px 22px",
-                            "borderTop": f"1px solid {_BORDER}",
-                            "backgroundColor": _BG_CARD2,
-                        }),
-                        # ← THÊM MỚI NGAY SAU DIV FOOTER TRÊN:
-                        html.Div([
-                            html.Span(
-                                "Bỏ qua khảo sát",
-                                id="btn-skip-onboarding",
-                                n_clicks=0,
-                                style={
-                                    "color": "rgba(200,200,200,0.3)",
-                                    "fontSize": "12px",
-                                    "cursor": "pointer",
-                                    "textDecoration": "underline",
-                                    "fontFamily": _FONT_INTER,
-                                    "userSelect": "none",
-                                }
-                            )
-                        ], style={
-                            "textAlign": "center",
-                            "padding": "4px 22px 16px",
-                            "backgroundColor": _BG_CARD2,
+                            "display": "flex", "justifyContent": "space-between", "alignItems": "center",
+                            "padding": "20px 48px", "borderTop": f"1px solid {_BORDER}",
+                            "backgroundColor": "rgba(17, 24, 35, 0.5)", "backdropFilter": "blur(10px)"
                         }),
                     ],
                 ),
 
+                # ── Footer Links ──────────────────────────────────────────────
+                html.Div([
+                    html.Span(
+                        "Bỏ qua thiết lập, truy cập toàn thị trường",
+                        id="btn-skip-onboarding", n_clicks=0,
+                        style={
+                            "color": _TEXT_MUT, "fontSize": "13px", "cursor": "pointer",
+                            "textDecoration": "underline", "textUnderlineOffset": "4px",
+                            "fontFamily": _FONT_INTER, "transition": "color 0.2s"
+                        }
+                    )
+                ], style={"textAlign": "center", "marginTop": "32px"}),
+                
                 html.P(
-                    "🔒 Dữ liệu hồ sơ được lưu trên thiết bị của bạn — không gửi lên máy chủ.",
-                    style={"fontSize": "11px", "color": _TEXT_MUT,
-                           "textAlign": "center", "marginTop": "20px"},
+                    "🔒 Dữ liệu hồ sơ được mã hóa và lưu trữ cục bộ trên thiết bị của bạn.",
+                    style={"fontSize": "12px", "color": _TEXT_MUT, "textAlign": "center", "marginTop": "24px", "opacity": "0.7"},
                 ),
             ],
         ),

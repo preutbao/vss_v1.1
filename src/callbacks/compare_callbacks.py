@@ -1,7 +1,7 @@
 # src/callbacks/compare_callbacks.py
 """
 So sánh tương đối nhiều cổ phiếu trên cùng 1 chart (% thay đổi so với điểm gốc).
-Kèm JCI làm benchmark.
+Kèm VNINDEX làm benchmark.
 """
 from dash import Input, Output, State, html, dcc, no_update, callback_context
 from src.app_instance import app
@@ -50,9 +50,9 @@ compare_modal = dbc.Modal([
                 style={"width": "130px", "flexShrink": "0"},
             ),
             dbc.Checklist(
-                options=[{"label": "vs VNINDEX", "value": "jci"}],
-                value=["jci"],
-                id="compare-show-jci",
+                options=[{"label": "vs VNINDEX", "value": "vnindex"}],
+                value=["vnindex"],
+                id="compare-show-vnindex",
                 inline=True,
                 style={"color": "#c9d1d9", "fontSize": "12px", "marginLeft": "8px",
                        "flexShrink": "0", "whiteSpace": "nowrap"},
@@ -130,7 +130,7 @@ def _clean_price_df(df_price: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _build_figure(tickers, days, show_jci):
+def _build_figure(tickers, days, show_vnindex):
     from src.backend.data_loader import load_market_data, load_index_data
     df_price = _clean_price_df(load_market_data())
     df_index = load_index_data()
@@ -178,20 +178,20 @@ def _build_figure(tickers, days, show_jci):
             "_perf":      last_p,
         })
 
-    # Vẽ JCI
-    if show_jci and "jci" in (show_jci or []) and df_index is not None and not df_index.empty:
-        df_jci = df_index.copy()
-        df_jci["Date"]      = pd.to_datetime(df_jci["Date"], errors="coerce")
-        df_jci["JCI_Close"] = pd.to_numeric(df_jci["JCI_Close"], errors="coerce")
-        df_jci = df_jci.dropna(subset=["Date", "JCI_Close"])
-        df_jci = df_jci[df_jci["Date"] >= cutoff].sort_values("Date")
+    # Vẽ VNINDEX
+    if show_vnindex and "vnindex" in (show_vnindex or []) and df_index is not None and not df_index.empty:
+        df_vnindex = df_index.copy()
+        df_vnindex["Date"]      = pd.to_datetime(df_vnindex["Date"], errors="coerce")
+        df_vnindex["VNINDEX_Close"] = pd.to_numeric(df_vnindex["VNINDEX_Close"], errors="coerce")
+        df_vnindex = df_vnindex.dropna(subset=["Date", "VNINDEX_Close"])
+        df_vnindex = df_vnindex[df_vnindex["Date"] >= cutoff].sort_values("Date")
 
-        if not df_jci.empty:
-            base_j = float(df_jci["JCI_Close"].iloc[0])
-            if base_j > 0:
-                pct_j = ((df_jci["JCI_Close"] / base_j) - 1) * 100
+        if not df_vnindex.empty:
+            base_vnindex = float(df_vnindex["VNINDEX_Close"].iloc[0])
+            if base_vnindex > 0:
+                pct_vnindex = ((df_vnindex["VNINDEX_Close"] / base_vnindex) - 1) * 100
                 fig.add_trace(go.Scatter(
-                    x=df_jci["Date"], y=pct_j,
+                    x=df_vnindex["Date"], y=pct_vnindex,
                     mode="lines", name="VNINDEX",
                     line=dict(color="#ffffff", width=1.5, dash="dot"),
                     hovertemplate="<b>VNINDEX</b><br>%{x|%d/%m/%y}<br>%{y:+.2f}%<extra></extra>",
@@ -259,12 +259,12 @@ def _build_figure(tickers, days, show_jci):
     Output("compare-summary-table", "children"),
     Input("compare-ticker-select",  "value"),
     Input("compare-period-select",  "value"),
-    Input("compare-show-jci",       "value"),
+    Input("compare-show-vnindex",       "value"),
     Input("compare-render-trigger", "n_intervals"),
     State("compare-modal",          "is_open"),
     prevent_initial_call=True,
 )
-def update_compare_chart(tickers, days, show_jci, _n, is_open):
+def update_compare_chart(tickers, days, show_vnindex, _n, is_open):
     HIDDEN  = {"height": "500px", "overflow": "hidden", "display": "none"}
     VISIBLE = {"height": "500px", "overflow": "hidden", "display": "block"}
 
@@ -289,7 +289,7 @@ def update_compare_chart(tickers, days, show_jci, _n, is_open):
         return blank, HIDDEN, empty_state, []
 
     try:
-        fig, summary = _build_figure(tickers, days, show_jci)
+        fig, summary = _build_figure(tickers, days, show_vnindex)
         return fig, VISIBLE, [], summary
     except Exception as e:
         logger.error(f"Compare chart error: {e}", exc_info=True)

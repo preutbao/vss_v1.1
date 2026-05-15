@@ -34,7 +34,7 @@ _REQUIRED_PARQUETS = {
     "market_prices.parquet":       "Giá lịch sử",
     "financial_yearly.parquet":    "BCTC năm",
     "financial_quarterly.parquet": "BCTC quý",
-    "index.parquet":               "Chỉ số JCI",
+    "index.parquet":               "Chỉ số VNINDEX, VN100, VN30",
 }
 
 
@@ -124,6 +124,7 @@ import src.callbacks.alert_callbacks
 import src.callbacks.score_breakdown_callbacks
 import src.callbacks.investor_profile_callbacks
 import src.callbacks.tab_dot_callbacks
+import src.callbacks.tplus_callbacks
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT — hai section: onboarding ↔ main app

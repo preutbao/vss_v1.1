@@ -1,7 +1,7 @@
 # src/callbacks/portfolio_callbacks.py
 """
 Portfolio Tracker — lưu danh mục đầu tư vào localStorage.
-Tính lời/lỗ theo giá hiện tại từ snapshot, so sánh với JCI.
+Tính lời/lỗ theo giá hiện tại từ snapshot, so sánh với VNINDEX.
 """
 from dash import Input, Output, State, html, dcc, no_update, callback_context, ALL
 from src.app_instance import app
@@ -75,7 +75,7 @@ portfolio_modal = dbc.Modal([
         # Summary cards
         html.Div(id="portfolio-summary"),
 
-        # Chart so sánh với JCI — ẩn khi chưa có cổ phiếu
+        # Chart so sánh với VNINDEX — ẩn khi chưa có cổ phiếu
         html.Div(id="portfolio-chart-wrapper", children=[
             dcc.Graph(id="portfolio-chart",
                       style={"height": "280px"},
@@ -335,16 +335,16 @@ def render_portfolio(positions):
                 hovertemplate=f"<b>{ticker}</b><br>%{{x|%d/%m/%y}}<br>%{{y:+.1f}}%<extra></extra>",
             ))
 
-        # JCI overlay
+        # VNINDEX overlay
         if df_index is not None and not df_index.empty:
             min_date = min(s.index.min() for s in chart_data.values()) if chart_data else None
             if min_date:
-                jci = df_index[df_index["Date"] >= min_date].sort_values("Date")
-                if not jci.empty:
-                    base_j = float(jci["JCI_Close"].iloc[0])
-                    pct_j  = ((jci["JCI_Close"] / base_j) - 1) * 100
+                vnindex = df_index[df_index["Date"] >= min_date].sort_values("Date")
+                if not vnindex.empty:
+                    base_vnindex = float(vnindex["VNINDEX_Close"].iloc[0])
+                    pct_vnindex  = ((vnindex["VNINDEX_Close"] / base_vnindex) - 1) * 100
                     fig.add_trace(go.Scatter(
-                        x=jci["Date"], y=pct_j,
+                        x=vnindex["Date"], y=pct_vnindex,
                         mode="lines", name="VN-Index",
                         line=dict(color="#ffffff", width=1.2, dash="dot"),
                         hovertemplate="<b>VN-Index</b><br>%{x|%d/%m/%y}<br>%{y:+.1f}%<extra></extra>",

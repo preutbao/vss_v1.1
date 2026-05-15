@@ -150,8 +150,8 @@ def create_fireant_candlestick(
         show_rsi=False,
         rsi_period=14,
         show_macd=False,
-        show_index=False,  # VĐ4: overlay JCI index normalized to 100
-        df_index=None,  # VĐ4: DataFrame with Date + JCI_Close columns
+        show_index=False,  # VĐ4: overlay VNINDEX index normalized to 100
+        df_index=None,  # VĐ4: DataFrame with Date + VNINDEX_Close columns
 ):
     colors = get_chart_theme_colors(theme)
 
@@ -381,13 +381,13 @@ def create_fireant_candlestick(
             fig.update_yaxes(tickmode='array', tickvals=v_ticks, ticktext=[format_volume_short(v) for v in v_ticks],
                              row=vol_row, col=1)
 
-    # ── VĐ4: JCI INDEX OVERLAY (normalized to 100 at chart start) ──────────
+    # ── VĐ4: VNINDEX OVERLAY (normalized to 100 at chart start) ──────────
     if show_index and df_index is not None and not df_index.empty:
         try:
             idx = df_index.copy()
-            # Support both Date/JCI_Close and date/jci_close column names
+            # Support both Date/VNINDEX_Close and date/vnindex_close column names
             date_col = next((c for c in idx.columns if c.lower() == 'date'), None)
-            price_col_idx = next((c for c in idx.columns if 'jci' in c.lower() or 'close' in c.lower()), None)
+            price_col_idx = next((c for c in idx.columns if 'vnindex' in c.lower() or 'close' in c.lower()), None)
             if date_col and price_col_idx:
                 idx[date_col] = pd.to_datetime(idx[date_col], errors='coerce')
                 idx = idx.dropna(subset=[date_col, price_col_idx]).sort_values(date_col)
@@ -401,7 +401,7 @@ def create_fireant_candlestick(
                     # Normalize: set first value = 100
                     base_val = float(idx_filtered[price_col_idx].iloc[0])
                     if base_val > 0:
-                        idx_filtered['jci_norm'] = idx_filtered[price_col_idx] / base_val * 100
+                        idx_filtered['vnindex_norm'] = idx_filtered[price_col_idx] / base_val * 100
 
                         # Get stock price range to scale index overlay to same y-axis
                         price_min = df_plot['close'].min()
@@ -413,11 +413,11 @@ def create_fireant_candlestick(
                             if idx_filtered['date_str'].iloc[0] in chart_dates else df_plot['close'].iloc[0]
 
                         # Scale index to stock price space: same % change from first point
-                        idx_filtered['jci_scaled'] = stock_base * (idx_filtered['jci_norm'] / 100)
+                        idx_filtered['vnindex_scaled'] = stock_base * (idx_filtered['vnindex_norm'] / 100)
 
                         fig.add_trace(go.Scatter(
                             x=idx_filtered['date_str'],
-                            y=idx_filtered['jci_scaled'],
+                            y=idx_filtered['vnindex_scaled'],
                             mode='lines',
                             name='VNINDEX',
                             line=dict(color='#fbbf24', width=1.5, dash='dot'),

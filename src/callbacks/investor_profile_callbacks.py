@@ -52,100 +52,73 @@ TOTAL_STEPS = 5
 def compute_risk_profile(goal: str, will: str, pct_savings: int,
                          emergency_months: int, time_horizon: str,
                          liquidity: str) -> dict:
-    """
-    Tính Risk Profile theo CFA L3:
-      - Willingness score (tâm lý)
-      - Ability score (tài chính: % tiết kiệm + quỹ dự phòng + time horizon)
-      - Final = min(willingness, ability)  ← nguyên tắc CFA: chọn ràng buộc chặt hơn
+    # ── Willingness Score (Hệ số tâm lý) ───────────────────────────────────
+    # Áp dụng logic Loss Aversion
+    will_map = {"panic": 0.15, "worry": 0.40, "hold": 0.70, "buy": 0.95}
+    will_score = will_map.get(will or "worry", 0.40)
 
-    Returns dict với các key:
-      risk_profile:   "conservative" | "moderate" | "aggressive"
-      risk_label_vi:  "Thận trọng" | "Cân bằng" | "Tăng trưởng"
-      will_score:     0.0 – 1.0
-      ability_score:  0.0 – 1.0
-      final_score:    0.0 – 1.0
-      target_return:  (int, int)   — (min%, max%)
-      max_drawdown:   int          — số âm, ví dụ -15
-      num_stocks:     (int, int)   — (min, max) cổ phiếu nên nắm
-      core_strategies:      list[str]
-      satellite_strategies: list[str]
-      bucket_alloc:   {"safe": int, "growth": int, "speculative": int}
-      auto_filters:   dict  — hard filters cho screener (min_vol, min_cap, min_price)
-    """
-
-    # ── Willingness score (0.0 → 1.0) ─────────────────────────────────────
-    will_map = {"panic": 0.10, "worry": 0.35, "hold": 0.65, "buy": 0.90}
-    will_score = will_map.get(will or "worry", 0.35)
-
-    # ── Ability score (composite) ──────────────────────────────────────────
-    # Component 1: % tiết kiệm dành cho CK
+    # ── Ability Score (Năng lực tài chính) ─────────────────────────────────
+    # Trọng số: Time Horizon (40%), Liquidity (30%), Buffer (20%), Savings (10%)
+    
+    # 1. Savings Rate (Thặng dư)
     pct = pct_savings or 30
-    if pct <= 15:
-        pct_score = 0.15
-    elif pct <= 30:
-        pct_score = 0.35
-    elif pct <= 50:
-        pct_score = 0.60
-    elif pct <= 65:
-        pct_score = 0.80
-    else:
-        pct_score = 0.90   # > 65% — khả năng tài chính cao
+    pct_score = min(pct / 60.0, 1.0) # >60% là tối đa điểm
 
-    # Component 2: Quỹ dự phòng
+    # 2. Emergency Buffer (Đệm thanh khoản)
     emg = emergency_months or 0
-    if emg < 2:
-        emg_score = 0.10   # Không có đệm — khả năng chịu lỗ thấp
-    elif emg < 4:
-        emg_score = 0.35
-    elif emg < 6:
-        emg_score = 0.65
-    else:
-        emg_score = 0.90   # ≥ 6 tháng — buffer tốt
+    if emg < 3: emg_score = 0.20
+    elif emg < 6: emg_score = 0.60
+    else: emg_score = 0.95
 
-    # Component 3: Time horizon
-    time_map = {"short": 0.15, "mid": 0.55, "long": 0.90}
-    time_score = time_map.get(time_horizon or "long", 0.55)
+    # 3. Time Horizon
+    time_map = {"short": 0.20, "mid": 0.60, "long": 0.95}
+    time_score = time_map.get(time_horizon or "long", 0.60)
+    
+    # 4. Liquidity Constraint (Penalty nặng nhất)
+    liq_map = {"high": 0.20, "mid": 0.60, "low": 0.95}
+    liq_score = liq_map.get(liquidity or "low", 0.60)
 
-    # Ability = weighted average (time horizon ảnh hưởng lớn nhất)
-    ability_score = 0.35 * pct_score + 0.35 * emg_score + 0.30 * time_score
+    ability_score = (0.40 * time_score) + (0.30 * liq_score) + (0.20 * emg_score) + (0.10 * pct_score)
 
-    # ── CFA Rule: Final = min(willingness, ability) ────────────────────────
-    # Liquidity cao → cap ability xuống "conservative" (không đủ thời gian ride out)
-    if liquidity == "high":
-        ability_score = min(ability_score, 0.30)
-
+    # ── Quy tắc định tuyến CFA L3 (Min Rule) ──────────────────────────────
+    # Tổng hợp rủi ro thực tế bị giới hạn bởi yếu tố yếu nhất.
     final_score = min(will_score, ability_score)
 
-    # ── Phân loại risk profile ─────────────────────────────────────────────
-    if final_score < 0.35:
+    # Penalty thêm nếu mục tiêu là Bảo toàn vốn nhưng hệ số rủi ro ra quá cao
+    if goal == "preserve":
+        final_score = min(final_score, 0.30)
+
+    # ── Phân loại Risk Profile ─────────────────────────────────────────────
+    if final_score < 0.40:
         risk_profile   = "conservative"
-        risk_label_vi  = "Thận trọng"
+        risk_label_vi  = "Thận trọng (Conservative)"
         risk_color     = _GREEN
-        risk_icon      = "fas fa-shield-alt"
-        target_return  = (6, 10)
-        max_drawdown   = -10
+        risk_icon      = "fas fa-shield-check"
+        target_return  = (7, 10)
+        max_drawdown   = -8
         num_stocks     = (15, 25)
-    elif final_score < 0.65:
+    elif final_score < 0.70:
         risk_profile   = "moderate"
-        risk_label_vi  = "Cân bằng"
+        risk_label_vi  = "Cân bằng (Moderate)"
         risk_color     = _BLUE
-        risk_icon      = "fas fa-balance-scale"
-        target_return  = (12, 18)
-        max_drawdown   = -18
-        num_stocks     = (12, 20)
+        risk_icon      = "fas fa-chart-pie"
+        target_return  = (12, 16)
+        max_drawdown   = -15
+        num_stocks     = (10, 18)
     else:
         risk_profile   = "aggressive"
-        risk_label_vi  = "Tăng trưởng"
+        risk_label_vi  = "Tăng trưởng (Aggressive)"
         risk_color     = _RED
-        risk_icon      = "fas fa-rocket"
-        target_return  = (18, 30)
-        max_drawdown   = -28
-        num_stocks     = (8, 15)
+        risk_icon      = "fas fa-chart-network"
+        target_return  = (18, 25)
+        max_drawdown   = -25
+        num_stocks     = (6, 12)
 
-    # ── Strategy Mapping (Core-Satellite) ─────────────────────────────────
+    # ── Core-Satellite Strategy Mapping ───────────────────────────────────
+    # Dựa trên Smart Beta và Factor Investing
     goal_strat_map = {
         "preserve": {
-            "core":      ["STRAT_QUALITY", "STRAT_PIOTROSKI", "STRAT_DIVIDEND"],
+            "core":      ["STRAT_QUALITY", "STRAT_DIVIDEND"],
             "satellite": ["STRAT_VALUE"],
         },
         "income": {
@@ -153,40 +126,29 @@ def compute_risk_profile(goal: str, will: str, pct_savings: int,
             "satellite": ["STRAT_VALUE", "STRAT_PIOTROSKI"],
         },
         "growth": {
-            "core":      ["STRAT_QUALITY", "STRAT_GARP", "STRAT_PIOTROSKI"],
-            "satellite": ["STRAT_MAGIC", "STRAT_TURNAROUND"],
+            "core":      ["STRAT_GARP", "STRAT_PIOTROSKI", "STRAT_QUALITY"],
+            "satellite": ["STRAT_CANSLIM", "STRAT_MAGIC"],
         },
         "speculate": {
-            "core":      ["STRAT_GARP", "STRAT_CANSLIM", "STRAT_GROWTH"],
-            "satellite": ["STRAT_MAGIC", "STRAT_TURNAROUND"],
+            "core":      ["STRAT_CANSLIM", "STRAT_GROWTH", "STRAT_TURNAROUND"],
+            "satellite": ["STRAT_MAGIC"],
         },
     }
-    strat = goal_strat_map.get(goal or "growth",
-                                goal_strat_map["growth"])
+    strat = goal_strat_map.get(goal or "growth", goal_strat_map["growth"])
 
-    # Aggressive profile → thêm momentum strategies
-    if risk_profile == "aggressive":
-        if "STRAT_CANSLIM" not in strat["core"]:
-            strat["satellite"].append("STRAT_CANSLIM")
-    # Conservative → gạt bỏ speculative strategies
-    if risk_profile == "conservative":
-        strat["satellite"] = [s for s in strat["satellite"]
-                              if s not in ["STRAT_CANSLIM", "STRAT_GROWTH"]]
-
-    # ── Bucket allocation (%) ──────────────────────────────────────────────
+    # ── Bucket allocation (Mô hình phân bổ 3 rổ tài sản) ──────────────────
     bucket_map = {
-        "conservative": {"safe": 70, "growth": 25, "speculative": 5},
+        "conservative": {"safe": 75, "growth": 20, "speculative": 5},
         "moderate":     {"safe": 40, "growth": 45, "speculative": 15},
-        "aggressive":   {"safe": 20, "growth": 50, "speculative": 30},
+        "aggressive":   {"safe": 15, "growth": 50, "speculative": 35},
     }
     bucket_alloc = bucket_map[risk_profile]
 
-    # ── Auto filters cho screener hard-filter block ────────────────────────
-    # Được đọc tại screener_callbacks.py line 514
+    # auto_filters cho screener hard-filter block
     auto_filters_map = {
-        "conservative": {"min_vol": 50_000,  "min_cap": 500_000_000_000,  "min_price": 5_000},
-        "moderate":     {"min_vol": 30_000,  "min_cap": 200_000_000_000,  "min_price": 3_000},
-        "aggressive":   {"min_vol": 10_000,  "min_cap": 50_000_000_000,   "min_price": 1_000},
+        "conservative": {"min_vol": 100_000,  "min_cap": 1_000_000_000_000, "min_price": 10_000}, # Siết thanh khoản chặt hơn
+        "moderate":     {"min_vol": 50_000,   "min_cap": 500_000_000_000,   "min_price": 5_000},
+        "aggressive":   {"min_vol": 20_000,   "min_cap": 100_000_000_000,   "min_price": 2_000},
     }
     auto_filters = auto_filters_map[risk_profile]
 

@@ -760,8 +760,11 @@ layout = html.Div(
                                                 ])
                                                 for group in _STRATEGY_GROUPS
                                             ],
-                                            style={"backgroundColor": "#0d1117",
-                                                "minWidth": "300px"},
+                                            style={
+                                                "backgroundColor": "#0d1117",
+                                                "minWidth": "350px",  # Đồng bộ với minWidth của nút
+                                                "maxWidth": "500px"   # (Tuỳ chọn) Đồng bộ với maxWidth của nút
+                                            },
                                         ),
                                         style={"padding": "0", "backgroundColor": "#0d1117",
                                             "border": "none"},
@@ -802,6 +805,74 @@ layout = html.Div(
                         section="strategies",
                         label="Chiến lược VIP",
                     ),
+                    # ── T+2.5 TOGGLE — THÊM VÀO ĐÂY ────────────────────────
+                    html.Div([
+                        # Label + badge
+                        html.Div([
+                            html.Span("T+2.5", style={
+                                "fontSize": "11px",
+                                "fontWeight": "700",
+                                "color": "#00d4ff",
+                                "fontFamily": "'Roboto Mono', monospace",
+                                "letterSpacing": "0.5px",
+                            }),
+                            html.Span("BETA", style={
+                                "fontSize": "8px",
+                                "fontWeight": "700",
+                                "color": "#f59e0b",
+                                "backgroundColor": "rgba(245,158,11,0.12)",
+                                "border": "1px solid rgba(245,158,11,0.3)",
+                                "borderRadius": "3px",
+                                "padding": "1px 4px",
+                                "marginLeft": "4px",
+                                "letterSpacing": "0.5px",
+                            }),
+                        ], style={"marginBottom": "3px"}),
+                        # Switch
+                        html.Div([
+                            html.Div(
+                                id="tplus-toggle-track",
+                                n_clicks=0,
+                                style={
+                                    "width": "36px",
+                                    "height": "18px",
+                                    "borderRadius": "9px",
+                                    "backgroundColor": "#1e2d3d",
+                                    "border": "1px solid #30363d",
+                                    "position": "relative",
+                                    "cursor": "pointer",
+                                    "transition": "all 0.2s ease",
+                                },
+                                children=[
+                                    html.Div(
+                                        id="tplus-toggle-thumb",
+                                        style={
+                                            "width": "12px",
+                                            "height": "12px",
+                                            "borderRadius": "50%",
+                                            "backgroundColor": "#484f58",
+                                            "position": "absolute",
+                                            "top": "2px",
+                                            "left": "2px",
+                                            "transition": "all 0.2s ease",
+                                        }
+                                    )
+                                ]
+                            ),
+                        ]),
+                    ], style={
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "alignItems": "center",
+                        "padding": "4px 10px",
+                        "backgroundColor": "rgba(0,212,255,0.04)",
+                        "border": "1px solid rgba(0,212,255,0.12)",
+                        "borderRadius": "8px",
+                        "cursor": "pointer",
+                        "flexShrink": "0",
+                    }),
+                    # ── KẾT THÚC T+2.5 TOGGLE ───────────────────────────────
+
                     # ── NÚT "XÓA TẤT CẢ" MỚI ĐƯỢC CHÈN VÀO ĐÂY ──
                     dbc.Button(
                         [html.I(className="fas fa-times", style={"marginRight": "6px"}),
@@ -1130,6 +1201,7 @@ layout = html.Div(
         dcc.Store(id='chart-refresh-store', data=0),
 
         dcc.Store(id='saved-filters-store', data={}, storage_type='local'),
+        dcc.Store(id='tplus-mode-store', storage_type='memory', data=False),
 
         dbc.Toast(
             id="save-toast",

@@ -57,12 +57,12 @@ HISTORY_DAYS = 60
 API_SLEEP    = 0.45 # Trễ 450ms giữa các request để giảm nguy cơ bị chặn IP (SSI có thể chặn nếu quá nhanh)
 
 INDEX_SYMBOL = "^VNINDEX"
-INDEX_COL    = "JCI_Close"
+INDEX_COL    = "VNINDEX_Close"
 
 
 # ═════════════════════════════════════════════════════════════════════════════
 # PHẦN 1: LẤY DANH SÁCH TICKER
-# ═════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════════════════
 def get_ticker_list_from_parquet() -> pd.DataFrame:
     if not PRICES_PARQUET.exists():
         logger.error(f"Không tìm thấy {PRICES_PARQUET}.")
@@ -239,8 +239,8 @@ def download_index(symbol: str = INDEX_SYMBOL, days: int = HISTORY_DAYS) -> pd.D
         return pd.DataFrame()
 
     # Chuẩn hóa format Index cho VSS
-    df_idx = df_idx.rename(columns={"Price Close": INDEX_COL, "Volume": "JCI_Volume"})
-    df_idx = df_idx[["Date", INDEX_COL, "JCI_Volume"]]
+    df_idx = df_idx.rename(columns={"Price Close": INDEX_COL, "Volume": "VNINDEX_Volume"})
+    df_idx = df_idx[["Date", INDEX_COL, "VNINDEX_Volume"]]
     
     logger.info(f"  ✓ Index {symbol}: {len(df_idx):,} ngày")
     return df_idx

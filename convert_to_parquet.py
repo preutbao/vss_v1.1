@@ -313,12 +313,12 @@ def convert_index_only():
             elif 'VNI100' in cl or 'VNI100' in cl:
                 rename_map[col] = 'VN100_Close'
             elif 'VNI' in cl:
-                rename_map[col] = 'JCI_Close'   # giữ tên JCI_Close để không đổi code downstream
+                rename_map[col] = 'VNINDEX_Close'   # giữ tên VNINDEX_Close để không đổi code downstream
         df = df.rename(columns=rename_map)
 
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        df["JCI_Close"] = pd.to_numeric(df["JCI_Close"], errors="coerce")
-        df = df.dropna(subset=["Date", "JCI_Close"])
+        df["VNINDEX_Close"] = pd.to_numeric(df["VNINDEX_Close"], errors="coerce")
+        df = df.dropna(subset=["Date", "VNINDEX_Close"])
         df = df.drop_duplicates(subset=["Date"]).sort_values("Date")
         df.to_parquet(output_path)
         print(f"   ✅ Xong INDEX: {len(df):,} dòng, cột: {list(df.columns)}")
