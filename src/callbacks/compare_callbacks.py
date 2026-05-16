@@ -339,8 +339,8 @@ app.clientside_callback(
 # ============================================================================
 app.clientside_callback(
     """
-    function(a, b, c, d, e, f, g, h) {
-        var anyOpen = a || b || c || d || e || f || g || h;
+    function(a, b, c, d, e, f, g, h, i) {
+        var anyOpen = a || b || c || d || e || f || g || h || i;
         document.body.style.overflow = anyOpen ? 'hidden' : '';
         document.documentElement.style.overflow = anyOpen ? 'hidden' : '';
         return window.dash_clientside.no_update;
@@ -349,6 +349,7 @@ app.clientside_callback(
     Output("screener-scroll-anchor", "style"),
     Input("compare-modal",            "is_open"),
     Input("portfolio-modal",          "is_open"),
+    Input("crisis-modal",    "is_open"),   # ← THÊM
     Input("detail-modal",             "is_open"),
     Input("watchlist-modal",          "is_open"),
     Input("heatmap-collapse",         "is_open"),

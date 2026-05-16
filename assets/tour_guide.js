@@ -62,7 +62,7 @@ window.VssTour = (function () {
       requireClick: false, 
       disableInteraction: true, // 🛠 KHOÁ CLICK VÀO 3 NÚT NÀY
       // 🛠 THÊM DÒNG NÀY VÀO: Ép chiều rộng vùng khoanh đỏ (Ví dụ: 380px)
-      customW: 660, 
+      customW: 760, 
       
       // Nếu nó bị lệch sang trái/phải, bạn có thể bù trừ thêm bằng offsetX
       offsetX: 12,
@@ -193,16 +193,16 @@ window.VssTour = (function () {
       autoNextDelay: 1500 // Đợi 1.5s cho UI của Modal kịp Load ra
     },
     
-    // 4. Khóa tương tác, đếm ngược 8 giây
+    // 4. Khóa tương tác, đếm ngược 10 giây
     {
       id: "screener-modal-view",
       target: ".modal-content", // Khung của Popup Modal
       position: "right",
       title: "Hồ sơ Phân tích",
-      body: "Popup này chứa toàn bộ biểu đồ kỹ thuật, báo cáo tài chính và sức khỏe doanh nghiệp... Bạn có thể xem lướt qua nhé! (Hệ thống sẽ tự chuyển bước sau 8s).",
+      body: "Popup này chứa toàn bộ biểu đồ kỹ thuật, báo cáo tài chính và sức khỏe doanh nghiệp... Bạn có thể xem lướt qua nhé! (Hệ thống sẽ tự chuyển bước sau 10s).",
       skipBtn: "Bỏ qua",
       disableInteraction: true,
-      autoAdvanceDelay: 8000
+      autoAdvanceDelay: 10000 // Tự động chuyển bước sau 10s
     },
     
     // 5. Bắt Click vào nút X tắt đi
@@ -230,7 +230,7 @@ window.VssTour = (function () {
       nextBtn: "Tiếp theo",
       requireClick: true, // Bắt người dùng click mở ra
       autoNextAfterClick: true, // 🛠 Tự động chuyển bước sau khi click
-      autoNextDelay: 800 // Đợi 0.8s để thanh công cụ chạy hiệu ứng mở ra
+      autoNextDelay: 1000 // Đợi 1s để thanh công cụ chạy hiệu ứng mở ra
     },
 
     // 7. BƯỚC MỚI: Giới thiệu thanh công cụ

@@ -125,6 +125,7 @@ import src.callbacks.score_breakdown_callbacks
 import src.callbacks.investor_profile_callbacks
 import src.callbacks.tab_dot_callbacks
 import src.callbacks.tplus_callbacks
+import src.callbacks.margin_crisis_callbacks
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT — hai section: onboarding ↔ main app
@@ -142,7 +143,7 @@ app.layout = html.Div(
         create_topbar(),
 
         # ── 1. GLOBAL STORES ──────────────────────────────────────────────
-        dcc.Store(id="trading-mode-store",   storage_type="session",  data="investing"),
+        dcc.Store(id="trading-mode-store",   storage_type="session",  data="all_market"),
         dcc.Store(id="tour-selected-mode",   storage_type="memory",   data="investing"),
         dcc.Store(id="hint-shown-store",     storage_type="memory",   data=False),
         dcc.Store(id="tour-step-store",      data=1),

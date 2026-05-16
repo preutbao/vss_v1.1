@@ -698,12 +698,15 @@ strategy_info_offcanvas = dbc.Offcanvas(
 from src.callbacks.score_breakdown_callbacks import score_breakdown_modal
 from src.callbacks.compare_callbacks import compare_modal
 from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_store
+from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_store, crisis_result_store
 from src.callbacks.alert_callbacks import alert_modal, alert_store, alert_interval
 
 # === MAIN LAYOUT ===
 layout = html.Div([
     # Stores
     portfolio_store,
+    crisis_store,           # ← THÊM
+    crisis_result_store,    # ← THÊM
     alert_store,
     alert_interval,
     dcc.Store(id="fin-chart-period-store", data="quarterly"),  # ← period store cho biểu đồ TC
@@ -723,9 +726,7 @@ layout = html.Div([
                     }),
                     html.Div([
                         html.B("VIETCAP SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
-                            
-
-                            # Nút Tích sản (giữ nguyên của bạn)
+                        
                             dbc.Button(
                                 id="mode-toggle-btn",
                                 children=[
@@ -734,12 +735,13 @@ layout = html.Div([
                                 ],
                                 n_clicks=0,
                                 size="sm",
-                                color="secondary",
+                                color="primary",
                                 outline=True,
                                 style={
                                     "borderRadius": "20px", "fontSize": "11px",
                                     "padding": "4px 12px", "whiteSpace": "nowrap",
-                                    "fontWeight": "600", "marginLeft": "10px", # THÊM DÒNG NÀY ĐỂ CÁCH TIÊU ĐỀ 30PX
+                                    "fontWeight": "600", "marginLeft": "10px",
+                                    "borderColor": "#3b82f6", "color": "#3b82f6",
                                 },
                             ),
 
@@ -868,7 +870,7 @@ layout = html.Div([
                             ],
                         ),
 
-                        # Danh mục — PREMIUM
+                        # Danh mục — PREMIUM (giữ nguyên)
                         html.Div(
                             id="pw-portfolio",
                             className="premium-wrapper premium-locked",
@@ -878,8 +880,8 @@ layout = html.Div([
                                         html.I(className="fas fa-briefcase", style={"marginRight": "5px"}),
                                         "Danh mục",
                                     ], id="btn-portfolio", color="warning", outline=True, size="sm",
-                                        style={"borderRadius": "6px", "fontSize": "11px", 
-                                               "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
+                                        style={"borderRadius": "6px", "fontSize": "11px",
+                                            "padding": "4px 10px", "whiteSpace": "nowrap"}),
                                     className="premium-content",
                                 ),
                                 html.Div(
@@ -888,7 +890,36 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                            style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
+                                    ],
+                                ),
+                            ],
+                        ),
+
+                        # Margin Crisis — PREMIUM (mới)
+                        html.Div(
+                            id="pw-crisis",
+                            className="premium-wrapper premium-locked",
+                            children=[
+                                html.Div(
+                                    dbc.Button([
+                                        html.I(className="fas fa-fire-flame-curved",
+                                            style={"marginRight": "5px", "color": "#ef4444"}),
+                                        "Margin Crisis",
+                                    ], id="btn-crisis", color="danger", outline=True, size="sm",
+                                        style={"borderRadius": "6px", "fontSize": "11px",
+                                            "padding": "4px 10px", "whiteSpace": "nowrap",
+                                            "borderColor": "#ef4444"}),
+                                    className="premium-content",
+                                ),
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "crisis"},
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(className="fas fa-lock",
+                                            style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
                                         html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
@@ -902,11 +933,11 @@ layout = html.Div([
                             children=[
                                 html.Div([
                                     dbc.Button([
-                                        html.I(className="fas fa-bell", style={"marginRight": "5px"}),
+                                        html.I(className="fas fa-bell", style={"marginRight": "5px", "color": "#d8ef44"}),
                                         "Cảnh báo",
-                                    ], id="btn-alerts", color="danger", outline=True, size="sm",
+                                    ], id="btn-alerts", color="warning", outline=True, size="sm",
                                         style={"borderRadius": "6px", "fontSize": "11px", 
-                                               "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
+                                               "padding": "4px 10px", "whiteSpace": "nowrap", "borderColor": "#d8ef44"}), # 🛠 Bổ sung padding
                                     html.Span("0", id="alert-badge", style={"display": "none"}),
                                 ], style={"position": "relative"}, className="premium-content"),
                                 html.Div(
@@ -1022,6 +1053,7 @@ layout = html.Div([
     score_breakdown_modal,
     compare_modal,
     portfolio_modal,
+    crisis_modal,    # ← THÊM
     alert_modal,
 
 
@@ -1185,7 +1217,7 @@ html.Div(children=[
     ),
 
 ], id="zalo-bubble-container", style={
-    "display": "none", # <--- Dòng mới thêm vào: Ẩn mặc định khi load trang, MAC DINH LA ẨN ĐI BONG BONG ZALO, CHỈ HIỆN KHI CÓ TIN NHẮN MỚI
+    "display": "flex", # <--- Dòng mới thêm vào: Ẩn mặc định khi load trang, MAC DINH LA ẨN ĐI BONG BONG ZALO, CHỈ HIỆN KHI CÓ TIN NHẮN MỚI
     "position": "fixed", "bottom": "96px", "right": "28px",
     "zIndex": "10000", "flexDirection": "column",
     "alignItems": "center",

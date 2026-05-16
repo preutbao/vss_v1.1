@@ -207,6 +207,7 @@ def update_navbar_auth(auth_data):
 _PREMIUM_WRAPPERS = [
     'pw-compare',
     'pw-portfolio',
+    "pw-crisis",
     'pw-alerts',
     'pw-strategies',
     'pw-momentum',
