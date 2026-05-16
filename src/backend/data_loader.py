@@ -86,6 +86,9 @@ _quarterly_lock: threading.Lock = threading.Lock()
 _filter_ranges_cache = None
 _filter_ranges_lock  = threading.Lock()
 
+# [FIX 4] TTL cache cho market data — tránh đọc lại parquet ~50MB mỗi callback
+_MARKET_CACHE: dict = {"data": None, "ts": 0.0}
+
 # [8] Guard chặn auto-update chạy nhiều lần trong cùng 1 phiên
 _auto_update_done = False
 _auto_update_lock = threading.Lock()
@@ -439,8 +442,13 @@ def _strip_exchange_suffix(df: pd.DataFrame) -> pd.DataFrame:
         df['Ticker'] = df['Ticker'].str.replace(r'\.(HNO|HN|HM)$', '', regex=True)
     return df
 
-
 def load_market_data():
+    # [FIX 4] TTL cache 5 phút — đủ cho phiên dùng liên tục
+    now = time.time()
+    if _MARKET_CACHE["data"] is not None and now - _MARKET_CACHE["ts"] < 300:
+        logger.info(f"[MarketCache] HIT — trả từ RAM ({len(_MARKET_CACHE['data']):,} dòng)")
+        return _MARKET_CACHE["data"]
+
     parquet = os.path.join(PROCESSED_DIR, FILES["parquet_price"])
     if os.path.exists(parquet) and not DEV_MODE:
         t0 = time.perf_counter()
@@ -461,6 +469,8 @@ def load_market_data():
         # Đảm bảo Ticker là string (tránh lỗi .str accessor)
         if 'Ticker' in df.columns:
             df['Ticker'] = df['Ticker'].astype(str)
+        _MARKET_CACHE["data"] = df
+        _MARKET_CACHE["ts"]   = time.time()
         return df
 
     df = _process_price_file(os.path.join(RAW_DIR, FILES["price"]))

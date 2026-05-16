@@ -67,12 +67,16 @@ GROUP_CRITERIA_MAP = {
         ("criteria-pct-from-low-all",  "% Cách đáy lịch sử"),
     ],
     "ky-thuat": [
-        ("criteria-rsi14",       "RSI (14)"),
-        ("criteria-rsi-state",   "Trạng thái RSI(14)"),
-        ("criteria-macd-hist",   "MACD Histogram"),
-        ("criteria-bb-width",    "Mở Band Bollinger (%)"),
-        ("criteria-consec-up",   "Phiên tăng liên tiếp"),
-        ("criteria-consec-down", "Phiên giảm liên tiếp"),
+        ("criteria-rsi14",            "RSI (14)"),
+        ("criteria-rsi-state",        "Trạng thái RSI(14)"),
+        ("criteria-macd-hist",        "MACD Histogram"),
+        ("criteria-bb-width",         "Mở Band Bollinger (%)"),
+        ("criteria-consec-up",        "Phiên tăng liên tiếp"),
+        ("criteria-consec-down",      "Phiên giảm liên tiếp"),
+        # ── Elliott Wave Proxy ── THÊM 3 DÒNG NÀY
+        ("criteria-fib-position",       "Fibonacci Position (%)"),
+        ("criteria-wave-momentum",      "Wave Momentum Score"),
+        ("criteria-elliott-corrective", "Elliott: Đang hồi sóng"),
     ],
     "momentum": [
         ("criteria-beta",        "Beta"),
@@ -137,6 +141,10 @@ CRITERIA_TO_FILTER = {
     "criteria-bb-width":       "filter-bb-width",
     "criteria-consec-up":      "filter-consec-up",
     "criteria-consec-down":    "filter-consec-down",
+    # ── Elliott Wave Proxy ── THÊM 3 DÒNG NÀY
+    "criteria-fib-position":        "filter-fib-position",
+    "criteria-wave-momentum":       "filter-wave-momentum",
+    "criteria-elliott-corrective":  "filter-elliott-corrective",
     "criteria-beta":           "filter-beta",
     "criteria-alpha":          "filter-alpha",
     "criteria-rs-1m":          "filter-rs-1m",

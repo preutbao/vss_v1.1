@@ -614,7 +614,16 @@ detail_tabs = dbc.Tabs([
     dbc.Tab(
         label="TỔNG QUAN",
         tab_id="tab-overview",
-        children=html.Div(id="tab-overview-content")
+        children=html.Div([
+            dcc.Loading(
+                type="dot",
+                color="#58a6ff",
+                children=html.Div(
+                    id="tab-overview-content",
+                    style={"minHeight": "200px"}
+                )
+            )
+        ])
     ),
     dbc.Tab(
         label="BIẾN ĐỘNG GIÁ",
@@ -1269,6 +1278,7 @@ html.Div([
                         "padding": "10px 14px",
                         "fontSize": "13px", "color": "#c9d1d9",
                         "lineHeight": "1.6",
+                        "whiteSpace": "pre-line",  # <-- Thêm dòng này để nhận diện \n
                     }
                 ),
             ]),

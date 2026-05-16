@@ -81,6 +81,10 @@ def _count_matching(filter_id, current_range, filter_year=None):
             "filter-vol-vs-sma20": "Vol_vs_SMA20", "filter-vol-vs-sma50": "Vol_vs_SMA50",
             "filter-avg-vol-5d": "Avg_Vol_5D", "filter-avg-vol-10d": "Avg_Vol_10D",
             "filter-avg-vol-50d": "Avg_Vol_50D",
+            # ── Elliott Wave Proxy ── THÊM 3 DÒNG NÀY
+            "filter-fib-position":        "Fib_Position_%",
+            "filter-wave-momentum":       "Wave_Momentum_Score",
+            "filter-elliott-corrective":  "Elliott_Corrective",
         }
         col = _COL_MAP.get(filter_id)
         if not col or not current_range or len(current_range) != 2:
@@ -619,6 +623,24 @@ CRITERIA_CONFIG = {
                            "max": 20, "default_value": [0, 20]},
     "criteria-consec-down": {"label": "Phiên giảm liên tiếp", "filter_id": "filter-consec-down", "type": "range",
                              "min": 0, "max": 20, "default_value": [0, 20]},
+    # ── ELLIOTT WAVE PROXY ── THÊM 3 ENTRY NÀY
+    "criteria-fib-position": {
+        "label": "Fibonacci Position (%)",
+        "filter_id": "filter-fib-position",
+        "type": "range", "min": 0, "max": 100, "default_value": [0, 100],
+    },
+    "criteria-wave-momentum": {
+        "label": "Wave Momentum Score",
+        "filter_id": "filter-wave-momentum",
+        "type": "range", "min": 0, "max": 100, "default_value": [0, 100],
+    },
+    "criteria-elliott-corrective": {
+        "label": "Elliott: Đang hồi sóng",
+        "filter_id": "filter-elliott-corrective",
+        "type": "boolean",
+        "true_label": "Đang hồi",
+        "false_label": "Sóng đẩy",
+    },
     # ── KỸ THUẬT: MOMENTUM & SỨC MẠNH TƯƠNG ĐỐI ──
     "criteria-beta": {"label": "Beta", "filter_id": "filter-beta", "type": "range", "min": -2, "max": 4,
                       "default_value": [-2, 4]},

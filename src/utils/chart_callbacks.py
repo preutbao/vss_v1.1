@@ -174,7 +174,8 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
             '6M': '6 tháng gần nhất', '1Y': '12 tháng gần nhất',
             'YTD': f'Từ đầu năm {today.year}', 'All': 'Toàn bộ lịch sử'
         }
-        title = f"{selected_ticker} - {company_name} ({range_label_map.get(time_range, '12 tháng gần nhất')})"
+        # title = f"{selected_ticker} - {company_name} ({range_label_map.get(time_range, '12 tháng gần nhất')})"
+        title = "" # Để trống tiêu đề, vì chúng ta đã có header bên ngoài hiển thị tên công ty rồi — tránh trùng lặp và rối mắt
 
         # Xử lý MA periods
         ma_list = []

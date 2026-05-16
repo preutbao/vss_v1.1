@@ -477,50 +477,49 @@ def _assign_grade_series(series, percentiles, ascending=True):
     result[series.isna()] = 'F'
     return pd.Series(result, index=series.index)
 
+# Bins phân phối chuẩn: F(15%), D(20%), C(30%), B(20%), A(15%)
+BELL_CURVE_BINS = [0, 0.15, 0.35, 0.65, 0.85, 1.001]
+BELL_CURVE_LABELS = ['F', 'D', 'C', 'B', 'A']
 
 def calculate_value_score(df):
     """
     VALUE SCORE: Đánh giá độ rẻ của cổ phiếu.
-    Trọng số: P/E 35% | P/B 30% | EV/EBITDA 20% | P/S 15%
-    Chỉ dùng mã có giá trị dương (loại mã lỗ / thiếu data).
+    Trọng số MỚI: EV/EBITDA 35% | P/E 25% | P/B 25% | P/S 15%
     """
-    logger.info("📊 Đang tính Value Score (P/E + P/B + EV/EBITDA + P/S)...")
+    logger.info("📊 Đang tính Value Score (EV/EBITDA + P/E + P/B + P/S)...")
     try:
         df = df.copy()
         grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
-
         component_grades = []
-        weights          = []
+        weights = []
 
         def _grade_valuation(col, w):
-            """Helper: grade cho cột định giá (càng thấp càng tốt, loại <= 0)."""
-            if col not in df.columns:
-                return
+            if col not in df.columns: return
             series = pd.to_numeric(df[col], errors='coerce')
-            valid  = series[series > 0]
-            if len(valid) < 10:
-                return
+            valid = series[series > 0]
+            if len(valid) < 10: return
+            
+            # Giữ nguyên logic chia quintile cho sub-components để tính điểm
             pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
-            masked = series.where(series > 0)  # NaN cho mã thiếu/âm
+            masked = series.where(series > 0) 
             g = _assign_grade_series(masked, pct, ascending=False)
             g[series <= 0] = 'F'
             component_grades.append(g)
             weights.append(w)
 
-        _grade_valuation('P/E',       0.35)
-        _grade_valuation('P/B',       0.30)
-        _grade_valuation('EV/EBITDA', 0.20)
-        _grade_valuation('P/S',       0.15)
+        # Ưu tiên EV/EBITDA cho cấu trúc vốn
+        _grade_valuation('EV_EBITDA', 0.35) 
+        _grade_valuation('PE',        0.25)
+        _grade_valuation('PB',        0.25)
+        _grade_valuation('PS',        0.15)
 
-        # Giữ lại grade sub-components cho Score Breakdown UI
-        df['Value_PE_Grade'] = component_grades[0] if len(component_grades) > 0 else 'F'
-        df['Value_PB_Grade'] = component_grades[1] if len(component_grades) > 1 else 'F'
+        df['Value_PE_Grade'] = component_grades[1] if len(component_grades) > 1 else 'F'
+        df['Value_PB_Grade'] = component_grades[2] if len(component_grades) > 2 else 'F'
 
         if not component_grades:
             df['Value Score'] = 'F'
             return df
 
-        # Normalize weights
         total_w = sum(weights)
         weights = [w / total_w for w in weights]
 
@@ -529,66 +528,53 @@ def calculate_value_score(df):
             score_num += grade_series.map(grade_map).fillna(1) * w
 
         df['Value_Score_Num'] = score_num
-        # Dùng percentile rank thực tế thay vì bins cứng
         pct_rank = score_num.rank(pct=True, na_option='bottom')
-        df['Value Score'] = pd.cut(
-            pct_rank,
-            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
-            labels=['F', 'D', 'C', 'B', 'A']
-        ).astype(str)
+        
+        # Áp dụng Bell Curve để phân loại
+        df['Value Score'] = pd.cut(pct_rank, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
         df.loc[score_num.isna(), 'Value Score'] = 'F'
 
-        return df # bạn thêm dòng này vào đây nhé
+        return df
 
     except Exception as e:
         logger.error(f"Lỗi tính Value Score: {e}")
-        import traceback; traceback.print_exc()
         df['Value Score'] = 'F'
         return df
 
+
 def calculate_growth_score(df):
     """
-    GROWTH SCORE: Đánh giá tăng trưởng thực sự (Revenue Growth, EPS Growth, ROE, ROA).
-    - Revenue Growth YoY: 30%
-    - EPS Growth YoY:     30%
-    - ROE:                25%
-    - ROA:                15%
-
-    Dùng percentile rank TRONG NGÀNH (sector-relative) nếu có cột Sector,
-    fallback về toàn thị trường. Lý do: ROE ngân hàng 15% bình thường,
-    ROE tech 15% thấp — so sánh cross-sector tạo bias lớn.
+    GROWTH SCORE: 
+    Trọng số MỚI: EPS Growth 40% | Rev Growth 30% | ROE 20% | ROA 10%
     """
-    logger.info("📊 Đang tính Growth Score (Revenue+EPS+ROE+ROA)...")
+    logger.info("📊 Đang tính Growth Score (EPS ưu tiên)...")
     try:
         df = df.copy()
         grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
-
         component_grades = []
-        weights          = []
+        weights = []
 
-        # ── 1. Revenue Growth YoY (30%) ────────────────────────────────────
-        if 'Revenue Growth YoY (%)' in df.columns:
-            rev_g = pd.to_numeric(df['Revenue Growth YoY (%)'], errors='coerce')
+        # EPS Growth YoY (40%) - Driver chính
+        if 'EPS_Growth_YoY_%' in df.columns:
+            eps_g = pd.to_numeric(df['EPS_Growth_YoY_%'], errors='coerce')
+            valid = eps_g.dropna()
+            if len(valid) >= 10:
+                pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
+                component_grades.append(_assign_grade_series(eps_g, pct, ascending=True))
+                weights.append(0.40)
+
+        # Rev Growth YoY (30%)
+        if 'Rev_Growth_YoY_%' in df.columns:
+            rev_g = pd.to_numeric(df['Rev_Growth_YoY_%'], errors='coerce')
             valid = rev_g.dropna()
             if len(valid) >= 10:
                 pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
                 component_grades.append(_assign_grade_series(rev_g, pct, ascending=True))
                 weights.append(0.30)
 
-        # ── 2. EPS Growth YoY (30%) ────────────────────────────────────────
-        if 'EPS Growth YoY (%)' in df.columns:
-            eps_g = pd.to_numeric(df['EPS Growth YoY (%)'], errors='coerce')
-            # Chỉ lấy mã có EPS dương (loại mã lỗ)
-            eps_g_valid = eps_g.where(df.get('EPS', pd.Series(0, index=df.index)) > 0)
-            valid = eps_g_valid.dropna()
-            if len(valid) >= 10:
-                pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
-                component_grades.append(_assign_grade_series(eps_g_valid, pct, ascending=True))
-                weights.append(0.30)
-
-        # ── 3. ROE (25%) ───────────────────────────────────────────────────
-        if 'ROE (%)' in df.columns:
-            roe = pd.to_numeric(df['ROE (%)'], errors='coerce')
+        # ROE (20%)
+        if 'ROE_%' in df.columns:
+            roe = pd.to_numeric(df['ROE_%'], errors='coerce')
             roe_valid = roe.where(roe > 0)
             valid = roe_valid.dropna()
             if len(valid) >= 10:
@@ -596,11 +582,11 @@ def calculate_growth_score(df):
                 g = _assign_grade_series(roe_valid, pct, ascending=True)
                 g[roe <= 0] = 'F'
                 component_grades.append(g)
-                weights.append(0.25)
+                weights.append(0.20)
 
-        # ── 4. ROA (15%) ───────────────────────────────────────────────────
-        if 'ROA (%)' in df.columns:
-            roa = pd.to_numeric(df['ROA (%)'], errors='coerce')
+        # ROA (10%)
+        if 'ROA_%' in df.columns:
+            roa = pd.to_numeric(df['ROA_%'], errors='coerce')
             roa_valid = roa.where(roa > 0)
             valid = roa_valid.dropna()
             if len(valid) >= 10:
@@ -608,25 +594,12 @@ def calculate_growth_score(df):
                 g = _assign_grade_series(roa_valid, pct, ascending=True)
                 g[roa <= 0] = 'F'
                 component_grades.append(g)
-                weights.append(0.15)
-
-        # Giữ lại grade sub-components cho Score Breakdown UI
-        if len(component_grades) >= 3:
-            df['Growth_ROE_Grade'] = component_grades[-2] if len(component_grades) >= 2 else 'F'
-            df['Growth_ROA_Grade'] = component_grades[-1]
-        elif len(component_grades) >= 2:
-            df['Growth_ROE_Grade'] = component_grades[0]
-            df['Growth_ROA_Grade'] = component_grades[1]
-        else:
-            df['Growth_ROE_Grade'] = 'F'
-            df['Growth_ROA_Grade'] = 'F'
+                weights.append(0.10)
 
         if not component_grades:
-            logger.warning("   ⚠️ Không có data growth → fallback ROE/ROA only")
             df['Growth Score'] = 'F'
             return df
 
-        # Normalize weights
         total_w = sum(weights)
         weights = [w / total_w for w in weights]
 
@@ -634,150 +607,110 @@ def calculate_growth_score(df):
         for grade_series, w in zip(component_grades, weights):
             score_num += grade_series.map(grade_map).fillna(1) * w
 
-        # ── Sector-relative bonus: blend market + sector percentile ───────
-        # Nếu có Sector, tính thêm sector-relative ROE rank và blend 50/50
-        if 'Sector' in df.columns and 'ROE (%)' in df.columns:
+        # Sector-relative adjustment
+        if 'Sector' in df.columns and 'ROE_%' in df.columns:
             try:
-                roe = pd.to_numeric(df['ROE (%)'], errors='coerce')
-                # Sector-relative rank (0-1)
-                sector_rank = df.groupby('Sector')['ROE (%)'].transform(
-                    lambda x: pd.to_numeric(x, errors='coerce').rank(pct=True)
-                ).fillna(0.5)
-                # Market-relative rank (0-1)
+                roe = pd.to_numeric(df['ROE_%'], errors='coerce')
+                sector_rank = df.groupby('Sector')['ROE_%'].transform(lambda x: pd.to_numeric(x, errors='coerce').rank(pct=True)).fillna(0.5)
                 market_rank = roe.rank(pct=True).fillna(0.5)
-                # Blend 50/50, scale to 1-5 grade range
                 blended = (sector_rank * 0.5 + market_rank * 0.5) * 4 + 1
-                # Nhẹ nhàng điều chỉnh score_num (±0.3 max để không override hoàn toàn)
                 adjustment = (blended - score_num).clip(-0.3, 0.3)
                 score_num = score_num + adjustment
-                logger.info("   ✅ Sector-relative adjustment applied to Growth Score")
-            except Exception as e:
-                logger.warning(f"   ⚠️ Sector adjustment failed: {e}")
+            except: pass
 
         df['Growth_Score_Num'] = score_num
         pct_rank = score_num.rank(pct=True, na_option='bottom')
-        df['Growth Score'] = pd.cut(
-            pct_rank,
-            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
-            labels=['F', 'D', 'C', 'B', 'A']
-        ).astype(str)
+        
+        # Áp dụng Bell Curve
+        df['Growth Score'] = pd.cut(pct_rank, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
         df.loc[score_num.isna(), 'Growth Score'] = 'F'
 
-        a_count = (df['Growth Score'] == 'A').sum()
-        logger.info(f"   ✅ Growth Score xong — {a_count} mã đạt A")
         return df
-
     except Exception as e:
         logger.error(f"Lỗi tính Growth Score: {e}")
-        import traceback; traceback.print_exc()
         df['Growth Score'] = 'F'
         return df
 
+
 def calculate_momentum_score(df):
     """
-    MOMENTUM SCORE: Đánh giá động lượng giá dựa trên RS_1M, RS_3M, Perf_1W, Perf_1M.
-    - RS (Relative Strength) so với VNINDEX: càng cao càng tốt
-    - Perf ngắn hạn: hỗ trợ thêm
-    Dùng percentile rank toàn thị trường — cùng logic với Value/Growth.
+    MOMENTUM SCORE: 
+    Bỏ Perf_1W (noise). Dùng Price_vs_SMA50_% để đo lường cấu trúc trend.
+    Trọng số MỚI: RS_3M 35% | RS_1M 30% | Price_vs_SMA50 20% | Perf_1M 15%
     """
-    logger.info("📊 Đang tính Momentum Score (RS + Perf based)...")
+    logger.info("📊 Đang tính Momentum Score (RS + SMA Trend)...")
     try:
         df = df.copy()
-        grade_points_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
-
+        grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
         momentum_grades = []
-        weights         = []
+        weights = []
 
-        # ── Tín hiệu 1: RS_1M (trọng số 35%) ──────────────────────────────
-        if 'RS_1M' in df.columns:
-            rs1m = pd.to_numeric(df['RS_1M'], errors='coerce')
-            valid = rs1m.dropna()
-            if len(valid) >= 10:
-                pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
-                momentum_grades.append(_assign_grade_series(rs1m, pct, ascending=True))
-                weights.append(0.35)
-
-        # ── Tín hiệu 2: RS_3M (trọng số 30%) ──────────────────────────────
         if 'RS_3M' in df.columns:
             rs3m = pd.to_numeric(df['RS_3M'], errors='coerce')
             valid = rs3m.dropna()
             if len(valid) >= 10:
                 pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
                 momentum_grades.append(_assign_grade_series(rs3m, pct, ascending=True))
+                weights.append(0.35)
+
+        if 'RS_1M' in df.columns:
+            rs1m = pd.to_numeric(df['RS_1M'], errors='coerce')
+            valid = rs1m.dropna()
+            if len(valid) >= 10:
+                pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
+                momentum_grades.append(_assign_grade_series(rs1m, pct, ascending=True))
                 weights.append(0.30)
 
-        # ── Tín hiệu 3: Perf_1M (trọng số 20%) ────────────────────────────
-        if 'Perf_1M' in df.columns:
-            p1m = pd.to_numeric(df['Perf_1M'], errors='coerce')
+        # Thay Perf_1W bằng Price_vs_SMA50_%
+        if 'Price_vs_SMA50_%' in df.columns:
+            sma50 = pd.to_numeric(df['Price_vs_SMA50_%'], errors='coerce')
+            valid = sma50.dropna()
+            if len(valid) >= 10:
+                pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
+                momentum_grades.append(_assign_grade_series(sma50, pct, ascending=True))
+                weights.append(0.20)
+
+        if 'Perf_1M_%' in df.columns:
+            p1m = pd.to_numeric(df['Perf_1M_%'], errors='coerce')
             valid = p1m.dropna()
             if len(valid) >= 10:
                 pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
                 momentum_grades.append(_assign_grade_series(p1m, pct, ascending=True))
-                weights.append(0.20)
-
-        # ── Tín hiệu 4: Perf_1W (trọng số 15%) ────────────────────────────
-        if 'Perf_1W' in df.columns:
-            p1w = pd.to_numeric(df['Perf_1W'], errors='coerce')
-            valid = p1w.dropna()
-            if len(valid) >= 10:
-                pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
-                momentum_grades.append(_assign_grade_series(p1w, pct, ascending=True))
                 weights.append(0.15)
 
         if not momentum_grades:
-            # Fallback: không có data momentum → C
-            logger.warning("   ⚠️ Không có data momentum, gán C mặc định")
             df['Momentum Score'] = 'C'
             return df
 
-        # Normalize weights về tổng = 1
         total_w = sum(weights)
         weights = [w / total_w for w in weights]
 
-        # Tính điểm số có trọng số
-        grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
         score_num = pd.Series(0.0, index=df.index)
         for grade_series, w in zip(momentum_grades, weights):
             score_num += grade_series.map(grade_map).fillna(3) * w
 
         df['Momentum_Score_Num'] = score_num
         pct_rank = score_num.rank(pct=True, na_option='bottom')
-        df['Momentum Score'] = pd.cut(
-            pct_rank,
-            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
-            labels=['F', 'D', 'C', 'B', 'A']
-        ).astype(str)
-
-        # Mã thiếu data momentum → C (neutral)
-        missing_mask = (
-            df.get('RS_1M', pd.Series(dtype=float)).isna() &
-            df.get('RS_3M', pd.Series(dtype=float)).isna() &
-            df.get('Perf_1M', pd.Series(dtype=float)).isna()
-        )
+        
+        # Áp dụng Bell Curve
+        df['Momentum Score'] = pd.cut(pct_rank, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
+        
+        missing_mask = df.get('RS_1M', pd.Series(dtype=float)).isna() & df.get('RS_3M', pd.Series(dtype=float)).isna()
         df.loc[missing_mask, 'Momentum Score'] = 'C'
 
-        a_count = (df['Momentum Score'] == 'A').sum()
-        logger.info(f"   ✅ Momentum Score xong — {a_count} mã đạt A")
         return df
-
     except Exception as e:
         logger.error(f"Lỗi tính Momentum Score: {e}")
-        import traceback; traceback.print_exc()
         df['Momentum Score'] = 'C'
         return df
+
 
 def calculate_vgm_score(df):
     """
     VGM SCORE: Tổng hợp Value + Growth + Momentum.
-
-    Trọng số cơ bản: Value 30% | Growth 40% | Momentum 30%
-    (Growth ưu tiên vì IDX là thị trường tăng trưởng)
-
-    Staleness adjustment: nếu BCTC > 9 tháng chưa cập nhật,
-    giảm trọng số V+G và tăng trọng số M để tránh stale fundamental
-    kéo score sai. Đây là vấn đề thực tế khi annual data lag 12 tháng.
+    Giữ nguyên logic Staleness adjustment, áp dụng Bell Curve cho kết quả cuối.
     """
-    logger.info("📊 Đang tính VGM Score (with staleness adjustment)...")
+    logger.info("📊 Đang tính VGM Score...")
     try:
         df = df.copy()
         grade_points = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
@@ -786,23 +719,19 @@ def calculate_vgm_score(df):
         g_points = df['Growth Score'].map(grade_points).fillna(1)
         m_points = df['Momentum Score'].map(grade_points).fillna(3)
 
-        # ── Staleness check: nếu có cột Date BCTC ─────────────────────────
-        w_v, w_g, w_m = 0.30, 0.40, 0.30   # default weights
+        w_v, w_g, w_m = 0.30, 0.40, 0.30  
 
         if 'Date' in df.columns:
             try:
                 fin_date = pd.to_datetime(df['Date'], errors='coerce')
                 now = pd.Timestamp.now()
                 months_stale = ((now - fin_date).dt.days / 30).fillna(12)
-                # Nếu BCTC > 9 tháng: giảm V+G, tăng M
                 stale_mask = months_stale > 9
-                stale_count = stale_mask.sum()
-                if stale_count > 0:
-                    logger.info(f"   ⚠️ {stale_count} mã có BCTC > 9 tháng → giảm V/G weight")
-                # Vectorized weight adjustment per ticker
+                
                 w_v_arr = np.where(stale_mask, 0.20, 0.30)
                 w_g_arr = np.where(stale_mask, 0.25, 0.40)
                 w_m_arr = np.where(stale_mask, 0.55, 0.30)
+                
                 df['VGM_Score_Num'] = (
                     v_points.values * w_v_arr +
                     g_points.values * w_g_arr +
@@ -813,17 +742,12 @@ def calculate_vgm_score(df):
         else:
             df['VGM_Score_Num'] = v_points * w_v + g_points * w_g + m_points * w_m
 
-        # Phân vị theo rank thực tế — đảm bảo luôn có ~20% mỗi grade
         pct_rank_vgm = df['VGM_Score_Num'].rank(pct=True, na_option='bottom')
-        df['VGM Score'] = pd.cut(
-            pct_rank_vgm,
-            bins=[0, 0.20, 0.40, 0.60, 0.80, 1.001],
-            labels=['F', 'D', 'C', 'B', 'A']
-        ).astype(str)
+        
+        # Áp dụng Bell Curve cho Final Score
+        df['VGM Score'] = pd.cut(pct_rank_vgm, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
         df.loc[df['VGM_Score_Num'].isna(), 'VGM Score'] = 'F'
 
-        dist = df['VGM Score'].value_counts().to_dict()
-        logger.info(f"   ✅ VGM Score xong — phân bổ: {dist}")
         return df
 
     except Exception as e:
@@ -1107,7 +1031,10 @@ def calculate_all_scores(df_price, df_financial):
                     if len(s) >= 6:
                         v_5y = s.iloc[-6]
                         if pd.notna(s.iloc[-1]) and pd.notna(v_5y) and v_5y > 0:
-                            rec[cagr_name] = round(((s.iloc[-1] / v_5y) ** (1/5) - 1) * 100, 2)
+                            if v_5y > 0 and s.iloc[-1] > 0:
+                                rec[cagr_name] = round(((s.iloc[-1] / v_5y) ** (1/5) - 1) * 100, 2)
+                            else:
+                                rec[cagr_name] = np.nan
                     records.append(rec)
                 return pd.DataFrame(records)   # 1 row per Ticker — không MultiIndex
 
@@ -1158,6 +1085,94 @@ def calculate_all_scores(df_price, df_financial):
                 logger.info(f"   ✅ Đã merge {len(df_tech.columns)-1} Technical Indicators")
         except Exception as e:
             logger.warning(f"   ⚠️ Không merge được Technical Indicators: {e}")
+        
+        # ── ELLIOTT WAVE PROXY ────────────────────────────────────────────
+        try:
+            # 1. Fibonacci Retracement Level (%) so với range 52W
+            #    0% = đáy 52W, 100% = đỉnh 52W
+            #    Vùng quan trọng: 38.2%, 50%, 61.8%
+            if all(c in df.columns for c in ['Price Close', 'High_52W', 'Low_52W']):
+                price  = pd.to_numeric(df['Price Close'], errors='coerce')
+                hi52   = pd.to_numeric(df['High_52W'],    errors='coerce')
+                lo52   = pd.to_numeric(df['Low_52W'],      errors='coerce')
+                rng    = hi52 - lo52
+                df['Fib_Position_%'] = np.where(
+                    rng > 0,
+                    ((price - lo52) / rng * 100).round(1),
+                    np.nan
+                )
+                # Nhãn vùng Fib: xác định đang ở vùng nào
+                fib = df['Fib_Position_%']
+                df['Fib_Zone'] = np.select(
+                    [
+                        fib <= 23.6,
+                        (fib > 23.6)  & (fib <= 38.2),
+                        (fib > 38.2)  & (fib <= 50.0),
+                        (fib > 50.0)  & (fib <= 61.8),
+                        (fib > 61.8)  & (fib <= 78.6),
+                        fib > 78.6,
+                    ],
+                    [
+                        'Zone0_236',    # Dưới 23.6% — gần đáy, sóng C/5 có thể kết thúc
+                        'Zone1_382',    # 23.6–38.2% — hồi얕 (sóng 2 nông)
+                        'Zone2_500',    # 38.2–50%   — vùng hồi trung bình
+                        'Zone3_618',    # 50–61.8%   — vùng hồi sâu lý tưởng (sóng 2/4)
+                        'Zone4_786',    # 61.8–78.6% — hồi sâu, test lại
+                        'Zone5_Top',    # >78.6%     — gần đỉnh, tiệm cận sóng 3/5
+                    ],
+                    default='Unknown'
+                )
+
+            # 2. Wave Momentum Score (0-100)
+            #    Kết hợp các tín hiệu để ước lượng vị trí sóng đẩy hay sóng hồi
+            wave_score = pd.Series(0.0, index=df.index)
+
+            # Tín hiệu đang trong sóng đẩy (impulse):
+            if 'MACD_Histogram' in df.columns:
+                macd = pd.to_numeric(df['MACD_Histogram'], errors='coerce').fillna(0)
+                wave_score += np.where(macd > 0, 20, 0)           # MACD dương = đẩy
+
+            if 'Price_vs_SMA20' in df.columns:
+                sma20 = pd.to_numeric(df['Price_vs_SMA20'], errors='coerce').fillna(0)
+                wave_score += np.where(sma20 > 0, 15, 0)          # Trên SMA20
+
+            if 'Price_vs_SMA50' in df.columns:
+                sma50 = pd.to_numeric(df['Price_vs_SMA50'], errors='coerce').fillna(0)
+                wave_score += np.where(sma50 > 2, 15, 0)          # Trên SMA50 > 2%
+
+            if 'RSI_14' in df.columns:
+                rsi = pd.to_numeric(df['RSI_14'], errors='coerce').fillna(50)
+                wave_score += np.where(
+                    (rsi >= 50) & (rsi <= 70), 20,                 # RSI 50-70 = sóng đẩy khỏe
+                    np.where(rsi > 70, 10, 0)                      # RSI > 70 = cuối sóng 3/5
+                )
+
+            if 'Vol_vs_SMA20' in df.columns:
+                vol = pd.to_numeric(df['Vol_vs_SMA20'], errors='coerce').fillna(1)
+                wave_score += np.where(vol >= 1.5, 15, np.where(vol >= 1.2, 8, 0))
+
+            if 'Consec_Up' in df.columns:
+                cu = pd.to_numeric(df['Consec_Up'], errors='coerce').fillna(0)
+                wave_score += np.where(cu >= 3, 15, np.where(cu >= 1, 7, 0))
+
+            df['Wave_Momentum_Score'] = wave_score.clip(0, 100).round(1)
+
+            # 3. Corrective Flag — đang trong sóng điều chỉnh (ABC)
+            #    True nếu: giá dưới SMA50 VÀ RSI < 50 VÀ MACD âm
+            corr_flag = pd.Series(False, index=df.index)
+            if all(c in df.columns for c in ['Price_vs_SMA50', 'RSI_14', 'MACD_Histogram']):
+                corr_flag = (
+                    (pd.to_numeric(df['Price_vs_SMA50'],   errors='coerce').fillna(0)  < 0) &
+                    (pd.to_numeric(df['RSI_14'],            errors='coerce').fillna(50) < 50) &
+                    (pd.to_numeric(df['MACD_Histogram'],    errors='coerce').fillna(0)  < 0)
+                )
+            df['Elliott_Corrective'] = corr_flag.astype(int)  # 1 = đang hồi, 0 = có thể đẩy
+
+            logger.info("✅ Elliott Wave proxy columns added: Fib_Position_%, Fib_Zone, Wave_Momentum_Score, Elliott_Corrective")
+
+        except Exception as _ew_err:
+            logger.warning(f"Elliott proxy error: {_ew_err}")
+        # ── KẾT THÚC ELLIOTT WAVE PROXY ──────────────────────────────────
 
         # ===================================================================
         # 3. TÍNH TOÁN CÁC LOẠI ĐIỂM SỐ (Chạy tuần tự)
@@ -1246,6 +1261,10 @@ def calculate_all_scores(df_price, df_financial):
 
             # ── Technical: Streak & Pattern ──
             'Consec_Up', 'Consec_Down', 'Candlestick_Pattern',
+
+            # ── Elliott Wave Proxy ──          ← THÊM ĐOẠN NÀY
+            'Fib_Position_%', 'Fib_Zone',
+            'Wave_Momentum_Score', 'Elliott_Corrective',
 
             # ── Scores ──
             'T_Plus_Score',

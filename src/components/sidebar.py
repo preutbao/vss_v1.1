@@ -243,12 +243,16 @@ HIGH_LOW_ITEMS = [
 ]
 
 CHI_BAO_KT_ITEMS = [
-    create_criteria_item("rsi14", "RSI (14)"),
-    create_criteria_item("rsi-state", "Trạng thái RSI(14)"),
-    create_criteria_item("macd-hist", "MACD Histogram"),
-    create_criteria_item("bb-width", "Mở Band Bollinger (%)"),
-    create_criteria_item("consec-up", "Phiên tăng liên tiếp"),
-    create_criteria_item("consec-down", "Phiên giảm liên tiếp"),
+    create_criteria_item("rsi14",               "RSI (14)"),
+    create_criteria_item("rsi-state",           "Trạng thái RSI(14)"),
+    create_criteria_item("macd-hist",           "MACD Histogram"),
+    create_criteria_item("bb-width",            "Mở Band Bollinger (%)"),
+    create_criteria_item("consec-up",           "Phiên tăng liên tiếp"),
+    create_criteria_item("consec-down",         "Phiên giảm liên tiếp"),
+    # ── Elliott Wave Proxy ── THÊM 3 DÒNG NÀY
+    create_criteria_item("fib-position",        "Fibonacci Position (%)"),
+    create_criteria_item("wave-momentum",       "Wave Momentum Score"),
+    create_criteria_item("elliott-corrective",  "Elliott: Đang hồi sóng"),
 ]
 
 MOMENTUM_ITEMS = [
@@ -1173,6 +1177,11 @@ layout = html.Div(
         dcc.Store(id='filter-consec-up', data=_get_r(_DR, 'filter-consec-up', [0, 20])),
         dcc.Store(id='filter-consec-down', data=_get_r(_DR, 'filter-consec-down', [0, 20])),
 
+        # Elliott Wave Proxy stores
+        dcc.Store(id='filter-fib-position',       data=[0, 100]),
+        dcc.Store(id='filter-wave-momentum',      data=[0, 100]),
+        dcc.Store(id='filter-elliott-corrective', data=None),
+
         dcc.Store(id='filter-beta', data=_get_r(_DR, 'filter-beta', [-2, 4])),
         dcc.Store(id='filter-alpha', data=_get_r(_DR, 'filter-alpha', [-50, 100])),
         dcc.Store(id='filter-rs-3d', data=_get_r(_DR, 'filter-rs-3d', [-20, 20])),
@@ -1256,7 +1265,7 @@ layout = html.Div(
                 html.Div(id="watchlist-content", style={"minHeight": "100px"}),
             ]),
             dbc.ModalFooter([
-                dbc.Button("Xóa tất cả", id="btn-clear-watchlist", color="danger",
+                dbc.Button("Xóa tất cả tiêu chí lọc", id="btn-clear-watchlist", color="danger",
                            outline=True, size="sm", style={"fontSize": "11px"}),
                 dbc.Button("Đóng", id="btn-close-watchlist", color="secondary", size="sm"),
             ], style={"display": "flex", "justifyContent": "space-between"}),

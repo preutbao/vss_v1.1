@@ -258,7 +258,7 @@ FIXED_COLS = [
     {
     "field": "Star_Rating",
     "headerName": "XẾP HẠNG",
-    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao. Hệ thống tự động kích hoạt màng lọc giới hạn tối đa 2 sao đối với doanh nghiệp rỗng dòng tiền hoặc thanh khoản yếu.",
+    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
     "width": 120, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
     "sortable": True,
     "cellRenderer": "CustomStarRating", # <--- Gọi tên Component đã đăng ký ở file JS
@@ -519,6 +519,59 @@ FILTER_TO_COLDEF = {
         "valueFormatter": {"function": "params.value != null ? d3.format(',.0f')(params.value/1e9) + ' tỷ' : '-'"},
     },
 
+    # ── Elliott Wave Proxy ──
+    "filter-fib-position": {
+        "field": "Fib_Position_%",
+        "headerName": "FIB %",
+        "headerTooltip": "Vị trí giá trong range 52W theo Fibonacci (0%=đáy, 100%=đỉnh). Vùng 38.2–61.8% = hồi lý tưởng.",
+        "type": "rightAligned", "sortable": True, "width": 95,
+        "valueFormatter": {"function": "params.value != null ? d3.format('.1f')(params.value) + '%' : '-'"},
+        "cellStyle": {
+            "function": """
+                if (params.value == null) return {};
+                // Vùng vàng 38.2–61.8%: đang hồi về Fib lý tưởng
+                if (params.value >= 38.2 && params.value <= 61.8)
+                    return {'color': '#f59e0b', 'fontWeight': '700'};
+                // Trên 70%: gần đỉnh, sóng đẩy mạnh
+                if (params.value > 70)
+                    return {'color': '#10b981', 'fontWeight': '700'};
+                // Dưới 25%: gần đáy
+                if (params.value < 25)
+                    return {'color': '#ef4444'};
+                return {'color': '#c9d1d9'};
+            """
+        },
+    },
+    "filter-wave-momentum": {
+        "field": "Wave_Momentum_Score",
+        "headerName": "WAVE MOM",
+        "headerTooltip": "Wave Momentum Score (0-100): tổng hợp MACD+RSI+SMA+Volume+Consec để ước lượng sóng đẩy. ≥70 = tín hiệu impulse mạnh.",
+        "type": "rightAligned", "sortable": True, "width": 115,
+        "valueFormatter": {"function": "params.value != null ? params.value.toFixed(0) + ' đ' : '-'"},
+        "cellStyle": {
+            "function": """
+                if (params.value == null) return {'color':'#484f58'};
+                if (params.value >= 70) return {'color':'#10b981','fontWeight':'800'};
+                if (params.value >= 50) return {'color':'#3b82f6','fontWeight':'600'};
+                if (params.value >= 30) return {'color':'#f59e0b'};
+                return {'color':'#ef4444'};
+            """
+        },
+    },
+    "filter-elliott-corrective": {
+        "field": "Elliott_Corrective",
+        "headerName": "HỒI SÓNG",
+        "headerTooltip": "1 = đang trong sóng điều chỉnh ABC (giá dưới SMA50 + RSI<50 + MACD âm). 0 = có thể đang trong sóng đẩy.",
+        "sortable": True, "width": 110,
+        "valueFormatter": {"function": "params.value === 1 ? '🔄 Đang hồi' : '🚀 Có thể đẩy'"},
+        "cellStyle": {
+            "function": """
+                return params.value === 1
+                    ? {'color': '#f59e0b', 'fontWeight': '600'}
+                    : {'color': '#10b981', 'fontWeight': '600'};
+            """
+        },
+    },
 }
 
 # ── Bộ cột mặc định cho chế độ TÍCH SẢN ──────────────────────────────────

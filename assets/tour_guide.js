@@ -200,7 +200,7 @@ window.VssTour = (function () {
       position: "right",
       title: "Hồ sơ Phân tích",
       body: "Popup này chứa toàn bộ biểu đồ kỹ thuật, báo cáo tài chính và sức khỏe doanh nghiệp... Bạn có thể xem lướt qua nhé! (Hệ thống sẽ tự chuyển bước sau 10s).",
-      skipBtn: "Bỏ qua",
+      skipBtn: false, // 🛠 ĐỔI THÀNH FALSE ĐỂ ẨN NÚT
       disableInteraction: true,
       autoAdvanceDelay: 10000 // Tự động chuyển bước sau 10s
     },
@@ -212,7 +212,7 @@ window.VssTour = (function () {
       position: "left",
       title: "Đóng hồ sơ",
       body: "Bạn đã xem xong! Hãy click vào nút X này để đóng cửa sổ và trở lại bảng chính.",
-      skipBtn: "Bỏ qua",
+      skipBtn: false, // 🛠 ĐỔI THÀNH FALSE ĐỂ ẨN NÚT
       nextBtn: "Tiếp theo",
       requireClick: true, 
       autoNextAfterClick: true, 
@@ -228,9 +228,22 @@ window.VssTour = (function () {
       body: "Bảng kết quả còn có rất nhiều tính năng ẩn. Hãy click vào nút '<<' này để mở rộng thanh công cụ nhé.",
       skipBtn: "Bỏ qua",
       nextBtn: "Tiếp theo",
-      requireClick: true, // Bắt người dùng click mở ra
-      autoNextAfterClick: true, // 🛠 Tự động chuyển bước sau khi click
-      autoNextDelay: 1000 // Đợi 1s để thanh công cụ chạy hiệu ứng mở ra
+      requireClick: true, 
+      autoNextAfterClick: true, 
+      autoNextDelay: 800,
+      
+      // 🛠 THÊM ĐOẠN NÀY ĐỂ FIX EDGE CASE:
+      // Tự động kiểm tra và đóng thanh công cụ nếu nó đang được mở sẵn
+      onBeforeShow: function() {
+        const container = document.getElementById("action-buttons-container");
+        const btn = document.getElementById("btn-toggle-actions");
+        
+        // Kiểm tra xem container có đang hiện trên màn hình không
+        if (container && window.getComputedStyle(container).display !== "none") {
+          // Nếu đang hiện (nghĩa là user đã mở trước đó) -> Dùng JS bấm nút ẩn nó đi
+          if (btn) btn.click();
+        }
+      }
     },
 
     // 7. BƯỚC MỚI: Giới thiệu thanh công cụ
@@ -535,10 +548,13 @@ window.VssTour = (function () {
           " onmouseover="this.style.background='#334155'; this.style.color='#f8fafc'" onmouseout="this.style.background='transparent'; this.style.color='#cbd5e1'">Trở lại</button>` : ""}
 
           <button id="tour-skip-btn" style="
+            display: ${step.skipBtn ? 'inline-block' : 'none'}; /* 🛠 Tự động ẩn nếu skipBtn là false/rỗng */
             font-size:13px; color:#64748b; background:none;
             border:none; cursor:pointer; padding:6px 8px; transition: color 0.2s;
             font-weight: 500; flex-shrink: 0; white-space: nowrap;
-          " onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">${step.skipBtn}</button>
+          " onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
+            ${step.skipBtn || "Bỏ qua"}
+          </button>
 
           ${step.autoAdvanceDelay ? `
             <div style="font-size:13px; font-weight:600; color:#0284c7; padding:7px 10px; animation: pulseText 1.5s infinite; flex-shrink:0;">
@@ -645,6 +661,11 @@ window.VssTour = (function () {
     currentStep = index;
     const step = STEPS[index];
     highlightTarget(step.target, step.disableInteraction); 
+
+    // 🛠 TÍNH NĂNG MỚI: Chạy logic tiền xử lý trước khi vẽ mục tiêu của bước này
+    if (typeof step.onBeforeShow === 'function') {
+      step.onBeforeShow();
+    }
 
     let reqEvent = null;
     if (step.requireDblClick) reqEvent = "dblclick";
@@ -764,26 +785,33 @@ window.VssTour = (function () {
       e.preventDefault();
     }
   }
-  // ── KHỞI ĐỘNG TOUR ───────────────────────────────────────────
+  // ── BẮT ĐẦU VÀ KẾT THÚC ─────────────────────────────────────
   function startTour() {
-    if (isActive) return;
-    isActive = true;
-    currentStep = 0;
+    if (isActive) return; // Nếu tour đang chạy rồi thì bỏ qua
 
-    const container = document.getElementById("tour-overlay-container");
-    if (container) container.style.display = "block";
+    // 🛠 1. TỰ ĐỘNG CUỘN LÊN ĐẦU TRANG
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
 
-    // document.body.style.overflow = "hidden"; // Giấu scrollbar
+    // 🛠 2. ĐỢI 300ms CHO MÀN HÌNH CUỘN XONG RỒI MỚI BẬT TOUR
+    setTimeout(() => {
+      isActive = true;
+      currentStep = 0;
+      stepRequirementMet = false;
 
-    // 🛠 THÊM 3 DÒNG NÀY VÀO ĐỂ KHÓA CUỘN & ZOOM:
-    // Lưu ý: phải có { passive: false } thì trình duyệt mới cho phép dùng preventDefault()
-    window.addEventListener('wheel', preventScrollAndZoom, { passive: false });
-    window.addEventListener('touchmove', preventScrollAndZoom, { passive: false });
-    window.addEventListener('keydown', preventScrollKeys, { passive: false }); // (Tùy chọn: chặn phím mũi tên)
-    goToStep(0);
+      const container = document.getElementById("tour-overlay-container");
+      if (container) container.style.display = "block";
 
-    // Resize handler để redraw khi resize cửa sổ
-    window.addEventListener("resize", onResize);
+      // Khóa cuộn chuột và bàn phím của người dùng
+      window.addEventListener('wheel', preventScrollAndZoom, { passive: false });
+      window.addEventListener('touchmove', preventScrollAndZoom, { passive: false });
+      window.addEventListener('keydown', preventScrollKeys, { passive: false }); 
+      
+      // Chạy bước đầu tiên
+      goToStep(0);
+
+      // Bắt sự kiện resize
+      window.addEventListener("resize", onResize);
+    }, 300); // 300ms là đủ để màn hình trượt mượt mà lên top
   }
 
   function onResize() {

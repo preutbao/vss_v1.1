@@ -162,15 +162,14 @@ app.layout = html.Div(
         # Hiển thị khi profile-setup-done = False (lần đầu vào / chưa setup)
         html.Div(
             id="onboarding-page",
-            children=[onboarding.layout],
-            # style mặc định: hiện — callback sẽ ẩn đi sau khi setup xong
+            children=[onboarding.layout], style={"opacity": "0", "transition": "opacity 0.15s ease"},
         ),
 
         # ── 3. MAIN APP ───────────────────────────────────────────────────
         # Ẩn cho đến khi profile-setup-done = True
         html.Div(
             id="main-app-page",
-            style={"display": "none"},
+            style={"opacity": "0", "transition": "opacity 0.15s ease"},
             children=[
                 # THAY create_header() BẰNG create_banner() ĐỂ KHÔNG BỊ TRÙNG TOPBAR
                 create_banner(), 
@@ -201,6 +200,33 @@ app.layout = html.Div(
     ],
 )
 
+# THÊM ĐOẠN NÀY — chạy ngay khi browser load, không chờ server roundtrip
+app.clientside_callback(
+    """
+    function(setup_done) {
+        var onboard = document.getElementById('onboarding-page');
+        var main    = document.getElementById('main-app-page');
+        if (!onboard || !main) return window.dash_clientside.no_update;
+
+        if (setup_done) {
+            onboard.style.display  = 'none';
+            onboard.style.opacity  = '0';
+            main.style.display     = 'block';
+            // Fade in mượt
+            setTimeout(function() { main.style.opacity = '1'; }, 10);
+        } else {
+            main.style.display     = 'none';
+            main.style.opacity     = '0';
+            onboard.style.display  = 'block';
+            setTimeout(function() { onboard.style.opacity = '1'; }, 10);
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("onboarding-page", "id"),   # Output giả — không dùng giá trị trả về
+    Input("profile-setup-done", "data"),
+    prevent_initial_call=False,
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CALLBACK: Chuyển trang dựa trên profile-setup-done
@@ -211,14 +237,16 @@ app.layout = html.Div(
     Input("profile-setup-done", "data"),
 )
 def toggle_pages(setup_done):
-    """
-    - setup_done = False (hoặc None) → hiển thị onboarding, ẩn main app
-    - setup_done = True              → ẩn onboarding, hiển thị main app
-    """
+    _transition = "opacity 0.2s ease"
     if setup_done:
-        return {"display": "none"}, {"display": "block"}
-    return {"display": "block"}, {"display": "none"}
-
+        return (
+            {"display": "none",  "opacity": "0",  "transition": _transition},
+            {"display": "block", "opacity": "1",  "transition": _transition},
+        )
+    return (
+        {"display": "block", "opacity": "1",  "transition": _transition},
+        {"display": "none",  "opacity": "0",  "transition": _transition},
+    )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CALLBACK: Nút "Hồ sơ" trong header → quay về onboarding để chỉnh sửa

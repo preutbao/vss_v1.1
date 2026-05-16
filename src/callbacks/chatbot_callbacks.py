@@ -417,7 +417,7 @@ def create_chatbot_layout():
                                     "fontSize": "13px", "fontWeight": "600",
                                     "color": "#e2e8f0", "marginBottom": "8px",
                                 }),
-                                html.Div("Chuyên gia đầu tư chứng khoán Việt Nam. Tôi có thể giúp:", style={
+                                html.Div("Tôi có thể giúp:", style={
                                     "fontSize": "12px", "color": "#94a3b8",
                                     "marginBottom": "10px", "lineHeight": "1.6",
                                 }),
@@ -426,7 +426,7 @@ def create_chatbot_layout():
                                     html.Div("⚖️ Tính toán quản lý rủi ro & định giá",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
                                     html.Div("🎯 Tư vấn cá nhân hóa theo trình độ F0/F1/Pro", style={"fontSize": "12px", "color": "#cbd5e1"}),
                                 ], style={"paddingLeft": "4px"}),
-                                html.Div("Hãy click vào 1 mã ở bảng lọc bên trái để nhận được tư vấn về cổ phiếu đó!", style={
+                                html.Div("Hãy click vào 1 mã ở bảng lọc bên trái để nhận được ngay tư vấn về cổ phiếu đó!", style={
                                     "fontSize": "12px", "color": "#7dd3fc",
                                     "marginTop": "10px", "fontStyle": "italic",
                                 }),

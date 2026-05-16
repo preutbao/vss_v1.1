@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 import gc
 import dash
 from src.app_instance import app
-from src.backend.data_loader import load_market_data, load_financial_data, get_latest_snapshot, get_snapshot_df, load_financial_data_nocache
+from src.backend.data_loader import load_market_data, load_financial_data, get_latest_snapshot, get_snapshot_df
 from src.backend.quant_engine import calculate_all_scores
 from src.backend.quant_engine_strategies import run_strategy
 from src.backend.data_loader import load_financial_data
@@ -459,6 +459,10 @@ def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
         State("filter-gtgd-1w",             "data"),
         State("filter-gtgd-10d",            "data"),
         State("filter-gtgd-1m",             "data"),
+        # >>> THÊM STATE CHO DROPDOWN CHỈ SỐ <<<
+        State("filter-fib-position",       "data"),
+        State("filter-wave-momentum",      "data"),
+        State("filter-elliott-corrective", "data"),
     ],
     prevent_initial_call='initial_duplicate'
 )
@@ -491,6 +495,7 @@ def update_screener_table(
         vvsma5, vvsma10, vvsma20, vvsma50, avg5d, avg10d, avg50d,
         # GTGD
         gtgd_1w, gtgd_10d, gtgd_1m,
+        fib_pos, wave_mom, elliott_corr,   # ← thêm vào cuối danh sách tham số
 ):
     try:
         # ── DEBUG BLOCK — BẮT ĐẦU ──────────────────────────────────────
@@ -835,6 +840,10 @@ def update_screener_table(
             ("filter-gtgd-1w",          "GTGD_1W",                  gtgd_1w,                False),
             ("filter-gtgd-10d",         "GTGD_10D",                 gtgd_10d,               False),
             ("filter-gtgd-1m",          "GTGD_1M",                  gtgd_1m,                False),
+            # Elliott Wave Proxy
+            ("filter-fib-position",       "Fib_Position_%",        fib_pos,       False),
+            ("filter-wave-momentum",      "Wave_Momentum_Score",    wave_mom,      False),
+            ("filter-elliott-corrective", "Elliott_Corrective",     elliott_corr,  False),
         ]
 
         for (filter_id, col_name, fallback_val, is_grade) in FILTER_MAP:
@@ -1034,16 +1043,11 @@ def open_detail_modal_fast(double_clicked_cell, grid_data):
 # CALLBACK 2B: LOAD NỘI DUNG SAU KHI MODAL ĐÃ HIỆN — trigger từ store
 # ============================================================================
 @app.callback(
-    Output("tab-overview-content",  "children"),
-    Output("tab-technical-content", "children"),
-    Output("fin-table-is", "rowData"),  Output("fin-table-is", "columnDefs"),
-    Output("fin-table-bs", "rowData"),  Output("fin-table-bs", "columnDefs"),
-    Output("fin-table-cf", "rowData"),  Output("fin-table-cf", "columnDefs"),
-    Input("selected-stock-store", "data"),   # trigger khi modal đã mở
-    Input("fin-period-toggle",    "value"),
+    Output("tab-overview-content", "children"),
+    Input("selected-stock-store", "data"),
     prevent_initial_call=True,
 )
-def load_detail_content(stock, period_toggle):
+def load_detail_content(stock, period_toggle=None):
     """Load data nặng SAU khi modal đã hiện — user thấy UI ngay."""
     # ── DEBUG: log khi callback trigger ──────────────────────────────────
     import logging
@@ -1109,7 +1113,7 @@ def load_detail_content(stock, period_toggle):
     # Tải dữ liệu BCTC Quý để vẽ biểu đồ lịch sử
     df_history = pd.DataFrame()
     try:
-        df_fin_q = load_financial_data_nocache('quarterly')
+        df_fin_q = load_financial_data('quarterly')  # ✅ có cache in-memory
         df_history = df_fin_q[df_fin_q['Ticker'] == ticker].sort_values("Date", ascending=False).head(
             8)  # Lấy 8 quý gần nhất
         df_history = df_history.sort_values("Date", ascending=True)  # Đảo lại để vẽ từ cũ tới mới
@@ -1684,640 +1688,366 @@ def load_detail_content(stock, period_toggle):
 
     ], style={"padding": "20px"})
 
-    # === TAB 3: MATRIX FINANCIAL STATEMENTS (CHIA 3 BẢNG) ===
-    # Khởi tạo mặc định trống
-    is_row_data, is_col_defs = [], []
-    bs_row_data, bs_col_defs = [], []
-    cf_row_data, cf_col_defs = [], []
+    
+    # Callback 2B: chỉ trả overview
+    return overview_content
 
-    try:
-        df_fin = load_financial_data(period_toggle)
+# ============================================================================
+# CALLBACK 2C: LOAD TAB KỸ THUẬT — CHỈ KHI CLICK TAB NÀY
+# ============================================================================
+@app.callback(
+    Output("tab-technical-content", "children"),
+    Input("detail-tabs",            "active_tab"),
+    State("selected-stock-store",   "data"),
+    prevent_initial_call=True,
+)
+def load_technical_tab(active_tab, stock):
+    if active_tab != "tab-technical" or not stock:
+        return no_update
 
-        df_stock = df_fin[df_fin['Ticker'] == ticker].copy()
+    ticker = stock.get('Ticker', 'N/A')
 
-        if not df_stock.empty:
-            df_stock['Date'] = pd.to_datetime(df_stock['Date'])
-            df_stock = df_stock.sort_values("Date", ascending=False)
-
-            if period_toggle == "yearly":
-                df_stock['Period'] = df_stock['Date'].dt.year.astype(str)
-            else:
-                df_stock['Period'] = df_stock['Date'].dt.year.astype(str) + "-Q" + df_stock['Date'].dt.quarter.astype(
-                    str)
-
-            raw_cols_to_keep = [col for col in FINANCIAL_UI_MAP.keys() if col in df_stock.columns]
-            df_stock = df_stock[['Period'] + raw_cols_to_keep]
-
-            # Xoay bảng (Transpose)
-            df_stock.set_index('Period', inplace=True)
-            df_t = df_stock.T.reset_index()
-            df_t.rename(columns={'index': 'RawItem'}, inplace=True)
-
-            # Map Tên và Nhóm
-            df_t['Chỉ tiêu'] = df_t['RawItem'].apply(
-                lambda x: FINANCIAL_UI_MAP[x]['name'] if x in FINANCIAL_UI_MAP else x)
-            df_t['Nhóm BCTC'] = df_t['RawItem'].apply(
-                lambda x: FINANCIAL_UI_MAP[x]['group'] if x in FINANCIAL_UI_MAP else "Khác")
-
-            # Định nghĩa hàm tạo Cột (Column Definitions) dùng chung
-            def create_col_defs(period_columns):
-                col_defs = [
-                    {"field": "Chỉ tiêu", "pinned": "left", "width": 280,
-                     "cellStyle": {"fontWeight": "bold", "color": "#e6edf3", "backgroundColor": "#0d1b2a"}}
-                ]
-                for p in period_columns:
-                    col_defs.append({
-                        "field": p, "headerName": p, "type": "rightAligned", "width": 120,
-                        "valueFormatter": {
-                            "function": "params.value !== '' && params.value !== null ? d3.format(',.0f')(params.value) : '-'"}
-                    })
-                return col_defs
-
-            # Lấy danh sách các cột thời gian (VD: 2023, 2022)
-            period_cols = [c for c in df_t.columns if c not in ['Chỉ tiêu', 'RawItem', 'Nhóm BCTC']]
-
-            # 🟢 HÀM XỬ LÝ CHIA NHỎ BẢNG
-            def process_sub_table(group_name):
-                # Lọc ra các dòng thuộc nhóm đó
-                df_sub = df_t[df_t['Nhóm BCTC'] == group_name].copy()
-                if df_sub.empty: return [], []
-
-                # Sắp xếp lại thứ tự cột cho gọn
-                df_sub = df_sub[['Chỉ tiêu'] + period_cols]
-
-                # Chia cho 1 Triệu (Ngoại trừ EPS/DPS)
-                for c in period_cols:
-                    df_sub[c] = pd.to_numeric(df_sub[c], errors='coerce')
-                    df_sub[c] = np.where(df_sub['Chỉ tiêu'].isin(['EPS Cơ bản', 'Cổ tức mỗi cổ phiếu (DPS)']),
-                                         df_sub[c],
-                                         df_sub[c] / 1_000_000)
-                df_sub.replace({np.nan: None}, inplace=True)
-
-                # Giữ nguyên thứ tự dòng của từ điển (không sort alpha-bê)
-                df_sub['Sort_Order'] = df_sub['Chỉ tiêu'].map(
-                    {v['name']: i for i, v in enumerate(FINANCIAL_UI_MAP.values())})
-                df_sub.sort_values('Sort_Order', inplace=True)
-                df_sub.drop('Sort_Order', axis=1, inplace=True)
-
-                return df_sub.to_dict('records'), create_col_defs(period_cols)
-
-            # Phân bổ dữ liệu ra 3 bảng
-            is_row_data, is_col_defs = process_sub_table("1. Kết quả kinh doanh")
-            bs_row_data, bs_col_defs = process_sub_table("2. Bảng cân đối kế toán")
-            cf_row_data, cf_col_defs = process_sub_table("3. Lưu chuyển tiền tệ")
-
-        else:
-            err_msg = [{"field": "Lỗi", "headerName": "Không có dữ liệu BCTC"}]
-            is_col_defs, bs_col_defs, cf_col_defs = err_msg, err_msg, err_msg
-
-    except Exception as e:
-        logger.error(f"Lỗi khi nạp Tab Tài Chính: {e}")
-        err_msg = [{"field": "Lỗi", "headerName": f"Lỗi hệ thống: {str(e)}"}]
-        is_col_defs, bs_col_defs, cf_col_defs = err_msg, err_msg, err_msg
-
-    # === TAB 4: TECHNICAL ANALYSIS (ĐỒNG HỒ & CHỈ BÁO) ===
-    technical_content = ""
     try:
         df_price = load_market_data()
-        df_tech = df_price[df_price['Ticker'] == ticker].copy()
-        del df_price   # ← giải phóng RAM (~50MB) ngay sau khi lọc xong 1 ticker
+        df_tech  = df_price[df_price['Ticker'] == ticker].copy()
+        del df_price
         gc.collect()
 
-        if len(df_tech) > 50:  # Cần ít nhất 50 phiên để có dữ liệu cơ bản
-            df_tech = df_tech.sort_values('Date')
-            close_price = df_tech['Price Close'].iloc[-1]
+        if len(df_tech) < 50:
+            return html.Div("Không đủ dữ liệu giá (cần ít nhất 50 phiên) để tính toán kỹ thuật.",
+                            className="text-muted text-center p-5")
 
-            # ---------------------------------------------------------
-            # 1. TÍNH TOÁN CÁC CHỈ BÁO KỸ THUẬT (BẰNG PANDAS)
-            # ---------------------------------------------------------
+        df_tech     = df_tech.sort_values('Date')
+        close_price = df_tech['Price Close'].iloc[-1]
 
-            # --- Moving Averages (MA) ---
-            sma10 = df_tech['Price Close'].rolling(10).mean().iloc[-1]
-            sma20 = df_tech['Price Close'].rolling(20).mean().iloc[-1]
-            sma50 = df_tech['Price Close'].rolling(50).mean().iloc[-1]
-            sma200 = df_tech['Price Close'].rolling(200).mean().iloc[-1] if len(df_tech) >= 200 else np.nan
+        sma10  = df_tech['Price Close'].rolling(10).mean().iloc[-1]
+        sma20  = df_tech['Price Close'].rolling(20).mean().iloc[-1]
+        sma50  = df_tech['Price Close'].rolling(50).mean().iloc[-1]
+        sma200 = df_tech['Price Close'].rolling(200).mean().iloc[-1] if len(df_tech) >= 200 else np.nan
+        ema10  = df_tech['Price Close'].ewm(span=10, adjust=False).mean().iloc[-1]
+        ema20  = df_tech['Price Close'].ewm(span=20, adjust=False).mean().iloc[-1]
+        ema50  = df_tech['Price Close'].ewm(span=50, adjust=False).mean().iloc[-1]
 
-            ema10 = df_tech['Price Close'].ewm(span=10, adjust=False).mean().iloc[-1]
-            ema20 = df_tech['Price Close'].ewm(span=20, adjust=False).mean().iloc[-1]
-            ema50 = df_tech['Price Close'].ewm(span=50, adjust=False).mean().iloc[-1]
+        def eval_ma(val):
+            if pd.isna(val): return "N/A", "#8b949e"
+            return ("MUA", "#3fb950") if close_price > val else ("BÁN", "#f85149")
 
-            # Hàm đánh giá MUA/BÁN cho MA
-            def eval_ma(val):
-                if pd.isna(val): return "N/A", "#8b949e"
-                return ("MUA", "#3fb950") if close_price > val else ("BÁN", "#f85149")
+        delta = df_tech['Price Close'].diff()
+        gain  = (delta.where(delta > 0, 0)).rolling(14).mean()
+        loss  = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rsi   = 100 - (100 / (1 + gain / loss))
+        rsi_val = rsi.iloc[-1]
 
-            # --- Oscillators (RSI, MACD, Stochastic) ---
-            # 1. RSI (14)
-            delta = df_tech['Price Close'].diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-            rs = gain / loss
-            rsi = 100 - (100 / (1 + rs))
-            rsi_val = rsi.iloc[-1]
+        if rsi_val < 30:   sig_rsi, col_rsi = "MUA MẠNH (Quá bán)", "#3fb950"
+        elif rsi_val > 70: sig_rsi, col_rsi = "BÁN MẠNH (Quá mua)", "#f85149"
+        else:              sig_rsi, col_rsi = "TRUNG TÍNH",          "#8b949e"
 
-            if rsi_val < 30:
-                sig_rsi, col_rsi = "MUA MẠNH (Quá bán)", "#3fb950"
-            elif rsi_val > 70:
-                sig_rsi, col_rsi = "BÁN MẠNH (Quá mua)", "#f85149"
-            else:
-                sig_rsi, col_rsi = "TRUNG TÍNH", "#8b949e"
+        ema12     = df_tech['Price Close'].ewm(span=12, adjust=False).mean()
+        ema26     = df_tech['Price Close'].ewm(span=26, adjust=False).mean()
+        macd_line = ema12 - ema26
+        sig_line  = macd_line.ewm(span=9, adjust=False).mean()
+        macd_val  = macd_line.iloc[-1]
+        macd_sig  = sig_line.iloc[-1]
+        sig_macd, col_macd = ("MUA", "#3fb950") if macd_val > macd_sig else ("BÁN", "#f85149")
 
-            # 2. MACD (12, 26, 9)
-            ema12 = df_tech['Price Close'].ewm(span=12, adjust=False).mean()
-            ema26 = df_tech['Price Close'].ewm(span=26, adjust=False).mean()
-            macd_line = ema12 - ema26
-            signal_line = macd_line.ewm(span=9, adjust=False).mean()
-            macd_val = macd_line.iloc[-1]
-            macd_sig = signal_line.iloc[-1]
+        low14   = df_tech['Price Low'].rolling(14).min()
+        high14  = df_tech['Price High'].rolling(14).max()
+        k_pct   = 100 * ((df_tech['Price Close'] - low14) / (high14 - low14))
+        d_pct   = k_pct.rolling(3).mean()
+        stoch_k = k_pct.iloc[-1]
+        stoch_d = d_pct.iloc[-1]
 
-            if macd_val > macd_sig:
-                sig_macd, col_macd = "MUA", "#3fb950"
-            else:
-                sig_macd, col_macd = "BÁN", "#f85149"
+        if stoch_k > stoch_d and stoch_k < 20:   sig_stoch, col_stoch = "MUA",       "#3fb950"
+        elif stoch_k < stoch_d and stoch_k > 80: sig_stoch, col_stoch = "BÁN",       "#f85149"
+        else:                                     sig_stoch, col_stoch = "TRUNG TÍNH","#8b949e"
 
-            # 3. Stochastic (14, 3, 3)
-            low14 = df_tech['Price Low'].rolling(14).min()
-            high14 = df_tech['Price High'].rolling(14).max()
-            k_percent = 100 * ((df_tech['Price Close'] - low14) / (high14 - low14))
-            d_percent = k_percent.rolling(3).mean()
-            stoch_k = k_percent.iloc[-1]
-            stoch_d = d_percent.iloc[-1]
+        prev_h = df_tech['Price High'].iloc[-2]
+        prev_l = df_tech['Price Low'].iloc[-2]
+        prev_c = df_tech['Price Close'].iloc[-2]
+        pp = (prev_h + prev_l + prev_c) / 3
+        r1 = 2 * pp - prev_l;  s1 = 2 * pp - prev_h
+        r2 = pp + (prev_h - prev_l); s2 = pp - (prev_h - prev_l)
+        r3 = prev_h + 2 * (pp - prev_l); s3 = prev_l - 2 * (prev_h - pp)
 
-            if stoch_k > stoch_d and stoch_k < 20:
-                sig_stoch, col_stoch = "MUA", "#3fb950"
-            elif stoch_k < stoch_d and stoch_k > 80:
-                sig_stoch, col_stoch = "BÁN", "#f85149"
-            else:
-                sig_stoch, col_stoch = "TRUNG TÍNH", "#8b949e"
+        buy_count = sell_count = 0
+        signals   = [
+            eval_ma(sma10)[0], eval_ma(sma20)[0], eval_ma(sma50)[0], eval_ma(sma200)[0],
+            eval_ma(ema10)[0], eval_ma(ema20)[0], eval_ma(ema50)[0],
+            "MUA" if rsi_val < 40 else ("BÁN" if rsi_val > 60 else "TRUNG TÍNH"),
+            sig_macd,
+            "MUA" if stoch_k > stoch_d else "BÁN"
+        ]
+        for s in signals:
+            if s.startswith("MUA"):   buy_count  += 1
+            elif s.startswith("BÁN"): sell_count += 1
 
-            # --- Pivot Points (Classic) ---
-            prev_h = df_tech['Price High'].iloc[-2]
-            prev_l = df_tech['Price Low'].iloc[-2]
-            prev_c = df_tech['Price Close'].iloc[-2]
+        total_signals = buy_count + sell_count
+        meter_score   = ((buy_count - sell_count) / max(total_signals, 1)) * 100
 
-            pp = (prev_h + prev_l + prev_c) / 3
-            r1 = 2 * pp - prev_l
-            s1 = 2 * pp - prev_h
-            r2 = pp + (prev_h - prev_l)
-            s2 = pp - (prev_h - prev_l)
-            r3 = prev_h + 2 * (pp - prev_l)
-            s3 = prev_l - 2 * (prev_h - pp)
+        if meter_score >= 50:    meter_text, meter_color = "MUA MẠNH", "#3fb950"
+        elif meter_score >= 10:  meter_text, meter_color = "MUA",      "#2ea043"
+        elif meter_score <= -50: meter_text, meter_color = "BÁN MẠNH", "#f85149"
+        elif meter_score <= -10: meter_text, meter_color = "BÁN",      "#da3633"
+        else:                    meter_text, meter_color = "TRUNG TÍNH","#8b949e"
 
-            # ---------------------------------------------------------
-            # 2. TÍNH ĐIỂM TỔNG HỢP CHO ĐỒNG HỒ (METER)
-            # ---------------------------------------------------------
-            # Mua = +1, Bán = -1, Trung tính = 0
-            buy_count = 0
-            sell_count = 0
+        arc_color = "#ff4d6d" if meter_score < -10 else ("#00ffc8" if meter_score > 10 else "#ffb703")
+        fig_gauge = go.Figure(go.Indicator(
+            mode="gauge", value=meter_score,
+            gauge={'axis': {'range': [-100, 100], 'tickwidth': 1, 'tickcolor': 'rgba(0,255,200,0.2)',
+                            'tickvals': [-100, -50, 0, 50, 100],
+                            'tickfont': {'color': 'rgba(255,255,255,0.3)', 'size': 9, 'family': 'JetBrains Mono'}},
+                   'bar': {'color': arc_color, 'thickness': 0.3},
+                   'bgcolor': 'rgba(0,0,0,0)', 'borderwidth': 0,
+                   'steps': [
+                       {'range': [-100, -60], 'color': 'rgba(255,77,109,0.18)'},
+                       {'range': [-60,  -25], 'color': 'rgba(255,77,109,0.08)'},
+                       {'range': [-25,   25], 'color': 'rgba(255,255,255,0.03)'},
+                       {'range': [25,    60], 'color': 'rgba(0,255,200,0.08)'},
+                       {'range': [60,   100], 'color': 'rgba(0,255,200,0.18)'},
+                   ],
+                   'threshold': {'line': {'color': arc_color, 'width': 3}, 'thickness': 0.85, 'value': meter_score}},
+        ))
+        fig_gauge.update_layout(height=200, margin=dict(l=20, r=20, t=20, b=5),
+                                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                                font={'color': 'rgba(255,255,255,0.3)', 'family': 'JetBrains Mono'})
 
-            signals = [
-                eval_ma(sma10)[0], eval_ma(sma20)[0], eval_ma(sma50)[0], eval_ma(sma200)[0],
-                eval_ma(ema10)[0], eval_ma(ema20)[0], eval_ma(ema50)[0],
-                "MUA" if rsi_val < 40 else ("BÁN" if rsi_val > 60 else "TRUNG TÍNH"),
-                sig_macd,
-                "MUA" if stoch_k > stoch_d else "BÁN"
-            ]
+        def ind_row(name, val, sig, col):
+            val_str = f"{val:,.2f}" if not pd.isna(val) else "N/A"
+            chip_bg = {"#3fb950":"rgba(0,230,118,0.15)","#2ea043":"rgba(0,230,118,0.1)",
+                       "#f85149":"rgba(255,61,87,0.15)","#da3633":"rgba(255,61,87,0.1)",
+                       "#8b949e":"rgba(139,148,158,0.1)"}.get(col,"rgba(0,212,255,0.1)")
+            chip_bd = {"#3fb950":"rgba(0,230,118,0.4)","#2ea043":"rgba(0,230,118,0.3)",
+                       "#f85149":"rgba(255,61,87,0.4)","#da3633":"rgba(255,61,87,0.3)",
+                       "#8b949e":"rgba(139,148,158,0.2)"}.get(col,"rgba(0,212,255,0.3)")
+            return html.Tr([
+                html.Td(html.Span(name, style={"color":"#e6edf3","fontSize":"0.83rem","fontFamily":"JetBrains Mono,monospace","fontWeight":"500"})),
+                html.Td(html.Span(val_str, style={"color":"#00d4ff","fontSize":"0.85rem","fontWeight":"700","fontFamily":"JetBrains Mono,monospace","float":"right"})),
+                html.Td(html.Span(sig, style={"color":col,"fontSize":"0.73rem","fontWeight":"800","padding":"3px 10px",
+                                              "borderRadius":"4px","backgroundColor":chip_bg,"border":f"1px solid {chip_bd}",
+                                              "fontFamily":"JetBrains Mono,monospace","float":"right","whiteSpace":"nowrap"}))
+            ], style={"borderBottom":"1px solid rgba(0,212,255,0.06)"})
 
-            for s in signals:
-                if s.startswith("MUA"):
-                    buy_count += 1
-                elif s.startswith("BÁN"):
-                    sell_count += 1
+        def pivot_card(label, value, color):
+            return html.Div([
+                html.Div(label, style={"fontSize":"0.68rem","letterSpacing":"0.1em","textTransform":"uppercase",
+                                       "color":color,"opacity":"0.8","marginBottom":"6px","fontWeight":"600","fontFamily":"JetBrains Mono,monospace"}),
+                html.Div(f"{value:,.0f}", style={"fontSize":"1.1rem","fontWeight":"800","color":color,
+                                                  "fontFamily":"JetBrains Mono,monospace","letterSpacing":"-0.02em"})
+            ], style={"textAlign":"center","padding":"12px 8px","borderRadius":"8px",
+                      "background":"linear-gradient(135deg,rgba(9,21,38,0.9),rgba(12,30,51,0.7))",
+                      "border":f"1px solid {color}22","borderTop":f"2px solid {color}88"})
 
-            total_signals = buy_count + sell_count
-            # Scale điểm từ -100 (Strong Sell) đến +100 (Strong Buy)
-            meter_score = ((buy_count - sell_count) / max(total_signals, 1)) * 100
-
-            if meter_score >= 50:
-                meter_text, meter_color = "MUA MẠNH", "#3fb950"
-            elif meter_score >= 10:
-                meter_text, meter_color = "MUA", "#2ea043"
-            elif meter_score <= -50:
-                meter_text, meter_color = "BÁN MẠNH", "#f85149"
-            elif meter_score <= -10:
-                meter_text, meter_color = "BÁN", "#da3633"
-            else:
-                meter_text, meter_color = "TRUNG TÍNH", "#8b949e"
-
-            # ── GAUGE PREMIUM — Full redesign ──
-            # Gauge SVG dùng Plotly — mode "gauge" only (không hiện số)
-            arc_color = "#ff4d6d" if meter_score < -10 else ("#00ffc8" if meter_score > 10 else "#ffb703")
-            fig_gauge = go.Figure(go.Indicator(
-                mode="gauge",  # chỉ vẽ arc, KHÔNG hiện number
-                value=meter_score,
-                gauge={
-                    'axis': {
-                        'range': [-100, 100],
-                        'tickwidth': 1,
-                        'tickcolor': 'rgba(0,255,200,0.2)',
-                        'tickvals': [-100, -50, 0, 50, 100],
-                        'ticktext': ['-100', '-50', '0', '50', '100'],
-                        'tickfont': {'color': 'rgba(255,255,255,0.3)', 'size': 9, 'family': 'JetBrains Mono'},
-                    },
-                    'bar': {'color': arc_color, 'thickness': 0.3, 'line': {'color': arc_color, 'width': 0}},
-                    'bgcolor': 'rgba(0,0,0,0)',
-                    'borderwidth': 0,
-                    'steps': [
-                        {'range': [-100, -60], 'color': 'rgba(255,77,109,0.18)'},
-                        {'range': [-60, -25],  'color': 'rgba(255,77,109,0.08)'},
-                        {'range': [-25, 25],   'color': 'rgba(255,255,255,0.03)'},
-                        {'range': [25, 60],    'color': 'rgba(0,255,200,0.08)'},
-                        {'range': [60, 100],   'color': 'rgba(0,255,200,0.18)'},
-                    ],
-                    'threshold': {
-                        'line': {'color': arc_color, 'width': 3},
-                        'thickness': 0.85,
-                        'value': meter_score,
-                    },
-                },
-            ))
-            fig_gauge.update_layout(
-                height=200,
-                margin=dict(l=20, r=20, t=20, b=5),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font={'color': 'rgba(255,255,255,0.3)', 'family': 'JetBrains Mono'},
-            )
-
-            # ---------------------------------------------------------
-            # 3. RENDER GIAO DIỆN HTML (SUB-PANELS)
-            # ---------------------------------------------------------
-
-            # Helper function để tạo dòng trong bảng
-            def tr_maker(name, val, sig, col):
-                val_str = f"{val:,.2f}" if not pd.isna(val) else "N/A"
-                return html.Tr([
-                    html.Td(name, style={"color": "#c9d1d9"}),
-                    html.Td(val_str, style={"textAlign": "right"}),
-                    html.Td(sig, style={"color": col, "fontWeight": "bold", "textAlign": "right"})
-                ])
-
-            # ── Helper: row cho bảng indicator premium ──
-            def ind_row(name, val, sig, col, icon=""):
-                val_str = f"{val:,.2f}" if not pd.isna(val) else "N/A"
-                chip_bg = {
-                    "#3fb950": "rgba(0,230,118,0.15)", "#2ea043": "rgba(0,230,118,0.1)",
-                    "#f85149": "rgba(255,61,87,0.15)", "#da3633": "rgba(255,61,87,0.1)",
-                    "#8b949e": "rgba(139,148,158,0.1)",
-                }.get(col, "rgba(0,212,255,0.1)")
-                chip_border = {
-                    "#3fb950": "rgba(0,230,118,0.4)", "#2ea043": "rgba(0,230,118,0.3)",
-                    "#f85149": "rgba(255,61,87,0.4)", "#da3633": "rgba(255,61,87,0.3)",
-                    "#8b949e": "rgba(139,148,158,0.2)",
-                }.get(col, "rgba(0,212,255,0.3)")
-                return html.Tr([
-                    html.Td(html.Span(name, style={
-                        "color": "#e6edf3", "fontSize": "0.83rem",
-                        "fontFamily": "JetBrains Mono,monospace", "fontWeight": "500",
-                    })),
-                    html.Td(html.Span(val_str, style={
-                        "color": "#00d4ff", "fontSize": "0.85rem", "fontWeight": "700",
-                        "fontFamily": "JetBrains Mono,monospace", "float": "right",
-                        "textShadow": "0 0 8px rgba(0,212,255,0.4)",
-                    })),
-                    html.Td(html.Span(sig, style={
-                        "color": col, "fontSize": "0.73rem", "fontWeight": "800",
-                        "padding": "3px 10px", "borderRadius": "4px",
-                        "backgroundColor": chip_bg,
-                        "border": f"1px solid {chip_border}",
-                        "fontFamily": "JetBrains Mono,monospace",
-                        "float": "right", "whiteSpace": "nowrap",
-                        "letterSpacing": "0.05em",
-                        "textShadow": f"0 0 6px {col}88",
-                    }))
-                ], style={"borderBottom": "1px solid rgba(0,212,255,0.06)"})
-
-            # ── Pivot card helper ──
-            def pivot_card(label, value, color, bg_opacity="0.08"):
-                return html.Div([
-                    html.Div(label, style={
-                        "fontSize": "0.68rem", "letterSpacing": "0.1em", "textTransform": "uppercase",
-                        "color": color, "opacity": "0.8", "marginBottom": "6px", "fontWeight": "600",
-                        "fontFamily": "JetBrains Mono,monospace"
-                    }),
-                    html.Div(f"{value:,.0f}", style={
-                        "fontSize": "1.1rem", "fontWeight": "800", "color": color,
-                        "fontFamily": "JetBrains Mono,monospace", "letterSpacing": "-0.02em"
-                    })
-                ], style={
-                    "textAlign": "center", "padding": "12px 8px", "borderRadius": "8px",
-                    "background": f"linear-gradient(135deg, rgba(9,21,38,0.9), rgba(12,30,51,0.7))",
-                    "border": f"1px solid {color}22",
-                    "borderTop": f"2px solid {color}88",
-                    "boxShadow": f"0 4px 12px rgba(0,0,0,0.3)",
-                })
-
-            technical_content = html.Div([
-
-                # ── HEADER ROW: Futuristic Signal Card ──
+        technical_content = html.Div([
+            html.Div([
                 html.Div([
-                    # sweep animation + grid overlay via CSS injected
-                    html.Div(style={  # sweep
-                        "position": "absolute", "top": "0", "left": "-60%", "width": "60%", "height": "100%",
-                        "background": "linear-gradient(90deg,transparent,rgba(0,255,200,0.04),transparent)",
-                        "animation": "sweep 4s ease-in-out infinite", "pointerEvents": "none", "zIndex": "0",
-                    }),
-                    html.Div(style={  # grid bg
-                        "position": "absolute", "inset": "0", "pointerEvents": "none", "zIndex": "0",
-                        "backgroundImage": "linear-gradient(rgba(0,255,200,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,200,0.025) 1px,transparent 1px)",
-                        "backgroundSize": "28px 28px",
-                        "maskImage": "radial-gradient(ellipse 90% 90% at 50% 50%,black 30%,transparent 100%)",
-                        "WebkitMaskImage": "radial-gradient(ellipse 90% 90% at 50% 50%,black 30%,transparent 100%)",
-                    }),
-                    # top accent bar
-                    html.Div(style={
-                        "position": "absolute", "top": "0", "left": "10%", "right": "10%", "height": "1px", "zIndex": "2",
-                        "background": "linear-gradient(90deg,transparent,#00ffc8,cyan,#00ffc8,transparent)",
-                        "boxShadow": "0 0 16px rgba(0,255,200,0.7)",
-                    }),
-                    # corner HUD brackets
-                    *[html.Div(style={
-                        "position": "absolute", "width": "20px", "height": "20px", "zIndex": "2",
-                        "borderColor": "rgba(0,255,200,0.55)", "borderStyle": "solid",
-                        **pos, **bw
-                    }) for pos, bw in [
-                        ({"top":"10px","left":"10px"},  {"borderWidth":"2px 0 0 2px"}),
-                        ({"top":"10px","right":"10px"}, {"borderWidth":"2px 2px 0 0"}),
-                        ({"bottom":"10px","left":"10px"},  {"borderWidth":"0 0 2px 2px"}),
-                        ({"bottom":"10px","right":"10px"}, {"borderWidth":"0 2px 2px 0"}),
-                    ]],
-
-                    # content
+                    dcc.Graph(figure=fig_gauge, config={"displayModeBar": False}, style={"height":"200px","marginBottom":"-20px"}),
+                    html.Div(f"{meter_score:+.0f}", style={"fontSize":"5.5rem","fontWeight":"800","color":"#00ffc8",
+                                                            "letterSpacing":"-4px","lineHeight":"1","textAlign":"center",
+                                                            "fontFamily":"JetBrains Mono,monospace"}),
                     html.Div([
-                        # LEFT — arc + score
-                        html.Div([
-                            html.Div([
-                                html.Div(style={"flex":"1","height":"1px","background":"linear-gradient(90deg,rgba(0,255,200,0.3),transparent)"}),
-                                html.Span("TỔNG HỢP", style={"fontSize":"8px","letterSpacing":"0.3em","color":"rgba(0,255,200,0.5)","fontWeight":"700","padding":"0 10px"}),
-                                html.Div(style={"flex":"1","height":"1px","background":"linear-gradient(90deg,transparent,rgba(0,255,200,0.3))"}),
-                            ], style={"display":"flex","alignItems":"center","marginBottom":"12px","width":"100%"}),
-
-                            # Plotly gauge (mode gauge only - không số)
-                            html.Div([dcc.Graph(figure=fig_gauge, config={"displayModeBar": False},
-                                style={"height":"200px","marginBottom":"-20px"})
-                            ]),
-
-                            # hero number
-                            html.Div(f"{meter_score:+.0f}", style={
-                                "fontSize": "5.5rem", "fontWeight": "800", "color": "#00ffc8",
-                                "letterSpacing": "-4px", "lineHeight": "1", "textAlign": "center",
-                                "fontFamily": "JetBrains Mono,monospace",
-                                "textShadow": "0 0 10px #00ffc8, 0 0 25px rgba(0,255,200,0.9), 0 0 55px rgba(0,255,200,0.5), 0 0 100px rgba(0,255,200,0.2)",
-                            }),
-                            # pill badge
-                            html.Div([
-                                html.Div(style={
-                                    "width":"6px","height":"6px","borderRadius":"50%","background":"#ff4d6d",
-                                    "boxShadow":"0 0 6px #ff4d6d","animation":"blink 1.5s ease-in-out infinite","marginRight":"8px"
-                                }),
-                                html.Span(f"{meter_text}", style={"fontSize":"10px","fontWeight":"700","letterSpacing":"0.18em","color":"#ff4d6d"}),
-                            ], style={
-                                "display":"inline-flex","alignItems":"center","marginTop":"12px",
-                                "background":"rgba(255,77,109,0.1)","border":"1px solid rgba(255,77,109,0.4)",
-                                "borderRadius":"100px","padding":"5px 14px",
-                                "boxShadow":"0 0 14px rgba(255,77,109,0.2)",
-                            }),
-                        ], style={"display":"flex","flexDirection":"column","alignItems":"center","width":"300px","flexShrink":"0","paddingRight":"24px","borderRight":"1px solid rgba(0,255,200,0.07)","position":"relative","zIndex":"1"}),
-
-                        # SEPARATOR
-                        html.Div(style={"width":"1px","alignSelf":"stretch","margin":"0 28px","background":"linear-gradient(180deg,transparent,rgba(0,255,200,0.15) 40%,rgba(0,255,200,0.15) 60%,transparent)","flexShrink":"0"}),
-
-                        # RIGHT — verdict + bars + badges
-                        html.Div([
-                            # header
-                            html.Div([
-                                html.Div([
-                                    html.Div(id="tech-live-dot", style={
-                                        "width":"7px","height":"7px","borderRadius":"50%","background":"#00ffc8",
-                                        "boxShadow":"0 0 8px #00ffc8,0 0 16px rgba(0,255,200,0.5)",
-                                        "animation":"pulse 2s ease-in-out infinite","marginRight":"8px","flexShrink":"0",
-                                    }),
-                                    html.Span("PHÂN TÍCH KỸ THUẬT REAL-TIME", style={"fontSize":"8px","letterSpacing":"0.22em","color":"rgba(0,255,200,0.5)","fontWeight":"700"}),
-                                ], style={"display":"flex","alignItems":"center"}),
-                            ], style={"marginBottom":"18px"}),
-
-                            # verdict text
-                            html.Div([
-                                html.Div("10 CHỈ BÁO · MA + OSCILLATORS", style={"fontSize":"9px","letterSpacing":"0.15em","color":"rgba(255,255,255,0.3)","marginBottom":"8px"}),
-                                html.Div(meter_text, style={
-                                    "fontSize": "3.2rem", "fontWeight": "800", "color": "#ff4d6d",
-                                    "letterSpacing": "0.04em", "lineHeight": "1",
-                                    "fontFamily": "JetBrains Mono,monospace",
-                                    "textShadow": "0 0 2px #fff,0 0 12px #ff4d6d,0 0 30px rgba(255,77,109,0.7),0 0 60px rgba(255,77,109,0.3)",
-                                }),
-                            ], style={"marginBottom":"22px"}),
-
-                            # progress bars
-                            html.Div([
-                                *[html.Div([
-                                    html.Span(lbl, style={"fontSize":"9px","color":"rgba(255,255,255,0.45)","width":"70px","flexShrink":"0","letterSpacing":"0.06em"}),
-                                    html.Div(html.Div(style={
-                                        "height":"100%","borderRadius":"3px","width":f"{pct}%",
-                                        "background":bg,"boxShadow":shadow,
-                                        "transition":"width 1.4s cubic-bezier(.4,0,.2,1)",
-                                    }), style={"flex":"1","height":"5px","background":"rgba(255,255,255,0.05)","borderRadius":"3px","overflow":"hidden"}),
-                                    html.Span(str(cnt), style={"fontSize":"10px","fontWeight":"700","color":col,"width":"14px","textAlign":"right","fontFamily":"JetBrains Mono,monospace"}),
-                                ], style={"display":"flex","alignItems":"center","gap":"10px","marginBottom":"8px"})
-                                for lbl, pct, cnt, bg, shadow, col in [
-                                    ("Bán", sell_count/len(signals)*100, sell_count, "linear-gradient(90deg,rgba(255,77,109,0.3),#ff4d6d)", "0 0 8px rgba(255,77,109,0.6)", "#ff4d6d"),
-                                    ("Mua", buy_count/len(signals)*100, buy_count,   "linear-gradient(90deg,rgba(0,255,200,0.2),#00ffc8)", "0 0 8px rgba(0,255,200,0.5)",  "#00ffc8"),
-                                    ("Trung tính", (len(signals)-buy_count-sell_count)/len(signals)*100, len(signals)-buy_count-sell_count, "rgba(255,255,255,0.25)", "none", "rgba(255,255,255,0.35)"),
-                                ]],
-                            ], style={"marginBottom":"20px"}),
-
-                            # badges
-                            html.Div([
-                                *[html.Div([
-                                    html.Div(str(n), style={"fontSize":"2.4rem","fontWeight":"800","lineHeight":"1","marginBottom":"6px","color":nc,"fontFamily":"JetBrains Mono,monospace","textShadow":f"0 0 10px {nc}cc,0 0 25px {nc}66"}),
-                                    html.Div(lbl, style={"fontSize":"8px","fontWeight":"700","letterSpacing":"0.2em","color":lc}),
-                                ], style={
-                                    "flex":"1","borderRadius":"12px","padding":"16px 10px 14px","textAlign":"center",
-                                    "background":bg,"border":bd,
-                                    "boxShadow":f"0 4px 20px {sh},inset 0 1px 0 {ib}",
-                                    "position":"relative","overflow":"hidden",
-                                }) for n,lbl,nc,lc,bg,bd,sh,ib in [
-                                    (sell_count,"BÁN","#ff4d6d","rgba(255,77,109,0.55)","linear-gradient(160deg,rgba(255,77,109,0.1),rgba(255,77,109,0.04))","1px solid rgba(255,77,109,0.35)","rgba(255,77,109,0.1)","rgba(255,77,109,0.1)"),
-                                    (buy_count,"MUA","#00ffc8","rgba(0,255,200,0.5)","linear-gradient(160deg,rgba(0,255,200,0.08),rgba(0,255,200,0.03))","1px solid rgba(0,255,200,0.28)","rgba(0,255,200,0.08)","rgba(0,255,200,0.08)"),
-                                    (len(signals)-buy_count-sell_count,"TRUNG TÍNH","rgba(255,255,255,0.5)","rgba(255,255,255,0.25)","linear-gradient(160deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))","1px solid rgba(255,255,255,0.1)","rgba(0,0,0,0)","rgba(255,255,255,0.04)"),
-                                ]],
-                            ], style={"display":"flex","gap":"10px"}),
-
-                        ], style={"flex":"1","display":"flex","flexDirection":"column","justifyContent":"center","position":"relative","zIndex":"1"}),
-                    ], style={"display":"flex","alignItems":"center","position":"relative","zIndex":"1"}),
-
-                ], style={
-                    "position": "relative",
-                    "background": "linear-gradient(160deg,#060d1c 0%,#080f20 40%,#06111e 100%)",
-                    "borderRadius": "16px",
-                    "border": "1px solid rgba(0,255,200,0.12)",
-                    "padding": "24px 28px 24px 24px",
-                    "marginBottom": "16px",
-                    "overflow": "hidden",
-                    "boxShadow": "0 20px 60px rgba(0,0,0,0.6)",
-                }),
-
-                # ── INDICATOR TABLES ──
-                dbc.Row([
-                    # Moving Averages
-                    dbc.Col([
-                        html.Div([
-                            html.Span(html.I(className="fas fa-wave-square", style={"marginRight": "8px"})),
-                            html.Span("TRUNG BÌNH ĐỘNG", style={
-                                "fontSize": "0.72rem", "letterSpacing": "0.1em", "fontWeight": "700",
-                                "color": "#00d4ff", "fontFamily": "JetBrains Mono,monospace",
-                                "textShadow": "0 0 10px rgba(0,212,255,0.5)",
-                            }),
-                        ], style={"marginBottom": "12px"}),
-                        html.Table([
-                            html.Thead(html.Tr([
-                                html.Th("Chỉ báo", style={"color": "#58a6ff", "fontSize": "0.7rem", "fontWeight": "700",
-                                                          "paddingBottom": "8px",
-                                                          "fontFamily": "JetBrains Mono,monospace",
-                                                          "letterSpacing": "0.1em",
-                                                          "borderBottom": "1px solid rgba(0,212,255,0.25)"}),
-                                html.Th("Giá trị", style={"color": "#58a6ff", "fontSize": "0.7rem", "fontWeight": "700",
-                                                          "textAlign": "right", "paddingBottom": "8px",
-                                                          "fontFamily": "JetBrains Mono,monospace",
-                                                          "letterSpacing": "0.1em",
-                                                          "borderBottom": "1px solid rgba(0,212,255,0.25)"}),
-                                html.Th("Tín hiệu",
-                                        style={"color": "#58a6ff", "fontSize": "0.7rem", "fontWeight": "700",
-                                               "textAlign": "right", "paddingBottom": "8px",
-                                               "fontFamily": "JetBrains Mono,monospace", "letterSpacing": "0.1em",
-                                               "borderBottom": "1px solid rgba(0,212,255,0.25)"}),
-                            ])),
-                            html.Tbody([
-                                ind_row("SMA 10", sma10, *eval_ma(sma10)),
-                                ind_row("SMA 20", sma20, *eval_ma(sma20)),
-                                ind_row("SMA 50", sma50, *eval_ma(sma50)),
-                                ind_row("SMA 200", sma200, *eval_ma(sma200)),
-                                ind_row("EMA 10", ema10, *eval_ma(ema10)),
-                                ind_row("EMA 20", ema20, *eval_ma(ema20)),
-                                ind_row("EMA 50", ema50, *eval_ma(ema50)),
-                            ])
-                        ], style={"width": "100%", "borderCollapse": "collapse"})
-                    ], width=12, lg=6, style={
-                        "background": "linear-gradient(135deg,rgba(9,21,38,0.95),rgba(12,30,51,0.8))",
-                        "borderRadius": "10px",
-                        "border": "1px solid rgba(0,212,255,0.15)",
-                        "borderLeft": "3px solid rgba(0,212,255,0.6)",
-                        "padding": "16px", "marginBottom": "12px",
-                        "boxShadow": "0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(0,212,255,0.05)",
-                    }),
-
-                    # Oscillators
-                    dbc.Col([
-                        html.Div([
-                            html.Span(html.I(className="fas fa-tachometer-alt", style={"marginRight": "8px"})),
-                            html.Span("CHỈ BÁO ĐỘNG LƯỢNG", style={
-                                "fontSize": "0.72rem", "letterSpacing": "0.1em", "fontWeight": "700",
-                                "color": "#ffb703", "fontFamily": "JetBrains Mono,monospace",
-                                "textShadow": "0 0 10px rgba(255,183,3,0.5)",
-                            }),
-                        ], style={"marginBottom": "12px"}),
-                        html.Table([
-                            html.Thead(html.Tr([
-                                html.Th("Chỉ báo", style={"color": "#58a6ff", "fontSize": "0.7rem", "fontWeight": "700",
-                                                          "paddingBottom": "8px",
-                                                          "fontFamily": "JetBrains Mono,monospace",
-                                                          "letterSpacing": "0.1em",
-                                                          "borderBottom": "1px solid rgba(0,212,255,0.25)"}),
-                                html.Th("Giá trị", style={"color": "#58a6ff", "fontSize": "0.7rem", "fontWeight": "700",
-                                                          "textAlign": "right", "paddingBottom": "8px",
-                                                          "fontFamily": "JetBrains Mono,monospace",
-                                                          "letterSpacing": "0.1em",
-                                                          "borderBottom": "1px solid rgba(0,212,255,0.25)"}),
-                                html.Th("Tín hiệu",
-                                        style={"color": "#58a6ff", "fontSize": "0.7rem", "fontWeight": "700",
-                                               "textAlign": "right", "paddingBottom": "8px",
-                                               "fontFamily": "JetBrains Mono,monospace", "letterSpacing": "0.1em",
-                                               "borderBottom": "1px solid rgba(0,212,255,0.25)"}),
-                            ])),
-                            html.Tbody([
-                                ind_row("RSI (14)", rsi_val, sig_rsi, col_rsi),
-                                ind_row("MACD (12,26)", macd_val, sig_macd, col_macd),
-                                ind_row("Stochastic (14,3)", stoch_k, sig_stoch, col_stoch),
-                            ])
-                        ], style={"width": "100%", "borderCollapse": "collapse"})
-                    ], width=12, lg=6, style={
-                        "background": "linear-gradient(135deg,rgba(9,21,38,0.95),rgba(12,30,51,0.8))",
-                        "borderRadius": "10px",
-                        "border": "1px solid rgba(255,183,3,0.15)",
-                        "borderLeft": "3px solid rgba(255,183,3,0.6)",
-                        "padding": "16px", "marginBottom": "12px",
-                        "boxShadow": "0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,183,3,0.05)",
-                    }),
-                ], className="g-3 mb-3"),
-
-                # ── PIVOT POINTS — Premium Layout ──
+                        html.Div(style={"width":"6px","height":"6px","borderRadius":"50%","background":"#ff4d6d","marginRight":"8px"}),
+                        html.Span(f"{meter_text}", style={"fontSize":"10px","fontWeight":"700","letterSpacing":"0.18em","color":"#ff4d6d"}),
+                    ], style={"display":"inline-flex","alignItems":"center","marginTop":"12px",
+                              "background":"rgba(255,77,109,0.1)","border":"1px solid rgba(255,77,109,0.4)",
+                              "borderRadius":"100px","padding":"5px 14px"}),
+                ], style={"display":"flex","flexDirection":"column","alignItems":"center","width":"300px",
+                          "flexShrink":"0","paddingRight":"24px","borderRight":"1px solid rgba(0,255,200,0.07)"}),
                 html.Div([
-                    html.Div([
-                        html.Span(
-                            html.I(className="fas fa-layer-group", style={"marginRight": "8px", "color": "#ff3d57"})),
-                        html.Span("HỖ TRỢ & KHÁNG CỰ", style={
-                            "fontSize": "0.72rem", "letterSpacing": "0.1em", "fontWeight": "700",
-                            "color": "#ff7b72", "fontFamily": "JetBrains Mono,monospace"
-                        }),
-                        html.Span(" — Classic Pivot", style={"fontSize": "0.68rem", "color": "#4a7a99",
-                                                             "fontFamily": "JetBrains Mono,monospace"}),
-                    ], style={"marginBottom": "14px"}),
-
-                    # R3 R2 R1
+                    html.Div(meter_text, style={"fontSize":"3.2rem","fontWeight":"800","color":"#ff4d6d",
+                                                "letterSpacing":"0.04em","lineHeight":"1",
+                                                "fontFamily":"JetBrains Mono,monospace","marginBottom":"22px"}),
+                    *[html.Div([
+                        html.Span(lbl, style={"fontSize":"9px","color":"rgba(255,255,255,0.45)","width":"70px","flexShrink":"0"}),
+                        html.Div(html.Div(style={"height":"100%","borderRadius":"3px","width":f"{pct}%",
+                                                 "background":bg,"transition":"width 1.4s cubic-bezier(.4,0,.2,1)"}),
+                                 style={"flex":"1","height":"5px","background":"rgba(255,255,255,0.05)","borderRadius":"3px","overflow":"hidden"}),
+                        html.Span(str(cnt), style={"fontSize":"10px","fontWeight":"700","color":col,
+                                                    "width":"14px","textAlign":"right","fontFamily":"JetBrains Mono,monospace"}),
+                    ], style={"display":"flex","alignItems":"center","gap":"10px","marginBottom":"8px"})
+                      for lbl, pct, cnt, bg, col in [
+                        ("Bán",       sell_count/len(signals)*100, sell_count,
+                         "linear-gradient(90deg,rgba(255,77,109,0.3),#ff4d6d)", "#ff4d6d"),
+                        ("Mua",       buy_count/len(signals)*100,  buy_count,
+                         "linear-gradient(90deg,rgba(0,255,200,0.2),#00ffc8)", "#00ffc8"),
+                        ("Trung tính",(len(signals)-buy_count-sell_count)/len(signals)*100,
+                         len(signals)-buy_count-sell_count, "rgba(255,255,255,0.25)", "rgba(255,255,255,0.35)"),
+                      ]],
                     dbc.Row([
-                        dbc.Col(pivot_card("R3 — Kháng cự 3", r3, "#ff3d57"), width=4),
-                        dbc.Col(pivot_card("R2 — Kháng cự 2", r2, "#ff6b6b"), width=4),
-                        dbc.Col(pivot_card("R1 — Kháng cự 1", r1, "#ff9999"), width=4),
-                    ], className="g-2 mb-2"),
-
-                    # PIVOT (center)
-                    html.Div([
-                        html.Div("ĐIỂM XOAY — PIVOT", style={
-                            "fontSize": "0.68rem", "letterSpacing": "0.12em", "textTransform": "uppercase",
-                            "color": "#7fa8cc", "fontWeight": "600", "marginBottom": "6px",
-                            "fontFamily": "JetBrains Mono,monospace"
-                        }),
-                        html.Div(f"{pp:,.0f}", style={
-                            "fontSize": "1.6rem", "fontWeight": "900", "color": "#d6eaf8",
-                            "fontFamily": "JetBrains Mono,monospace", "letterSpacing": "-0.02em"
-                        }),
-                    ], style={
-                        "textAlign": "center", "padding": "14px", "borderRadius": "8px", "margin": "8px 0",
-                        "background": "linear-gradient(135deg,rgba(0,212,255,0.08),rgba(0,144,255,0.05))",
-                        "border": "1px solid rgba(0,212,255,0.2)",
-                        "boxShadow": "0 0 20px rgba(0,212,255,0.08)",
-                    }),
-
-                    # S1 S2 S3
-                    dbc.Row([
-                        dbc.Col(pivot_card("S1 — Hỗ trợ 1", s1, "#56d364"), width=4),
-                        dbc.Col(pivot_card("S2 — Hỗ trợ 2", s2, "#3fb950"), width=4),
-                        dbc.Col(pivot_card("S3 — Hỗ trợ 3", s3, "#2ea043"), width=4),
+                        dbc.Col(html.Div([
+                            html.Div(str(sell_count), style={"fontSize":"2.4rem","fontWeight":"800","color":"#ff4d6d","fontFamily":"JetBrains Mono,monospace"}),
+                            html.Div("BÁN", style={"fontSize":"8px","fontWeight":"700","letterSpacing":"0.2em","color":"rgba(255,77,109,0.55)"}),
+                        ], style={"borderRadius":"12px","padding":"16px 10px 14px","textAlign":"center",
+                                  "background":"linear-gradient(160deg,rgba(255,77,109,0.1),rgba(255,77,109,0.04))",
+                                  "border":"1px solid rgba(255,77,109,0.35)"})),
+                        dbc.Col(html.Div([
+                            html.Div(str(buy_count), style={"fontSize":"2.4rem","fontWeight":"800","color":"#00ffc8","fontFamily":"JetBrains Mono,monospace"}),
+                            html.Div("MUA", style={"fontSize":"8px","fontWeight":"700","letterSpacing":"0.2em","color":"rgba(0,255,200,0.5)"}),
+                        ], style={"borderRadius":"12px","padding":"16px 10px 14px","textAlign":"center",
+                                  "background":"linear-gradient(160deg,rgba(0,255,200,0.08),rgba(0,255,200,0.03))",
+                                  "border":"1px solid rgba(0,255,200,0.28)"})),
+                        dbc.Col(html.Div([
+                            html.Div(str(len(signals)-buy_count-sell_count), style={"fontSize":"2.4rem","fontWeight":"800","color":"rgba(255,255,255,0.5)","fontFamily":"JetBrains Mono,monospace"}),
+                            html.Div("TRUNG TÍNH", style={"fontSize":"8px","fontWeight":"700","letterSpacing":"0.2em","color":"rgba(255,255,255,0.25)"}),
+                        ], style={"borderRadius":"12px","padding":"16px 10px 14px","textAlign":"center",
+                                  "background":"linear-gradient(160deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))",
+                                  "border":"1px solid rgba(255,255,255,0.1)"})),
                     ], className="g-2"),
+                ], style={"flex":"1","display":"flex","flexDirection":"column","justifyContent":"center"}),
 
-                ], style={
-                    "background": "linear-gradient(135deg,rgba(9,21,38,0.9),rgba(12,30,51,0.6))",
-                    "borderRadius": "12px", "border": "1px solid rgba(255,61,87,0.1)",
-                    "padding": "16px 20px",
-                    "boxShadow": "0 8px 24px rgba(0,0,0,0.3)"
-                }),
+            ], style={"display":"flex","alignItems":"center","gap":"28px", "background":"linear-gradient(160deg,#060d1c 0%,#080f20 40%,#06111e 100%)",
+                      "borderRadius":"16px","border":"1px solid rgba(0,255,200,0.12)",
+                      "padding":"24px 28px","marginBottom":"16px","boxShadow":"0 20px 60px rgba(0,0,0,0.6)"}),
 
-            ], style={"padding": "4px"})
+            dbc.Row([
+                dbc.Col([
+                    html.Div("TRUNG BÌNH ĐỘNG", style={"fontSize":"0.72rem","letterSpacing":"0.1em","fontWeight":"700",
+                                                        "color":"#00d4ff","fontFamily":"JetBrains Mono,monospace","marginBottom":"12px"}),
+                    html.Table([
+                        html.Thead(html.Tr([
+                            html.Th("Chỉ báo",  style={"color":"#58a6ff","fontSize":"0.7rem","fontWeight":"700","paddingBottom":"8px","borderBottom":"1px solid rgba(0,212,255,0.25)"}),
+                            html.Th("Giá trị",  style={"color":"#58a6ff","fontSize":"0.7rem","fontWeight":"700","textAlign":"right","paddingBottom":"8px","borderBottom":"1px solid rgba(0,212,255,0.25)"}),
+                            html.Th("Tín hiệu", style={"color":"#58a6ff","fontSize":"0.7rem","fontWeight":"700","textAlign":"right","paddingBottom":"8px","borderBottom":"1px solid rgba(0,212,255,0.25)"}),
+                        ])),
+                        html.Tbody([
+                            ind_row("SMA 10",  sma10,  *eval_ma(sma10)),
+                            ind_row("SMA 20",  sma20,  *eval_ma(sma20)),
+                            ind_row("SMA 50",  sma50,  *eval_ma(sma50)),
+                            ind_row("SMA 200", sma200, *eval_ma(sma200)),
+                            ind_row("EMA 10",  ema10,  *eval_ma(ema10)),
+                            ind_row("EMA 20",  ema20,  *eval_ma(ema20)),
+                            ind_row("EMA 50",  ema50,  *eval_ma(ema50)),
+                        ])
+                    ], style={"width":"100%","borderCollapse":"collapse"})
+                ], width=12, lg=6, style={"background":"linear-gradient(135deg,rgba(9,21,38,0.95),rgba(12,30,51,0.8))",
+                                          "borderRadius":"10px","border":"1px solid rgba(0,212,255,0.15)",
+                                          "borderLeft":"3px solid rgba(0,212,255,0.6)","padding":"16px","marginBottom":"12px"}),
+                dbc.Col([
+                    html.Div("CHỈ BÁO ĐỘNG LƯỢNG", style={"fontSize":"0.72rem","letterSpacing":"0.1em","fontWeight":"700",
+                                                            "color":"#ffb703","fontFamily":"JetBrains Mono,monospace","marginBottom":"12px"}),
+                    html.Table([
+                        html.Thead(html.Tr([
+                            html.Th("Chỉ báo",  style={"color":"#58a6ff","fontSize":"0.7rem","fontWeight":"700","paddingBottom":"8px","borderBottom":"1px solid rgba(0,212,255,0.25)"}),
+                            html.Th("Giá trị",  style={"color":"#58a6ff","fontSize":"0.7rem","fontWeight":"700","textAlign":"right","paddingBottom":"8px","borderBottom":"1px solid rgba(0,212,255,0.25)"}),
+                            html.Th("Tín hiệu", style={"color":"#58a6ff","fontSize":"0.7rem","fontWeight":"700","textAlign":"right","paddingBottom":"8px","borderBottom":"1px solid rgba(0,212,255,0.25)"}),
+                        ])),
+                        html.Tbody([
+                            ind_row("RSI (14)",          rsi_val,  sig_rsi,   col_rsi),
+                            ind_row("MACD (12,26)",      macd_val, sig_macd,  col_macd),
+                            ind_row("Stochastic (14,3)", stoch_k,  sig_stoch, col_stoch),
+                        ])
+                    ], style={"width":"100%","borderCollapse":"collapse"})
+                ], width=12, lg=6, style={"background":"linear-gradient(135deg,rgba(9,21,38,0.95),rgba(12,30,51,0.8))",
+                                          "borderRadius":"10px","border":"1px solid rgba(255,183,3,0.15)",
+                                          "borderLeft":"3px solid rgba(255,183,3,0.6)","padding":"16px","marginBottom":"12px"}),
+            ], className="g-3 mb-3"),
 
-        else:
-            technical_content = html.Div("Không đủ dữ liệu giá (cần ít nhất 50 phiên) để tính toán kỹ thuật.",
-                                         className="text-muted text-center p-5")
+            html.Div([
+                html.Div("HỖ TRỢ & KHÁNG CỰ", style={"fontSize":"0.72rem","letterSpacing":"0.1em","fontWeight":"700",
+                                                        "color":"#ff7b72","fontFamily":"JetBrains Mono,monospace","marginBottom":"14px"}),
+                dbc.Row([
+                    dbc.Col(pivot_card("R3 — Kháng cự 3", r3, "#ff3d57"), width=4),
+                    dbc.Col(pivot_card("R2 — Kháng cự 2", r2, "#ff6b6b"), width=4),
+                    dbc.Col(pivot_card("R1 — Kháng cự 1", r1, "#ff9999"), width=4),
+                ], className="g-2 mb-2"),
+                html.Div([
+                    html.Div("ĐIỂM XOAY — PIVOT", style={"fontSize":"0.68rem","letterSpacing":"0.12em","color":"#7fa8cc",
+                                                           "fontWeight":"600","marginBottom":"6px","fontFamily":"JetBrains Mono,monospace"}),
+                    html.Div(f"{pp:,.0f}", style={"fontSize":"1.6rem","fontWeight":"900","color":"#d6eaf8","fontFamily":"JetBrains Mono,monospace"}),
+                ], style={"textAlign":"center","padding":"14px","borderRadius":"8px","margin":"8px 0",
+                          "background":"linear-gradient(135deg,rgba(0,212,255,0.08),rgba(0,144,255,0.05))",
+                          "border":"1px solid rgba(0,212,255,0.2)"}),
+                dbc.Row([
+                    dbc.Col(pivot_card("S1 — Hỗ trợ 1", s1, "#56d364"), width=4),
+                    dbc.Col(pivot_card("S2 — Hỗ trợ 2", s2, "#3fb950"), width=4),
+                    dbc.Col(pivot_card("S3 — Hỗ trợ 3", s3, "#2ea043"), width=4),
+                ], className="g-2"),
+            ], style={"background":"linear-gradient(135deg,rgba(9,21,38,0.9),rgba(12,30,51,0.6))",
+                      "borderRadius":"12px","border":"1px solid rgba(255,61,87,0.1)","padding":"16px 20px"}),
+        ], style={"padding": "4px"})
+
+        return technical_content
 
     except Exception as e:
         logger.error(f"Lỗi Tab Kỹ thuật: {e}")
-        technical_content = html.Div(f"Lỗi tải dữ liệu kỹ thuật: {str(e)}", className="text-danger p-4")
+        return html.Div(f"Lỗi tải dữ liệu kỹ thuật: {str(e)}", className="text-danger p-4")
+    
+    return technical_content
 
-    # 🟢 TRẢ VỀ 8 GIÁ TRỊ (overview + technical + 6 bảng tài chính)
-    return (
-        overview_content, technical_content,
-        is_row_data, is_col_defs,
-        bs_row_data, bs_col_defs,
-        cf_row_data, cf_col_defs,
-    )
+
+# ============================================================================
+# CALLBACK 2D: LOAD TAB TÀI CHÍNH — CHỈ KHI CLICK VÀO TAB
+# ============================================================================
+@app.callback(
+    Output("fin-table-is", "rowData"),   Output("fin-table-is", "columnDefs"),
+    Output("fin-table-bs", "rowData"),   Output("fin-table-bs", "columnDefs"),
+    Output("fin-table-cf", "rowData"),   Output("fin-table-cf", "columnDefs"),
+    Input("detail-tabs",      "active_tab"),
+    Input("fin-period-toggle", "value"),
+    State("selected-stock-store", "data"),
+    prevent_initial_call=True,
+)
+def load_financial_tab(active_tab, period_toggle, stock):
+    if active_tab != "tab-financial" or not stock:
+        return [], [], [], [], [], []
+    ticker = stock.get('Ticker', 'N/A')
+
+    try:
+        df_fin   = load_financial_data(period_toggle)   # ← dùng bản có cache
+        df_stock = df_fin[df_fin['Ticker'] == ticker].copy()
+        if not df_stock.empty:
+            df_stock['Date'] = pd.to_datetime(df_stock['Date'])
+            df_stock = df_stock.sort_values("Date", ascending=False)
+            if period_toggle == "yearly":
+                df_stock['Period'] = df_stock['Date'].dt.year.astype(str)
+            else:
+                df_stock['Period'] = (
+                    df_stock['Date'].dt.year.astype(str) + "-Q" +
+                    df_stock['Date'].dt.quarter.astype(str)
+                )
+            raw_cols_to_keep = [col for col in FINANCIAL_UI_MAP.keys() if col in df_stock.columns]
+            df_stock = df_stock[['Period'] + raw_cols_to_keep]
+            df_stock.set_index('Period', inplace=True)
+            df_t = df_stock.T.reset_index()
+            df_t.rename(columns={'index': 'RawItem'}, inplace=True)
+            df_t['Chỉ tiêu']  = df_t['RawItem'].apply(lambda x: FINANCIAL_UI_MAP[x]['name'] if x in FINANCIAL_UI_MAP else x)
+            df_t['Nhóm BCTC'] = df_t['RawItem'].apply(lambda x: FINANCIAL_UI_MAP[x]['group'] if x in FINANCIAL_UI_MAP else "Khác")
+            period_cols = [c for c in df_t.columns if c not in ['Chỉ tiêu', 'RawItem', 'Nhóm BCTC']]
+
+            def create_col_defs(period_columns):
+                col_defs = [{"field": "Chỉ tiêu", "pinned": "left", "width": 280,
+                             "cellStyle": {"fontWeight": "bold", "color": "#e6edf3", "backgroundColor": "#0d1b2a"}}]
+                for p in period_columns:
+                    col_defs.append({"field": p, "headerName": p, "type": "rightAligned", "width": 120,
+                        "valueFormatter": {"function": "params.value !== '' && params.value !== null ? d3.format(',.0f')(params.value) : '-'"}})
+                return col_defs
+
+            def process_sub_table(group_name):
+                df_sub = df_t[df_t['Nhóm BCTC'] == group_name].copy()
+                if df_sub.empty: return [], []
+                df_sub = df_sub[['Chỉ tiêu'] + period_cols]
+                for c in period_cols:
+                    df_sub[c] = pd.to_numeric(df_sub[c], errors='coerce')
+                    df_sub[c] = np.where(
+                        df_sub['Chỉ tiêu'].isin(['EPS Cơ bản', 'Cổ tức mỗi cổ phiếu (DPS)']),
+                        df_sub[c], df_sub[c] / 1_000_000)
+                df_sub.replace({np.nan: None}, inplace=True)
+                df_sub['Sort_Order'] = df_sub['Chỉ tiêu'].map({v['name']: i for i, v in enumerate(FINANCIAL_UI_MAP.values())})
+                df_sub.sort_values('Sort_Order', inplace=True)
+                df_sub.drop('Sort_Order', axis=1, inplace=True)
+                return df_sub.to_dict('records'), create_col_defs(period_cols)
+
+            is_row_data, is_col_defs = process_sub_table("1. Kết quả kinh doanh")
+            bs_row_data, bs_col_defs = process_sub_table("2. Bảng cân đối kế toán")
+            cf_row_data, cf_col_defs = process_sub_table("3. Lưu chuyển tiền tệ")
+        else:
+            err_msg = [{"field": "Lỗi", "headerName": "Không có dữ liệu BCTC"}]
+            is_col_defs = bs_col_defs = cf_col_defs = err_msg
+    except Exception as e:
+        logger.error(f"Lỗi Tab Tài Chính (2D): {e}")
+        err_msg = [{"field": "Lỗi", "headerName": f"Lỗi hệ thống: {str(e)}"}]
+        is_col_defs = bs_col_defs = cf_col_defs = err_msg
+
+    return is_row_data, is_col_defs, bs_row_data, bs_col_defs, cf_row_data, cf_col_defs
 
 @app.callback(
     [Output("metric-table-1", "rowData"), Output("metric-table-1", "columnDefs"),
