@@ -236,25 +236,26 @@ FIXED_COLS = [
             "color": "#94a3b8",
         },
     },
-    {
-        "field": "_profile_match",
-        "headerName": "HỒ SƠ",
-        "headerTooltip": "Mức độ phù hợp với hồ sơ nhà đầu tư cá nhân",
-        "width": 80,
-        "sortable": True,
-        "cellRenderer": "agAnimateShowChangeCellRenderer",
-        "cellStyle": {
-            "function": """
-                const v = params.value;
-                if (!v) return {'color':'#484f58','textAlign':'center'};
-                if (v === '✓✓') return {'color':'#10b981','fontWeight':'700',
-                                        'textAlign':'center','fontSize':'14px'};
-                if (v === '✓')  return {'color':'#f59e0b','fontWeight':'600',
-                                        'textAlign':'center'};
-                return {'color':'#ef4444','textAlign':'center'};
-            """
-        },
-    },
+    # tạm thời ẩn cái cột mức độ phù hợp với hồ sơ ndt đi tại lúc 1 tick lúc 2 ticks hơi khó hiểu với người dùng
+    # {
+    #     "field": "_profile_match",
+    #     "headerName": "HỒ SƠ",
+    #     "headerTooltip": "Mức độ phù hợp với hồ sơ nhà đầu tư cá nhân",
+    #     "width": 80,
+    #     "sortable": True,
+    #     "cellRenderer": "agAnimateShowChangeCellRenderer",
+    #     "cellStyle": {
+    #         "function": """
+    #             const v = params.value;
+    #             if (!v) return {'color':'#484f58','textAlign':'center'};
+    #             if (v === '✓✓') return {'color':'#10b981','fontWeight':'700',
+    #                                     'textAlign':'center','fontSize':'14px'};
+    #             if (v === '✓')  return {'color':'#f59e0b','fontWeight':'600',
+    #                                     'textAlign':'center'};
+    #             return {'color':'#ef4444','textAlign':'center'};
+    #         """
+    #     },
+    # },
     {
     "field": "Star_Rating",
     "headerName": "XẾP HẠNG",
@@ -561,7 +562,7 @@ FILTER_TO_COLDEF = {
     "filter-elliott-corrective": {
         "field": "Elliott_Corrective",
         "headerName": "HỒI SÓNG",
-        "headerTooltip": "1 = đang trong sóng điều chỉnh ABC (giá dưới SMA50 + RSI<50 + MACD âm). 0 = có thể đang trong sóng đẩy.",
+        "headerTooltip": "Đang hồi = đang trong sóng điều chỉnh ABC (giá dưới SMA50 + RSI<50 + MACD âm). Có thể đẩy = có thể đang trong sóng đẩy.",
         "sortable": True, "width": 110,
         "valueFormatter": {"function": "params.value === 1 ? '🔄 Đang hồi' : '🚀 Có thể đẩy'"},
         "cellStyle": {

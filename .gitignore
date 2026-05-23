@@ -11,4 +11,5 @@ myenv/
 venv/
 env/
 cache*
+cache/
 data/processed/*.parquet

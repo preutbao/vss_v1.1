@@ -19,8 +19,13 @@ COMPARE_COLORS = ["#00d4ff", "#10b981", "#f59e0b", "#a78bfa", "#f87171", "#34d39
 compare_modal = dbc.Modal([
     dbc.ModalHeader(
         dbc.ModalTitle([
-            html.I(className="fas fa-code-compare", style={"marginRight": "8px", "color": "#00d4ff"}),
-            "So sánh cổ phiếu",
+            html.Div([
+                html.I(className="fas fa-code-compare", style={"marginRight": "8px", "color": "#00d4ff"}),
+                html.Span("So sánh cổ phiếu"),
+                # 🟢 THÊM NÚT HELP Ở ĐÂY:
+                html.I(className="fas fa-info-circle", id="btn-compare-help",
+                       style={"cursor": "pointer", "fontSize": "16px", "color": "#3b82f6", "marginLeft": "15px", "padding": "5px"}),
+            ], style={"display": "flex", "alignItems": "center"})
         ]),
         close_button=True,
     ),
@@ -90,6 +95,24 @@ compare_modal = dbc.Modal([
    scrollable=False,
    style={"zIndex": "1060"})
 
+compare_help_modal = dbc.Modal([
+    dbc.ModalHeader(dbc.ModalTitle([
+        html.I(className="fas fa-code-compare", style={"marginRight": "8px", "color": "#00d4ff"}),
+        "Hướng dẫn So sánh Cổ phiếu"
+    ], style={"fontSize": "16px"})),
+    dbc.ModalBody([
+        html.P("Công cụ Relative Strength giúp bạn tìm ra cổ phiếu khỏe nhất dòng (Leader) và kiểm tra xem danh mục có chiến thắng được đà tăng của thị trường chung hay không (Tìm Alpha).", style={"fontSize": "13px", "color": "#c9d1d9", "marginBottom": "16px"}),
+        
+        html.H6([html.I(className="fas fa-1", style={"marginRight": "8px", "color": "#3b82f6"}), "Chọn Rổ Cổ Phiếu"], style={"fontSize": "14px", "fontWeight": "700", "color": "#3b82f6"}),
+        html.P("Gõ và chọn tối đa 6 mã cổ phiếu bạn muốn đưa lên bàn cân. Nên so sánh các mã trong cùng một nhóm ngành (VD: SSI, HCM, VCI, VND).", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+        html.H6([html.I(className="fas fa-2", style={"marginRight": "8px", "color": "#f59e0b"}), "Thiết lập Khung Thời Gian"], style={"fontSize": "14px", "fontWeight": "700", "color": "#f59e0b"}),
+        html.P("Chọn mốc thời gian nhìn lại (từ 1 tháng đến 2 năm). Biểu đồ sẽ quy tất cả các mã về chung 1 điểm xuất phát (mốc 0%) ở đầu kỳ để xem mã nào chạy nhanh nhất.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+        html.H6([html.I(className="fas fa-3", style={"marginRight": "8px", "color": "#10b981"}), "Benchmark VN-INDEX"], style={"fontSize": "14px", "fontWeight": "700", "color": "#10b981"}),
+        html.P("Luôn bật tick 'vs VNINDEX'. Đường đứt nét màu trắng đại diện cho đà tăng trung bình của thị trường. Nếu mã bạn chọn nằm dưới đường trắng này, đó là mã yếu (Underperform).", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+    ], style={"backgroundColor": "#0d1117", "border": "1px solid #30363d", "borderRadius": "0 0 8px 8px"}),
+], id="compare-help-modal", size="md", is_open=False, centered=True)
 
 @app.callback(
     Output("compare-ticker-select", "options"),
@@ -358,3 +381,11 @@ app.clientside_callback(
     Input("health-methodology-modal", "is_open"),
     prevent_initial_call=True,
 )
+
+@app.callback(
+    Output("compare-help-modal", "is_open"),
+    Input("btn-compare-help", "n_clicks"),
+    prevent_initial_call=True,
+)
+def toggle_compare_help(n):
+    return True if n else no_update

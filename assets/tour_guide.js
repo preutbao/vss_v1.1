@@ -62,12 +62,12 @@ window.VssTour = (function () {
       requireClick: false, 
       disableInteraction: true, // 🛠 KHOÁ CLICK VÀO 3 NÚT NÀY
       // 🛠 THÊM DÒNG NÀY VÀO: Ép chiều rộng vùng khoanh đỏ (Ví dụ: 380px)
-      customW: 760, 
+      customW: 900, 
       
       // Nếu nó bị lệch sang trái/phải, bạn có thể bù trừ thêm bằng offsetX
       offsetX: 12,
     },
-// ==========================================
+    // ==========================================
     // ── TAB TÌM KIẾM ──
     // ==========================================
     {

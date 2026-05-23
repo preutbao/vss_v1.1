@@ -381,6 +381,7 @@ def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
         Input("investor-profile-store", "data"),
 
         Input("filter-index", "value"),# >>> THÊM INPUT CỦA DROPDOWN CHỈ SỐ <<<
+        Input("nav-input", "value"), # 🟢 BẠN THÊM DÒNG NÀY VÀO
     ],
     [
         # ── STATE: đọc giá trị hiện tại của từng store khi callback chạy ──
@@ -469,7 +470,7 @@ def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
 def update_screener_table(
         btn_reset, search_text, current_strategy, selected_sectors, active_filters, selected_subs,
         selected_exchange, filter_year, trading_mode, investor_profile,
-        filter_index,
+        filter_index, nav_value,
         # Tổng quan (State)
         price_range, volume_range, market_cap_range, eps_range, perf_1w_range, perf_1m_range,
         # Định giá
@@ -752,12 +753,12 @@ def update_screener_table(
 
         def apply_range(col_name, rng):
             nonlocal df_filtered
-            if col_name in df_filtered.columns and rng and len(rng) == 2:
+            if col_name in df_filtered.columns and rng and isinstance(rng, (list, tuple)) and len(rng) == 2:
                 numeric = pd.to_numeric(df_filtered[col_name], errors='coerce')
+                # Cho phép NaN pass qua (không loại mã chỉ vì thiếu dữ liệu chỉ tiêu đó)
                 df_filtered = df_filtered[
-                    numeric.notna() &
-                    (numeric >= rng[0]) &
-                    (numeric <= rng[1])
+                    numeric.isna() |
+                    ((numeric >= rng[0]) & (numeric <= rng[1]))
                 ]
 
         def apply_grade(col_name, grades):
@@ -843,7 +844,6 @@ def update_screener_table(
             # Elliott Wave Proxy
             ("filter-fib-position",       "Fib_Position_%",        fib_pos,       False),
             ("filter-wave-momentum",      "Wave_Momentum_Score",    wave_mom,      False),
-            ("filter-elliott-corrective", "Elliott_Corrective",     elliott_corr,  False),
         ]
 
         for (filter_id, col_name, fallback_val, is_grade) in FILTER_MAP:
@@ -860,25 +860,51 @@ def update_screener_table(
 
         # ── Boolean filters: Break_High_52W / Break_Low_52W ──
         _BOOL_MAP = [
-            ("filter-break-high-52w", "Break_High_52W", break_high_52w),
-            ("filter-break-low-52w",  "Break_Low_52W",  break_low_52w),
+            ("filter-break-high-52w",     "Break_High_52W",   break_high_52w),
+            ("filter-break-low-52w",      "Break_Low_52W",    break_low_52w),
+            # Elliott: cùng 1 cột, khác value
+            # filter-elliott-impulse    → Elliott_Corrective == 0  (KHÔNG hồi = đang đẩy)
+            # filter-elliott-corrective → Elliott_Corrective == 1  (đang hồi)
+            ("filter-elliott-impulse",    "Elliott_Corrective", None),
+            ("filter-elliott-corrective", "Elliott_Corrective", None),
         ]
+
         for (fid, col, bval) in _BOOL_MAP:
             if fid not in active_filters:
                 continue
             if col not in df_filtered.columns:
+                logger.warning(f"[BOOL_MAP] Cột '{col}' không tồn tại trong snapshot — bỏ qua")
                 continue
             af_entry = active_filters[fid]
-            # Đọc value từ active_filters (được sync bởi sync_bool_to_active_filters)
             bool_val = af_entry.get("value") if isinstance(af_entry, dict) else None
-            # Fallback về State store nếu chưa có trong active_filters
             if bool_val is None:
                 bool_val = bval
             if bool_val is None:
                 continue
-            # Ép kiểu an toàn: col có thể là int hoặc float (0.0/1.0)
+
+            # ── FIX ELLIOTT: map filter_id → giá trị cột thực tế ──────────────────
+            # Cả 2 filter đều dùng cột Elliott_Corrective
+            # impulse   → người dùng bấm "Có"(1) → lọc Elliott_Corrective == 0
+            # corrective → người dùng bấm "Có"(1) → lọc Elliott_Corrective == 1
+            # SAU (đúng — dùng bool_val để đảo chiều):
+            if fid == "filter-elliott-corrective":
+                # bool_val=1 (bấm "Có") → muốn xem hồi sóng → Elliott_Corrective == 1
+                # bool_val=0 (bấm "Không") → muốn xem sóng đẩy → Elliott_Corrective == 0
+                target_val = 1 if int(bool_val) == 1 else 0
+
+            elif fid == "filter-elliott-impulse":
+                # bool_val=1 (bấm "Có") → muốn xem sóng đẩy → Elliott_Corrective == 0
+                # bool_val=0 (bấm "Không") → muốn xem hồi sóng → Elliott_Corrective == 1
+                target_val = 0 if int(bool_val) == 1 else 1
+
+            else:
+                target_val = int(bool_val)
+            # ──────────────────────────────────────────────────────────────────────
+
+            logger.info(f"[BOOL_MAP] Lọc {fid}: {col} == {target_val}")
             df_filtered[col] = pd.to_numeric(df_filtered[col], errors='coerce').fillna(-1).astype(int)
-            df_filtered = df_filtered[df_filtered[col] == int(bool_val)]
+            df_filtered = df_filtered[df_filtered[col] == target_val]
+            logger.info(f"[BOOL_MAP] Còn {len(df_filtered)} mã sau khi lọc {col}")
 
         # ── Sub-industry filter (Bug #2 fix: xử lý trong callback chính,
         #    không dùng callback riêng nữa để tránh bị overwrite) ──
@@ -911,6 +937,19 @@ def update_screener_table(
                     logger.warning("[Exchange Filter] Cột 'Exchange' KHÔNG tồn tại trong snapshot! "
                                    "Hãy xóa data/processed/snapshot_cache.parquet và restart.")
 
+        # 🟢 🟢 🟢 THÊM ĐOẠN LOGIC NÀY VÀO TRƯỚC KHI RETURN BẢNG
+        if nav_value:
+            try:
+                # Xóa dấu phẩy để biến chuỗi "50,000,000" thành số nguyên 50000000
+                clean_nav = int(str(nav_value).replace(',', ''))
+                if clean_nav > 0:
+                    # Điều kiện: Tiền của user phải lớn hơn giá trị 1 lô (100 cổ phiếu)
+                    # (Giả định 'Price Close' của bạn lưu ở mức VND. Nếu lưu dạng 25.5 (nghìn đồng) thì lấy Price * 1000 * 100)
+                    df_filtered = df_filtered[(df_filtered['Price Close'] * 100) <= clean_nav]
+            except Exception as e:
+                logger.error(f"Lỗi filter NAV: {e}")
+                pass
+        # 🟢 🟢 🟢 KẾT THÚC ĐOẠN THÊM
         filtered_count = len(df_filtered)
         # Tính Forward P/E và build columnDefs trong cùng 1 lần → AG Grid nhận 1 batch update
         df_filtered = _add_forward_pe(df_filtered)
@@ -3518,3 +3557,21 @@ def toggle_action_buttons(n_clicks, current_style):
         # Thu gọn lại
         base_style["display"] = "none"
         return base_style, "fas fa-angles-left"
+
+from dash import clientside_callback
+
+# Tự động format dấu phẩy khi người dùng nhập số tiền
+clientside_callback(
+    """
+    function(val) {
+        if (!val) return val;
+        // Xóa hết các ký tự không phải là số (chỉ giữ lại số)
+        let numStr = val.toString().replace(/\\D/g, "");
+        // Thêm dấu phẩy phân cách hàng nghìn
+        return numStr.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ",");
+    }
+    """,
+    Output("nav-input", "value"),
+    Input("nav-input", "value"),
+    prevent_initial_call=True
+)

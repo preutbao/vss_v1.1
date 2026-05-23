@@ -126,6 +126,7 @@ import src.callbacks.investor_profile_callbacks
 import src.callbacks.tab_dot_callbacks
 import src.callbacks.tplus_callbacks
 import src.callbacks.margin_crisis_callbacks
+import src.callbacks.screener_pdf_callback
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT — hai section: onboarding ↔ main app
@@ -134,6 +135,9 @@ from dash import Dash, html, dcc, Input, Output, State
 from src.pages import screener, onboarding
 from src.components.header import create_header, create_topbar, create_banner
 from src.callbacks.chatbot_callbacks import create_chatbot_layout
+from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_help_modal
+from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_help_modal
+from src.callbacks.compare_callbacks import compare_modal, compare_help_modal
 
 
 app.layout = html.Div(
@@ -158,11 +162,19 @@ app.layout = html.Div(
         # 🛠 THÊM DÒNG NÀY VÀO ĐỂ KHÔNG BỊ LỖI CALLBACK
         dcc.Store(id="tour-finish-trigger", data=False),
 
+        # ===================================================================
+        # 🟢 CHÈN CÁC MODAL ẨN VÀO ĐÂY (NẰM GIỮA STORES VÀ PAGES)
+        # ===================================================================
+        compare_help_modal,   # Bảng Hướng dẫn So sánh (Popup i)
+        crisis_help_modal,    # Bảng Chi tiết Khủng hoảng Ký quỹ (Popup i)
+        portfolio_help_modal, # Bảng Hướng dẫn (Popup i)
+
         # ── 2. ONBOARDING PAGE ────────────────────────────────────────────
         # Hiển thị khi profile-setup-done = False (lần đầu vào / chưa setup)
         html.Div(
             id="onboarding-page",
-            children=[onboarding.layout], style={"opacity": "0", "transition": "opacity 0.15s ease"},
+            children=[onboarding.layout],
+            style={"opacity": "0", "transition": "opacity 0.15s ease", "marginTop": "-40px"},
         ),
 
         # ── 3. MAIN APP ───────────────────────────────────────────────────
@@ -218,6 +230,7 @@ app.clientside_callback(
             main.style.display     = 'none';
             main.style.opacity     = '0';
             onboard.style.display  = 'block';
+            onboard.style.marginTop = '-0px';   // ← thêm dòng này
             setTimeout(function() { onboard.style.opacity = '1'; }, 10);
         }
         return window.dash_clientside.no_update;
@@ -244,7 +257,7 @@ def toggle_pages(setup_done):
             {"display": "block", "opacity": "1",  "transition": _transition},
         )
     return (
-        {"display": "block", "opacity": "1",  "transition": _transition},
+        {"display": "block", "opacity": "1",  "transition": _transition},  # ← thêm vào đây
         {"display": "none",  "opacity": "0",  "transition": _transition},
     )
 
@@ -265,6 +278,38 @@ def reopen_onboarding(n_clicks):
         return False
     return no_update
 
+# ============================================================
+# CALLBACK JAVASCRIPT CHO FAQ ONBOARDING (FIXED)
+# ============================================================
+for i in range(1, 7):
+    app.clientside_callback(
+        f"""
+        function(n_clicks) {{
+            if (!n_clicks) return window.dash_clientside.no_update;
+            
+            // Nhờ Python f-string, biến {i} sẽ được hardcode thẳng vào JS cho từng câu hỏi
+            var content = document.getElementById('faq-content-{i}');
+            var icon = document.getElementById('faq-icon-{i}');
+            
+            if (content && icon) {{
+                if (content.style.display === 'none' || content.style.display === '') {{
+                    content.style.display = 'block';
+                    icon.innerText = '×';
+                    icon.style.color = '#3b82f6'; // Màu xanh _BLUE
+                }} else {{
+                    content.style.display = 'none';
+                    icon.innerText = '+';
+                    icon.style.color = '#6b7280'; // Màu xám _TEXT_MUT
+                }}
+            }}
+            
+            return window.dash_clientside.no_update;
+        }}
+        """,
+        Output(f"faq-content-{i}", "id"), # Output giả để lừa Dash
+        Input(f"faq-btn-{i}", "n_clicks"),
+        prevent_initial_call=True
+    )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PRE-LOAD DATA

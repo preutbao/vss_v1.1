@@ -198,6 +198,7 @@ def update_navbar_auth(auth_data):
 # =============================================================================
 # 5. PREMIUM GATES — cập nhật className của tất cả wrapper
 #    Danh sách premium-wrapper IDs:
+#      pw-watchlist → Nút "Watchlist" trên navbar + trong heatmap
 #      pw-compare   → Nút "So sánh"
 #      pw-portfolio → Nút "Danh mục"
 #      pw-alerts    → Nút "Cảnh báo"
@@ -205,6 +206,8 @@ def update_navbar_auth(auth_data):
 #      pw-momentum  → Nhóm "Hành vi thị trường" trong wizard
 # =============================================================================
 _PREMIUM_WRAPPERS = [
+    "pw-screener-pdf",  # Báo cáo PDF trong screener
+    "pw-watchlist",  # Watchlist — PREMIUM
     'pw-compare',
     'pw-portfolio',
     "pw-crisis",

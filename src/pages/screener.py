@@ -706,7 +706,7 @@ strategy_info_offcanvas = dbc.Offcanvas(
 # Import các modal mới
 from src.callbacks.score_breakdown_callbacks import score_breakdown_modal
 from src.callbacks.compare_callbacks import compare_modal
-from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_store
+from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_store, portfolio_modal
 from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_store, crisis_result_store
 from src.callbacks.alert_callbacks import alert_modal, alert_store, alert_interval
 
@@ -817,14 +817,21 @@ layout = html.Div([
                                    "padding": "4px 10px", "whiteSpace": "nowrap"},
                         ),
                         # Export CSV
-                        dbc.Button(
-                            [html.I(className="fas fa-download", style={"marginRight": "5px"}),
-                             html.Span("CSV", id="label-export-btn")],
-                            id="btn-export-csv",
-                            color="success", outline=True, size="sm",
-                            style={"borderRadius": "6px", "fontSize": "11px",
-                                   "padding": "4px 10px", "whiteSpace": "nowrap"},
-                        ),
+                        # dbc.Button(
+                        #     [html.I(className="fas fa-download", style={"marginRight": "5px"}),
+                        #      html.Span("CSV", id="label-export-btn")],
+                        #     id="btn-export-csv",
+                        #     color="success", outline=True, size="sm",
+                        #     style={"borderRadius": "6px", "fontSize": "11px",
+                        #            "padding": "4px 10px", "whiteSpace": "nowrap"},
+                        # ),
+                        # Heatmap
+                        dbc.Button([
+                            html.I(className="fas fa-th-large", style={"marginRight": "5px"}),
+                            "Heatmap",
+                        ], id="btn-heatmap", color="secondary", outline=True, size="sm",
+                            style={"borderRadius": "6px", "fontSize": "11px", 
+                                   "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
                         # Export Excel
                         dbc.Button(
                             [html.I(className="fas fa-file-excel", style={"marginRight": "5px"}),
@@ -835,23 +842,115 @@ layout = html.Div([
                                    "padding": "4px 10px", "whiteSpace": "nowrap",
                                    "borderColor": "#1D6F42", "color": "#1D6F42"},
                         ),
-                        # Watchlist
-                        dbc.Button(
-                            [html.I(className="fas fa-eye", style={"marginRight": "5px"}),
-                             html.Span("Watchlist", id="label-watchlist-btn")],
-                            id="btn-watchlist",
-                            color="warning", outline=True, size="sm",
-                            style={"borderRadius": "6px", "fontSize": "11px",
-                                   "padding": "4px 10px", "whiteSpace": "nowrap"},
+                        # ============================================================
+                        # SNIPPET: Premium Wrapper cho nút "Xuất PDF Danh mục"
+                        # Dán vào screener.py thay thế đoạn nút btn-export-screener-pdf cũ.
+                        # ============================================================
+                        #
+                        # TRƯỚC (code cũ - KHÔNG có premium):
+                        # ─────────────────────────────────────
+                        # dbc.Button(
+                        #     [html.I(className="fas fa-file-pdf", ...), "Xuất PDF Danh mục"],
+                        #     id="btn-export-screener-pdf", color="danger", outline=True, size="sm",
+                        #     style={...},
+                        # ),
+                        # dcc.Download(id="screener-pdf-download"),
+                        # html.Span(id="screener-pdf-status", ...),
+                        #
+                        #
+                        # SAU (code mới - CÓ premium wrapper, y hệt pattern Watchlist):
+                        # ─────────────────────────────────────────────────────────────
+                        html.Div(
+                            id="pw-screener-pdf",
+                            className="premium-wrapper premium-locked",   # ← bỏ "premium-locked" nếu user đã VIP
+                            children=[
+                                # ── Nội dung thật (bị overlay che khi chưa VIP) ──
+                                html.Div(
+                                    children=[
+                                        dbc.Button(
+                                            [
+                                                html.I(className="fas fa-file-pdf",
+                                                    style={"marginRight": "5px"}),
+                                                "PDF Danh mục",
+                                            ],
+                                            id="btn-export-screener-pdf",
+                                            color="danger", outline=True, size="sm",
+                                            style={
+                                                "borderRadius": "6px",
+                                                "fontSize": "11px",
+                                                "padding": "4px 10px",
+                                                "whiteSpace": "nowrap",
+                                            },
+                                        ),
+                                        dcc.Download(id="screener-pdf-download"),
+                                        html.Span(
+                                            id="screener-pdf-status",
+                                            style={
+                                                "fontSize": "10px",
+                                                "color": "#8b949e",
+                                                "marginLeft": "6px",
+                                                "fontStyle": "italic",
+                                            },
+                                        ),
+                                    ],
+                                    className="premium-content",
+                                ),
+                                # ── Overlay khóa VIP (hiện khi chưa đăng ký) ──
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "screener-pdf"},
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(
+                                            className="fas fa-lock",
+                                            style={
+                                                "fontSize": "10px",
+                                                "color": "#00a651",
+                                                "marginBottom": "2px",
+                                            },
+                                        ),
+                                        html.Span(
+                                            "VIP",
+                                            style={
+                                                "fontSize": "9px",
+                                                "fontWeight": "700",
+                                                "color": "#6e7681",
+                                            },
+                                        ),
+                                    ],
+                                ),
+                            ],
                         ),
-                        # Heatmap
-                        dbc.Button([
-                            html.I(className="fas fa-th-large", style={"marginRight": "5px"}),
-                            "Heatmap",
-                        ], id="btn-heatmap", color="secondary", outline=True, size="sm",
-                            style={"borderRadius": "6px", "fontSize": "11px", 
-                                   "padding": "4px 10px", "whiteSpace": "nowrap"}), # 🛠 Bổ sung padding
-
+                        # Watchlist — PREMIUM
+                        html.Div(
+                            id="pw-watchlist",
+                            className="premium-wrapper premium-locked",
+                            children=[
+                                html.Div(
+                                    dbc.Button(
+                                        [
+                                            html.I(className="fas fa-eye", style={"marginRight": "5px"}),
+                                            html.Span("Watchlist", id="label-watchlist-btn")
+                                        ],
+                                        id="btn-watchlist",
+                                        color="warning", outline=True, size="sm",
+                                        style={"borderRadius": "6px", "fontSize": "11px",
+                                               "padding": "4px 10px", "whiteSpace": "nowrap"},
+                                    ),
+                                    className="premium-content",
+                                ),
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "watchlist"},
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(className="fas fa-lock",
+                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
+                                    ],
+                                ),
+                            ],
+                        ),
                         # So sánh — PREMIUM
                         html.Div(
                             id="pw-compare",
@@ -944,7 +1043,7 @@ layout = html.Div([
                                     dbc.Button([
                                         html.I(className="fas fa-bell", style={"marginRight": "5px", "color": "#d8ef44"}),
                                         "Cảnh báo",
-                                    ], id="btn-alerts", color="warning", outline=True, size="sm",
+                                    ], id="btn-alerts", outline=True, size="sm",
                                         style={"borderRadius": "6px", "fontSize": "11px", 
                                                "padding": "4px 10px", "whiteSpace": "nowrap", "borderColor": "#d8ef44"}), # 🛠 Bổ sung padding
                                     html.Span("0", id="alert-badge", style={"display": "none"}),

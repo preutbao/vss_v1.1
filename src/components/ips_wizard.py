@@ -18,25 +18,22 @@ import dash_bootstrap_components as dbc
 
 
 # ── Màu sắc và typography nhất quán với dark theme của VSS ──────────────────
-_BG_MODAL   = "#0c1220"
-_BG_CARD    = "#0d1117"
-_BG_CARD2   = "#161b22"
-_BORDER     = "#21262d"
-_BORDER2    = "#30363d"
-_TEXT_PRI   = "#e6edf3"
-_TEXT_SEC   = "#8b949e"
-_TEXT_MUT   = "#484f58"
-_BLUE       = "#3b82f6"
-_GREEN      = "#10b981"
-_AMBER      = "#f59e0b"
-_RED        = "#ef4444"
-_PURPLE     = "#a78bfa"
-_CYAN       = "#00d4ff"
+_BG_CARD    = "#0d1d36"
+_BG_CARD2   = "#112340"
+_BORDER     = "#1a3a60"
+_TEXT_PRI   = "#e8f4ff"
+_TEXT_SEC   = "#7aafcc"
+_TEXT_MUT   = "#3d6a8a"
+_BLUE       = "#0090ff"
+_GREEN      = "#00e676"
+_AMBER      = "#ffb703"
+_RED        = "#ff3d57"
+_PURPLE     = "#8b5cf6"
+_CYAN       = "#00e5ff"
+_FONT_SORA  = "'Be Vietnam Pro', 'DM Sans', sans-serif"
+_FONT_INTER = "'DM Sans', sans-serif"
+_FONT_MONO  = "'DM Mono', monospace"
 
-# ── Font helpers ─────────────────────────────────────────────────────────────
-_FONT_SORA  = "'Sora', 'Inter', sans-serif"
-_FONT_INTER = "'Inter', sans-serif"
-_FONT_MONO  = "'Roboto Mono', monospace"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

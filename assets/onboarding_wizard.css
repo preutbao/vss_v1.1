@@ -1,0 +1,510 @@
+/* ═══════════════════════════════════════════════════════════════
+   VSS ONBOARDING WIZARD — CSS
+   Copy file này vào: assets/onboarding_wizard.css
+   Dash tự động load tất cả file trong thư mục assets/
+═══════════════════════════════════════════════════════════════ */
+
+/* ── GOOGLE FONTS ── */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── CSS TOKENS ── */
+:root {
+  --void:      #040810;
+  --base:      #070e1c;
+  --surface:   #0a1628;
+  --card:      #0d1d36;
+  --elevated:  #112340;
+  --hover:     #172d50;
+  --border:    #1a3a60;
+  --border-hi: #2a5a90;
+
+  --accent:    #00e5ff;
+  --accent2:   #0090ff;
+  --green:     #00e676;
+  --amber:     #ffb703;
+  --red:       #ff3d57;
+
+  --t1: #e8f4ff;
+  --t2: #7aafcc;
+  --t3: #3d6a8a;
+  --t4: #1d4060;
+
+  --ff-display: 'Be Vietnam Pro', 'DM Sans', sans-serif;
+  --ff-body:    'DM Sans', sans-serif;
+  --ff-mono:    'DM Mono', monospace;
+
+  --r-sm:  6px;
+  --r-md:  12px;
+  --r-lg:  18px;
+  --r-xl:  24px;
+
+  --glow: 0 0 40px rgba(0,229,255,0.15);
+}
+
+/* ── GLOBAL RESET (chỉ áp trong wrapper onboarding) ── */
+#ips-onboarding-wrapper * {
+  box-sizing: border-box;
+}
+
+#ips-onboarding-wrapper {
+  font-family: var(--ff-body);
+  background: var(--void);
+  color: var(--t1);
+  min-height: 100vh;
+}
+
+/* ── BACKGROUND GLOW ── */
+#ips-onboarding-wrapper::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0,144,255,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(0,229,255,0.05) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+  animation: vss-bgPulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes vss-bgPulse {
+  from { opacity: 0.6; }
+  to   { opacity: 1;   }
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--void); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ═══════════════════════════════════════════════════
+   WIZARD WRAPPER .vss-page
+═══════════════════════════════════════════════════ */
+.vss-page {
+  position: relative; z-index: 1;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 60px 24px 80px;
+}
+
+/* ═══════════════════════════════════════════════════
+   LOGO BAR
+═══════════════════════════════════════════════════ */
+.vss-logo-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.vss-logo-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 0 24px rgba(0,229,255,0.3);
+}
+
+.vss-logo-name {
+  font-family: var(--ff-display);
+  font-size: 22px; font-weight: 800;
+  letter-spacing: -0.3px;
+  background: linear-gradient(90deg, var(--t1) 0%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vss-logo-tagline {
+  text-align: center;
+  font-size: 13px; color: var(--t3); line-height: 1.7;
+  max-width: 420px; margin: 0 auto 48px;
+}
+
+/* ═══════════════════════════════════════════════════
+   PROGRESS RAIL
+═══════════════════════════════════════════════════ */
+.vss-progress-rail {
+  display: flex;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.vss-rail-step {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; flex: 1; cursor: default;
+}
+
+.vss-rail-dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--ff-mono); font-size: 11px; font-weight: 500;
+  color: var(--t4);
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  position: relative; z-index: 1;
+}
+
+.vss-rail-dot.done {
+  background: var(--green);
+  border-color: var(--green);
+  color: #001a08;
+  box-shadow: 0 0 16px rgba(0,230,118,0.4);
+}
+
+.vss-rail-dot.active {
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  border-color: var(--accent);
+  color: #001a20;
+  box-shadow: 0 0 20px rgba(0,229,255,0.5);
+  animation: vss-dotPulse 2s ease-in-out infinite;
+}
+
+@keyframes vss-dotPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(0,229,255,0.5); }
+  50%      { box-shadow: 0 0 30px rgba(0,229,255,0.8); }
+}
+
+.vss-rail-label {
+  font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--t4);
+  transition: color 0.3s;
+}
+
+.vss-rail-label.active { color: var(--accent); }
+.vss-rail-label.done   { color: var(--green);  }
+
+.vss-rail-line {
+  height: 2px; flex: 1;
+  background: var(--border);
+  transition: background 0.5s;
+  margin: 0 -2px;
+  position: relative; bottom: 10px;
+}
+
+.vss-rail-line.done { background: var(--green); }
+
+/* ═══════════════════════════════════════════════════
+   WIZARD CARD
+═══════════════════════════════════════════════════ */
+.vss-wizard-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7), 0 0 40px rgba(0,144,255,0.05);
+  overflow: hidden;
+}
+
+.vss-wizard-body {
+  padding: 40px 48px;
+  position: relative;
+}
+
+.vss-wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 48px;
+  border-top: 1px solid var(--border);
+  background: rgba(10,22,40,0.6);
+  backdrop-filter: blur(10px);
+}
+
+/* ═══════════════════════════════════════════════════
+   STEP HEADER
+═══════════════════════════════════════════════════ */
+.vss-step-eyebrow {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+
+.vss-step-num {
+  font-family: var(--ff-mono);
+  font-size: 11px; font-weight: 500;
+  color: var(--accent);
+  background: rgba(0,229,255,0.08);
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+.vss-step-line {
+  height: 1px; flex: 1;
+  background: linear-gradient(90deg, var(--border-hi) 0%, transparent 100%);
+}
+
+.vss-step-title {
+  font-family: var(--ff-display) !important;
+  font-size: 26px !important; font-weight: 800 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.5px !important;
+  color: var(--t1) !important;
+  margin-bottom: 8px !important;
+  margin-top: 0 !important;
+}
+
+.vss-step-desc {
+  font-size: 13px; color: var(--t3); line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+/* ═══════════════════════════════════════════════════
+   CHOICE GRID + CARDS
+═══════════════════════════════════════════════════ */
+.vss-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.vss-choice-grid.cols-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.vss-choice-card {
+  position: relative;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px 16px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  user-select: none;
+}
+
+.vss-choice-card::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 70%);
+  opacity: 0; transition: opacity 0.3s;
+}
+
+.vss-choice-card:hover {
+  border-color: var(--border-hi);
+  background: var(--card);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.vss-choice-card:hover::before { opacity: 1; }
+
+.vss-choice-card.selected {
+  border-color: var(--accent) !important;
+  background: rgba(0,229,255,0.06) !important;
+  box-shadow: 0 0 0 1px var(--accent), var(--glow) !important;
+}
+
+.vss-choice-card.selected::before { opacity: 1; }
+
+.vss-choice-card.selected .vss-choice-icon { color: var(--accent); }
+
+/* Check tick */
+.vss-choice-check {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: #001a20;
+  opacity: 0; transform: scale(0);
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.vss-choice-card.selected .vss-choice-check {
+  opacity: 1; transform: scale(1);
+}
+
+.vss-choice-icon {
+  font-size: 26px;
+  margin-bottom: 12px;
+  display: block;
+  color: var(--t3);
+  transition: color 0.25s, transform 0.25s;
+}
+
+.vss-choice-card:hover .vss-choice-icon {
+  transform: scale(1.1);
+}
+
+.vss-choice-label {
+  font-family: var(--ff-display);
+  font-size: 13px; font-weight: 700;
+  color: var(--t1); line-height: 1.4;
+}
+
+.vss-choice-sub {
+  font-size: 11px; color: var(--t3);
+  margin-top: 5px; line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════
+   SECTION LABELS (inside step 3)
+═══════════════════════════════════════════════════ */
+.vss-section-label {
+  font-size: 12px; font-weight: 600;
+  color: var(--t3);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin-bottom: 12px;
+}
+
+/* ═══════════════════════════════════════════════════
+   SLIDER ROW
+═══════════════════════════════════════════════════ */
+.vss-slider-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.vss-slider-row:hover { border-color: var(--border-hi); }
+
+/* Override dcc.Slider in Dash */
+.vss-slider-row .rc-slider-track { background-color: var(--accent) !important; }
+.vss-slider-row .rc-slider-handle {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 10px rgba(0,229,255,0.5) !important;
+}
+.vss-slider-row .rc-slider-rail { background-color: var(--border) !important; }
+
+/* ═══════════════════════════════════════════════════
+   CHECKLIST (Unique flags)
+═══════════════════════════════════════════════════ */
+.vss-check-list-wrap {
+  padding: 16px 20px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+
+/* Override dbc.Checklist */
+.vss-check-list-wrap .form-check { margin-bottom: 12px; }
+.vss-check-list-wrap .form-check-label {
+  color: var(--t2) !important;
+  font-size: 13px;
+  font-family: var(--ff-body);
+  cursor: pointer;
+}
+.vss-check-list-wrap .form-check-input:checked {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* ═══════════════════════════════════════════════════
+   DIVIDER giữa các bước
+═══════════════════════════════════════════════════ */
+.vss-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 40px 0;
+}
+
+/* ═══════════════════════════════════════════════════
+   NAV BUTTONS
+═══════════════════════════════════════════════════ */
+.vss-btn-ghost {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 24px;
+  border-radius: var(--r-md);
+  font-family: var(--ff-display);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid var(--border) !important;
+  color: var(--t3) !important;
+  transition: all 0.25s !important;
+}
+
+.vss-btn-ghost:hover {
+  border-color: var(--border-hi) !important;
+  color: var(--t2) !important;
+  background: var(--surface) !important;
+}
+
+.vss-btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 28px;
+  border-radius: var(--r-md);
+  font-family: var(--ff-display);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%) !important;
+  border: none !important;
+  color: #001a20 !important;
+  box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+  transition: all 0.25s !important;
+}
+
+.vss-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,229,255,0.5) !important;
+}
+
+.vss-btn-success {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 28px;
+  border-radius: var(--r-md);
+  font-family: var(--ff-display);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #00b860 0%, var(--green) 100%) !important;
+  border: none !important;
+  color: #001a08 !important;
+  box-shadow: 0 4px 20px rgba(0,230,118,0.3);
+  transition: all 0.25s !important;
+}
+
+.vss-btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,230,118,0.5) !important;
+}
+
+.vss-step-counter {
+  font-family: var(--ff-mono);
+  font-size: 11px; color: var(--t4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 14px;
+}
+
+/* ═══════════════════════════════════════════════════
+   ERROR MESSAGE
+═══════════════════════════════════════════════════ */
+.vss-error {
+  color: var(--red);
+  font-size: 12px;
+  min-height: 20px;
+  margin-top: 8px;
+}
+
+/* ═══════════════════════════════════════════════════
+   FOOTER NOTE
+═══════════════════════════════════════════════════ */
+.vss-footer-note {
+  text-align: center;
+  font-size: 11px; color: var(--t4);
+  margin-top: 32px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .vss-page { padding: 40px 16px 80px; }
+  .vss-step-title { font-size: 20px !important; }
+  .vss-choice-grid { grid-template-columns: 1fr 1fr; }
+  .vss-choice-grid.cols-3 { grid-template-columns: 1fr; }
+  .vss-wizard-body { padding: 28px 20px; }
+  .vss-wizard-footer { padding: 16px 20px; }
+}

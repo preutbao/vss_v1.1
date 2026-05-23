@@ -21,27 +21,28 @@ import logging
 from dash import Input, Output, State, html, dcc, no_update, callback_context, clientside_callback, ALL
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+from matplotlib.pyplot import step
 from src.app_instance import app
 logger = logging.getLogger(__name__)
 
 # ────────────────────────────────────────────────────────────────────────────
 # CONSTANTS
 # ────────────────────────────────────────────────────────────────────────────
-_BG_CARD    = "#0d1117"
-_BG_CARD2   = "#161b22"
-_BORDER     = "#21262d"
-_TEXT_PRI   = "#e6edf3"
-_TEXT_SEC   = "#8b949e"
-_TEXT_MUT   = "#484f58"
-_BLUE       = "#3b82f6"
-_GREEN      = "#10b981"
-_AMBER      = "#f59e0b"
-_RED        = "#ef4444"
-_PURPLE     = "#a78bfa"
-_CYAN       = "#00d4ff"
-_FONT_SORA  = "'Sora', 'Inter', sans-serif"
-_FONT_INTER = "'Inter', sans-serif"
-_FONT_MONO  = "'Roboto Mono', monospace"
+_BG_CARD    = "#0d1d36"
+_BG_CARD2   = "#112340"
+_BORDER     = "#1a3a60"
+_TEXT_PRI   = "#e8f4ff"
+_TEXT_SEC   = "#7aafcc"
+_TEXT_MUT   = "#3d6a8a"
+_BLUE       = "#0090ff"
+_GREEN      = "#00e676"
+_AMBER      = "#ffb703"
+_RED        = "#ff3d57"
+_PURPLE     = "#8b5cf6"
+_CYAN       = "#00e5ff"
+_FONT_SORA  = "'Be Vietnam Pro', 'DM Sans', sans-serif"
+_FONT_INTER = "'DM Sans', sans-serif"
+_FONT_MONO  = "'DM Mono', monospace"
 
 TOTAL_STEPS = 5
 
@@ -388,19 +389,16 @@ def navigate_wizard(next_clicks, prev_clicks, current_step, goal, will, time_h, 
 
     if triggered == "ips-btn-next":
         if step <= 3:
-            # Bước 1-3 hiện cùng lúc → validate cả 3
             e1 = "⚠ Vui lòng chọn mục tiêu đầu tư." if not goal else ""
             e2 = "⚠ Vui lòng chọn phản ứng rủi ro." if not will else ""
             e3 = ("⚠ Vui lòng chọn đủ thời gian & thanh khoản."
                   if not time_h or not liq else "")
             if e1 or e2 or e3:
                 return step, e1, e2, e3
-            # Đủ hết → sang bước 4
+            # Đủ hết → sang bước 4+5 cùng lúc
             return 4, "", "", ""
-        elif step == 4:
-            return 5, "", "", ""
         else:
-            # step == 5 → apply_ips_profile callback tự xử lý
+            # step >= 4 → apply_ips_profile callback tự xử lý
             return step, "", "", ""
     raise PreventUpdate
 
@@ -426,16 +424,13 @@ def render_step_visibility(current_step):
     show = {"display": "block"}
     hide = {"display": "none"}
 
-    # Bẻ khóa logic: Ép bước 1, 2, 3 hiện cùng lúc
     if step <= 3:
         s1, s2, s3, s4, s5 = show, show, show, hide, hide
         d_step = 1
-    elif step == 4:
-        s1, s2, s3, s4, s5 = hide, hide, hide, show, hide
-        d_step = 4
     else:
-        s1, s2, s3, s4, s5 = hide, hide, hide, hide, show
-        d_step = 5
+        # Bước 4 và 5 hiện cùng lúc khi người dùng bấm Tiếp tục từ bước 3
+        s1, s2, s3, s4, s5 = hide, hide, hide, show, show
+        d_step = 4
 
     # Cập nhật thanh Progress bar
     labels = ["Mục tiêu", "Rủi ro", "Ràng buộc", "Chiến lược", "Xác nhận"]
@@ -443,7 +438,7 @@ def render_step_visibility(current_step):
     for i, label in enumerate(labels):
         n = i + 1
         done   = n < d_step
-        active = (n <= 3 and d_step == 1) or (n == d_step)
+        active = (n <= 3 and d_step == 1) or (n >= 4 and d_step == 4)
         
         if done:
             bg, color, icon_html = "#0f3d22", "#10b981", html.I(className="fas fa-check", style={"marginRight": "4px"})
@@ -474,10 +469,10 @@ def render_step_visibility(current_step):
     }
     nxt_btn = (
         [html.I(className="fas fa-check", style={"marginRight": "6px"}), "Lưu & Áp dụng"]
-        if d_step == 5
+        if d_step == 4   # bước 4+5 hiện cùng lúc, nút này là nút cuối
         else ["Tiếp theo ", html.I(className="fas fa-arrow-right", style={"marginLeft": "6px"})]
     )
-    counter = "Bước 1–3 / 5" if d_step == 1 else f"Bước {d_step} / 5"
+    counter = "Bước 1–3 / 5" if d_step == 1 else "Bước 4–5 / 5"
 
     return s1, s2, s3, s4, s5, progress, prev_dis, prev_st, nxt_btn, counter
 
@@ -498,7 +493,7 @@ def render_step_visibility(current_step):
 )
 def render_profile_preview(step, goal, will, pct_savings, emergency,
                            time_h, liq, unique_flags):
-    if step != 4:
+    if step < 4:
         raise PreventUpdate
 
     unique_flags = unique_flags or []
@@ -659,7 +654,7 @@ def _bucket_mini(label: str, pct: int, color: str):
 )
 def render_final_summary(step, goal, will, pct_savings, emergency,
                          time_h, liq, unique_flags):
-    if step != 5:
+    if step < 4:
         raise PreventUpdate
 
     unique_flags = unique_flags or []
@@ -850,7 +845,7 @@ def apply_ips_profile(
     tự động ẩn trang onboarding và hiện giao diện screener chính.
     """
     # Chạy khi user bấm Next ở bước 5 (current_step == 5)
-    if (current_step or 0) < TOTAL_STEPS or not next_clicks:
+    if (current_step or 0) < 4 or not next_clicks:
         raise PreventUpdate
 
     unique_flags  = unique_flags  or []
@@ -1002,32 +997,25 @@ def apply_ips_profile(
 # CALLBACK 6: Xử lý click chọn thẻ (Python Callbacks)
 # ════════════════════════════════════════════════════════════════════════════
 
-_BASE_STYLE = {
-    "padding": "20px 10px", "backgroundColor": _BG_CARD,
-    "border": f"1px solid {_BORDER}", "borderRadius": "12px",
-    "textAlign": "center", "cursor": "pointer", "transition": "all 0.2s"
-}
-
-def _active_style(border_color, bg_color):
-    return {
-        "padding": "20px 10px", "backgroundColor": bg_color,
-        "border": f"2px solid {border_color}", "borderRadius": "12px",
-        "textAlign": "center", "cursor": "pointer", "transition": "all 0.2s"
-    }
+_BASE_CLASS   = "vss-choice-card"
+_ACTIVE_CLASS = "vss-choice-card selected"
 
 
 # 1. Goal cards (Bước 1 - Mục tiêu)
+# ── select_goal ───────────────────────────────────────────────────────────────
+# TÌM toàn bộ decorator + hàm select_goal, THAY BẰNG:
+ 
 @app.callback(
     Output("ips-goal-store", "data"),
     Output("ips-step1-error", "children", allow_duplicate=True),
-    Output({"type": "ips-choice", "id": "goal-preserve"}, "style"),
-    Output({"type": "ips-choice", "id": "goal-income"}, "style"),
-    Output({"type": "ips-choice", "id": "goal-growth"}, "style"),
-    Output({"type": "ips-choice", "id": "goal-speculate"}, "style"),
+    Output({"type": "ips-choice", "id": "goal-preserve"}, "className"),   # ← "className"
+    Output({"type": "ips-choice", "id": "goal-income"},   "className"),
+    Output({"type": "ips-choice", "id": "goal-growth"},   "className"),
+    Output({"type": "ips-choice", "id": "goal-speculate"},"className"),
     Input({"type": "ips-choice", "id": "goal-preserve"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "goal-income"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "goal-growth"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "goal-speculate"}, "n_clicks"),
+    Input({"type": "ips-choice", "id": "goal-income"},   "n_clicks"),
+    Input({"type": "ips-choice", "id": "goal-growth"},   "n_clicks"),
+    Input({"type": "ips-choice", "id": "goal-speculate"},"n_clicks"),
     prevent_initial_call=True
 )
 def select_goal(n1, n2, n3, n4):
@@ -1036,21 +1024,20 @@ def select_goal(n1, n2, n3, n4):
         return no_update
     prop_id = ctx.triggered[0]["prop_id"]
 
-    styles = [_BASE_STYLE.copy() for _ in range(4)]
-    active = _active_style(_BLUE, "#071628")
+    classes = [_BASE_CLASS] * 4          # ← dùng class string
 
     if "goal-preserve" in prop_id:
-        styles[0] = active
-        return "preserve", "", *styles
+        classes[0] = _ACTIVE_CLASS
+        return "preserve", "", *classes
     elif "goal-income" in prop_id:
-        styles[1] = active
-        return "income", "", *styles
+        classes[1] = _ACTIVE_CLASS
+        return "income", "", *classes
     elif "goal-growth" in prop_id:
-        styles[2] = active
-        return "growth", "", *styles
+        classes[2] = _ACTIVE_CLASS
+        return "growth", "", *classes
     elif "goal-speculate" in prop_id:
-        styles[3] = active
-        return "speculate", "", *styles
+        classes[3] = _ACTIVE_CLASS
+        return "speculate", "", *classes
 
     return no_update
 
@@ -1059,14 +1046,14 @@ def select_goal(n1, n2, n3, n4):
 @app.callback(
     Output("ips-will-store", "data"),
     Output("ips-step2-error", "children", allow_duplicate=True),
-    Output({"type": "ips-choice", "id": "will-panic"}, "style"),
-    Output({"type": "ips-choice", "id": "will-worry"}, "style"),
-    Output({"type": "ips-choice", "id": "will-hold"}, "style"),
-    Output({"type": "ips-choice", "id": "will-buy"}, "style"),
+    Output({"type": "ips-choice", "id": "will-panic"}, "className"),
+    Output({"type": "ips-choice", "id": "will-worry"}, "className"),
+    Output({"type": "ips-choice", "id": "will-hold"},  "className"),
+    Output({"type": "ips-choice", "id": "will-buy"},   "className"),
     Input({"type": "ips-choice", "id": "will-panic"}, "n_clicks"),
     Input({"type": "ips-choice", "id": "will-worry"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "will-hold"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "will-buy"}, "n_clicks"),
+    Input({"type": "ips-choice", "id": "will-hold"},  "n_clicks"),
+    Input({"type": "ips-choice", "id": "will-buy"},   "n_clicks"),
     prevent_initial_call=True
 )
 def select_will(n1, n2, n3, n4):
@@ -1075,21 +1062,20 @@ def select_will(n1, n2, n3, n4):
         return no_update
     prop_id = ctx.triggered[0]["prop_id"]
 
-    styles = [_BASE_STYLE.copy() for _ in range(4)]
-    active = _active_style(_AMBER, "#0c0a00")
+    classes = [_BASE_CLASS] * 4
 
     if "will-panic" in prop_id:
-        styles[0] = active
-        return "panic", "", *styles
+        classes[0] = _ACTIVE_CLASS
+        return "panic", "", *classes
     elif "will-worry" in prop_id:
-        styles[1] = active
-        return "worry", "", *styles
+        classes[1] = _ACTIVE_CLASS
+        return "worry", "", *classes
     elif "will-hold" in prop_id:
-        styles[2] = active
-        return "hold", "", *styles
+        classes[2] = _ACTIVE_CLASS
+        return "hold", "", *classes
     elif "will-buy" in prop_id:
-        styles[3] = active
-        return "buy", "", *styles
+        classes[3] = _ACTIVE_CLASS
+        return "buy", "", *classes
 
     return no_update
 
@@ -1097,12 +1083,12 @@ def select_will(n1, n2, n3, n4):
 # 3. Time Horizon cards (Bước 3 - Thời gian)
 @app.callback(
     Output("ips-time-store", "data"),
-    Output({"type": "ips-choice", "id": "time-short"}, "style"),
-    Output({"type": "ips-choice", "id": "time-mid"}, "style"),
-    Output({"type": "ips-choice", "id": "time-long"}, "style"),
+    Output({"type": "ips-choice", "id": "time-short"}, "className"),
+    Output({"type": "ips-choice", "id": "time-mid"},   "className"),
+    Output({"type": "ips-choice", "id": "time-long"},  "className"),
     Input({"type": "ips-choice", "id": "time-short"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "time-mid"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "time-long"}, "n_clicks"),
+    Input({"type": "ips-choice", "id": "time-mid"},   "n_clicks"),
+    Input({"type": "ips-choice", "id": "time-long"},  "n_clicks"),
     prevent_initial_call=True
 )
 def select_time(n1, n2, n3):
@@ -1111,18 +1097,17 @@ def select_time(n1, n2, n3):
         return no_update
     prop_id = ctx.triggered[0]["prop_id"]
 
-    styles = [_BASE_STYLE.copy() for _ in range(3)]
-    active = _active_style(_GREEN, "#071e12")
+    classes = [_BASE_CLASS] * 3
 
     if "time-short" in prop_id:
-        styles[0] = active
-        return "short", *styles
+        classes[0] = _ACTIVE_CLASS
+        return "short", *classes
     elif "time-mid" in prop_id:
-        styles[1] = active
-        return "mid", *styles
+        classes[1] = _ACTIVE_CLASS
+        return "mid", *classes
     elif "time-long" in prop_id:
-        styles[2] = active
-        return "long", *styles
+        classes[2] = _ACTIVE_CLASS
+        return "long", *classes
 
     return no_update
 
@@ -1130,12 +1115,12 @@ def select_time(n1, n2, n3):
 # 4. Liquidity cards (Bước 3 - Thanh khoản)
 @app.callback(
     Output("ips-liq-store", "data"),
-    Output({"type": "ips-choice", "id": "liq-high"}, "style"),
-    Output({"type": "ips-choice", "id": "liq-mid"}, "style"),
-    Output({"type": "ips-choice", "id": "liq-low"}, "style"),
+    Output({"type": "ips-choice", "id": "liq-high"}, "className"),
+    Output({"type": "ips-choice", "id": "liq-mid"},  "className"),
+    Output({"type": "ips-choice", "id": "liq-low"},  "className"),
     Input({"type": "ips-choice", "id": "liq-high"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "liq-mid"}, "n_clicks"),
-    Input({"type": "ips-choice", "id": "liq-low"}, "n_clicks"),
+    Input({"type": "ips-choice", "id": "liq-mid"},  "n_clicks"),
+    Input({"type": "ips-choice", "id": "liq-low"},  "n_clicks"),
     prevent_initial_call=True
 )
 def select_liq(n1, n2, n3):
@@ -1144,18 +1129,17 @@ def select_liq(n1, n2, n3):
         return no_update
     prop_id = ctx.triggered[0]["prop_id"]
 
-    styles = [_BASE_STYLE.copy() for _ in range(3)]
-    active = _active_style(_PURPLE, "#1a0b2e")
+    classes = [_BASE_CLASS] * 3
 
     if "liq-high" in prop_id:
-        styles[0] = active
-        return "high", *styles
+        classes[0] = _ACTIVE_CLASS
+        return "high", *classes
     elif "liq-mid" in prop_id:
-        styles[1] = active
-        return "mid", *styles
+        classes[1] = _ACTIVE_CLASS
+        return "mid", *classes
     elif "liq-low" in prop_id:
-        styles[2] = active
-        return "low", *styles
+        classes[2] = _ACTIVE_CLASS
+        return "low", *classes
 
     return no_update
 

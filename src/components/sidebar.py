@@ -671,236 +671,165 @@ layout = html.Div(
                    style={"display": "flex", "alignItems": "center"} # Ép 2 khối nằm ngang
                 ),
 
-                # ── PANEL 2: Chiến lược đầu tư ──────────────────────────────────
+                # ── PANEL 2: Chiến lược đầu tư (Đã Tối Ưu UX) ──────────────────────────────────
                 html.Div([
-                    # Nút BỘ LỌC (giữ id cho toggle_filter_offcanvas callback)
+                    
+                    # 1. Nút BỘ LỌC CHI TIẾT
                     dbc.Button(
                         [html.I(className="fas fa-filter", style={"marginRight": "6px"}),
-                        html.Span("BỘ LỌC", id="label-filter-btn",
-                                className="btn-filter-shimmer")],
+                        html.Span("BỘ LỌC", id="label-filter-btn", className="btn-filter-shimmer")],
                         id="toggle-filter-btn",
                         color="primary", outline=True, size="sm",
-                        style={"borderRadius": "20px", "fontSize": "12px",
-                            "padding": "4px 14px", "flexShrink": "0"},
+                        style={"borderRadius": "20px", "fontSize": "12px", "padding": "6px 16px", "flexShrink": "0", "fontWeight": "bold"},
                     ),
-                    # Strategy picker (premium wrapped)
-                    _premium_wrap(
-                        content=html.Div([
-                            # Trigger button hiển thị lựa chọn hiện tại
-                            html.Div([
-                                dbc.Button(
-                                    [
-                                        html.Span(
-                                            "Chọn chiến lược đầu tư...",
-                                            id="strategy-display-label",
-                                            style={
-                                                "flex": "1", "textAlign": "left",
-                                                "overflow": "hidden",
-                                                "textOverflow": "ellipsis",
-                                                "whiteSpace": "nowrap",
-                                                "fontSize": "12px",
-                                            },
-                                        ),
-                                        html.I(
-                                            className="fas fa-chevron-down",
-                                            id="strategy-chevron",
-                                            style={"fontSize": "9px", "color": "#6e7681",
-                                                "flexShrink": "0", "marginLeft": "8px",
-                                                "transition": "transform 0.2s"},
-                                        ),
-                                    ],
-                                    id="strategy-accordion-trigger",
-                                    color="secondary", outline=True, size="sm",
-                                    style={
-                                        "minWidth": "350px",  # Tăng từ 220px lên 350px
-                                        "maxWidth": "500px",  # Tăng từ 300px lên 500px
-                                        "display": "flex", 
-                                        "alignItems": "center",
-                                        "justifyContent": "space-between",
-                                        "borderColor": "#30363d",
-                                    },
-                                ),
-                                # Popover accordion
-                                dbc.Popover(
-                                    dbc.PopoverBody(
-                                        html.Div(
-                                            id="strategy-accordion-body",
-                                            children=[
-                                                # Render từng nhóm
-                                                html.Div([
-                                                    # Header nhóm
-                                                    html.Div([
-                                                        html.Span(
-                                                            group["label"],
-                                                            style={"flex": "1"},
-                                                        ),
-                                                        html.I(
-                                                            className="fas fa-plus",
-                                                            id=f"strategy-grp-icon-{group['id']}",
-                                                            style={"fontSize": "10px",
-                                                                "color": "#6e7681"},
-                                                        ),
-                                                    ],
-                                                        id=f"strategy-grp-hdr-{group['id']}",
-                                                        n_clicks=0,
-                                                        className="strategy-group-header",
-                                                    ),
-                                                    # Children items (ẩn ban đầu)
-                                                    dbc.Collapse(
-                                                        html.Div([
-                                                            html.Div(
-                                                                strat_label,
-                                                                id={"type": "strategy-item",
-                                                                    "value": strat_val},
-                                                                n_clicks=0,
-                                                                className="strategy-item-row",
-                                                            )
-                                                            for strat_val, strat_label
-                                                            in group["strategies"]
-                                                        ]),
-                                                        id=f"strategy-grp-collapse-{group['id']}",
-                                                        is_open=False,
-                                                    ),
-                                                ])
-                                                for group in _STRATEGY_GROUPS
-                                            ],
-                                            style={
-                                                "backgroundColor": "#0d1117",
-                                                "minWidth": "350px",  # Đồng bộ với minWidth của nút
-                                                "maxWidth": "500px"   # (Tuỳ chọn) Đồng bộ với maxWidth của nút
-                                            },
-                                        ),
-                                        style={"padding": "0", "backgroundColor": "#0d1117",
-                                            "border": "none"},
-                                    ),
-                                    target="strategy-accordion-trigger",
-                                    trigger="click",
-                                    placement="bottom-start",
-                                    id="strategy-accordion-popover",
-                                    style={
-                                        "zIndex": "9999",
-                                        "border": "1px solid #30363d",
-                                        "borderRadius": "8px",
-                                        "boxShadow": "0 8px 24px rgba(0,0,0,0.6)",
-                                        "backgroundColor": "#0d1117",
-                                        "padding": "0",
-                                    },
-                                ),
-                            ], style={"position": "relative"}),
-                            # ← HIDDEN dropdown — giữ nguyên ID, mọi callback cũ hoạt động
-                            dcc.Dropdown(
-                                id="strategy-preset-dropdown",
-                                options=[
-                                    {"label": v, "value": k}
-                                    for k, v in _STRATEGY_LABEL_MAP.items()
-                                ],
-                                value=None,
-                                style={"display": "none"},
-                            ),
-                            # Nút info
-                            dbc.Button(
-                                html.I(className="fas fa-info-circle"),
-                                id="btn-strategy-info",
-                                color="primary", outline=True, size="sm",
-                                style={"padding": "0 8px", "flexShrink": "0"},
-                            ),
-                        ], style={"display": "flex", "alignItems": "center", "gap": "6px"}),
-                        wrapper_id="pw-strategies",
-                        section="strategies",
-                        label="Chiến lược VIP",
-                    ),
-                    # ── T+2.5 TOGGLE — THÊM VÀO ĐÂY ────────────────────────
+                    # 2. CỤM CHỌN CHIẾN LƯỢC VIP + T+2.5 (gộp lại để xóa gap thừa)
                     html.Div([
-                        # Label + badge
-                        html.Div([
-                            html.Span("T+2.5", style={
-                                "fontSize": "11px",
-                                "fontWeight": "700",
-                                "color": "#00d4ff",
-                                "fontFamily": "'Roboto Mono', monospace",
-                                "letterSpacing": "0.5px",
-                            }),
-                            html.Span("BETA", style={
-                                "fontSize": "8px",
-                                "fontWeight": "700",
-                                "color": "#f59e0b",
-                                "backgroundColor": "rgba(245,158,11,0.12)",
-                                "border": "1px solid rgba(245,158,11,0.3)",
-                                "borderRadius": "3px",
-                                "padding": "1px 4px",
-                                "marginLeft": "4px",
-                                "letterSpacing": "0.5px",
-                            }),
-                        ], style={"marginBottom": "3px"}),
-                        # Switch
-                        html.Div([
-                            html.Div(
-                                id="tplus-toggle-track",
-                                n_clicks=0,
-                                style={
-                                    "width": "36px",
-                                    "height": "18px",
-                                    "borderRadius": "9px",
-                                    "backgroundColor": "#1e2d3d",
-                                    "border": "1px solid #30363d",
-                                    "position": "relative",
-                                    "cursor": "pointer",
-                                    "transition": "all 0.2s ease",
-                                },
-                                children=[
-                                    html.Div(
-                                        id="tplus-toggle-thumb",
+                        _premium_wrap(
+                            content=html.Div([
+                                html.Div([
+                                    dbc.Button(
+                                        [
+                                            html.Span("Chọn chiến lược đầu tư...", id="strategy-display-label", 
+                                                    style={"flex": "1", "textAlign": "left", "overflow": "hidden", "textOverflow": "ellipsis", "whiteSpace": "nowrap", "fontSize": "12px", "fontWeight": "600", "color": "#94a3b8"}),
+                                            html.I(className="fas fa-chevron-down", id="strategy-chevron", 
+                                                style={"fontSize": "10px", "color": "#64748b", "flexShrink": "0", "marginLeft": "10px", "transition": "transform 0.2s"}),
+                                        ],
+                                        id="strategy-accordion-trigger", size="sm",
+                                        className="btn btn-sm",          # ← không dùng color= hay outline= nữa
                                         style={
-                                            "width": "12px",
-                                            "height": "12px",
-                                            "borderRadius": "50%",
-                                            "backgroundColor": "#484f58",
-                                            "position": "absolute",
-                                            "top": "2px",
-                                            "left": "2px",
-                                            "transition": "all 0.2s ease",
-                                        }
-                                    )
-                                ]
-                            ),
-                        ]),
-                    ], style={
-                        "display": "flex",
-                        "flexDirection": "column",
-                        "alignItems": "center",
-                        "padding": "4px 10px",
-                        "backgroundColor": "rgba(0,212,255,0.04)",
-                        "border": "1px solid rgba(0,212,255,0.12)",
-                        "borderRadius": "8px",
-                        "cursor": "pointer",
-                        "flexShrink": "0",
+                                            "minWidth": "300px", "display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                                            "backgroundColor": "#1a1f2e",
+                                            "border": "1px solid #334155",
+                                            "borderRadius": "8px", "padding": "6px 12px",
+                                            "boxShadow": "inset 0 1px 0 rgba(99,102,241,0.08)",
+                                        },
+                                    ),
+                                    dbc.Popover(
+                                        dbc.PopoverBody(
+                                            html.Div(
+                                                id="strategy-accordion-body",
+                                                children=[
+                                                    html.Div([
+                                                        html.Div([
+                                                            html.Span(group["label"], style={"flex": "1", "fontWeight": "bold", "color": "#7dd3fc"}),
+                                                            html.I(className="fas fa-plus", id=f"strategy-grp-icon-{group['id']}", style={"fontSize": "10px", "color": "#94a3b8"}),
+                                                        ], id=f"strategy-grp-hdr-{group['id']}", n_clicks=0, className="strategy-group-header"),
+                                                        dbc.Collapse(
+                                                            html.Div([
+                                                                html.Div(
+                                                                    strat_label,
+                                                                    id={"type": "strategy-item", "value": strat_val},
+                                                                    n_clicks=0, className="strategy-item-row"
+                                                                ) for strat_val, strat_label in group["strategies"]
+                                                            ]),
+                                                            id=f"strategy-grp-collapse-{group['id']}", is_open=False,
+                                                        ),
+                                                    ]) for group in _STRATEGY_GROUPS
+                                                ],
+                                                style={"backgroundColor": "#0f172a", "minWidth": "300px"}
+                                            ),
+                                            style={"padding": "0", "border": "none"}
+                                        ),
+                                        target="strategy-accordion-trigger",
+                                        trigger="legacy", 
+                                        placement="bottom-start",
+                                        id="strategy-accordion-popover",
+                                        style={"zIndex": "9999", "border": "1px solid #334155", "borderRadius": "8px", "boxShadow": "0 10px 25px rgba(0,0,0,0.8)", "backgroundColor": "#0f172a", "padding": "0"},
+                                    ),
+                                ], style={"position": "relative"}),
+                                dcc.Dropdown(
+                                    id="strategy-preset-dropdown",
+                                    options=[{"label": v, "value": k} for k, v in _STRATEGY_LABEL_MAP.items()],
+                                    value=None, style={"display": "none"},
+                                ),
+                                dbc.Button(
+                                    html.I(className="fas fa-info-circle"),
+                                    id="btn-strategy-info",
+                                    color="primary", outline=True, size="sm",
+                                    style={"padding": "0 8px", "flexShrink": "0"},
+                                ),
+                            ], style={"display": "flex", "alignItems": "center", "gap": "6px"}),
+                            wrapper_id="pw-strategies",
+                            section="strategies",
+                            label="Chiến lược VIP",
+                        ),
+                        # ── T+2.5 TOGGLE — gộp cùng div với strategy để không có gap thừa ──
+                        html.Div([
+                            html.Div([
+                                html.Span("T+2.5", style={"fontSize": "11px", "fontWeight": "700", "color": "#00d4ff", "fontFamily": "'Roboto Mono', monospace", "letterSpacing": "0.5px"}),
+                                html.Span("BETA", style={"fontSize": "8px", "fontWeight": "700", "color": "#f59e0b", "backgroundColor": "rgba(245,158,11,0.12)", "border": "1px solid rgba(245,158,11,0.3)", "borderRadius": "3px", "padding": "1px 4px", "marginLeft": "4px"}),
+                            ], style={"marginBottom": "3px"}),
+                            html.Div([
+                                html.Div(
+                                    id="tplus-toggle-track", n_clicks=0,
+                                    style={"width": "36px", "height": "18px", "borderRadius": "9px", "backgroundColor": "#1e2d3d", "border": "1px solid #30363d", "position": "relative", "transition": "all 0.2s ease"},
+                                    children=[
+                                        html.Div(id="tplus-toggle-thumb", style={"width": "12px", "height": "12px", "borderRadius": "50%", "backgroundColor": "#484f58", "position": "absolute", "top": "2px", "left": "2px", "transition": "all 0.2s ease"})
+                                    ]
+                                ),
+                            ]),
+                            dbc.Tooltip(
+                                "Bật chế độ này để mô phỏng sự kiện rủi ro T+2.5: Cảnh báo kẹt thanh khoản (trắng bên mua) và Call Margin nếu thị trường giảm sâu.",
+                                target="tplus-wrapper", placement="bottom",
+                                style={
+                                    "backgroundColor": "#0d1117", "color": "#cbd5e1",
+                                    "border": "1px solid #334155",
+                                    "borderRadius": "8px",
+                                    "fontFamily": "'Inter', 'Segoe UI', sans-serif",
+                                    "fontSize": "12px", "lineHeight": "1.5",
+                                    "padding": "8px 12px", "boxShadow": "0 8px 20px rgba(0,0,0,0.6)",
+                                    "maxWidth": "260px", "textAlign": "left"
+                                }
+                            )
+                        ], id="tplus-wrapper", style={ 
+                            "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "4px 10px",
+                            "backgroundColor": "rgba(0,212,255,0.04)", "border": "1px solid rgba(0,212,255,0.12)",
+                            "borderRadius": "8px", "cursor": "pointer", "flexShrink": "0",
+                            "marginLeft": "6px",   # ← thay vì dùng gap của toolbar, gắn sát vào strategy
+                        }),
+                    ], style={"display": "flex", "alignItems": "center", "gap": "0"}),  # wrapper gộp 2 item, gap=0 để 2 item sát nhau, không có khoảng trống thừa giữa chúng
+                    # 3. CỤM NHẬP VỐN (NAV) VỚI TOOLTIP PREMIUM
+                    html.Div([
+                        html.I(className="fas fa-wallet", style={"color": "#10b981", "fontSize": "13px", "marginRight": "6px"}), 
+                        html.Span("Vốn:", style={"color": "#9ca3af", "fontSize": "12px", "fontWeight": "bold", "marginRight": "6px"}),
+                        dcc.Input(
+                            id="nav-input", type="text", placeholder="VD: 50,000,000", debounce=True,
+                            style={
+                                "width": "120px", "backgroundColor": "#0d1117", "color": "#10b981",
+                                "border": "1px solid #30363d", "borderRadius": "14px", "padding": "0 10px", 
+                                "fontSize": "12px", "height": "28px", "fontWeight": "bold", "outline": "none"
+                            }
+                        ),
+                        dbc.Tooltip(
+                            "Nhập số tiền đầu tư. Hệ thống sẽ tự loại bỏ các cổ phiếu có thị giá quá cao (không đủ mua 1 lô 100 cổ) và AI sẽ gợi ý phân bổ vốn tối ưu.",
+                            target="nav-wrapper", placement="bottom",
+                            style={
+                                "backgroundColor": "#0d1117", "color": "#ffffff", "border": "1px solid #3b82f6", 
+                                "borderRadius": "6px", "fontFamily": "'Inter', 'Segoe UI', sans-serif", 
+                                "fontSize": "12px", "padding": "8px 12px", "boxShadow": "0 4px 12px rgba(0,0,0,0.5)",
+                                "maxWidth": "250px", "textAlign": "left"
+                            }
+                        )
+                    ], id="nav-wrapper", style={ 
+                        "display": "flex", "alignItems": "center", "backgroundColor": "#161b22", 
+                        "borderRadius": "20px", "border": "1px solid #21262d", "padding": "4px 12px",
+                        "height": "34px", "flexShrink": "0", "cursor": "help"
                     }),
-                    # ── KẾT THÚC T+2.5 TOGGLE ───────────────────────────────
-
-                    # ── NÚT "XÓA TẤT CẢ" MỚI ĐƯỢC CHÈN VÀO ĐÂY ──
+                    
+                    # 5. NÚT XÓA TẤT CẢ
                     dbc.Button(
-                        [html.I(className="fas fa-times", style={"marginRight": "6px"}),
-                         "Xoá tất cả"],
-                        id="btn-reset-ui",
-                        color="secondary", outline=True, size="sm",
-                        style={
-                            "borderRadius": "20px", 
-                            "fontSize": "12px",
-                            "padding": "4px 14px", 
-                            "marginLeft": "8px", 
-                            "flexShrink": "0"
-                        },
+                        [html.I(className="fas fa-times", style={"marginRight": "6px"}), "Xoá tất cả"],
+                        id="btn-reset-ui", color="secondary", outline=True, size="sm",
+                        style={"borderRadius": "20px", "fontSize": "12px", "padding": "6px 14px", "flexShrink": "0"}, 
                     ),
-
                 ], 
                    id="toolbar-panel-strategy", 
-                   className="toolbar-panel toolbar-panel-hidden",
-                   # THÊM STYLE DƯỚI ĐÂY ĐỂ CĂN LỀ TRÁI VÀ TẠO KHOẢNG CÁCH CỐ ĐỊNH
+                   className="toolbar-panel",
                    style={
-                       "display": "flex", 
-                       "alignItems": "center", 
-                       "gap": "10px",              # Khoảng cách giữa các nút là 10px
-                       "justifyContent": "flex-start" # Ép các nút dồn về bên trái, không giãn cách xa
+                       "display": "flex", "alignItems": "center", 
+                       "gap": "16px",
+                       "justifyContent": "flex-start",
+                       "width": "100%"
                    }
                 ),
 

@@ -1354,3 +1354,44 @@ def calculate_vss_smart_rank(df):
 
     logger.info(f"   ✅ VSS Smart Rank xong — min={df['VSS_Smart_Rank'].min():.3f} max={df['VSS_Smart_Rank'].max():.3f}")
     return df
+
+def calculate_robo_allocation(filtered_df, nav):
+    """
+    Tính toán số lượng cổ phiếu có thể mua dựa trên NAV và list cổ phiếu đã lọc.
+    Trả về list các dict chứa thông tin đi lệnh và số tiền dư.
+    """
+    import pandas as pd
+    if filtered_df is None or filtered_df.empty or nav <= 0:
+        return None, nav
+
+    # Lấy Top 3 mã tốt nhất
+    top_stocks = filtered_df.head(3).to_dict('records')
+    
+    # Phân bổ vốn: 3 mã (40%, 30%, 30%), 2 mã (60%, 40%), 1 mã (100%)
+    weights = [0.4, 0.3, 0.3] if len(top_stocks) == 3 else [0.6, 0.4] if len(top_stocks) == 2 else [1.0]
+    
+    allocations = []
+    remaining_cash = nav
+    
+    for idx, stock in enumerate(top_stocks):
+        # Lưu ý: Tuỳ thuộc vào dữ liệu của bạn, giá là VND (ví dụ 25000) hay K_VND (25.0). 
+        # Nếu là giá 25000:
+        price = float(stock.get('Price Close', 0))
+        if price <= 0: continue
+        
+        # Mua theo lô 100
+        max_shares = int((nav * weights[idx]) / (price * 100)) * 100
+        
+        if max_shares > 0:
+            cost = max_shares * price
+            remaining_cash -= cost
+            allocations.append({
+                "Ticker": stock.get('Ticker', 'N/A'),
+                "Volume": max_shares,
+                "Price": price,
+                "Cost": cost,
+                "Score": stock.get('VGM_Score', 'N/A')
+            })
+            
+    return allocations, remaining_cash
+

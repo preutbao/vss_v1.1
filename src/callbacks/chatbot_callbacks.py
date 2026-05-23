@@ -8,7 +8,7 @@ import os
 import json
 import logging
 from datetime import datetime
-from dash import Input, Output, State, html, dcc, no_update, callback_context, ALL
+from dash import Input, Output, State, html, dcc, no_update, callback_context, ALL, clientside_callback
 from src.app_instance import app
 import google.generativeai as genai
 
@@ -314,6 +314,27 @@ def create_chatbot_layout():
         dcc.Store(id="chat-history-store", data=[], storage_type="session"),
         dcc.Store(id="chat-quick-prompts-store", data=[p[1] for p in quick_prompts]),
         dcc.Store(id="chat-pending-msg-store", data=None),
+        # ── THÊM BƯỚC 3: POPUP BONG BÓNG CHAT (MẶC ĐỊNH ẨN) ───────────────
+        html.Div(
+            id="vinance-ai-popup",
+            style={
+                "position": "fixed",         # 🟢 Fix cứng vào màn hình giống nút Chat
+                "bottom": "28px",            # 🟢 Bằng đúng lề dưới của nút Chat
+                "right": "95px",             # 🟢 Lề phải 28px + Nút chat 56px + Khoảng cách 11px = 95px
+                "backgroundColor": "#1e293b",
+                "border": "1px solid rgba(14,165,233,0.3)",
+                "borderRadius": "16px 16px 4px 16px",
+                "padding": "12px",
+                "width": "290px",
+                "boxShadow": "0 10px 25px rgba(0,0,0,0.5), 0 0 0 1px rgba(14,165,233,0.1)",
+                "zIndex": "9999",
+                "display": "none",           # Ẩn đi, chỉ hiện khi có data
+                "color": "#c9d1d9",
+                "fontSize": "13px",
+                "fontFamily": "'Inter', 'Segoe UI', sans-serif",
+                "animation": "fadeInUp 0.3s ease-out",
+            }
+        ),
 
         # ── FLOATING BUTTON ───────────────────────────────────────────────────
         html.Div([
@@ -366,14 +387,14 @@ def create_chatbot_layout():
                     }),
                     html.Div([
                         html.Div("VinanceAI - Chuyên gia đầu tư tự động", style={
-                            "fontSize": "15px", "fontWeight": "700", "color": "#f1f5f9",
+                            "fontSize": "12px", "fontWeight": "700", "color": "#f1f5f9",
                             "fontFamily": "'Inter', 'Segoe UI', sans-serif",
                             "letterSpacing": "-0.3px",
                         }),
                         html.Div([
                             html.Span(className="vinance-status-dot"),
                             html.Span("Mọi thông tin chỉ mang tính tham khảo!", style={
-                                "fontSize": "11px", "color": "#64748b",
+                                "fontSize": "10px", "color": "#64748b",
                                 "fontFamily": "'Inter', sans-serif",
                             }),
                         ], style={"display": "flex", "alignItems": "center", "gap": "5px"}),
@@ -525,7 +546,7 @@ def create_chatbot_layout():
             "border": "1px solid rgba(148,163,184,0.12)",
             "boxShadow": "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(14,165,233,0.1)",
             "display": "flex", "flexDirection": "column",
-            "overflow": "hidden", "zIndex": "9997",
+            "overflow": "hidden", "zIndex": "99999",
             "transform": "scale(0.85) translateY(20px)",
             "opacity": "0", "pointerEvents": "none",
             "transition": "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -770,3 +791,120 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
         }, 80);
     """)
     return bubbles + [auto_scroll], history, ""
+
+# ── CALLBACK 3: TÍNH TOÁN NAV VÀ HIỂN THỊ POPUP KHUYẾN NGHỊ ──────
+
+@app.callback(
+    [Output("vinance-ai-popup", "children"),
+     Output("vinance-ai-popup", "style")],
+    # 🔴 ĐỔI TÊN ID TẠI DÒNG DƯỚI NÀY:
+    [Input("screener-table", "rowData"), # <-- Bắt buộc phải là "screener-table"
+     Input("nav-input", "value")],
+    [State("vinance-ai-popup", "style")],
+    prevent_initial_call=True
+)
+
+def trigger_vinance_popup(grid_data, nav_str, current_style):
+    if not grid_data or not nav_str:
+        return no_update, no_update
+    try:
+        # 🟢 Xử lý cắt dấu phẩy để biến chuỗi "50,000,000" thành số 50000000
+        nav = int(str(nav_str).replace(',', ''))
+        print(f"✅ NAV đã xử lý thành công: {nav}") # Thêm dòng này để theo dõi terminal
+    except Exception as e:
+        print(f"❌ Lỗi format NAV: {e}") # Báo lỗi ra terminal nếu nhập sai
+        return no_update, no_update
+    if nav < 1000000: # Vốn dưới 1 triệu bot sẽ không hiện
+        return no_update, no_update
+    import pandas as pd
+    from src.backend.quant_engine import calculate_robo_allocation
+    df = pd.DataFrame(grid_data)
+    print("DEBUG DATA: ", df.head()) # Kiểm tra xem có cột Score, Ticker đúng không
+    allocations, remaining = calculate_robo_allocation(df, nav)
+    if not allocations:
+        return no_update, no_update
+    # Xây dựng giao diện tin nhắn Popup
+    msg_elements = [
+        # HEADER chứa Tiêu đề và Nút X (Đóng)
+        html.Div([
+            html.Div([
+                html.I(className="fas fa-robot", style={"marginRight": "6px", "color": "#0ea5e9"}),
+                "VinanceAI Đề xuất:"
+            ]),
+            html.I(className="fas fa-times", id="close-vinance-popup", 
+                   style={"cursor": "pointer", "color": "#94a3b8", "fontSize": "16px", "padding": "0 4px"})
+        ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", 
+                  "fontWeight": "700", "color": "#38bdf8", "marginBottom": "8px", "fontSize": "14px"}),
+        
+        html.Div(f"💰 Vốn khả dụng: {nav:,.0f} đ", style={"fontSize": "11px", "color": "#94a3b8", "marginBottom": "6px"})
+    ]
+    
+    for item in allocations:
+        msg_elements.append(
+            html.Div([
+                html.Span(f"✅ {item['Ticker']}", style={"fontWeight": "bold", "color": "#e2e8f0"}),
+                html.Span(f" (Điểm {item['Score']}): ", style={"color": "#64748b"}),
+                html.Span(f"Mua {item['Volume']:,} cp", style={"color": "#10b981", "fontWeight": "600"})
+            ], style={"marginBottom": "4px", "padding": "4px", "background": "rgba(255,255,255,0.03)", "borderRadius": "4px"})
+        )
+        
+    msg_elements.append(
+        html.Div(f"💵 Sức mua dư: {remaining:,.0f} đ", 
+                 style={"marginTop": "8px", "color": "#fbbf24", "fontWeight": "bold", "fontSize": "12px"})
+    )
+    # Sửa lại text hiển thị 1 phút
+    msg_elements.append(
+        html.Div("Sẽ tự động đóng sau 1 phút...", style={"fontSize": "9px", "color": "#475569", "marginTop": "6px", "textAlign": "right"})
+    )
+    
+    # Đổi style thành hiển thị
+    new_style = current_style.copy() if current_style else {}
+    new_style["display"] = "block"
+    
+    return msg_elements, new_style
+
+
+# ── CALLBACK 4: HẸN GIỜ TẮT POPUP SAU 5 PHÚT BẰNG JAVASCRIPT (BƯỚC 4.2) ──────
+# ── CALLBACK 4: XỬ LÝ NÚT X VÀ HẸN GIỜ TẮT SAU 1 PHÚT ──────
+clientside_callback(
+    """
+    function(popup_children) {
+        if (popup_children) {
+            var popup = document.getElementById('vinance-ai-popup');
+            if (!popup) return window.dash_clientside.no_update;
+
+            // 1. XỬ LÝ LẮNG NGHE NÚT X (ĐÓNG POPUP BẰNG TAY)
+            var closeBtn = document.getElementById('close-vinance-popup');
+            if (closeBtn) {
+                closeBtn.onclick = function() {
+                    popup.style.display = 'none';
+                    // Clear luôn cái đồng hồ đếm ngược nếu user đã tự đóng
+                    if (window.vinancePopupTimeout) {
+                        clearTimeout(window.vinancePopupTimeout);
+                    }
+                };
+            }
+
+            // 2. XỬ LÝ AUTO-CLOSE 1 PHÚT (60,000 ms)
+            if (window.vinancePopupTimeout) {
+                clearTimeout(window.vinancePopupTimeout);
+            }
+            
+            window.vinancePopupTimeout = setTimeout(function() {
+                if (popup.style.display !== 'none') { // Chỉ chạy hiệu ứng nếu popup đang mở
+                    popup.style.opacity = '0';
+                    popup.style.transition = 'opacity 0.5s ease';
+                    setTimeout(function() { 
+                        popup.style.display = 'none'; 
+                        popup.style.opacity = '1'; // Reset opacity cho lần mở sau
+                    }, 500);
+                }
+            }, 60000); 
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("vinance-ai-popup", "id"), 
+    Input("vinance-ai-popup", "children"),
+    prevent_initial_call=True
+)

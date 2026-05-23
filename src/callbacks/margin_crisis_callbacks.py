@@ -373,6 +373,9 @@ crisis_modal = dbc.Modal([
             html.Span(" — Xử lý khủng hoảng & tránh Force Sell", style={
                 "fontSize": "12px", "color": _C["text_sec"], "marginLeft": "10px"
             }),
+            # 🟢 THÊM NÚT HELP Ở ĐÂY:
+            html.I(className="fas fa-info-circle", id="btn-crisis-help",
+                   style={"cursor": "pointer", "fontSize": "16px", "color": "#3b82f6", "marginLeft": "15px", "padding": "5px"}),
         ], style={"display": "flex", "alignItems": "center"}),
         close_button=True,
     ),
@@ -402,6 +405,28 @@ crisis_modal = dbc.Modal([
     ], style={"backgroundColor": _C["bg_dark"], "minHeight": "520px"}),
 ], id="crisis-modal", size="xl", is_open=False, centered=True, scrollable=True,
    style={"fontFamily": "'Inter', sans-serif"})
+
+crisis_help_modal = dbc.Modal([
+    dbc.ModalHeader(dbc.ModalTitle([
+        html.I(className="fas fa-fire-flame-curved", style={"marginRight": "8px", "color": "#ef4444"}),
+        "Hướng dẫn Backtest Margin"
+    ], style={"fontSize": "16px"})),
+    dbc.ModalBody([
+        html.P("Công cụ này giúp bạn 'diễn tập' trước kịch bản thị trường sập để biết chính xác sáng mai phải bán mã nào, bán bao nhiêu để không bị Công ty Chứng khoán Force Sell.", style={"fontSize": "13px", "color": "#c9d1d9", "marginBottom": "16px"}),
+        
+        html.H6([html.I(className="fas fa-1", style={"marginRight": "8px", "color": "#3b82f6"}), "Nhập danh mục Gốc"], style={"fontSize": "14px", "fontWeight": "700", "color": "#3b82f6"}),
+        html.P("Nhập vốn tự có và chi tiết các mã đang kẹp (Khối lượng, Giá vốn, Tỷ lệ vay Margin do CTCK cấp). Hệ thống tự tính ra tổng nợ và Rtt hiện tại.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+        html.H6([html.I(className="fas fa-2", style={"marginRight": "8px", "color": "#f59e0b"}), "Thiết lập kịch bản"], style={"fontSize": "14px", "fontWeight": "700", "color": "#f59e0b"}),
+        html.P("Chọn kịch bản giá T+1 (Đi ngang hoặc Xấu nhất dựa trên Perf_1W). Cài đặt ngưỡng Rtt mục tiêu bạn muốn kéo về (VD: Kéo về 40% cho an toàn).", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+        html.H6([html.I(className="fas fa-3", style={"marginRight": "8px", "color": "#10b981"}), "Thuật toán xử lý"], style={"fontSize": "14px", "fontWeight": "700", "color": "#10b981"}),
+        html.P("Tùy chọn A: Ưu tiên sút các mã rác (VGM = D, F) giữ lại hàng xịn. Tùy chọn B: Ưu tiên sút mã có thanh khoản cao (dễ khớp lệnh nhất trong hoảng loạn).", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+        html.H6([html.I(className="fas fa-4", style={"marginRight": "8px", "color": "#ef4444"}), "Hành động dứt khoát"], style={"fontSize": "14px", "fontWeight": "700", "color": "#ef4444"}),
+        html.P("Đọc kỹ bảng khuyến nghị lúc 14:15. Mã nào ghi 'BÁN NGAY' tức là CTCK đã cắt margin về 0%, nếu không tự bán ATC hôm nay, sáng mai sẽ bị ép bán MP.", style={"fontSize": "12px", "color": "#7fa8cc"}),
+    ], style={"backgroundColor": "#0d1117", "border": "1px solid #30363d", "borderRadius": "0 0 8px 8px"}),
+], id="crisis-help-modal", size="md", is_open=False, centered=True)
 
 # Store lưu trạng thái danh mục khủng hoảng (localStorage)
 crisis_store = dcc.Store(id="crisis-portfolio-store", storage_type="local", data={
@@ -1366,3 +1391,11 @@ def render_result_panel(result):
         detail_table,
         disclaimer,
     ])
+
+@app.callback(
+    Output("crisis-help-modal", "is_open"),
+    Input("btn-crisis-help", "n_clicks"),
+    prevent_initial_call=True,
+)
+def toggle_crisis_help(n):
+    return True if n else no_update
