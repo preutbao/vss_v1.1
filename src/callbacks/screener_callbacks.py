@@ -544,7 +544,11 @@ def update_screener_table(
             total_stocks = len(df)
         # ─────────────────────────────────────────────────────────────────────
 
-        if 'VGM Score' in df.columns:
+        if 'VSS_Smart_Rank' in df.columns:
+            df = df.sort_values('VSS_Smart_Rank', ascending=False)
+        elif 'Star_Rating' in df.columns:
+            df = df.sort_values('Star_Rating', ascending=False)
+        elif 'VGM Score' in df.columns:
             grade_order = {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'F': 5}
             df['_sort'] = df['VGM Score'].map(grade_order).fillna(6)
             df = df.sort_values('_sort').drop('_sort', axis=1)
@@ -764,7 +768,9 @@ def update_screener_table(
         def apply_grade(col_name, grades):
             nonlocal df_filtered
             if col_name in df_filtered.columns and grades:
-                df_filtered = df_filtered[df_filtered[col_name].isin(grades)]
+                # BẢO VỆ: Nếu cột này rỗng toàn bộ (NaN) thì bỏ qua để tránh rớt 0 mã
+                if not df_filtered[col_name].isna().all():
+                    df_filtered = df_filtered[df_filtered[col_name].isin(grades)]
 
         # Map filter_id → (col_name, fallback_state_value, is_grade)
         FILTER_MAP = [

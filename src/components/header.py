@@ -208,7 +208,7 @@ def _create_login_modal():
                             ], style={"marginTop": "12px", "marginBottom": "20px"}),
                             
                             # Tính năng
-                            _pricing_row("fas fa-check", "#00e676", "Real-time Data Intraday", is_pro=True),
+                            _pricing_row("fas fa-check", "#00e676", "Chatbot AI Real-time", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Backtest 10 trường phái", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Báo cáo phân tích chuyên sâu", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Tín hiệu Margin Crisis Radar", is_pro=True),
@@ -225,7 +225,7 @@ def _create_login_modal():
                             # Dòng text mờ ưu đãi dịch vụ
                             html.Div([
                                 html.I(className="fas fa-info-circle", style={"marginRight": "4px", "fontSize": "10px"}),
-                                "Kèm theo được ưu tiên hỗ trợ chiến lược từ đội ngũ tư vấn Vietcap."
+                                "Kèm theo ưu tiên hỗ trợ chiến lược từ đội ngũ tư vấn Vietcap."
                             ], style={
                                 "fontSize": "10px", "color": "#6b7280", "fontStyle": "italic",
                                 "textAlign": "center", "marginTop": "12px", "lineHeight": "1.4"

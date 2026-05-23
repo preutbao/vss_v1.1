@@ -124,7 +124,8 @@ columnDefs = [
         "field": "Sector",
         "headerName": "NGÀNH",
         "headerTooltip": _TOOLTIPS["NGÀNH"],
-        "width": 130,
+        "minWidth": 160,     # ← THÊM dòng này
+        "flex": 1,           # ← THÊM: tự co giãn theo nội dung
         "sortable": True,
         "filter": True,
         "cellStyle": {
@@ -1124,6 +1125,7 @@ layout = html.Div([
                         "sortable": True,
                         "filter": False,
                         "tooltipShowDelay": 300,
+                        "autoHeaderHeight": True, # THÊM: tự điều chỉnh chiều cao header
                     },
                     className="ag-theme-alpine-dark ssi-screener-grid",
                     style={"width": "100%"},
@@ -1148,6 +1150,7 @@ layout = html.Div([
                         "tooltipHideDelay": 5000,
                         "suppressLoadingOverlay": True,
                         "suppressNoRowsOverlay": False,
+                        "columnSizeOptions": {"skipHeader": False},
                     }
                 )
             ], className="info-card mb-3")

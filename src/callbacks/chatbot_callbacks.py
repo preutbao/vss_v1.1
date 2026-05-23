@@ -797,35 +797,35 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
 @app.callback(
     [Output("vinance-ai-popup", "children"),
      Output("vinance-ai-popup", "style")],
-    # 🔴 ĐỔI TÊN ID TẠI DÒNG DƯỚI NÀY:
-    [Input("screener-table", "rowData"), # <-- Bắt buộc phải là "screener-table"
+    # 🟢 SỬA: Đổi rowData thành virtualRowData để lấy list cổ phiếu ĐÃ LỌC & SẮP XẾP trên UI
+    [Input("screener-table", "virtualRowData"), 
      Input("nav-input", "value")],
     [State("vinance-ai-popup", "style")],
     prevent_initial_call=True
 )
-
 def trigger_vinance_popup(grid_data, nav_str, current_style):
+    from dash import no_update, html # Đảm bảo đã import
     if not grid_data or not nav_str:
         return no_update, no_update
     try:
-        # 🟢 Xử lý cắt dấu phẩy để biến chuỗi "50,000,000" thành số 50000000
         nav = int(str(nav_str).replace(',', ''))
-        print(f"✅ NAV đã xử lý thành công: {nav}") # Thêm dòng này để theo dõi terminal
     except Exception as e:
-        print(f"❌ Lỗi format NAV: {e}") # Báo lỗi ra terminal nếu nhập sai
+        print(f"❌ Lỗi format NAV: {e}") 
         return no_update, no_update
-    if nav < 1000000: # Vốn dưới 1 triệu bot sẽ không hiện
+        
+    if nav < 1000000: 
         return no_update, no_update
+        
     import pandas as pd
     from src.backend.quant_engine import calculate_robo_allocation
     df = pd.DataFrame(grid_data)
-    print("DEBUG DATA: ", df.head()) # Kiểm tra xem có cột Score, Ticker đúng không
     allocations, remaining = calculate_robo_allocation(df, nav)
+    
     if not allocations:
         return no_update, no_update
+        
     # Xây dựng giao diện tin nhắn Popup
     msg_elements = [
-        # HEADER chứa Tiêu đề và Nút X (Đóng)
         html.Div([
             html.Div([
                 html.I(className="fas fa-robot", style={"marginRight": "6px", "color": "#0ea5e9"}),
@@ -840,10 +840,14 @@ def trigger_vinance_popup(grid_data, nav_str, current_style):
     ]
     
     for item in allocations:
+        # 🟢 SỬA LỖI GIAO DIỆN: Render số sao thay vì chữ
+        star_val = item.get('Score', 0)
+        stars_str = "⭐" * int(star_val) if pd.notna(star_val) and int(star_val) > 0 else "N/A"
+
         msg_elements.append(
             html.Div([
-                html.Span(f"✅ {item['Ticker']}", style={"fontWeight": "bold", "color": "#e2e8f0"}),
-                html.Span(f" (Điểm {item['Score']}): ", style={"color": "#64748b"}),
+                html.Span(f"{item['Ticker']}", style={"fontWeight": "bold", "color": "#e2e8f0"}),
+                html.Span(f" ({stars_str}): ", style={"color": "#fbbf24", "fontSize": "10px"}), # Đổi sang màu vàng cho sao
                 html.Span(f"Mua {item['Volume']:,} cp", style={"color": "#10b981", "fontWeight": "600"})
             ], style={"marginBottom": "4px", "padding": "4px", "background": "rgba(255,255,255,0.03)", "borderRadius": "4px"})
         )
@@ -852,19 +856,16 @@ def trigger_vinance_popup(grid_data, nav_str, current_style):
         html.Div(f"💵 Sức mua dư: {remaining:,.0f} đ", 
                  style={"marginTop": "8px", "color": "#fbbf24", "fontWeight": "bold", "fontSize": "12px"})
     )
-    # Sửa lại text hiển thị 1 phút
+    
     msg_elements.append(
         html.Div("Sẽ tự động đóng sau 1 phút...", style={"fontSize": "9px", "color": "#475569", "marginTop": "6px", "textAlign": "right"})
     )
     
-    # Đổi style thành hiển thị
     new_style = current_style.copy() if current_style else {}
     new_style["display"] = "block"
     
     return msg_elements, new_style
 
-
-# ── CALLBACK 4: HẸN GIỜ TẮT POPUP SAU 5 PHÚT BẰNG JAVASCRIPT (BƯỚC 4.2) ──────
 # ── CALLBACK 4: XỬ LÝ NÚT X VÀ HẸN GIỜ TẮT SAU 1 PHÚT ──────
 clientside_callback(
     """

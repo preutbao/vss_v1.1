@@ -1364,6 +1364,12 @@ def calculate_robo_allocation(filtered_df, nav):
     if filtered_df is None or filtered_df.empty or nav <= 0:
         return None, nav
 
+    # 🟢 SỬA LỖI PARADOX: Đảm bảo Data được sắp xếp theo Rank/Sao cao nhất trước khi lấy Top 3
+    if 'VSS_Smart_Rank' in filtered_df.columns:
+        filtered_df = filtered_df.sort_values(by='VSS_Smart_Rank', ascending=False)
+    elif 'Star_Rating' in filtered_df.columns:
+        filtered_df = filtered_df.sort_values(by='Star_Rating', ascending=False)
+
     # Lấy Top 3 mã tốt nhất
     top_stocks = filtered_df.head(3).to_dict('records')
     
@@ -1374,8 +1380,6 @@ def calculate_robo_allocation(filtered_df, nav):
     remaining_cash = nav
     
     for idx, stock in enumerate(top_stocks):
-        # Lưu ý: Tuỳ thuộc vào dữ liệu của bạn, giá là VND (ví dụ 25000) hay K_VND (25.0). 
-        # Nếu là giá 25000:
         price = float(stock.get('Price Close', 0))
         if price <= 0: continue
         
@@ -1390,8 +1394,8 @@ def calculate_robo_allocation(filtered_df, nav):
                 "Volume": max_shares,
                 "Price": price,
                 "Cost": cost,
-                "Score": stock.get('VGM_Score', 'N/A')
+                # 🟢 SỬA LỖI KEY: Đổi sang lấy 'Star_Rating' (số 1-5) để render sao
+                "Score": stock.get('Star_Rating', 0)
             })
             
     return allocations, remaining_cash
-

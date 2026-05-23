@@ -235,9 +235,13 @@ def build_ips_filter_settings(risk_profile: str, goal: str,
 def build_active_filters(filter_settings: dict, existing_af: dict) -> dict:
     af = existing_af.copy() if existing_af else {}
     for filter_id, rng in filter_settings.items():
-        # Store with value so screener can read it
-        label = filter_id.replace("filter-", "").replace("-", " ").title()
-        af[filter_id] = {"label": label, "type": "range", "value": rng}
+        # SỬA LỖI 0 MÃ: Chỉ thêm vào store nếu là dải số (có thẻ UI để xóa)
+        try:
+            lo, hi = float(rng[0]), float(rng[1])
+            label = filter_id.replace("filter-", "").replace("-", " ").title()
+            af[filter_id] = {"label": label, "type": "range", "value": [lo, hi]}
+        except (TypeError, ValueError, IndexError):
+            pass # Chặn các bộ lọc chữ (VGM Score...) rơi vào trạng thái tàng hình
     return af
 
 
@@ -475,6 +479,32 @@ def render_step_visibility(current_step):
     counter = "Bước 1–3 / 5" if d_step == 1 else "Bước 4–5 / 5"
 
     return s1, s2, s3, s4, s5, progress, prev_dis, prev_st, nxt_btn, counter
+
+# CLIENTSIDE: Auto-scroll to top of onboarding header when entering step 4 (so user sees profile preview)
+app.clientside_callback(
+    """
+    function(step) {
+        try {
+            if (!step) { return null; }
+            if (step >= 4) {
+                var wrapper = document.getElementById('ips-onboarding-wrapper');
+                var logo = wrapper ? wrapper.querySelector('.vss-logo-bar') : null;
+                var target = logo || wrapper;
+                if (target && typeof target.scrollIntoView === 'function') {
+                    target.scrollIntoView({behavior: 'smooth', block: 'start'});
+                } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }
+        } catch (err) {
+            console.warn('ips scroll error', err);
+        }
+        return step;
+    }
+    """,
+    Output("ips-scroll-store", "data"),
+    Input("ips-current-step", "data"),
+)
 
 # ════════════════════════════════════════════════════════════════════════════
 # CALLBACK 3: Render step 4 — Profile Preview (chạy khi vào step 4)
@@ -799,6 +829,8 @@ def render_final_summary(step, goal, will, pct_savings, emergency,
     Output("filter-canslim",           "data"),
     # Status message
     Output("ips-apply-status",         "children"),
+    Output("readonly-filters-store", "data", allow_duplicate=True),
+    
 
     Input("ips-btn-next",              "n_clicks"),
     State("ips-current-step",          "data"),
@@ -939,6 +971,7 @@ def apply_ips_profile(
     # Find the end of apply_ips_profile where it returns. Before the return, add this code to build slider cards
     # Build slider UI cards for IPS filters
     ips_slider_cards = []
+    ips_readonly_map = {}  # ← THÊM DÒNG NÀY
     if apply_filters and filter_settings:
         from src.callbacks.filter_interaction_callbacks import create_range_filter_ui, get_filter_ranges, CRITERIA_CONFIG
         ranges = get_filter_ranges()
@@ -974,15 +1007,23 @@ def apply_ips_profile(
                 actual_min, actual_max = ranges[fid]
             else:
                 actual_min, actual_max = float(rng[0]), float(rng[1])
+
+            # THÊM: clamp lo/hi theo actual_min/max để tránh slider tự clamp rồi fire lại
+            lo = max(actual_min, lo)
+            hi = min(actual_max, hi)
+
+            ips_readonly_map[fid] = [lo, hi]  # ← THÊM DÒNG NÀY
+
             ips_slider_cards.append(
-                create_range_filter_ui(fid, label, actual_min, actual_max, rng)
+                # SỬA LỖI DOUBLE FILTER: Thay [actual_min, actual_max] thành [lo, hi]
+                create_range_filter_ui(fid, label, actual_min, actual_max, [lo, hi])
             )
 
     return (
         full_profile,     # investor-profile-store
         True,             # profile-setup-done
         new_af,           # active-filters-store
-        ips_slider_cards if apply_filters else [],  # selected-filters-container  ← ADD
+        ips_slider_cards if apply_filters else [],  # selected-filters-container
         # Range filters
         new_roe, new_pe, new_pb, new_de, new_cr, new_div,
         new_rev, new_eps_g, new_rs3m, new_nm,
@@ -990,6 +1031,7 @@ def apply_ips_profile(
         new_vgm, new_val, new_gro, new_mom, new_canslim,
         # UI
         status,
+        ips_readonly_map if apply_filters else {},  # ← THÊM readonly-filters-store
     )
 
 

@@ -1000,6 +1000,11 @@ def manage_filter_ui(
 
     # ── XÓA FILTER ─────────────────────────────────────────────────────────
     if '"type":"remove-filter"' in trigger_prop:
+        # GUARD: bỏ qua nếu n_clicks == 0 (mount event, không phải user click)
+        triggered_val = ctx.triggered[0].get('value', 0)
+        if not triggered_val or triggered_val == 0:
+            return (NO,) * 11
+
         fid = json.loads(trigger_prop.split('.')[0])['index']
         af.pop(fid, None)
         ch = [c for c in ch
@@ -1175,9 +1180,15 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
             # Bỏ qua slider readonly (card Tham khảo) — chúng dùng riêng active-filters-store
             if fid in readonly_id_set:
                 continue
-            # Bỏ qua nếu value == [min, max] → slider chỉ mới mount
+            # Bỏ qua nếu value == [min, max] → slider chỉ mới mount  
             if val and len(val) == 2 and val[0] == smin and val[1] == smax:
                 continue
+            # THÊM: bỏ qua nếu đây là IPS filter với value đúng bằng ips range (mount event)
+            if isinstance(readonly_filter_ids, dict) and fid in readonly_filter_ids:
+                ips_range = readonly_filter_ids[fid]
+                if isinstance(ips_range, list) and len(ips_range) == 2:
+                    if val and val[0] == ips_range[0] and val[1] == ips_range[1]:
+                        continue
             slider_map[fid] = val
 
     store_outputs = [slider_map.get(fid, no_update) for fid in _ALL_FILTER_STORE_IDS]
@@ -1203,22 +1214,11 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
     import json
     from dash import callback_context, no_update
     ctx = callback_context
-    
-    # ── DEBUG BLOCK activate_readonly ──────────────────────────────
-    if ctx.triggered:
-        import time as _time
-        logger.warning(
-            f"[READONLY_DRAG] @ {_time.strftime('%H:%M:%S')} | "
-            f"triggered={ctx.triggered[0]['prop_id'][:60]} | "
-            f"readonly_ids_type={type(readonly_filter_ids).__name__} | "
-            f"readonly_ids={str(readonly_filter_ids)[:80]}"
-        )
-    # ── END DEBUG ──────────────────────────────────────────────────
-    
+
     if not ctx.triggered:
         return no_update
 
-    # Parse JSON từ Pattern-Matching Callback
+    # Parse filter id từ triggered prop
     try:
         triggered_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])
         dragged_fid = triggered_id.get("filter")
@@ -1228,7 +1228,7 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
     if not dragged_fid:
         return no_update
 
-    # Lấy giá trị của slider bị kéo thông qua zip
+    # Lấy giá trị slider bị trigger
     new_val = s_min = s_max = None
     for val, id_spec, smin, smax in zip(slider_values, slider_ids,
                                          slider_mins, slider_maxs):
@@ -1236,57 +1236,55 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
             new_val, s_min, s_max = val, smin, smax
             break
 
-    if new_val is None:
+    if new_val is None or not isinstance(new_val, (list, tuple)) or len(new_val) != 2:
         return no_update
 
     af = dict(active_filters or {})
+    ips_map = readonly_filter_ids if isinstance(readonly_filter_ids, dict) else {}
 
-    # =========================================================================
-    # ── GUARD 1 (ĐÃ SỬA): Chống lỗi tự bắn tín hiệu lúc mới Mount ────────────
-    # =========================================================================
-    is_readonly = False
-    
-    # Kịch bản A: Nếu Slider thuộc danh sách Chiến lược (Readonly)
-    if isinstance(readonly_filter_ids, dict) and dragged_fid in readonly_filter_ids:
-        is_readonly = True
-        strategy_range = readonly_filter_ids[dragged_fid]
-        
-        # Nếu slider đang nằm đúng ở khoảng [lo, hi] mặc định của chiến lược
-        # -> Nghĩa là nó vừa tự render, CHỨ KHÔNG PHẢI KHÁCH HÀNG KÉO -> Bỏ qua.
-        if isinstance(strategy_range, list) and len(strategy_range) == 2:
-            if new_val[0] == strategy_range[0] and new_val[1] == strategy_range[1]:
-                return no_update
-                
-    # Kịch bản B: Nếu Slider là card thường (Khách hàng tự thêm)
-    elif s_min is not None and s_max is not None:
-        # Nếu card thường mới mount, value mặc định của nó là max của biên độ data
+    # ── NHÁNH A: IPS / Readonly card ─────────────────────────────────────────
+    if dragged_fid in ips_map:
+        ips_range = ips_map[dragged_fid]
+
+        # Mount event: slider vừa render với đúng giá trị IPS → bỏ qua
+        if (isinstance(ips_range, list) and len(ips_range) == 2
+                and new_val[0] == ips_range[0] and new_val[1] == ips_range[1]):
+            return no_update
+
+        # Người dùng thực sự kéo → cập nhật value, GIỮ NGUYÊN toàn bộ af
+        label = dragged_fid
+        for cfg in CRITERIA_CONFIG.values():
+            if cfg.get("filter_id") == dragged_fid:
+                label = cfg.get("label", dragged_fid)
+                break
+
+        af[dragged_fid] = {
+            "label": label,
+            "type": "readonly_range",
+            "value": new_val,
+        }
+        return af
+
+    # ── NHÁNH B: Card thường (user tự thêm) ──────────────────────────────────
+
+    # Mount event: slider vừa render với full range của data → bỏ qua
+    if s_min is not None and s_max is not None:
         if new_val[0] == s_min and new_val[1] == s_max:
             return no_update
-    # =========================================================================
 
-    # ── Guard 2: value không thay đổi so với active_filters hiện tại ─────────
+    # Value không thay đổi so với store hiện tại → bỏ qua
     if dragged_fid in af:
         existing_val = af[dragged_fid].get("value") if isinstance(af[dragged_fid], dict) else None
         if existing_val == new_val:
             return no_update
 
-    # ── LẤY LABEL TỪ CRITERIA_CONFIG ──────────────────────────────────────────
+    # Cập nhật
     label = dragged_fid
     for cfg in CRITERIA_CONFIG.values():
         if cfg.get("filter_id") == dragged_fid:
             label = cfg.get("label", dragged_fid)
             break
 
-    # ── Xử lý readonly card (thẻ Tham khảo) ──────────────────────────────────
-    if is_readonly:
-        af[dragged_fid] = {
-            "label": label,
-            "type": "readonly_range",  # Dùng type riêng để phân biệt màu sắc/UI
-            "value": new_val
-        }
-        return af
-
-    # ── Card thường ──────────────────────────────────────────────────────────
     if dragged_fid not in af:
         af[dragged_fid] = {"label": label, "type": "range", "value": new_val}
     else:

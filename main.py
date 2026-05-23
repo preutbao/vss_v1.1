@@ -241,6 +241,37 @@ app.clientside_callback(
     prevent_initial_call=False,
 )
 
+app.clientside_callback(
+    """
+    function(rowData, columnDefs) {
+        if (!rowData || rowData.length === 0) return window.dash_clientside.no_update;
+        
+        // Đợi AG Grid render xong rồi mới autosize
+        setTimeout(function() {
+            var gridDiv = document.getElementById('screener-table');
+            if (!gridDiv) return;
+            
+            // Lấy AG Grid API instance từ Dash AG Grid
+            var gridComp = gridDiv._dashprivate_agGridInstance;
+            if (!gridComp) return;
+            
+            var api = gridComp.api;
+            if (!api) return;
+            
+            // AutoSize tất cả cột theo nội dung cell
+            api.autoSizeAllColumns(false);  // false = tính cả header
+            
+        }, 150);  // 150ms đủ để AG Grid render xong 1 page (20 rows)
+        
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("screener-table", "id"),   # output giả
+    Input("screener-table", "rowData"),
+    Input("screener-table", "columnDefs"),
+    prevent_initial_call=False,
+)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CALLBACK: Chuyển trang dựa trên profile-setup-done
 # ─────────────────────────────────────────────────────────────────────────────

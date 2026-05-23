@@ -13,3 +13,4 @@ env/
 cache*
 cache/
 data/processed/*.parquet
+data/processed/

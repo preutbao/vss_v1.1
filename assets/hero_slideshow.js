@@ -35,7 +35,7 @@
 
     .cyber-btn {
       display: inline-block;
-      padding: 12px 25px;
+      padding: 12px 30px;
       background: rgba(0, 229, 255, 0.05);
       border: none;
       color: #00e5ff;
@@ -74,7 +74,7 @@
       /* Giữ lại thuộc tính để hiện hình ảnh mờ */
       background-size: cover; 
       background-position: center right; 
-      filter: blur(6px);
+      filter: blur(1px);
       /* Chặn đứng hiệu ứng pan/zoom */
       transform: scale(1.05) !important;
       animation: none !important;

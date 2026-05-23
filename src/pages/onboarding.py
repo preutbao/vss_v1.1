@@ -262,6 +262,7 @@ layout = html.Div(
                     dcc.Store(id="ips-will-store",   data=None),
                     dcc.Store(id="ips-time-store",   data=None),
                     dcc.Store(id="ips-liq-store",    data=None),
+                    dcc.Store(id="ips-scroll-store", data=None),
                 ]),
 
                 # Footer — nút điều hướng
