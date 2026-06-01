@@ -729,6 +729,7 @@ layout = html.Div([
     html.Div([
         # Page Header + Action Buttons
         html.Div([
+            # Trong file screener.py (khoảng dòng 475)
             html.Div([
                 html.Div([
                     html.I(className="fas fa-chart-bar", style={
@@ -737,30 +738,34 @@ layout = html.Div([
                     html.Div([
                         html.B("VIETCAP SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
                         
-                            dbc.Button(
-                                id="mode-toggle-btn",
-                                children=[
-                                    html.I(className="fas fa-globe", style={"marginRight": "5px"}),
-                                    html.Span("Toàn TT", id="mode-toggle-label"),
-                                ],
-                                n_clicks=0,
-                                size="sm",
-                                color="primary",
-                                outline=True,
-                                style={
-                                    "borderRadius": "20px", "fontSize": "11px",
-                                    "padding": "4px 12px", "whiteSpace": "nowrap",
-                                    "fontWeight": "600", "marginLeft": "10px",
-                                    "borderColor": "#3b82f6", "color": "#3b82f6",
-                                },
-                            ),
+                        dbc.Button(
+                            id="mode-toggle-btn",
+                            children=[
+                                html.I(className="fas fa-globe", style={"marginRight": "5px"}),
+                                html.Span("Toàn TT", id="mode-toggle-label"),
+                            ],
+                            n_clicks=0,
+                            size="sm",
+                            color="primary",
+                            outline=True,
+                            style={
+                                "borderRadius": "20px", "fontSize": "11px",
+                                "padding": "4px 12px", "whiteSpace": "nowrap",
+                                "fontWeight": "600", "marginLeft": "10px",
+                                "borderColor": "#00a651", "color": "#00a651", # Đổi từ blue sang green
+                            },
+                        ),
+                        
+                        # CHÈN NÚT THEME VÀO ĐÂY
+
+                        # ... (Giữ nguyên Tooltip bên dưới)
 
                             # NÂNG CẤP TOOLTIP
                             dbc.Tooltip(
                                 children=[
                                     html.Div([
-                                        html.I(className="fas fa-bolt", style={"marginRight": "6px", "color": "#00f0ff"}),
-                                        html.B("Chế độ Tích sản", style={"color": "#00f0ff", "fontSize": "14px", "letterSpacing": "0.5px"}),
+                                        html.I(className="fas fa-bolt", style={"marginRight": "6px", "color": "#00c85a"}),
+                                        html.B("Chế độ Tích sản", style={"color": "#00c85a", "fontSize": "14px", "letterSpacing": "0.5px"}),
                                     ], style={"marginBottom": "6px", "borderBottom": "1px solid rgba(0, 240, 255, 0.2)", "paddingBottom": "4px"}),
                                     
                                     html.Div(
@@ -1307,7 +1312,7 @@ html.Div(children=[
         "position": "absolute", "top": "0px", "left": "0px",
         "width": "14px", "height": "14px",
         "borderRadius": "50%", "backgroundColor": "#ef4444",
-        "border": "2px solid #0d1117",
+        "border": "2px solid #00a651",
         "animation": "pulse-red 1.5s infinite",
         "zIndex": "10001",
     }),
@@ -1322,7 +1327,7 @@ html.Div(children=[
             "borderRadius": "50%",
             "cursor": "pointer",
             "boxShadow": "0 4px 20px rgba(0,100,255,0.4)",
-            "border": "2px solid #0068ff",
+            "border": "2px solid #00a651",
             "display": "block",
         }
     ),
@@ -1354,7 +1359,7 @@ html.Div([
             "lineHeight": "1",
         }),
     ], style={
-        "background": "linear-gradient(135deg, #0068ff, #0050cc)",
+        "background": "linear-gradient(135deg, #00a651, #007a3d)",
         "padding": "12px 16px",
         "display": "flex", "justifyContent": "space-between", "alignItems": "center",
         "borderRadius": "12px 12px 0 0",

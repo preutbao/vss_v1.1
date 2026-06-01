@@ -1,5 +1,21 @@
 from dash import html, Input, Output, State, callback, callback_context, no_update
 from src.app_instance import app
+from dash import clientside_callback, Input, Output
+
+clientside_callback(
+    """
+    function(is_dark_mode) {
+        if(is_dark_mode) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("theme-switch-button", "id"),
+    Input("theme-switch-button", "value")
+)
 
 # ============================================================================
 # CALLBACK 1: Xử lý logic nút bấm Toggle & Bài test Tour Guide

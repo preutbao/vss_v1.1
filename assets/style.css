@@ -54,80 +54,108 @@ iframe[src*="tradingview" i],
 /* ============================================================================
    CSS DESIGN TOKENS
    ============================================================================ */
-:root {
-  /* Core backgrounds */
-  --bg-void:        #020810;
-  --bg-base:        #060f1e;
-  --bg-card:        #091526;
-  --bg-surface:     #0d1d30;
-  --bg-elevated:    #112236;
-  --bg-hover:       #152840;
-  --bg-active:      #1a3550;
+/* ============================================================================
+   CSS DESIGN TOKENS (LIGHT & DARK MODE)
+   ============================================================================ */
 
-  /* Borders */
-  --border-subtle:  #0e2540;
-  --border-dim:     #163660;
-  --border-default: #1d4d80;
-  --border-bright:  #2a6ab0;
+/* 1. THEME SÁNG (Mặc định) */
+:root, [data-theme="light"] {
+  /* Core backgrounds: Trắng và xám sáng */
+  --bg-void:        #f4f6f8;
+  --bg-base:        #ffffff;
+  --bg-card:        #ffffff;
+  --bg-surface:     #f8f9fa;
+  --bg-elevated:    #e9ecef;
+  --bg-hover:       #e2e8f0;
+  --bg-active:      #cbd5e1;
 
-  /* Primary accent — electric cyan */
-  --accent:         #00d4ff;
-  --accent-dim:     rgba(0, 212, 255, 0.12);
-  --accent-glow:    rgba(0, 212, 255, 0.25);
-  --accent-deep:    #0090ff;
+  /* Borders: Xám nhạt */
+  --border-subtle:  #e2e8f0;
+  --border-dim:     #cbd5e1;
+  --border-default: #94a3b8;
+  --border-bright:  #10b981;
+
+  /* Primary accent — Xanh lá cây */
+  --accent:         #10b981; 
+  --accent-dim:     rgba(16, 185, 129, 0.12);
+  --accent-glow:    rgba(16, 185, 129, 0.25);
+  --accent-deep:    #059669;
 
   /* Semantic */
-  --positive:       #00e676;
-  --positive-dim:   rgba(0, 230, 118, 0.12);
-  --negative:       #ff3d57;
-  --negative-dim:   rgba(255, 61, 87, 0.12);
-  --warning:        #ffb703;
-  --warning-dim:    rgba(255, 183, 3, 0.12);
-  --purple:         #b388ff;
-  --purple-dim:     rgba(179, 136, 255, 0.12);
+  --positive:       #10b981;
+  --positive-dim:   rgba(16, 185, 129, 0.12);
+  --negative:       #ef4444;
+  --negative-dim:   rgba(239, 68, 68, 0.12);
+  --warning:        #f59e0b;
+  --warning-dim:    rgba(245, 158, 11, 0.12);
+  --purple:         #8b5cf6;
+  --purple-dim:     rgba(139, 92, 246, 0.12);
 
-  /* Text */
-  --text-primary:   #d6eaf8;
-  --text-secondary: #7fa8cc;
-  --text-muted:     #3d6a8a;
-  --text-ticker:    #00d4ff;
+  /* Text: Đen và xám đậm */
+  --text-primary:   #0f172a;
+  --text-secondary: #334155;
+  --text-muted:     #64748b;
+  --text-ticker:    #10b981;
 
-  /* Typography - Professional grade fonts */
-  --font-display:   'Montserrat', 'Space Grotesk', 'Sora', sans-serif;  /* Header/Brand */
-  --font-data:      'JetBrains Mono', 'Monaco', monospace;               /* Numbers/Data */
-  --font-ui:        'Inter', -apple-system, sans-serif;                  /* UI Text */
-  --font-brand:     'Space Grotesk', 'Montserrat', sans-serif;           /* Logo/Branding */
+  /* Typography & Radius (Giữ nguyên của bạn) */
+  --font-display:   'Montserrat', 'Space Grotesk', 'Sora', sans-serif;
+  --font-data:      'JetBrains Mono', 'Monaco', monospace;
+  --font-ui:        'Inter', -apple-system, sans-serif;
+  --font-brand:     'Space Grotesk', 'Montserrat', sans-serif;
 
-  /* Effects */
-  --glow-accent:    0 0 20px rgba(0, 212, 255, 0.3);
-  --glow-positive:  0 0 16px rgba(0, 230, 118, 0.25);
-  --glow-negative:  0 0 16px rgba(255, 61, 87, 0.25);
-  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.6);
-  --shadow-deep:    0 8px 40px rgba(0, 0, 0, 0.8);
+  --glow-accent:    0 0 20px rgba(16, 185, 129, 0.3);
+  --glow-positive:  0 0 16px rgba(16, 185, 129, 0.25);
+  --glow-negative:  0 0 16px rgba(239, 68, 68, 0.25);
+  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-deep:    0 8px 40px rgba(0, 0, 0, 0.12);
 
-  /* Radius */
   --radius-sm:  4px;
   --radius-md:  8px;
   --radius-lg:  12px;
   --radius-xl:  16px;
 }
 
-/* ============================================================================
-   GLOBAL RESET & BASE
-   ============================================================================ */
-*, *::before, *::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* 2. THEME TỐI */
+[data-theme="dark"] {
+  /* Core backgrounds: Đen và xám tối */
+  --bg-void:        #000000;
+  --bg-base:        #0a0a0a;
+  --bg-card:        #121212;
+  --bg-surface:     #1a1a1a;
+  --bg-elevated:    #242424;
+  --bg-hover:       #2a2a2a;
+  --bg-active:      #333333;
 
-html { scroll-behavior: smooth; }
+  /* Borders: Xám tối */
+  --border-subtle:  #2a2a2a;
+  --border-dim:     #333333;
+  --border-default: #404040;
+  --border-bright:  #22c55e;
+
+  /* Primary accent — Xanh lá cây sáng (Neon-ish) */
+  --accent:         #22c55e;
+  --accent-dim:     rgba(34, 197, 94, 0.12);
+  --accent-glow:    rgba(34, 197, 94, 0.25);
+  --accent-deep:    #16a34a;
+
+  /* Text: Trắng và xám nhạt */
+  --text-primary:   #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted:     #94a3b8;
+  --text-ticker:    #22c55e;
+
+  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.6);
+  --shadow-deep:    0 8px 40px rgba(0, 0, 0, 0.8);
+}
 
 body {
   font-family: var(--font-ui);
   background-color: var(--bg-void);
   color: var(--text-primary);
   overflow-x: hidden;
+
+  transition: background-color 0.4s ease, color 0.4s ease;
+
   /* Subtle scan-line texture for terminal feel */
   background-image:
     repeating-linear-gradient(
@@ -2706,4 +2734,797 @@ span[style*="f59e0b"] {
     padding: 8px 0 !important;
     background-color: #091526 !important;
     cursor: default !important;
+}
+/* ============================================================================
+   OVERRIDE: ÉP TOÀN HỆ THỐNG VỀ TONE XANH LÁ (VIETCAP THEME)
+   ============================================================================ */
+
+:root, [data-theme="light"], [data-theme="dark"] {
+    --accent: #00a651 !important;
+    --accent-deep: #007a3d !important;
+    --accent-dim: rgba(0, 166, 81, 0.12) !important;
+    --accent-glow: rgba(0, 166, 81, 0.25) !important;
+    --border-bright: #00c85a !important;
+    --glow-accent: 0 0 20px rgba(0, 166, 81, 0.3) !important;
+}
+
+/* Đổi màu xanh dương trong các gradient và hiệu ứng phát sáng */
+.btn-apply-ssi {
+    background: linear-gradient(135deg, #00c85a 0%, #00a651 100%) !important;
+    box-shadow: 0 4px 16px rgba(0, 166, 81, 0.3) !important;
+    color: #ffffff !important;
+}
+
+.btn-apply-ssi:hover {
+    box-shadow: 0 8px 28px rgba(0, 166, 81, 0.5) !important;
+}
+
+.custom-range-slider .rc-slider-handle,
+.custom-range-slider .rc-slider-track {
+    background: #00a651 !important;
+    border-color: #00a651 !important;
+    box-shadow: 0 0 8px rgba(0, 166, 81, 0.5) !important;
+}
+
+/* Ép màu AG Grid */
+.ag-theme-alpine-dark {
+    --ag-selected-row-background-color: rgba(0, 166, 81, 0.08) !important;
+    --ag-range-selection-border-color: #00a651 !important;
+    --ag-row-hover-color: rgba(0, 166, 81, 0.05) !important;
+}
+
+.ag-theme-alpine-dark .ag-row:hover {
+    box-shadow: inset 3px 0 0 rgba(0, 166, 81, 0.4) !important;
+}
+
+.ag-theme-alpine-dark .ag-row-selected {
+    box-shadow: inset 3px 0 0 #00a651 !important;
+    border-left: 3px solid #00a651 !important;
+}
+
+.ag-theme-alpine-dark .ag-header-cell:hover,
+.ag-theme-alpine-dark .ag-sort-indicator-icon {
+    color: #00c85a !important;
+}
+
+/* Ép màu các dropdown và tooltip bị dính blue */
+.custom-dropdown .Select-value,
+.ssi-dropdown-custom .Select-value {
+    background-color: rgba(0, 166, 81, 0.1) !important;
+    border: 1px solid rgba(0, 166, 81, 0.3) !important;
+}
+
+.custom-dropdown .Select-option:hover,
+.ssi-dropdown-custom .Select-option:hover {
+    background-color: rgba(0, 166, 81, 0.08) !important;
+}
+
+.cyber-tooltip .tooltip-inner {
+    border: 1px solid #00a651 !important;
+    box-shadow: 0 0 12px rgba(0, 166, 81, 0.3) !important;
+}
+
+.cyber-tooltip[data-popper-placement^="top"] .tooltip-arrow::before {
+    border-bottom-color: #00a651 !important;
+}
+
+/* Các tag, badge và text hiển thị phụ */
+#result-count-number {
+    text-shadow: 0 0 20px rgba(0, 166, 81, 0.5) !important;
+}
+
+.trending-chip:hover {
+    color: #00c85a !important;
+    border-color: #00c85a !important;
+    background-color: rgba(0, 166, 81, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2) !important;
+}
+
+/* Ép màu onboarding (Hero banner/IPS) */
+.ips-choice-card.selected {
+    border-color: #00a651 !important;
+    background-color: rgba(0, 166, 81, 0.1) !important;
+}
+
+#ips-onboarding-wrapper::before,
+#vss-hero-bg {
+    background: radial-gradient(ellipse 80% 60% at 10% 50%, rgba(0,166,81,0.13) 0%, transparent 60%) !important;
+}
+/* ============================================================
+   THEME SÁNG (LIGHT MODE) CHO HEADER & HERO BANNER
+   ============================================================ */
+
+/* Đổi nền thanh điều hướng (Navbar) sang trắng -> đã sửa thành trong suốt */
+[data-theme="light"] #vss-sticky-nav {
+    background: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+/* Chữ Logo Vietcap chuyển sang màu Đen */
+[data-theme="light"] .vss-logo-text {
+    color: #0f172a !important; 
+}
+
+/* Các link menu chuyển sang màu tối */
+[data-theme="light"] .vietcap-nav-link {
+    color: #334155 !important;
+}
+[data-theme="light"] .vietcap-nav-link:hover {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Nút Đăng nhập / User */
+[data-theme="light"] .vietcap-nav-login-btn {
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+[data-theme="light"] #navbar-user-name {
+    color: #0f172a !important;
+}
+
+/* Đổi nền khu vực Hero Banner sang xám nhạt */
+[data-theme="light"] #vss-hero {
+    background: #f4f6f8 !important;
+}
+
+/* CHỮ "Smart Screener" chuyển sang màu đen */
+[data-theme="light"] .vss-headline-sub {
+    color: #0f172a !important; 
+}
+
+/* Các text nhỏ (Eyebrow, Stats) đổi sang màu xám đậm/xanh lá để dễ đọc trên nền sáng */
+[data-theme="light"] .vss-eyebrow {
+    color: #00a651 !important;
+}
+[data-theme="light"] .vss-stat-pill {
+    color: #334155 !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    background: rgba(0, 0, 0, 0.03) !important;
+}
+/* Nâng cấp chữ "Smart Screener" - Hiện đại, thanh lịch hơn */
+.vss-headline-sub {
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 500 !important; /* Độ dày vừa phải, sang trọng */
+    color: #ffffff;
+    letter-spacing: -0.5px;
+}
+
+/* Nâng cấp dòng chữ nhỏ phía trên (Eyebrow) */
+.vss-eyebrow {
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 2px !important; /* Kéo dãn nhẹ để tạo cảm giác không gian */
+}
+
+/* Nâng cấp các con số định lượng (1500+, 165+) mang phong cách Terminal */
+.vss-stat-pill {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+}
+
+.vss-stat-pill strong {
+    font-family: 'JetBrains Mono', monospace !important; /* Font số lập trình */
+    font-weight: 700 !important;
+    font-size: 13.5px !important;
+    letter-spacing: 0.5px;
+    color: #00c85a;
+}
+/* ============================================================================
+   loại bỏ màu blue, chuyển sang xanh lá vietcap
+   ============================================================================ */
+
+/* 1. đổi màu nút chọn chiến lược đầu tư */
+#strategy-accordion-trigger {
+    background: linear-gradient(135deg, #00c85a 0%, #00a651 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2) !important;
+}
+
+#strategy-display-label, 
+#strategy-chevron {
+    color: #ffffff !important; /* chữ màu trắng cho nổi trên nền xanh */
+}
+
+/* 2. đổi màu đường gạch chân của tab đang chọn (chiến lược) */
+.toolbar-tab-active, 
+.toolbar-tab.active {
+    border-bottom: 2px solid #00a651 !important;
+    color: #ffffff !important;
+}
+
+/* ============================================================================
+   đồng bộ màu sắc sáng/tối cho thanh công cụ (toolbar)
+   ============================================================================ */
+
+/* nền thanh công cụ khi ở chế độ sáng */
+[data-theme="light"] #screener-scroll-anchor + div {
+    background-color: #ffffff !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+}
+
+/* màu chữ các tab: xám khi chưa chọn, đen khi được chọn */
+[data-theme="light"] .toolbar-tab {
+    color: #64748b !important;
+}
+[data-theme="light"] .toolbar-tab-active,
+[data-theme="light"] .toolbar-tab.active {
+    color: #0f172a !important; 
+}
+[data-theme="light"] .toolbar-tab-icon {
+    color: inherit !important;
+}
+
+/* màu chữ bên trong các khu vực điều khiển */
+[data-theme="light"] .toolbar-panel {
+    color: #0f172a !important;
+}
+
+/* tinh chỉnh lại khối nhập vốn (nav) */
+[data-theme="light"] #nav-wrapper {
+    background-color: #f8f9fa !important;
+    border-color: #cbd5e1 !important;
+}
+[data-theme="light"] #nav-wrapper span {
+    color: #334155 !important;
+}
+[data-theme="light"] #nav-input {
+    background-color: transparent !important;
+    color: #0f172a !important; /* chữ đen trên nền sáng */
+}
+[data-theme="light"] #nav-input::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* tinh chỉnh khối t+2.5 */
+[data-theme="light"] #tplus-wrapper {
+    background-color: #f8f9fa !important;
+    border-color: #cbd5e1 !important;
+}
+[data-theme="light"] #tplus-toggle-track {
+    background-color: #cbd5e1 !important;
+    border-color: #94a3b8 !important;
+}
+
+/* đổi màu nền menu thả xuống của chiến lược khi ở chế độ sáng */
+[data-theme="light"] #strategy-accordion-popover .popover-body > div,
+[data-theme="light"] #strategy-accordion-popover {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .strategy-group-header span {
+    color: #00a651 !important; /* tiêu đề nhóm chiến lược */
+}
+[data-theme="light"] .strategy-item-row {
+    color: #334155 !important;
+}
+[data-theme="light"] .strategy-item-row:hover {
+    background-color: rgba(0, 166, 81, 0.05) !important;
+    color: #00a651 !important;
+}
+/* ============================================================================
+   1. CHUYỂN ĐỔI MỌI SẮC XANH DƯƠNG (BLUE/CYAN) SANG XANH LÁ (GREEN)
+   ============================================================================ */
+
+/* Đổi màu các tag Hot (Trending chips) */
+.trending-chip:hover {
+    color: #00c85a !important;
+    border-color: #00c85a !important;
+    background-color: rgba(0, 200, 90, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 200, 90, 0.2) !important;
+}
+
+/* Đổi màu Nút thả xuống (Dropdown Năm) */
+.year-filter-dropdown .Select-value-label { color: #00a651 !important; }
+.year-filter-dropdown .Select-arrow { border-top-color: #00a651 !important; }
+.year-filter-dropdown .Select-option.is-focused { color: #00a651 !important; }
+.year-filter-dropdown .Select-option.is-selected { 
+    background-color: rgba(0,166,81,0.1) !important; 
+    color: #00a651 !important; 
+}
+
+/* Đổi viền Thanh tìm kiếm mã khi click vào */
+#search-ticker-input .Select-control:hover, 
+#search-ticker-input.is-focused .Select-control {
+    border-color: #00a651 !important;
+    box-shadow: 0 0 12px rgba(0, 166, 81, 0.15) !important;
+}
+
+/* ÉP ĐỔI MÀU CÁC ICON BỊ FIX CỨNG MÀU BLUE TRONG PYTHON MÀ KHÔNG CẦN SỬA PYTHON */
+[style*="color: #58a6ff"], 
+[style*="color: rgb(88, 166, 255)"] {
+    color: #00a651 !important;
+}
+[style*="color: #00d4ff"] {
+    color: #00c85a !important;
+}
+
+/* ============================================================================
+   2. ĐỒNG BỘ NỀN SÁNG (LIGHT MODE) CHO PANEL TÌM KIẾM & BỘ LỌC
+   ============================================================================ */
+
+/* Nền thanh công cụ (Tìm mã, Phạm vi...) */
+[data-theme="light"] #toolbar-panel-search,
+[data-theme="light"] #toolbar-panel-scope,
+[data-theme="light"] #toolbar-panel-personal {
+    background-color: #ffffff !important;
+}
+
+/* --- Khối Search Input --- */
+[data-theme="light"] .ticker-search-dropdown .Select-control {
+    background-color: #f8f9fa !important;
+    border-color: #cbd5e1 !important;
+}
+[data-theme="light"] .ticker-search-dropdown input,
+[data-theme="light"] .ticker-search-dropdown .Select-value-label {
+    color: #0f172a !important; /* Chữ đen */
+}
+[data-theme="light"] .ticker-search-dropdown .Select-placeholder {
+    color: #64748b !important;
+}
+[data-theme="light"] .ticker-search-dropdown .Select-menu-outer {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+[data-theme="light"] .ticker-search-dropdown .Select-option {
+    background-color: #ffffff !important;
+    color: #334155 !important;
+}
+[data-theme="light"] .ticker-search-dropdown .Select-option:hover {
+    background-color: rgba(0, 166, 81, 0.08) !important;
+    color: #00a651 !important;
+}
+
+/* --- Cụm Mã Hot (Trending Chips) --- */
+[data-theme="light"] .trending-chip {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #475569 !important;
+}
+[data-theme="light"] .trending-chip:hover {
+    background-color: rgba(0, 166, 81, 0.1) !important;
+    border-color: #00a651 !important;
+    color: #00a651 !important;
+}
+
+/* --- Bảng Điều Khiển Bộ Lọc (Wizard Panel) --- */
+/* Nền bao ngoài bộ lọc và Index */
+[data-theme="light"] #filter-offcanvas > div {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+}
+/* Xóa nền đen của 3 cột */
+[data-theme="light"] #filter-offcanvas > div > div:first-child,
+[data-theme="light"] #filter-offcanvas .wizard-group-item,
+[data-theme="light"] #wizard-col2-content,
+[data-theme="light"] #selected-filters-container {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* Tiêu đề các cột (Chọn điều kiện lọc, Chọn tiêu chí...) */
+[data-theme="light"] #filter-offcanvas > div > div:first-child > div > div:first-child,
+[data-theme="light"] #filter-offcanvas > div > div:first-child > div:nth-child(2) > div:first-child,
+[data-theme="light"] #filter-offcanvas > div > div:first-child > div:nth-child(3) > div:first-child {
+    background-color: #f8f9fa !important;
+    border-bottom-color: #e2e8f0 !important;
+}
+[data-theme="light"] #filter-offcanvas span {
+    color: #334155 !important;
+}
+
+/* Các dòng tiêu chí hover */
+[data-theme="light"] .wizard-group-item:hover,
+[data-theme="light"] .criteria-item-hover:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Nút Chọn Năm trong bộ lọc */
+[data-theme="light"] .year-filter-dropdown .Select-control,
+[data-theme="light"] .year-filter-dropdown .Select-menu-outer,
+[data-theme="light"] .year-filter-dropdown .Select-option {
+    background-color: #ffffff !important;
+    color: #334155 !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* --- Các Thẻ Tiêu Chí (Filter Cards) --- */
+[data-theme="light"] [id*="selected-filter"] {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+[data-theme="light"] [id*="selected-filter"] input {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* --- Khối Chỉ Số Thị Trường (VNINDEX Panel) --- */
+[data-theme="light"] #filter-offcanvas > div > div:nth-child(2) {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+[data-theme="light"] #filter-offcanvas > div > div:nth-child(2) > div:first-child {
+    background-color: #f8f9fa !important;
+    border-bottom-color: #e2e8f0 !important;
+}
+[data-theme="light"] #idx-stats-panel {
+    background-color: #ffffff !important;
+    border-right-color: #e2e8f0 !important;
+}
+[data-theme="light"] #idx-stats-panel > div {
+    border-bottom-color: #f1f5f9 !important;
+}
+/* ============================================================================
+   đồng bộ nền sáng cho các thanh chọn (dropdown) bị kẹt màu đen
+   ============================================================================ */
+
+/* 1. các thanh tìm kiếm và chọn phạm vi, cá nhân */
+[data-theme="light"] #search-ticker-input .Select-control,
+[data-theme="light"] #filter-exchange .Select-control,
+[data-theme="light"] #filter-all-industry .Select-control,
+[data-theme="light"] #filter-sub-industry .Select-control,
+[data-theme="light"] #filter-index .Select-control,
+[data-theme="light"] #saved-filters-dropdown .Select-control {
+    background-color: #f8f9fa !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* sửa màu chữ bên trong thanh chọn để dễ đọc trên nền sáng */
+[data-theme="light"] .Select-value-label,
+[data-theme="light"] .Select-input input,
+[data-theme="light"] #search-ticker-input input {
+    color: #0f172a !important; 
+}
+
+/* màu chữ phần gợi ý (placeholder) */
+[data-theme="light"] .Select-placeholder {
+    color: #64748b !important; 
+}
+
+/* mũi tên trỏ xuống */
+[data-theme="light"] .Select-arrow {
+    border-top-color: #64748b !important;
+}
+
+/* 2. các thẻ tag được chọn (như 'tất cả sàn', 'tất cả ngành') */
+[data-theme="light"] .Select-value {
+    background-color: rgba(0, 166, 81, 0.1) !important;
+    border: 1px solid rgba(0, 166, 81, 0.3) !important;
+    color: #00a651 !important;
+}
+
+/* dấu x để xóa tag */
+[data-theme="light"] .Select-value-icon {
+    border-right: 1px solid rgba(0, 166, 81, 0.3) !important;
+    color: #00a651 !important;
+}
+
+[data-theme="light"] .Select-value-icon:hover {
+    background-color: rgba(0, 166, 81, 0.2) !important;
+    color: #007a3d !important;
+}
+
+/* 3. menu xổ xuống của toàn bộ dropdown */
+[data-theme="light"] .Select-menu-outer {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .Select-option {
+    background-color: #ffffff !important;
+    color: #334155 !important;
+}
+
+[data-theme="light"] .Select-option:hover,
+[data-theme="light"] .Select-option.is-focused {
+    background-color: rgba(0, 166, 81, 0.08) !important;
+    color: #00a651 !important;
+}
+
+/* 4. fix riêng cho khung chọn "toàn bộ năm" */
+[data-theme="light"] .year-filter-dropdown .Select-control {
+    background-color: #f8f9fa !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* sửa lỗi chữ trong ô tìm mã bị mờ */
+[data-theme="light"] .ticker-search-dropdown input {
+    color: #0f172a !important;
+    caret-color: #00a651 !important;
+}
+/* ============================================================================
+   NÂNG CẤP TAB THANH CÔNG CỤ (TÌM MÃ, CHIẾN LƯỢC, PHẠM VI...)
+   => ĐỔI THÀNH KHỐI XANH LÁ KHI ĐƯỢC CHỌN, BỎ TOÀN BỘ MÀU BLUE
+   ============================================================================ */
+
+/* 1. Xóa nền đen/trắng mặc định, biến tab đang chọn thành khối màu xanh lá Vietcap */
+.toolbar-tab.toolbar-tab-active,
+.toolbar-tab.active,
+[data-theme="light"] .toolbar-tab.toolbar-tab-active,
+[data-theme="light"] .toolbar-tab.active {
+    background-color: #00a651 !important; 
+    border-bottom: none !important; /* Xóa đường gạch chân mỏng manh */
+    color: #ffffff !important; /* Chữ màu trắng */
+    border-radius: 6px !important; /* Bo góc cho giống một nút bấm hiện đại */
+    margin: 4px !important; /* Tạo lề để khối xanh không chạm sát viền thanh công cụ */
+    box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2) !important;
+}
+
+/* 2. Ép tất cả ICON bên trong tab ĐANG CHỌN thành màu TRẮNG (Áp dụng cho cả Sáng/Tối) */
+.toolbar-tab.toolbar-tab-active i,
+.toolbar-tab.active i,
+[data-theme="light"] .toolbar-tab.toolbar-tab-active i,
+[data-theme="light"] .toolbar-tab.active i {
+    color: #ffffff !important; 
+}
+
+/* 3. TẨY MÀU XANH DƯƠNG (BLUE) của các icon khi CHƯA được chọn */
+.toolbar-tab i,
+[data-theme="light"] .toolbar-tab i {
+    color: #94a3b8 !important; /* Chuyển icon về màu xám trung tính cho đồng bộ */
+}
+
+/* 4. Hiệu ứng khi rê chuột (hover) vào tab chưa chọn -> Hiện viền/chữ xanh lá thay vì xanh dương */
+.toolbar-tab:hover:not(.toolbar-tab-active),
+[data-theme="light"] .toolbar-tab:hover:not(.toolbar-tab-active) {
+    background-color: rgba(0, 166, 81, 0.05) !important;
+    color: #00a651 !important;
+}
+.toolbar-tab:hover:not(.toolbar-tab-active) i,
+[data-theme="light"] .toolbar-tab:hover:not(.toolbar-tab-active) i {
+    color: #00a651 !important;
+}
+/* ============================================================================
+   ĐỒNG BỘ NỀN SÁNG (LIGHT MODE) - BỔ SUNG FIX CÁC KHỐI BỊ KẸT MÀU ĐEN
+   ============================================================================ */
+
+/* 1. GHI ĐÈ NỀN ĐEN CỦA 3 THANH TIÊU ĐỀ (Chọn điều kiện, Chọn tiêu chí, Kéo chọn) */
+[data-theme="light"] #filter-offcanvas > div > div:first-child > div > div:first-child {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] #filter-offcanvas > div > div:first-child > div > div:first-child span {
+    color: #334155 !important; /* Đổi chữ xám sáng thành xám đậm */
+}
+
+[data-theme="light"] #filter-offcanvas > div > div:first-child > div > div:first-child i {
+    color: #64748b !important; /* Đổi mũi tên thành xám */
+}
+
+
+/* 2. SỬA MÀU Ô "TOÀN BỘ NĂM" VÀ NÚT "LƯU BỘ LỌC" */
+[data-theme="light"] .year-filter-dropdown .Select-control,
+[data-theme="light"] .year-filter-dropdown .Select-menu-outer {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .year-filter-dropdown .Select-value-label {
+    color: #0f172a !important; /* Chữ màu đen */
+}
+
+[data-theme="light"] #btn-save {
+    color: #00a651 !important;
+    border-color: #00a651 !important;
+    background-color: transparent !important;
+}
+
+[data-theme="light"] #btn-save:hover {
+    background-color: rgba(0, 166, 81, 0.1) !important;
+}
+
+
+/* 3. LÀM SÁNG KHỐI CHỈ SỐ VN-INDEX (Bảng thống kê) */
+[data-theme="light"] #filter-offcanvas > div > div:nth-child(2) {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Thanh Header của VN-INDEX */
+[data-theme="light"] #filter-offcanvas > div > div:nth-child(2) > div:first-child {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+[data-theme="light"] #filter-offcanvas > div > div:nth-child(2) > div:first-child span {
+    color: #0f172a !important;
+}
+
+/* Cột thông số bên trái */
+[data-theme="light"] #idx-stats-panel {
+    background-color: #ffffff !important;
+    border-right: 1px solid #cbd5e1 !important;
+}
+[data-theme="light"] #idx-stats-panel > div {
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Chữ trong cột thống kê: Ép xám/đen nhưng BỎ QUA màu Xanh/Đỏ của % thay đổi */
+[data-theme="light"] #idx-stats-panel span:not([style*="color: #10b981"]):not([style*="color: #ef4444"]):not([style*="color: #00a651"]) {
+    color: #334155 !important;
+}
+
+
+/* 4. TẨY TRẮNG BACKGROUND CỦA BIỂU ĐỒ PLOTLY (Can thiệp sâu vào SVG) */
+[data-theme="light"] #idx-mini-chart .bg,
+[data-theme="light"] #idx-mini-chart .plotbg,
+[data-theme="light"] #idx-mini-chart rect.bg,
+[data-theme="light"] #idx-mini-chart rect.plotbg {
+    fill: #ffffff !important; /* Đổi nền biểu đồ thành trắng */
+}
+
+/* Đổi màu lưới biểu đồ */
+[data-theme="light"] #idx-mini-chart .gridlayer path {
+    stroke: #f1f5f9 !important; 
+}
+[data-theme="light"] #idx-mini-chart .zerolinelayer path {
+    stroke: #cbd5e1 !important;
+}
+
+/* Đổi màu chữ trục hoành, trục tung (Tháng, Năm, Giá trị) */
+[data-theme="light"] #idx-mini-chart .xtick text, 
+[data-theme="light"] #idx-mini-chart .ytick text {
+    fill: #64748b !important; 
+}
+/* ============================================================================
+   VŨ KHÍ HẠNG NẶNG: ÉP TOÀN BỘ KHU VỰC BỘ LỌC VÀ VNINDEX SANG LIGHT MODE
+   ============================================================================ */
+
+/* 1. TẨY NỀN ĐEN: Ép toàn bộ các div bên trong khu vực này trong suốt hoặc nền trắng */
+[data-theme="light"] #filter-offcanvas div {
+    background-color: transparent !important; 
+    border-color: #e2e8f0 !important;
+}
+
+/* Đổ lại nền trắng cho các khối chính để không bị lỗi giao diện */
+[data-theme="light"] #filter-offcanvas {
+    background-color: #f1f5f9 !important; /* Nền tổng xám nhạt */
+}
+[data-theme="light"] #filter-offcanvas > div > div {
+    background-color: #ffffff !important; /* Khối 3 cột lọc & khối VNINDEX nền trắng */
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+}
+[data-theme="light"] .wizard-group-item:hover,
+[data-theme="light"] .criteria-item-hover:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* 2. ÉP ĐỔI MÀU CHỮ: Quét toàn bộ text sang màu đen (NGOẠI TRỪ MÀU XANH/ĐỎ CỦA GIÁ) */
+[data-theme="light"] #filter-offcanvas span:not([style*="color: #10b981"]):not([style*="color: rgb(16, 185, 129)"]):not([style*="color: #ef4444"]):not([style*="color: rgb(239, 68, 68)"]),
+[data-theme="light"] #filter-offcanvas div:not([style*="color: #10b981"]):not([style*="color: #ef4444"]) {
+    color: #334155 !important;
+}
+
+/* 3. SỬA LỖI CÁC Ô NHẬP SỐ (INPUT SLIDER) */
+[data-theme="light"] #filter-offcanvas input {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* 4. FIX RIÊNG THANH CHỌN "TOÀN BỘ NĂM" VÀ NÚT LƯU */
+[data-theme="light"] .year-filter-dropdown .Select-control {
+    background-color: #ffffff !important;
+}
+[data-theme="light"] .year-filter-dropdown .Select-value-label {
+    color: #0f172a !important;
+}
+[data-theme="light"] #btn-save {
+    color: #00a651 !important;
+    border-color: #00a651 !important;
+    background-color: transparent !important;
+}
+
+/* 5. TẨY TRẮNG BACKGROUND CỦA BIỂU ĐỒ PLOTLY VNINDEX */
+[data-theme="light"] #idx-mini-chart .bg,
+[data-theme="light"] #idx-mini-chart .plotbg,
+[data-theme="light"] #idx-mini-chart rect.bg,
+[data-theme="light"] #idx-mini-chart rect.plotbg {
+    fill: #ffffff !important; 
+}
+[data-theme="light"] #idx-mini-chart .gridlayer path {
+    stroke: #f1f5f9 !important; /* Lưới kẻ mờ */
+}
+[data-theme="light"] #idx-mini-chart .zerolinelayer path {
+    stroke: #cbd5e1 !important; /* Trục chính đậm hơn chút */
+}
+[data-theme="light"] #idx-mini-chart .xtick text, 
+[data-theme="light"] #idx-mini-chart .ytick text {
+    fill: #64748b !important; /* Chữ tháng, năm */
+}
+/* ép chữ màu trắng cho thanh navbar ở chế độ sáng */
+[data-theme="light"] .vss-logo-text,
+[data-theme="light"] .vietcap-nav-link,
+[data-theme="light"] .vietcap-nav-login-btn,
+[data-theme="light"] #navbar-user-name {
+    color: #ffffff !important;
+}
+
+/* màu khi rê chuột vào các chữ (màu xanh lá vietcap cho đẹp) */
+[data-theme="light"] .vietcap-nav-link:hover {
+    color: #00c85a !important; 
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+/* ép style cho nút đăng xuất đồng bộ với thanh navbar */
+#btn-logout {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #ffffff !important; /* màu chữ trắng */
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    padding: 7px 16px !important;
+    border-radius: 7px !important;
+    transition: all 0.2s ease !important;
+}
+
+/* màu khi rê chuột vào */
+#btn-logout:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #00c85a !important; /* chữ ngả xanh lá cho đẹp */
+}
+
+/* tạo khung màu xanh khi ấn vào (focus/active) */
+#btn-logout:active,
+#btn-logout:focus,
+#btn-logout:focus-visible {
+    border: 1px solid #00a651 !important; /* viền xanh */
+    box-shadow: 0 0 0 2px rgba(0, 166, 81, 0.3) !important; /* glow xanh nhẹ */
+    background: rgba(0, 166, 81, 0.1) !important;
+    outline: none !important;
+}
+
+/* ép màu chữ trắng luôn cho chế độ sáng */
+[data-theme="light"] #btn-logout {
+    color: #ffffff !important;
+}
+/* tăng cỡ chữ logo vietcap */
+.vss-logo-text {
+    font-size: 24px !important; 
+}
+
+/* tăng cỡ chữ các mục menu (về vietcap, dịch vụ, sản phẩm...) */
+.vietcap-nav-link {
+    font-size: 15px !important; 
+    padding: 8px 16px !important; /* nới rộng khoảng cách giữa các nút một chút cho thoáng */
+}
+
+/* chỉnh lại kích thước riêng cho nút screener cho cân xứng */
+.vietcap-nav-screener {
+    font-size: 15px !important;
+    padding: 7px 22px !important;
+}
+
+/* tăng cỡ chữ tên người dùng (guest demo) */
+#navbar-user-name {
+    font-size: 15px !important;
+}
+
+/* tăng cỡ chữ nút đăng xuất */
+#btn-logout {
+    font-size: 15px !important;
+    padding: 8px 18px !important;
+}
+/* bo tròn góc thanh công cụ (áp dụng cho cả sáng và tối) */
+#screener-scroll-anchor + div {
+    border-radius: 14px !important;
+    
+    /* thêm xíu bóng đổ nhẹ cho thanh này nổi lên 3d 1 chút */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+    
+    /* nếu bạn muốn nó không chạm sát viền màn hình (kiểu khối nổi) thì bỏ comment 2 dòng dưới nha */
+    /* width: calc(100% - 32px) !important; */
+    /* margin: 0 auto !important; */
+}
+
+/* chỉnh lại viền ở chế độ sáng cho nó bọc kín nguyên khối */
+[data-theme="light"] #screener-scroll-anchor + div {
+    border-bottom: none !important;
+    border: 1px solid #e2e8f0 !important;
 }

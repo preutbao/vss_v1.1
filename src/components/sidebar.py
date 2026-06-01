@@ -8,6 +8,30 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 from src.constants import SECTOR_TRANSLATION
 
+theme_switch = html.Div(
+    [
+        # Đổi thành FontAwesome (fas fa-sun)
+        html.I(className="fas fa-sun", style={"marginRight": "8px", "color": "#f59e0b", "fontSize": "14px"}),
+        
+        dbc.Switch(
+            id="theme-switch-button",
+            value=True, # True = Đang ở Dark Mode
+            style={"cursor": "pointer", "marginBottom": "0"}
+        ),
+        
+        # Đổi thành FontAwesome (fas fa-moon) và áp dụng màu xanh Vietcap
+        html.I(className="fas fa-moon", style={"marginLeft": "4px", "color": "#00a651", "fontSize": "14px"}) 
+    ],
+    className="d-flex align-items-center",
+    style={
+        "backgroundColor": "rgba(255, 255, 255, 0.05)",
+        "padding": "4px 10px",
+        "borderRadius": "20px",
+        "border": "1px solid rgba(255, 255, 255, 0.1)",
+        "marginLeft": "16px" # Tạo khoảng cách với nút Toàn TT
+    }
+)
+
 # Để trống — callback auto_update_dropdowns trong screener_callbacks.py
 # sẽ tự động điền đúng danh sách ngành từ snapshot thực tế khi page load.
 # Không hardcode 11 ngành GICS lớn vì VN data dùng cấp sub-industry.
@@ -286,7 +310,7 @@ WIZARD_GROUPS = [
         "id": "tong-quan",
         "label": "Thông tin chung",
         "icon": "fas fa-info-circle",
-        "color": "#58a6ff",
+        "color": "#00a651",
         "items": TONG_QUAN_ITEMS,
     },
     {
@@ -307,7 +331,7 @@ WIZARD_GROUPS = [
         "id": "tang-truong",
         "label": "Tăng trưởng",
         "icon": "fas fa-chart-line",
-        "color": "#58a6ff",
+        "color": "#00a651",
         "items": TANG_TRUONG_ITEMS,
     },
     {
