@@ -3528,3 +3528,9 @@ span[style*="f59e0b"] {
     border-bottom: none !important;
     border: 1px solid #e2e8f0 !important;
 }
+
+/* Ép thanh header luôn có nền đen */
+#vss-sticky-nav {
+    background-color: #000000 !important;
+    border-bottom: 1px solid #1f2937 !important;
+}

@@ -13,3 +13,4 @@ env/
 cache*
 cache/
 snapshot_cache.parquet
+*.parquet binary
