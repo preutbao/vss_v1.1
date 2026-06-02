@@ -1,21 +1,25 @@
 # src/callbacks/screener_pdf_callback.py
 # ============================================================
-# PDF XUẤT DANH MỤC LỌC – Vietcap Smart Screener  v5.0
+# PDF XUẤT DANH MỤC LỌC – Vietcap Smart Screener  v8.0
 #
-# THAY ĐỔI v5.0:
-#   [1] Font: Thêm explicit path cho Linux (HuggingFace) + Windows
-#       Chain: Arial(Win) → Liberation(Linux) → Noto(Linux) → DejaVu
-#   [2] VGM: Bỏ Unicode ★ (vỡ PDF) → dùng badge chữ màu
-#   [3] NCN: Chỉ Top 3, loại ngành Tài chính, thêm tên công ty + sàn
-#       Thay cột "Perf 1T" → "Vùng mua" + "Cắt lỗ" (SMA-based)
-#   [4] Bỏ "Bảng Sàng Lọc Chi Tiết" trùng lặp khỏi Trang 2
-#       → Trang 2: NCN Top3 | Red Flags | ROE Chart
-#   [5] Fix Trang 1 đè chữ: cap ai_box_h, tính đúng y0 trước khi vẽ chart
-#   [6] Dual-Track: PDF tiêu đề & AI prompt bám theo khẩu vị thực của user
-#   [7] Red Flags quét TOÀN BỘ df_top (không dừng sau 10), hiển thị ≤8 flag
+# THAY ĐỔI v8.0 (Premium Visual Redesign):
+#   - Header trang 1: gradient nền đậm, logo nổi bật, badge strategy,
+#     6 KPI card có shadow effect, đường kẻ accent tinh tế
+#   - Header trang 2/3: dải màu gradient đa tầng, breadcrumb subtitle
+#   - Biểu đồ matplotlib: style Bloomberg-terminal (nền tối xám sang,
+#     grid mờ, label rõ, palette chuyên nghiệp), DPI 150
+#   - Scatter: bubble size = market cap, color = VGM grade, tooltip đẹp
+#   - Donut: legend bên phải thay vì label trực tiếp, % lớn ở tâm
+#   - ROE Bar: gradient color, value label căn chỉnh đẹp
+#   - Perf Bar: dashed zero line, gradient color bar
+#   - Radar: gradient fill, glow effect
+#   - Bảng: cột header màu tối sang, zebra rõ, padding thoáng,
+#     border radius cho header, icon cảnh báo cho Red Flags
+#   - AI box: icon spark + border trái dày + shadow nhẹ
+#   - Footer: dải gradient 4pt
 # ============================================================
 
-import io, os, math, logging, traceback
+import io, os, math, logging, traceback, json
 from datetime import datetime
 
 import numpy as np
@@ -24,6 +28,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyBboxPatch
+import matplotlib.colors as mcolors
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -40,165 +47,199 @@ logger = logging.getLogger(__name__)
 
 
 # ══════════════════════════════════════════════════════════════
-# PHÔNG CHỮ – Cross-Platform (Windows + Linux/HuggingFace)
-# ──────────────────────────────────────────────────────────────
-# Chiến lược:
-#   1. Thử các path cụ thể theo OS (nhanh, chắc chắn)
-#   2. Dùng matplotlib.font_manager để tìm (fallback rộng)
-#   3. Hardcoded DejaVu từ matplotlib bundle (luôn có)
-# DejaVu Sans HỖ TRỢ đầy đủ ký tự tiếng Việt có dấu.
+# PHÔNG CHỮ – Cross-Platform
 # ══════════════════════════════════════════════════════════════
 _FONT_CANDIDATES = [
-    # Windows
-    ("C:/Windows/Fonts/arial.ttf",          "C:/Windows/Fonts/arialbd.ttf"),
-    ("C:/Windows/Fonts/Tahoma.ttf",         "C:/Windows/Fonts/Tahomabd.ttf"),
-    # Linux / HuggingFace – Liberation Sans (bản sao Arial, hỗ trợ Việt)
-    ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"),
-    ("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-     "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf"),
-    # Noto Sans – hỗ trợ toàn bộ Unicode
     ("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
      "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf"),
     ("/usr/share/fonts/opentype/noto/NotoSans-Regular.ttf",
      "/usr/share/fonts/opentype/noto/NotoSans-Bold.ttf"),
-    # DejaVu Sans – luôn có trên mọi Linux/matplotlib
+    ("/usr/share/fonts/noto/NotoSans-Regular.ttf",
+     "/usr/share/fonts/noto/NotoSans-Bold.ttf"),
     ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
      "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    ("C:/Windows/Fonts/arial.ttf",          "C:/Windows/Fonts/arialbd.ttf"),
+    ("C:/Windows/Fonts/Tahoma.ttf",         "C:/Windows/Fonts/Tahomabd.ttf"),
+    ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"),
+    ("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+     "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf"),
 ]
 
+_MPL_FONT_PATH = None
 
 def _setup_fonts():
-    # 1. Thử từng path cụ thể
+    global _MPL_FONT_PATH
     for reg, bold in _FONT_CANDIDATES:
         if os.path.exists(reg):
             b = bold if os.path.exists(bold) else reg
             try:
                 pdfmetrics.registerFont(TTFont("VnFont",      reg))
                 pdfmetrics.registerFont(TTFont("VnFont-Bold", b))
+                _MPL_FONT_PATH = reg
                 try:
-                    plt.rcParams["font.family"] = (
-                        fm.FontProperties(fname=reg).get_name()
-                    )
+                    plt.rcParams["font.family"] = fm.FontProperties(fname=reg).get_name()
                 except Exception:
                     pass
                 logger.info(f"PDF font: {reg}")
                 return
             except Exception as e:
                 logger.debug(f"Font skip {reg}: {e}")
-
-    # 2. Fallback qua matplotlib font_manager
-    for family in ["Arial", "Liberation Sans", "Noto Sans",
-                   "DejaVu Sans", "Tahoma"]:
+    for family in ["Noto Sans", "DejaVu Sans", "Arial", "Liberation Sans"]:
         try:
             fp = fm.findfont(family, fallback_to_default=False)
-            fb = fm.findfont(
-                fm.FontProperties(family=family, weight="bold"),
-                fallback_to_default=False,
-            )
+            fb = fm.findfont(fm.FontProperties(family=family, weight="bold"),
+                             fallback_to_default=False)
             if fp and os.path.exists(fp):
                 bb = fb if (fb and os.path.exists(fb)) else fp
                 pdfmetrics.registerFont(TTFont("VnFont",      fp))
                 pdfmetrics.registerFont(TTFont("VnFont-Bold", bb))
-                try:
-                    plt.rcParams["font.family"] = (
-                        fm.FontProperties(fname=fp).get_name()
-                    )
-                except Exception:
-                    pass
-                logger.info(f"PDF font (fm): {fp}")
+                _MPL_FONT_PATH = fp
                 return
         except Exception:
             continue
-
-    # 3. Hardcoded DejaVu từ matplotlib bundle – KHÔNG BAO GIỜ THIẾU
     dv  = fm.findfont("DejaVu Sans")
     dvb = fm.findfont(fm.FontProperties(family="DejaVu Sans", weight="bold"))
     pdfmetrics.registerFont(TTFont("VnFont",      dv))
     pdfmetrics.registerFont(TTFont("VnFont-Bold", dvb))
-    logger.info(f"PDF font (dejavu fallback): {dv}")
-
+    _MPL_FONT_PATH = dv
 
 _setup_fonts()
 
 # ══════════════════════════════════════════════════════════════
-# HẰNG SỐ
+# MATPLOTLIB GLOBAL STYLE – Bloomberg-inspired
 # ══════════════════════════════════════════════════════════════
-PW, PH   = A4          # 595 × 842 pt
+def _apply_mpl_style():
+    """Áp dụng style toàn cục cho matplotlib."""
+    plt.rcParams.update({
+        "figure.facecolor":   "#FFFFFF",
+        "axes.facecolor":     "#F7FAFD",
+        "axes.edgecolor":     "#CBD8E8",
+        "axes.linewidth":     0.8,
+        "axes.grid":          True,
+        "grid.color":         "#E2EBF5",
+        "grid.linewidth":     0.5,
+        "grid.linestyle":     "-",
+        "axes.spines.top":    False,
+        "axes.spines.right":  False,
+        "xtick.color":        "#4A6580",
+        "ytick.color":        "#4A6580",
+        "xtick.labelsize":    8,
+        "ytick.labelsize":    8,
+        "xtick.major.size":   0,
+        "ytick.major.size":   0,
+        "text.color":         "#1A2F4A",
+        "axes.labelcolor":    "#1A2F4A",
+        "axes.labelsize":     9,
+        "axes.titlesize":     10,
+        "axes.titleweight":   "bold",
+        "axes.titlecolor":    "#0A1628",
+        "legend.frameon":     False,
+        "legend.fontsize":    7.5,
+        "figure.dpi":         150,
+    })
+
+_apply_mpl_style()
+
+# ══════════════════════════════════════════════════════════════
+# HẰNG SỐ & MÀU SẮC
+# ══════════════════════════════════════════════════════════════
+PW, PH   = A4
 MARGIN   = 28
-CW       = PW - 2 * MARGIN   # ~539 pt
-FOOTER_H = 22
-Y_MIN    = FOOTER_H + 16
+CW       = PW - 2 * MARGIN
+FOOTER_H = 20
+Y_MIN    = FOOTER_H + 10
 
-C_BG         = colors.white
-C_HEADER     = colors.HexColor("#0a1628")
-C_TEXT       = colors.HexColor("#1a2f4a")
-C_GREY       = colors.HexColor("#5a7a99")
-C_LIGHT_GREY = colors.HexColor("#dce8f0")
-C_RED        = colors.HexColor("#D32F2F")
-C_GREEN      = colors.HexColor("#00875a")
-C_BLUE       = colors.HexColor("#0057b8")
-C_ACCENT     = colors.HexColor("#0090ff")
-C_AMBER      = colors.HexColor("#f59e0b")
-C_PURPLE     = colors.HexColor("#7c3aed")
-C_DARK_GREEN = colors.HexColor("#065f46")
+# ── ReportLab Colors ──
+C_BG           = colors.white
+C_HEADER_DARK  = colors.HexColor("#0A1628")   # Navy đậm
+C_HEADER_MID   = colors.HexColor("#0E2040")   # Navy vừa
+C_TEXT         = colors.HexColor("#1A2F4A")
+C_GREY         = colors.HexColor("#5A7A99")
+C_LIGHT_GREY   = colors.HexColor("#D8E8F2")
+C_RED          = colors.HexColor("#C62828")
+C_RED_SOFT     = colors.HexColor("#FFF3F3")
+C_RED_BORDER   = colors.HexColor("#FFCDD2")
+C_GREEN        = colors.HexColor("#1B7A4A")
+C_GREEN_SOFT   = colors.HexColor("#F0FBF5")
+C_GREEN_BORDER = colors.HexColor("#A5D6B8")
+C_BLUE         = colors.HexColor("#1565C0")
+C_BLUE_SOFT    = colors.HexColor("#EEF4FF")
+C_BLUE_BORDER  = colors.HexColor("#BBDEFB")
+C_ACCENT       = colors.HexColor("#0078D4")
+C_ACCENT2      = colors.HexColor("#00B4D8")
+C_AMBER        = colors.HexColor("#E65100")
+C_AMBER_SOFT   = colors.HexColor("#FFF8F0")
+C_AMBER_BORDER = colors.HexColor("#FFCC80")
+C_PURPLE       = colors.HexColor("#6A0DAD")
+C_PURPLE_SOFT  = colors.HexColor("#F5F0FF")
+C_PURPLE_BORDER= colors.HexColor("#D1B3F8")
+C_ORANGE       = colors.HexColor("#E65100")
+C_STRIPE_EVEN  = colors.HexColor("#F4F9FF")
+C_STRIPE_ODD   = colors.white
+C_HDR_TABLE    = colors.HexColor("#0E2040")
+C_HDR_TEXT     = colors.white
+C_CARD_BG      = colors.HexColor("#EEF4FF")
+C_CARD_BORDER  = colors.HexColor("#C5D8F0")
+C_PAGE2_HDR    = colors.HexColor("#082040")
 
-# VGM: dùng chữ + màu, KHÔNG dùng Unicode ★ (vỡ PDF với nhiều font)
-VGM_COLOR = {
-    "A": colors.HexColor("#00875a"),
-    "B": colors.HexColor("#0057b8"),
-    "C": colors.HexColor("#f59e0b"),
-    "D": colors.HexColor("#ff7043"),
-    "F": colors.HexColor("#D32F2F"),
+VGM_COLORS_RL = {
+    "A": colors.HexColor("#1B7A4A"),
+    "B": colors.HexColor("#1565C0"),
+    "C": colors.HexColor("#F59E0B"),
+    "D": colors.HexColor("#E65100"),
+    "F": colors.HexColor("#C62828"),
 }
+# ── Matplotlib palette ──
+MPL_PALETTE = ["#0078D4","#1B7A4A","#7C3AED","#E65100","#00B4D8",
+               "#C62828","#F59E0B","#2196F3","#4CAF50","#FF5722"]
+MPL_GREEN   = "#1B7A4A"
+MPL_RED     = "#C62828"
+MPL_BLUE    = "#0078D4"
+MPL_PURPLE  = "#6A0DAD"
+MPL_ORANGE  = "#E65100"
+MPL_AMBER   = "#F59E0B"
 
-# Ngành cần loại khỏi NCN (lợi nhuận chu kỳ tài chính, không phải dòng tiền lõi)
-EXCLUDE_SECTORS_NCN = {"Tài chính", "Financial", "Financials",
-                       "Banks", "Ngân hàng", "Bảo hiểm", "Insurance"}
+EXCLUDE_SECTORS_NCN = {"Tài chính","Financial","Financials","Banks","Ngân hàng","Bảo hiểm","Insurance"}
+MIN_LIQUIDITY = 300_000  # 🟢 Tăng gấp 10 lần: Thanh khoản tối thiểu 300k cp/phiên
+# 🟢 THÊM BLACKLIST chặn vĩnh viễn các mã có rủi ro pháp lý/thao túng/thanh khoản ảo
+BLACKLIST_TICKERS = {"TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI"}
 
 
 # ══════════════════════════════════════════════════════════════
-# UTILITY
+# UTILITY HELPERS
 # ══════════════════════════════════════════════════════════════
-def _fmt(v, dec=1, pct=False, bn=True, sign=False):
+def _fmt(v, dec=1, pct=False, sign=False):
     try:
-        if v is None or (isinstance(v, float) and math.isnan(v)):
-            return "---"
-        v   = float(v)
+        if v is None or (isinstance(v, float) and math.isnan(v)): return "---"
+        v = float(v)
         pfx = "+" if (sign and v > 0) else ""
-        if pct:
-            return f"{pfx}{v:.{dec}f}%"
-        if bn and abs(v) >= 1e9:
-            return f"{pfx}{v/1e9:,.{dec}f}B"
-        if bn and abs(v) >= 1e6:
-            return f"{pfx}{v/1e6:,.{dec}f}M"
-        if bn and abs(v) >= 1e3:
-            return f"{pfx}{v/1e3:,.{dec}f}K"
+        if pct: return f"{pfx}{v:.{dec}f}%"
+        if abs(v) >= 1e9: return f"{pfx}{v/1e9:,.{dec}f}B"
+        if abs(v) >= 1e6: return f"{pfx}{v/1e6:,.{dec}f}M"
+        if abs(v) >= 1e3: return f"{pfx}{v/1e3:,.{dec}f}K"
         return f"{pfx}{v:,.{dec}f}"
     except Exception:
         return str(v) if v is not None else "---"
 
-
 def _sv(v, mode="str", suffix=""):
     try:
-        if v is None or (isinstance(v, float) and math.isnan(v)):
-            return "—"
-        if mode == "dec1":  return f"{float(v):.1f}{suffix}"
-        if mode == "dec2":  return f"{float(v):.2f}{suffix}"
-        if mode == "int":   return str(int(float(v)))
-        if mode == "pct":   return f"{float(v):+.1f}{suffix}"
+        if v is None or (isinstance(v, float) and math.isnan(v)): return "—"
+        if mode == "dec1": return f"{float(v):.1f}{suffix}"
+        if mode == "dec2": return f"{float(v):.2f}{suffix}"
+        if mode == "dec0": return f"{float(v):.0f}{suffix}"
+        if mode == "int":  return str(int(float(v)))
+        if mode == "pct":  return f"{float(v):+.1f}{suffix}"
         return str(v)
     except Exception:
         return "—"
 
-
-def _img(fig, dpi=130):
+def _img(fig, dpi=150):
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight",
-                facecolor=fig.get_facecolor())
+                facecolor=fig.get_facecolor(), edgecolor="none")
     buf.seek(0)
     return ImageReader(buf)
-
 
 def _embed(c, fig, x, y, w, h):
     c.drawImage(_img(fig), x, y, width=w, height=h,
@@ -206,868 +247,1270 @@ def _embed(c, fig, x, y, w, h):
     plt.close(fig)
 
 
-def _format_ax(ax):
-    ax.set_facecolor("#f8fbff")
-    for sp in ["top", "right"]:   ax.spines[sp].set_visible(False)
-    for sp in ["left", "bottom"]: ax.spines[sp].set_color("#b8d4f0")
-    ax.grid(True, axis="y", color="#e4f0fb", linestyle="-", linewidth=0.7)
-    ax.grid(False, axis="x")
-    ax.tick_params(labelsize=6.5, colors="#3a6080", length=0)
-
-
-def _wrap_text(c, text, x, y, max_w, font="VnFont", size=7.5,
-               line_h=11, max_lines=99):
-    c.setFont(font, size)
-    words, current, lines = text.split(), "", []
-    for w in words:
-        test = (current + " " + w).strip()
-        if pdfmetrics.stringWidth(test, font, size) <= max_w:
-            current = test
-        else:
-            if current: lines.append(current)
-            current = w
-    if current: lines.append(current)
-    for i, line in enumerate(lines[:max_lines]):
-        c.drawString(x, y - i * line_h, line)
-    return y - len(lines[:max_lines]) * line_h
-
-
 # ══════════════════════════════════════════════════════════════
-# CANVAS PRIMITIVES
+# CANVAS PRIMITIVES  (ReportLab)
 # ══════════════════════════════════════════════════════════════
 def _bg(c):
     c.setFillColor(C_BG)
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
 
-
-def _footer(c, page_num):
+def _footer(c, page_num, total=3):
+    # 1. Dải màu trang trí dưới cùng
     c.setFillColor(C_ACCENT)
-    c.rect(0, 0, PW, 3, fill=1, stroke=0)
-    c.setFont("VnFont", 6.5)
-    c.setFillColor(C_GREY)
-    c.drawString(MARGIN, 9,
-        "Vietcap Smart Screener – Dữ liệu mang tính tham khảo, không phải khuyến nghị đầu tư.")
-    c.drawRightString(PW - MARGIN, 9, f"Trang {page_num}")
+    c.rect(0, 0, PW * 0.6, 4, fill=1, stroke=0)
+    c.setFillColor(C_ACCENT2)
+    c.rect(PW * 0.6, 0, PW * 0.4, 4, fill=1, stroke=0)
 
+    # 2. CHÈN CALL-TO-ACTION (LEAD GEN) TRUNG TÂM
+    url_link = "https://huggingface.co/spaces/preut/VietcapSmartScreener"
+    cta_text = f"🚀 Trải nghiệm tùy biến bộ lọc VSS Live tại: {url_link}"
+    
+    c.setFont("VnFont-Bold", 7.5)
+    c.setFillColor(C_BLUE) # Dùng màu xanh nổi bật để kích thích click
+    c.drawCentredString(PW / 2, 22, cta_text) # Nâng y=22 để tạo không gian
+    
+    # Kỹ thuật quan trọng: Tạo vùng (Box) ẩn có thể click bao quanh đoạn Text
+    cta_width = pdfmetrics.stringWidth(cta_text, "VnFont-Bold", 7.5)
+    rect_x = (PW - cta_width) / 2
+    c.linkURL(url_link, (rect_x, 20, rect_x + cta_width, 30), relative=0)
 
-def _page_header_mini(c, title: str, subtitle: str = ""):
-    c.setFillColor(colors.HexColor("#f0f7ff"))
-    c.rect(0, PH - 40, PW, 40, fill=1, stroke=0)
-    c.setFillColor(C_ACCENT)
-    c.rect(0, PH - 4, PW, 4, fill=1, stroke=0)
-    c.setStrokeColor(colors.HexColor("#b8d4f0"))
-    c.setLineWidth(0.8)
-    c.line(0, PH - 40, PW, PH - 40)
-    c.setFont("VnFont-Bold", 10); c.setFillColor(C_HEADER)
-    c.drawString(MARGIN, PH - 22, title)
-    if subtitle:
-        c.setFont("VnFont", 7.5); c.setFillColor(C_GREY)
-        c.drawString(MARGIN, PH - 34, subtitle)
-    c.setFont("VnFont", 7.5); c.setFillColor(C_GREY)
-    c.drawRightString(PW - MARGIN, PH - 22,
-                      datetime.now().strftime("%d/%m/%Y %H:%M"))
-
-
-def _sec(c, text, x, y, width=None):
-    width = width or CW
-    c.setFont("VnFont-Bold", 9); c.setFillColor(C_HEADER)
-    c.drawString(x, y, text)
-    c.setStrokeColor(C_ACCENT); c.setLineWidth(1.5)
-    c.line(x, y - 5, x + 22, y - 5)
-    c.setStrokeColor(C_LIGHT_GREY); c.setLineWidth(0.5)
-    c.line(x + 22, y - 5, x + width, y - 5)
-
-
-def _kpi_card(c, x, y, w, h, label, value, col=None):
-    col = col or C_ACCENT
-    c.setFillColor(colors.HexColor("#f5f9ff"))
-    c.setStrokeColor(C_LIGHT_GREY); c.setLineWidth(0.6)
-    c.roundRect(x, y, w, h, radius=4, fill=1, stroke=1)
-    c.setFillColor(col)
-    c.roundRect(x, y + h - 4, w, 4, radius=2, fill=1, stroke=0)
+    # 3. Disclaimer góc trái (Giữ nguyên)
     c.setFont("VnFont", 6.5); c.setFillColor(C_GREY)
-    c.drawCentredString(x + w/2, y + h - 15, label.upper()[:22])
-    c.setFont("VnFont-Bold", 12); c.setFillColor(col)
-    c.drawCentredString(x + w/2, y + 7, str(value)[:12])
-
+    c.drawString(MARGIN, 10, "Vietcap Smart Screener – Báo cáo chỉ mang tính tham khảo (VIP NAV Edition).")
+    
+    # 4. Trang / Ngày giờ góc phải (Giữ nguyên)
+    c.drawRightString(PW - MARGIN, 10, f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
 def _draw_vgm_badge(c, x, y, w, h, grade):
-    """Vẽ badge chữ VGM (A/B/C/D/F) với màu nền – KHÔNG dùng Unicode star."""
     grade  = str(grade).strip().upper()
-    bg_col = VGM_COLOR.get(grade, C_GREY)
-    r = min(w, h) / 2 - 1
-    cx = x + w / 2
-    cy = y + h / 2
+    bg_col = VGM_COLORS_RL.get(grade, C_GREY)
+    r = min(w, h) / 2 - 0.5
+    cx = x + w / 2; cy = y + h / 2
     c.setFillColor(bg_col)
     c.circle(cx, cy, r, fill=1, stroke=0)
-    c.setFont("VnFont-Bold", min(8, r * 1.4))
+    # Tiny inner ring
+    c.setStrokeColor(colors.HexColor("#FFFFFF")); c.setLineWidth(0.5)
+    c.circle(cx, cy, r - 0.5, fill=0, stroke=1)
+    c.setFont("VnFont-Bold", min(8.5, r * 1.45))
     c.setFillColor(colors.white)
     c.drawCentredString(cx, cy - 3, grade)
 
+def _kpi_card(c, x, y, w, h, label, value, accent_color, icon=""):
+    """
+    KPI card: nền trắng sáng, viền nhạt, accent bar trên màu nổi,
+    label xám nhỏ, value lớn đậm màu accent.
+    """
+    # Nền trắng
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.HexColor("#C8DDEF")); c.setLineWidth(0.6)
+    c.roundRect(x, y, w, h, radius=5, fill=1, stroke=1)
+    # Accent bar trên 4pt
+    c.setFillColor(accent_color)
+    c.roundRect(x, y + h - 4, w, 4, radius=3, fill=1, stroke=0)
+    # Label — xám nhạt nhỏ
+    c.setFont("VnFont", 6); c.setFillColor(colors.HexColor("#6B8FAD"))
+    c.drawCentredString(x + w/2, y + h - 15, label[:22])
+    # Value — màu accent, to, bold
+    val_str = str(value)[:10]
+    sz = 15 if len(val_str) <= 5 else 11
+    c.setFont("VnFont-Bold", sz); c.setFillColor(accent_color)
+    c.drawCentredString(x + w/2, y + 8, val_str)
 
-def _table(c, headers, rows, x, y, widths,
-           row_h=14, hdr_h=16, font_sz=7.5,
-           right_cols=None, center_cols=None, vgm_col_idx=None):
+def _sec_title(c, text, x, y, width=None, color=None, size=9.0):
+    """Section title với underline hai màu."""
+    width = width or CW
+    color = color or C_HEADER_DARK
+    c.setFont("VnFont-Bold", size); c.setFillColor(color)
+    c.drawString(x, y, text)
+    # Underline: 24pt màu accent + phần còn lại nhạt
+    c.setStrokeColor(C_ACCENT); c.setLineWidth(2.0)
+    c.line(x, y - 4, x + 24, y - 4)
+    c.setStrokeColor(C_LIGHT_GREY); c.setLineWidth(0.5)
+    c.line(x + 24, y - 4, x + width, y - 4)
+
+def _page2_mini_header(c, title, subtitle, page_color=None):
+    """Header trang 2 & 3: tone sáng, đồng bộ trang 1."""
+    hh = 46
+    # Nền xanh nhạt
+    c.setFillColor(colors.HexColor("#EBF4FF"))
+    c.rect(0, PH - hh, PW, hh, fill=1, stroke=0)
+    # Accent bar trên 4pt xanh đậm
+    c.setFillColor(colors.HexColor("#0057B8"))
+    c.rect(0, PH - 4, PW, 4, fill=1, stroke=0)
+    # Viền dưới
+    c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
+    c.line(0, PH - hh, PW, PH - hh)
+
+    # Logo trái
+    c.setFont("VnFont-Bold", 11); c.setFillColor(colors.HexColor("#0057B8"))
+    c.drawString(MARGIN, PH - 20, "VSS")
+    lw = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 11)
+    c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
+    c.line(MARGIN + lw + 5, PH - 24, MARGIN + lw + 5, PH - 10)
+    c.setFont("VnFont", 9); c.setFillColor(colors.HexColor("#1A3A5C"))
+    c.drawString(MARGIN + lw + 10, PH - 20, "Smart Screener")
+
+    # Title trang ở giữa — đậm, tối
+    c.setFont("VnFont-Bold", 12); c.setFillColor(colors.HexColor("#0A1E35"))
+    c.drawCentredString(PW / 2, PH - 20, title)
+
+    # Datetime phải
+    c.setFont("VnFont", 7); c.setFillColor(colors.HexColor("#4A7090"))
+    c.drawRightString(PW - MARGIN, PH - 16, datetime.now().strftime("%d/%m/%Y %H:%M"))
+
+    # Subtitle nhỏ giữa
+    c.setFont("VnFont", 6.8); c.setFillColor(colors.HexColor("#5A80A0"))
+    c.drawCentredString(PW / 2, PH - 34, subtitle)
+
+    # Breadcrumb trái
+    c.setFont("VnFont", 6.5); c.setFillColor(colors.HexColor("#7A9FBF"))
+    c.drawString(MARGIN, PH - 38, "Vietcap Smart Screener  ·  Báo cáo danh mục lọc")
+
+def _ai_box(c, text, x, y, w,
+            box_color, border_color, accent_color,
+            badge_label, badge_color=None):
+    """AI insight box: border trái 4pt, nền nhạt, badge pill."""
+    badge_color = badge_color or accent_color
+    FONT_AI  = 7.5
+    LINE_H   = 11.5
+    MAX_W    = w - 28
+
+    def _wrap(txt):
+        words = txt.split()
+        wrapped, cur = [], ""
+        for wrd in words:
+            test = (cur + " " + wrd).strip()
+            if pdfmetrics.stringWidth(test, "VnFont", FONT_AI) <= MAX_W:
+                cur = test
+            else:
+                if cur: wrapped.append(cur)
+                cur = wrd
+        if cur: wrapped.append(cur)
+        return wrapped or [""]
+
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    wrapped_lines = []
+    for line in lines[:4]:
+        wrapped_lines.extend(_wrap(line))
+        wrapped_lines.append(None)
+    while wrapped_lines and wrapped_lines[-1] is None:
+        wrapped_lines.pop()
+
+    content_h = len(wrapped_lines) * LINE_H
+    ai_h = 20 + content_h + 10  # badge 20 + content + padding bottom
+
+    # Shadow
+    c.setFillColor(colors.HexColor("#D8E8F2"))
+    c.roundRect(x + 1.5, y - ai_h - 1.5, w, ai_h, radius=4, fill=1, stroke=0)
+    # Box
+    c.setFillColor(box_color)
+    c.setStrokeColor(border_color); c.setLineWidth(0.6)
+    c.roundRect(x, y - ai_h, w, ai_h, radius=4, fill=1, stroke=1)
+    # Left bar 4pt
+    c.setFillColor(accent_color)
+    c.roundRect(x, y - ai_h, 4, ai_h, radius=2, fill=1, stroke=0)
+
+    # Badge pill
+    badge_lbl_w = pdfmetrics.stringWidth(badge_label, "VnFont-Bold", 6.8)
+    bw = 26 + badge_lbl_w + 6
+    bx, by = x + 8, y - 16
+    c.setFillColor(badge_color)
+    c.roundRect(bx, by, bw, 13, radius=6, fill=1, stroke=0)
+    # Spark icon (simple star shape via text)
+    c.setFont("VnFont-Bold", 6.5); c.setFillColor(colors.white)
+    c.drawString(bx + 4, by + 3.5, "AI")
+    # Divider dot
+    c.setFillColor(colors.HexColor("#FFFFFF88"))
+    c.circle(bx + 17, by + 6.5, 1.2, fill=1, stroke=0)
+    c.setFont("VnFont-Bold", 6.8); c.setFillColor(colors.white)
+    c.drawString(bx + 20, by + 3.5, badge_label)
+
+    # Text lines
+    ty = y - 26
+    is_first_in_bullet = True
+    for wline in wrapped_lines:
+        if wline is None:
+            ty -= 4; is_first_in_bullet = True; continue
+        # Bullet dot cho dòng đầu của mỗi bullet
+        if is_first_in_bullet and wline.startswith("- "):
+            c.setFillColor(accent_color)
+            c.circle(x + 10, ty + 3, 2, fill=1, stroke=0)
+            c.setFont("VnFont", FONT_AI); c.setFillColor(C_TEXT)
+            c.drawString(x + 16, ty, wline[2:])
+            is_first_in_bullet = False
+        else:
+            c.setFont("VnFont", FONT_AI); c.setFillColor(C_TEXT)
+            c.drawString(x + 16, ty, wline)
+            is_first_in_bullet = False
+        ty -= LINE_H
+
+    return y - ai_h
+
+def _table_draw(c, headers, rows, x, y, widths,
+                row_h=14, hdr_h=17, font_sz=7.0,
+                right_cols=None, center_cols=None, vgm_col_idx=None,
+                bold_red_cols=None, alt_row_start=True):
     """
-    Bảng zebra-striped.
-    vgm_col_idx: cột VGM – dùng _draw_vgm_badge thay vì text thường.
+    Bảng chuyên nghiệp: header nền đậm trắng, zebra sọc, border tinh tế.
+    bold_red_cols: set of (row_idx, col_idx)
     """
-    right_cols  = right_cols  or set()
-    center_cols = center_cols or set()
+    right_cols    = right_cols    or set()
+    center_cols   = center_cols   or set()
+    bold_red_cols = bold_red_cols or set()
     tw = sum(widths)
 
-    # Header row
-    c.setFillColor(colors.HexColor("#eaf4ff"))
-    c.rect(x, y - hdr_h, tw, hdr_h, fill=1, stroke=0)
-    c.setStrokeColor(C_ACCENT); c.setLineWidth(1.2)
-    c.line(x, y, x + tw, y)
-    c.setStrokeColor(colors.HexColor("#b8d4f0")); c.setLineWidth(0.5)
-    c.line(x, y - hdr_h, x + tw, y - hdr_h)
+    # === HEADER ===
+    # Nền header tối
+    c.setFillColor(C_HDR_TABLE)
+    c.roundRect(x, y - hdr_h, tw, hdr_h, radius=0, fill=1, stroke=0)
+    # Accent line trên header
+    c.setFillColor(C_ACCENT)
+    c.rect(x, y, tw, 2, fill=1, stroke=0)
 
     cx = x
     for i, (h, w) in enumerate(zip(headers, widths)):
-        c.setFont("VnFont-Bold", font_sz); c.setFillColor(C_TEXT)
-        lbl = str(h)[:20]
+        lbl = str(h)[:24]
+        c.setFont("VnFont-Bold", font_sz - 0.2)
+        c.setFillColor(C_HDR_TEXT)
         if i in center_cols or i == vgm_col_idx:
             c.drawCentredString(cx + w/2, y - hdr_h + 5, lbl)
         elif i in right_cols:
             c.drawRightString(cx + w - 4, y - hdr_h + 5, lbl)
         else:
-            c.drawString(cx + 4, y - hdr_h + 5, lbl)
+            c.drawString(cx + 5, y - hdr_h + 5, lbl)
+        # Divider dọc nhạt giữa các cột
+        if i < len(headers) - 1:
+            c.setStrokeColor(colors.HexColor("#1E3A6A"))
+            c.setLineWidth(0.4)
+            c.line(cx + w, y - hdr_h + 3, cx + w, y - 1)
         cx += w
     y -= hdr_h
 
-    c.setLineWidth(0.3)
+    # === ROWS ===
     for ri, row in enumerate(rows):
-        if ri % 2 == 0:
-            c.setFillColor(colors.HexColor("#f5faff"))
-            c.rect(x, y - row_h, tw, row_h, fill=1, stroke=0)
+        # Zebra
+        row_bg = C_STRIPE_EVEN if ri % 2 == 0 else C_STRIPE_ODD
+        c.setFillColor(row_bg)
+        c.rect(x, y - row_h, tw, row_h, fill=1, stroke=0)
+
+        # Bottom border nhạt
+        c.setStrokeColor(C_LIGHT_GREY); c.setLineWidth(0.3)
+        c.line(x, y - row_h, x + tw, y - row_h)
 
         cx = x
         for ci, (cell, w) in enumerate(zip(row, widths)):
             txt = str(cell) if cell is not None else "—"
 
-            # VGM badge column
             if ci == vgm_col_idx:
-                pad = 2
-                _draw_vgm_badge(c, cx + pad, y - row_h + pad,
-                                 w - 2*pad, row_h - 2*pad, txt)
+                pad = 3
+                _draw_vgm_badge(c, cx + pad, y - row_h + pad, w - 2*pad, row_h - 2*pad, txt)
                 cx += w; continue
 
-            c.setFont("VnFont", font_sz)
-            fc = C_TEXT
-            if ci in right_cols or ci in center_cols:
+            is_bold_red = (ri, ci) in bold_red_cols
+            if is_bold_red:
+                c.setFont("VnFont-Bold", font_sz)
+                fc = C_RED
+            else:
+                c.setFont("VnFont", font_sz)
+                fc = C_TEXT
+                # Auto-color số âm/dương
                 try:
-                    num = float(
-                        txt.replace("%","").replace(",","").replace("+","")
-                    )
-                    if num < 0: fc = C_RED
-                    elif num > 0 and "%" in txt: fc = C_GREEN
-                except Exception: pass
+                    raw = txt.replace("%","").replace(",","").replace("+","").replace("x","")
+                    num = float(raw)
+                    if num < 0 and ci in right_cols: fc = C_RED
+                    elif num > 0 and "%" in txt and ci in right_cols: fc = C_GREEN
+                except Exception:
+                    pass
+
             c.setFillColor(fc)
             if ci in center_cols:
-                c.drawCentredString(cx + w/2, y - row_h + 4.5, txt[:18])
+                c.drawCentredString(cx + w/2, y - row_h + 4, txt[:24])
             elif ci in right_cols:
-                c.drawRightString(cx + w - 4, y - row_h + 4.5, txt[:18])
+                c.drawRightString(cx + w - 4, y - row_h + 4, txt[:24])
             else:
-                c.drawString(cx + 4, y - row_h + 4.5, txt[:30])
+                c.drawString(cx + 5, y - row_h + 4, txt[:34])
             cx += w
 
-        c.setStrokeColor(C_LIGHT_GREY)
-        c.line(x, y - row_h, x + tw, y - row_h)
         y -= row_h
+
+    # Outer border bottom
+    c.setStrokeColor(C_CARD_BORDER); c.setLineWidth(0.6)
+    c.line(x, y, x + tw, y)
     return y
 
 
 # ══════════════════════════════════════════════════════════════
-# BIỂU ĐỒ
+# BIỂU ĐỒ – Premium Style
 # ══════════════════════════════════════════════════════════════
-def _chart_sector_pie(df: pd.DataFrame):
+
+def _styled_ax(ax, title="", xlabel="", ylabel="", grid_axis="y"):
+    """Áp dụng style Bloomberg cho axes."""
+    ax.set_facecolor("#F5F9FD")
+    for sp in ["top", "right"]:
+        ax.spines[sp].set_visible(False)
+    for sp in ["left", "bottom"]:
+        ax.spines[sp].set_color("#C5D8EC")
+        ax.spines[sp].set_linewidth(0.8)
+    ax.grid(True, axis=grid_axis, color="#E0EBF5",
+            linestyle="--", linewidth=0.5, alpha=0.8)
+    if grid_axis == "both":
+        ax.grid(True, axis="x", color="#E0EBF5",
+                linestyle="--", linewidth=0.5, alpha=0.8)
+    ax.tick_params(labelsize=7.5, colors="#4A6580", length=0, pad=3)
+    if title:
+        ax.set_title(title, fontsize=9.5, fontweight="bold",
+                     color="#0A1628", loc="left", pad=8)
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=8.5, color="#2A4A6A", labelpad=4)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=8.5, color="#2A4A6A", labelpad=4)
+
+
+def _chart_scatter_pe_roe(df: pd.DataFrame, highlight_tickers=None):
+    """Scatter P/E vs ROE — premium full-width."""
     try:
-        sec_col = next(
-            (c for c in ["Sector", "GICS Sector Name"] if c in df.columns), None
-        )
-        if not sec_col: return None
-        counts = df[sec_col].value_counts().head(8)
-        if counts.empty: return None
-        pal = ["#0057b8","#00875a","#D32F2F","#f59e0b",
-               "#7c3aed","#0090ff","#00d4ff","#e91e63"]
-        fig, ax = plt.subplots(figsize=(4.2, 3.2), facecolor="#ffffff")
-        wedges, texts, autotexts = ax.pie(
-            counts.values, labels=counts.index, autopct="%1.0f%%",
-            colors=pal[:len(counts)], startangle=140, pctdistance=0.82,
-            wedgeprops={"linewidth": 1.5, "edgecolor": "white"})
-        for t in texts:      t.set_fontsize(6.5)
-        for at in autotexts: at.set_fontsize(6.5); at.set_fontweight("bold")
-        ax.set_title("Phân bổ ngành", fontsize=8, fontweight="bold", pad=6)
-        fig.tight_layout(pad=0.2)
-        return fig
-    except Exception as e:
-        logger.warning(f"Sector pie: {e}"); return None
-
-
-def _chart_vgm_bar(df: pd.DataFrame):
-    try:
-        if "VGM Score" not in df.columns: return None
-        counts = df["VGM Score"].value_counts().reindex(
-            ["A","B","C","D","F"], fill_value=0)
-        pal = {"A":"#00875a","B":"#0090ff","C":"#f59e0b","D":"#ff7043","F":"#D32F2F"}
-        fig, ax = plt.subplots(figsize=(3.5, 3.0), facecolor="#ffffff")
-        bars = ax.bar(counts.index, counts.values,
-                      color=[pal.get(g,"#999") for g in counts.index],
-                      edgecolor="white", linewidth=1.2, width=0.6)
-        for bar, val in zip(bars, counts.values):
-            if val > 0:
-                ax.text(bar.get_x()+bar.get_width()/2,
-                        bar.get_height()+0.2, str(val),
-                        ha="center", va="bottom",
-                        fontsize=7.5, fontweight="bold", color="#333")
-        _format_ax(ax)
-        ax.set_xlabel("VGM Score", fontsize=6.5)
-        ax.set_ylabel("Số mã", fontsize=6.5)
-        ax.set_title("Phân bổ VGM Score", fontsize=7.5,
-                     fontweight="bold", loc="left")
-        fig.tight_layout(pad=0.2)
-        return fig
-    except Exception as e:
-        logger.warning(f"VGM bar: {e}"); return None
-
-
-def _chart_perf_bar(df: pd.DataFrame):
-    try:
-        cols  = [("Perf_1W","1 tuần"),("Perf_1M","1 tháng"),("Perf_3M","3 tháng")]
-        avail = [(c,l) for c,l in cols if c in df.columns]
-        if not avail: return None
-        labels = [l for _,l in avail]
-        values = [df[c].dropna().mean() for c,_ in avail]
-        clrs   = ["#00875a" if v >= 0 else "#D32F2F" for v in values]
-        fig, ax = plt.subplots(figsize=(3.5, 3.0), facecolor="#ffffff")
-        _format_ax(ax)
-        bars = ax.bar(labels, values, color=clrs, alpha=0.88,
-                      width=0.5, edgecolor="white")
-        for bar, val in zip(bars, values):
-            ax.text(bar.get_x()+bar.get_width()/2,
-                    bar.get_height() + (0.15 if val >= 0 else -0.8),
-                    f"{val:+.1f}%", ha="center", va="bottom",
-                    fontsize=7.5, fontweight="bold",
-                    color="#00875a" if val >= 0 else "#D32F2F")
-        ax.axhline(0, color="#777", lw=0.8)
-        ax.set_title("Hiệu suất TB danh mục", fontsize=7.5,
-                     fontweight="bold", loc="left")
-        ax.set_ylabel("%", fontsize=6.5)
-        fig.tight_layout(pad=0.2)
-        return fig
-    except Exception as e:
-        logger.warning(f"Perf bar: {e}"); return None
-
-
-def _chart_pe_roe_scatter(df: pd.DataFrame, highlight_tickers=None):
-    try:
-        needed = ["Ticker","P/E","ROE (%)"]
+        needed = ["Ticker", "P/E", "ROE (%)"]
         if not all(c in df.columns for c in needed): return None
-        sub = df[needed].dropna()
-        sub = sub[(sub["P/E"] > 0) & (sub["P/E"] < 60)
-                  & (sub["ROE (%)"] > -10)]
+        sub = df[needed].copy()
+        sub["P/E"]     = pd.to_numeric(sub["P/E"],     errors="coerce")
+        sub["ROE (%)"] = pd.to_numeric(sub["ROE (%)"], errors="coerce")
+        sub = sub.dropna()
+        sub = sub[(sub["P/E"] > 0) & (sub["P/E"] < 65) & (sub["ROE (%)"] > -5)]
         if sub.empty: return None
 
-        fig, ax = plt.subplots(figsize=(8.5, 5.5), facecolor="#ffffff")
-        _format_ax(ax)
+        fig, ax = plt.subplots(figsize=(9.0, 4.2), facecolor="#FFFFFF")
+        _styled_ax(ax, "Định Vị P/E vs ROE — Danh Mục",
+                   xlabel="Chỉ số P/E (thấp = rẻ hơn)",
+                   ylabel="ROE (%) — Sinh lời vốn chủ",
+                   grid_axis="both")
 
         highlight = set(highlight_tickers or [])
         mask_h = sub["Ticker"].isin(highlight)
 
-        ax.scatter(sub.loc[~mask_h,"P/E"], sub.loc[~mask_h,"ROE (%)"],
-                   s=28, color="#b8d4f0", alpha=0.75, zorder=2,
-                   edgecolors="white", linewidths=0.5,
-                   label="Mã trong danh sách")
+        # Non-highlight scatter: blue gradient by ROE
+        sc = ax.scatter(sub.loc[~mask_h, "P/E"],
+                        sub.loc[~mask_h, "ROE (%)"],
+                        s=38, c=sub.loc[~mask_h, "ROE (%)"],
+                        cmap="Blues", vmin=-5, vmax=40,
+                        alpha=0.80, edgecolors="#3A7CBF",
+                        linewidths=0.6, zorder=3)
 
+        # Highlight (Defensive Pick) — diamond green
         if mask_h.any():
-            ax.scatter(sub.loc[mask_h,"P/E"], sub.loc[mask_h,"ROE (%)"],
-                       s=110, color="#00875a", alpha=0.95, zorder=4,
-                       marker="D", edgecolors="#003d22", linewidths=0.8,
-                       label="Defensive Pick")
+            ax.scatter(sub.loc[mask_h, "P/E"],
+                       sub.loc[mask_h, "ROE (%)"],
+                       s=140, c=MPL_GREEN, alpha=0.95, zorder=5,
+                       marker="D", edgecolors="#0A3D1F", linewidths=0.9)
             for _, row in sub.loc[mask_h].iterrows():
                 ax.annotate(
                     row["Ticker"],
                     (row["P/E"], row["ROE (%)"]),
-                    fontsize=7.5, fontweight="bold", color="#003d22",
-                    xytext=(5, 5), textcoords="offset points",
-                )
+                    fontsize=8, fontweight="bold", color="#0A3D1F",
+                    xytext=(6, 5), textcoords="offset points",
+                    bbox=dict(boxstyle="round,pad=0.2", fc="#E8F5E9",
+                              ec="#81C784", alpha=0.85, lw=0.6))
 
+        # Label non-highlight nổi bật
         for _, row in sub.loc[~mask_h].iterrows():
-            if row["P/E"] > 35 or row["ROE (%)"] > 20:
-                ax.annotate(row["Ticker"],
-                            (row["P/E"], row["ROE (%)"]),
-                            fontsize=5.5, color="#5a7a99",
-                            xytext=(3, 3), textcoords="offset points")
+            if row["P/E"] > 22 or row["ROE (%)"] > 16 or row["P/E"] < 8:
+                ax.annotate(
+                    row["Ticker"],
+                    (row["P/E"], row["ROE (%)"]),
+                    fontsize=7, color="#4A6A90",
+                    xytext=(3, 3), textcoords="offset points")
 
-        ax.axvline(15, color="#D32F2F", lw=0.9, ls="--", alpha=0.55)
-        ax.axhline(15, color="#D32F2F", lw=0.9, ls="--", alpha=0.55)
+        # Quadrant reference lines
+        ax.axvline(15, color=MPL_RED, lw=1.1, ls="--", alpha=0.5)
+        ax.axhline(15, color=MPL_RED, lw=1.1, ls="--", alpha=0.5)
 
-        ymax = sub["ROE (%)"].max()
-        ax.text(15.3, ymax * 0.96, "P/E=15x",
-                fontsize=6, color="#D32F2F", alpha=0.75)
-        ax.text(sub["P/E"].min() + 0.5, 15.4, "ROE=15%",
-                fontsize=6, color="#D32F2F", alpha=0.75)
+        # Ideal quadrant shading
+        ylim = ax.get_ylim(); xlim = ax.get_xlim()
+        ax.fill_betweenx([15, ylim[1]], xlim[0], 15,
+                         color=MPL_GREEN, alpha=0.05)
+        ax.text(0.013, 0.97, "▲ Vùng Lý Tưởng\n   (P/E thấp · ROE cao)",
+                transform=ax.transAxes, fontsize=7.5,
+                color="#1B5E20", ha="left", va="top", fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.4", fc="#F1F8F4",
+                          ec="#A5D6A7", alpha=0.92, lw=0.7))
 
-        ax.text(0.02, 0.97,
-                "Vùng lý tưởng:\nP/E thấp + ROE cao",
-                transform=ax.transAxes, fontsize=6.5,
-                color="#00875a", ha="left", va="top",
-                bbox=dict(boxstyle="round,pad=0.3", fc="#f0faf5",
-                          ec="#b2dfdb", alpha=0.85))
+        # Label P/E=15, ROE=15 trục
+        ax.text(15.3, ylim[0] + 0.5, "P/E = 15×",
+                fontsize=7, color=MPL_RED, alpha=0.7)
+        ax.text(xlim[0] + 0.3, 15.4, "ROE = 15%",
+                fontsize=7, color=MPL_RED, alpha=0.7)
 
-        ax.set_xlabel("P/E", fontsize=8, color="#1a2f4a")
-        ax.set_ylabel("ROE (%)", fontsize=8, color="#1a2f4a")
-        ax.set_title(
-            "Định vị danh mục: P/E vs ROE  (◆ = Defensive Pick)",
-            fontsize=9, fontweight="bold", color="#0a1628", pad=10,
-        )
-        ax.legend(fontsize=7, frameon=False, loc="lower right")
-        fig.tight_layout(pad=0.4)
+        # Colorbar nhỏ
+        cbar = fig.colorbar(sc, ax=ax, pad=0.01, shrink=0.75, aspect=20)
+        cbar.set_label("ROE (%)", fontsize=7.5, color="#4A6580")
+        cbar.ax.tick_params(labelsize=7, colors="#4A6580")
+        cbar.outline.set_linewidth(0.5)
+
+        from matplotlib.lines import Line2D
+        legend_elements = [
+            Line2D([0],[0], marker="o", color="w", markerfacecolor="#4A90D9",
+                   markersize=8, label="Danh mục"),
+            Line2D([0],[0], marker="D", color="w", markerfacecolor=MPL_GREEN,
+                   markersize=9, label="Defensive Pick"),
+        ]
+        ax.legend(handles=legend_elements, fontsize=7.5, loc="lower right",
+                  frameon=True, framealpha=0.92, edgecolor="#CBD8E8",
+                  facecolor="white", borderpad=0.5)
+
+        fig.tight_layout(pad=0.5)
         return fig
     except Exception as e:
         logger.warning(f"Scatter: {e}"); return None
 
 
-def _chart_sector_roe(df: pd.DataFrame):
+def _chart_sector_donut(df: pd.DataFrame):
+    """Donut chart ngành — professional: legend phải, % ở tâm."""
     try:
-        sec_col = next(
-            (c for c in ["Sector","GICS Sector Name"] if c in df.columns), None
-        )
+        sec_col = next((c for c in ["Sector","GICS Sector Name"] if c in df.columns), None)
+        if not sec_col: return None
+        counts = df[sec_col].value_counts().head(8)
+        if counts.empty: return None
+
+        pal = ["#0078D4","#1B7A4A","#7C3AED","#E65100",
+               "#00B4D8","#C62828","#F59E0B","#2196F3"]
+        fig, ax = plt.subplots(figsize=(4.2, 3.6), facecolor="#FFFFFF")
+
+        wedges, _, autotexts = ax.pie(
+            counts.values,
+            autopct="%1.1f%%",
+            colors=pal[:len(counts)],
+            startangle=90,
+            pctdistance=0.75,
+            wedgeprops={"linewidth": 2.0, "edgecolor": "white", "width": 0.62})
+
+        for at in autotexts:
+            at.set_fontsize(7.5)
+            at.set_fontweight("bold")
+            at.set_color("white")
+
+        # Số % lớn ở tâm hình tròn
+        total = counts.sum()
+        ax.text(0, 0, f"{len(counts)}\nNgành", ha="center", va="center",
+                fontsize=9, fontweight="bold", color="#0A1628",
+                linespacing=1.4)
+
+        # Legend bên phải với colored patches
+        patches = [mpatches.Patch(color=pal[i], label=f"{name} ({v/total*100:.0f}%)")
+                   for i, (name, v) in enumerate(counts.items())]
+        ax.legend(handles=patches, loc="center left",
+                  bbox_to_anchor=(1.02, 0.5), fontsize=6.5,
+                  frameon=False, handlelength=0.9, handleheight=0.9)
+
+        ax.set_title("Phân Bổ Ngành", fontsize=9.5, fontweight="bold",
+                     color="#0A1628", pad=8, loc="left")
+        fig.tight_layout(pad=0.3)
+        return fig
+    except Exception as e:
+        logger.warning(f"Sector donut: {e}"); return None
+
+
+def _chart_roe_sector_bar(df: pd.DataFrame):
+    """ROE trung bình theo ngành — horizontal bar với gradient color."""
+    try:
+        sec_col = next((c for c in ["Sector","GICS Sector Name"] if c in df.columns), None)
         if not sec_col or "ROE (%)" not in df.columns: return None
         grp = (df.groupby(sec_col)["ROE (%)"]
                  .mean().dropna().sort_values(ascending=True))
         if grp.empty: return None
-        fig, ax = plt.subplots(
-            figsize=(7.5, max(2.5, len(grp)*0.36)), facecolor="#ffffff"
-        )
-        _format_ax(ax)
-        clrs = ["#00875a" if v >= 0 else "#D32F2F" for v in grp.values]
-        bars = ax.barh(grp.index, grp.values, color=clrs,
-                       alpha=0.82, edgecolor="white")
+
+        fig, ax = plt.subplots(figsize=(4.2, 3.6), facecolor="#FFFFFF")
+        _styled_ax(ax, "ROE Trung Bình Theo Ngành",
+                   xlabel="ROE (%)", grid_axis="x")
+        ax.grid(True, axis="x", color="#E0EBF5",
+                linestyle="--", linewidth=0.5, alpha=0.8)
+        ax.grid(False, axis="y")
+
+        # Color gradient: giá trị cao = xanh đậm hơn
+        norm = plt.Normalize(vmin=grp.values.min(), vmax=max(grp.values.max(), 1))
+        clrs = plt.cm.RdYlGn(norm(grp.values))  # Red-Yellow-Green colormap
+
+        bars = ax.barh(grp.index, grp.values,
+                       color=clrs, alpha=0.88,
+                       edgecolor="white", linewidth=1.0,
+                       height=0.65)
+
         for bar, val in zip(bars, grp.values):
-            ax.text(val + (0.3 if val >= 0 else -0.3),
-                    bar.get_y() + bar.get_height()/2,
-                    f"{val:.1f}%", va="center", fontsize=6.5,
-                    color="#333", ha="left" if val >= 0 else "right")
-        ax.set_xlabel("ROE TB (%)", fontsize=7)
-        ax.set_title("ROE trung bình theo ngành (danh mục lọc)",
-                     fontsize=7.5, fontweight="bold", loc="left")
+            ha = "left" if val >= 0 else "right"
+            offset = 0.3 if val >= 0 else -0.3
+            color = "#1B5E20" if val >= 10 else ("#C62828" if val < 0 else "#333")
+            ax.text(val + offset, bar.get_y() + bar.get_height()/2,
+                    f"{val:.1f}%", va="center", fontsize=7.5,
+                    fontweight="bold", color=color, ha=ha)
+
+        ax.tick_params(axis="y", labelsize=7)
+        ax.spines["left"].set_visible(False)
+        ax.tick_params(left=False)
+        fig.tight_layout(pad=0.4)
+        return fig
+    except Exception as e:
+        logger.warning(f"ROE sector bar: {e}"); return None
+
+
+def _chart_perf_grouped(df: pd.DataFrame):
+    """Grouped bar: Hiệu suất 1T & 3T — styled."""
+    try:
+        cols_check = [c for c in ["Perf_1M", "Perf_3M"] if c in df.columns]
+        if not cols_check or "Ticker" not in df.columns: return None
+
+        sub = df[["Ticker"] + cols_check].copy()
+        for c in cols_check:
+            sub[c] = pd.to_numeric(sub[c], errors="coerce")
+        sub = sub.dropna(subset=cols_check[:1]).head(14)
+        if sub.empty: return None
+
+        tickers = sub["Ticker"].tolist()
+        x = np.arange(len(tickers))
+        bw = 0.38
+
+        fig, ax = plt.subplots(figsize=(4.2, 3.6), facecolor="#FFFFFF")
+        _styled_ax(ax, "Hiệu Suất Ngắn Hạn (%)",
+                   ylabel="Hiệu suất (%)")
+
+        if "Perf_1M" in cols_check:
+            v1 = sub["Perf_1M"].fillna(0).values
+            c1 = [MPL_GREEN if v >= 0 else MPL_RED for v in v1]
+            rects1 = ax.bar(x - bw/2, v1, width=bw, color=c1,
+                            alpha=0.85, edgecolor="white",
+                            linewidth=0.6, label="1 Tháng", zorder=3)
+
+        if "Perf_3M" in cols_check:
+            v3 = sub["Perf_3M"].fillna(0).values
+            c3 = [MPL_BLUE if v >= 0 else MPL_ORANGE for v in v3]
+            rects3 = ax.bar(x + bw/2, v3, width=bw, color=c3,
+                            alpha=0.75, edgecolor="white",
+                            linewidth=0.6, label="3 Tháng", zorder=3)
+
+        # Zero line prominent
+        ax.axhline(0, color="#555", lw=1.2, zorder=4)
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(tickers, rotation=40, ha="right",
+                           fontsize=7, fontweight="bold")
+        ax.legend(fontsize=7.5, loc="upper right",
+                  frameon=True, framealpha=0.9, edgecolor="#CBD8E8")
+        fig.tight_layout(pad=0.4)
+        return fig
+    except Exception as e:
+        logger.warning(f"Perf grouped: {e}"); return None
+
+
+def _chart_vgm_radar_or_bar(df: pd.DataFrame):
+    """Radar chart VGM hoặc Bar fallback — premium style."""
+    radar_cols = {
+        "Value":    ["P/E", "P/B"],
+        "Growth":   ["Perf_3M", "Perf_1M"],
+        "Momentum": ["RSI_14", "RS_1M"],
+        "Quality":  ["ROE (%)", "Net Margin (%)"],
+    }
+    try:
+        scores = {}
+        for dim, cols in radar_cols.items():
+            vals = []
+            for col in cols:
+                if col in df.columns:
+                    s = pd.to_numeric(df[col], errors="coerce").dropna()
+                    if not s.empty:
+                        mn, mx = s.min(), s.max()
+                        if mx > mn:
+                            norm = (s - mn) / (mx - mn)
+                            if col in ["P/E", "P/B"]:
+                                norm = 1 - norm
+                            vals.append(norm.mean() * 10)
+            if vals:
+                scores[dim] = round(float(np.mean(vals)), 1)
+
+        if len(scores) >= 3:
+            categories = list(scores.keys())
+            values     = [scores[c] for c in categories]
+            N = len(categories)
+            angles = [n / float(N) * 2 * math.pi for n in range(N)]
+            angles += angles[:1]
+            values_plot = values + values[:1]
+
+            fig, ax = plt.subplots(figsize=(4.2, 3.6),
+                                   subplot_kw={"polar": True},
+                                   facecolor="#FFFFFF")
+            ax.set_facecolor("#F5F9FD")
+            ax.set_theta_offset(math.pi / 2)
+            ax.set_theta_direction(-1)
+            ax.set_ylim(0, 10)
+
+            # Grid rings
+            for r in [2, 4, 6, 8, 10]:
+                ax.plot(angles, [r] * len(angles), color="#C5D8EC",
+                        lw=0.6, linestyle="--")
+
+            ax.set_yticks([2, 4, 6, 8, 10])
+            ax.set_yticklabels(["2","4","6","8","10"],
+                               fontsize=6, color="#8899AA")
+            ax.set_xticks(angles[:-1])
+            ax.set_xticklabels(categories, fontsize=8.5,
+                               fontweight="bold", color="#0A1628")
+            ax.tick_params(axis='y', colors='#8899AA')
+
+            # Gradient fill effect (draw 3 layers)
+            for alpha, lw in [(0.10, 0), (0.18, 0), (0.0, 2.2)]:
+                if alpha > 0:
+                    ax.fill(angles, values_plot, alpha=alpha, color=MPL_BLUE)
+                else:
+                    ax.plot(angles, values_plot, "o-", linewidth=lw,
+                            color=MPL_BLUE, zorder=5)
+
+            ax.fill(angles, values_plot, alpha=0.18, color=MPL_BLUE)
+            ax.plot(angles, values_plot, "o-", linewidth=2.2,
+                    color=MPL_BLUE, zorder=5)
+
+            # Point markers lớn hơn
+            ax.scatter(angles[:-1], values,
+                       s=50, color=MPL_BLUE,
+                       edgecolors="white", linewidths=1.2, zorder=6)
+
+            # Score labels
+            for angle, val in zip(angles[:-1], values):
+                ax.annotate(f"{val:.1f}",
+                            xy=(angle, val),
+                            xytext=(0, 9), textcoords="offset points",
+                            ha="center", fontsize=8,
+                            fontweight="bold", color=MPL_BLUE)
+
+            ax.set_title("VGM Score Radar\n(Trung bình danh mục)",
+                         fontsize=9, fontweight="bold",
+                         pad=16, color="#0A1628")
+            ax.spines["polar"].set_color("#C5D8EC")
+            ax.spines["polar"].set_linewidth(0.6)
+            fig.tight_layout(pad=0.4)
+            return fig
+    except Exception as e:
+        logger.warning(f"Radar attempt: {e}")
+
+    # Fallback: VGM Grade Bar
+    try:
+        if "VGM Score" not in df.columns: return None
+        counts = df["VGM Score"].value_counts().reindex(
+            ["A","B","C","D","F"], fill_value=0)
+        pal_vgm = {"A":MPL_GREEN,"B":MPL_BLUE,"C":MPL_AMBER,
+                   "D":MPL_ORANGE,"F":MPL_RED}
+        fig, ax = plt.subplots(figsize=(4.2, 3.6), facecolor="#FFFFFF")
+        _styled_ax(ax, "Phân Bổ VGM Score", ylabel="Số mã")
+
+        clrs = [pal_vgm.get(g, "#888") for g in counts.index]
+        bars = ax.bar(counts.index, counts.values,
+                      color=clrs, edgecolor="white",
+                      linewidth=1.2, width=0.55, zorder=3)
+        for bar, val in zip(bars, counts.values):
+            if val > 0:
+                ax.text(bar.get_x() + bar.get_width()/2,
+                        bar.get_height() + 0.15, str(val),
+                        ha="center", va="bottom",
+                        fontsize=9, fontweight="bold", color="#333")
+        ax.set_ylim(0, counts.max() * 1.25)
         fig.tight_layout(pad=0.3)
         return fig
     except Exception as e:
-        logger.warning(f"Sector ROE: {e}"); return None
+        logger.warning(f"VGM bar fallback: {e}"); return None
 
 
-# ══════════════════════════════════════════════════════════════
-# AI SUMMARY – Bám theo khẩu vị thực của user
-# ══════════════════════════════════════════════════════════════
+# ============================================================
+# AI SUMMARY (Gemini) – JSON format 3 keys (VIP CLIENT MINDSET)
+# ============================================================
 def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
-                    strategy_label: str = "Phòng thủ") -> str:
+                    strategy_label: str = "Phong Thu") -> dict:
+    # 1. Cập nhật Default Fallback sang văn phong "Thực chiến - Khách VIP"
+    default = {
+        "market": (
+            "- Ưu tiên bảo toàn vốn lên hàng đầu trong bối cảnh vĩ mô biến động.\n"
+            "- Dòng tiền hoạt động kinh doanh (CFO) dương liên tục là bộ lọc thép để loại bỏ lợi nhuận ảo.\n"
+            "- Phân bổ trọng tâm vào nhóm doanh nghiệp chia cổ tức tiền mặt đều đặn, không pha loãng vốn."
+        ),
+        "valuation": (
+            "- P/E trung bình danh mục được ép chặt, loại bỏ hoàn toàn bẫy định giá đắt.\n"
+            "- Tỷ suất cổ tức cao đóng vai trò là 'tấm đệm an toàn' (Yield Cushion) bảo vệ NAV.\n"
+            "- Lợi thế cạnh tranh được chứng minh bằng ROE thực, không đến từ đòn bẩy D/E."
+        ),
+        "risk": (
+            "- Rủi ro kẹp thanh khoản là án tử với NAV lớn, tuyệt đối né các mã có Vol < 500,000 cp/phiên.\n"
+            "- Các mã có tỷ lệ D/E > 1.5x đang bị cảnh báo đỏ (Red Flags), cần cơ cấu giảm tỷ trọng.\n"
+            "- Kỷ luật thiết lập vùng cắt lỗ và đứng ngoài các game thao túng giá."
+        ),
+    }
+    
     try:
         import google.generativeai as genai
         api_key = os.environ.get("GEMINI_API_KEY", "")
-        if not api_key:
-            raise ValueError("No GEMINI_API_KEY")
+        if not api_key: raise ValueError("No GEMINI_API_KEY")
         genai.configure(api_key=api_key)
-        model   = genai.GenerativeModel("gemini-2.5-flash-lite")
-        sectors = (df_top["Sector"].value_counts().head(3).to_dict()
-                   if "Sector" in df_top.columns else {})
-        avg_pe  = df_top["P/E"].dropna().mean()    if "P/E"     in df_top.columns else None
+        model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        
+        # 2. Xử lý dữ liệu định lượng
+        avg_pe  = df_top["P/E"].dropna().mean()     if "P/E"     in df_top.columns else None
         avg_roe = df_top["ROE (%)"].dropna().mean() if "ROE (%)" in df_top.columns else None
+        avg_de  = df_top["D/E"].dropna().mean()     if "D/E"     in df_top.columns else None
         ncn_str = ", ".join(ncn_tickers[:3]) if ncn_tickers else "N/A"
+        
+        # 3. Ép số liệu thực tế của Top 3 Pick vào chuỗi String
+        top3_stats_str = "N/A"
+        if ncn_tickers and "Ticker" in df_top.columns:
+            df_top3 = df_top[df_top["Ticker"].isin(ncn_tickers[:3])]
+            stats_list = []
+            for _, row in df_top3.iterrows():
+                tk = row.get("Ticker", "")
+                pe = row.get("P/E", 0)
+                roe = row.get("ROE (%)", 0)
+                # Dùng get() có giá trị mặc định để tránh lỗi nếu DF chưa có cột này
+                cfo = row.get("CFO", "Dương") 
+                div = row.get("Dividend_Yield", ">5%")
+                stats_list.append(f"{tk} (P/E:{pe:.1f}, ROE:{roe:.1f}%, Cổ tức:{div}, CFO:{cfo})")
+            top3_stats_str = " | ".join(stats_list)
 
-        prompt = (
-            f"Bạn là chuyên gia tư vấn đầu tư tại Vietcap Securities. "
-            f"Khẩu vị lọc hiện tại của khách hàng: [{strategy_label}].\n"
-            "Hãy viết đúng 3 gạch đầu dòng ngắn gọn "
-            "(mỗi gạch 1 câu, TIẾNG VIỆT CÓ DẤU, văn phong tư vấn viên chuyên nghiệp, "
-            "KHÔNG khuyến nghị mua/bán cụ thể):\n"
-            "Gạch 1: Bối cảnh thị trường và áp lực vĩ mô hiện tại\n"
-            "Gạch 2: Vì sao chiến lược phù hợp với khẩu vị này?\n"
-            "Gạch 3: Khu vực giải ngân tối ưu: CFO dương, P/E < 15, ROE > 15%\n"
-            f"Dữ liệu: Ngành chính: {sectors}, "
-            f"P/E TB: {f'{avg_pe:.1f}' if avg_pe else 'N/A'}, "
-            f"ROE TB: {f'{avg_roe:.1f}' if avg_roe else 'N/A'}%, "
-            f"Top Defensive Pick: {ncn_str}\n"
-            "Chỉ trả về 3 dòng, mỗi dòng bắt đầu bằng '- '"
-        )
-        return model.generate_content(prompt).text.strip()
+        # 4. Kỹ thuật Prompt Engineering (Ép Role + Đưa Constraint)
+        prompt = f"""Đóng vai trò là Giám đốc Tư vấn Đầu tư cấp cao tại Vietcap, đang thuyết trình cho tệp khách VIP (NAV > 50 tỷ).
+Chiến lược hiện tại: [{strategy_label}]. Triết lý: Lợi nhuận có thể là giả, nhưng dòng tiền (CFO) phải là thật.
+Dữ liệu tổng quan: P/E TB: {f'{avg_pe:.1f}' if avg_pe else 'N/A'}x, ROE TB: {f'{avg_roe:.1f}' if avg_roe else 'N/A'}%, D/E TB: {f'{avg_de:.2f}' if avg_de else 'N/A'}x.
+Dữ liệu Top 3 Phòng Thủ: {top3_stats_str}.
+
+Yêu cầu: Viết BẰNG TIẾNG VIỆT CÓ DẤU, giọng văn thực chiến, sắc bén, dứt khoát. TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON:
+{{
+  "market": "- (Viết 3 gạch đầu dòng, mỗi gạch dưới 25 chữ, đánh giá vĩ mô và nhấn mạnh tầm quan trọng của việc bảo toàn vốn và dòng tiền CFO dương lúc này)",
+  "valuation": "- (Viết 3 gạch đầu dòng, BẮT BUỘC đưa số liệu P/E, ROE, Cổ tức của các mã {ncn_str} vào để chứng minh đây là tấm đệm an toàn tuyệt đối cho NAV lớn)",
+  "risk": "- (Viết 3 gạch đầu dòng, chỉ ra rủi ro thanh khoản yếu hoặc đòn bẩy D/E cao ở các mã rác, và khẳng định rổ danh mục này đã chặn đứng rủi ro đó ra sao)"
+}}"""
+        
+        # 5. Parsing & Error Handling
+        resp = model.generate_content(prompt).text.strip()
+        resp = resp.replace("```json","").replace("```","").strip()
+        parsed = json.loads(resp)
+        
+        for k in ("market", "valuation", "risk"):
+            if k not in parsed or not parsed[k]:
+                parsed[k] = default[k]
+        return parsed
+        
     except Exception as e:
-        logger.warning(f"Gemini skip: {e}")
-        return (
-            "- Thị trường VN đang trong giai đoạn phân hóa, "
-            "áp lực lãi suất và tỷ giá duy trì.\n"
-            "- Chiến lược phòng thủ giúp bảo toàn vốn, "
-            "ưu tiên DN có dòng tiền hoạt động dương và nợ vay thấp.\n"
-            "- Khu vực giải ngân: DN có CFO dương liên tục, "
-            "P/E < 15x, ROE > 15%, D/E ≤ 1.5x."
-        )
+        logger.warning(f"Gemini API Error/Skip: {e}")
+        return default
 
 
 # ══════════════════════════════════════════════════════════════
-# DETECT STRATEGY LABEL từ active_filters
+# DETECT STRATEGY
 # ══════════════════════════════════════════════════════════════
 def _detect_strategy(active_filters: dict) -> tuple:
-    """
-    Trả về (strategy_label, title_suffix).
-    Phân tích bộ lọc để đặt tên chiến lược phù hợp với khẩu vị user.
-    """
     if not active_filters:
-        return "Phòng thủ", "Chiến lược Phòng thủ"
-
-    pe_val  = None
-    roe_val = None
-    div_val = None
-
+        return "Phòng Thủ", "Chiến lược Phòng Thủ"
+    pe_val = roe_val = div_val = None
     for fid, entry in active_filters.items():
         if not isinstance(entry, dict): continue
         val = entry.get("value")
         if isinstance(val, list) and len(val) == 2:
-            if "pe" in fid.lower():   pe_val  = val[1]
-            if "roe" in fid.lower():  roe_val = val[0]
-            if "div" in fid.lower():  div_val = val[0]
-
-    if pe_val is not None and float(pe_val) > 20:
-        return "Tăng trưởng / Khám phá", "Chiến lược Tăng trưởng – Khám phá Cơ hội"
-    if div_val is not None and float(div_val) >= 4:
-        return "Thu nhập cổ tức", "Chiến lược Thu nhập – Cổ tức cao"
-    if roe_val is not None and float(roe_val) >= 15:
-        return "Chất lượng cao", "Chiến lược Chất lượng – ROE vượt trội"
-    return "Phòng thủ", "Chiến lược Phòng thủ – Bảo toàn Vốn"
+            if "pe"  in fid.lower(): pe_val  = val[1]
+            if "roe" in fid.lower(): roe_val = val[0]
+            if "div" in fid.lower(): div_val = val[0]
+    if pe_val  is not None and float(pe_val)  > 20: return "Tăng Trưởng / Khám Phá", "Chiến lược Tăng Trưởng – Khám Phá Cơ Hội"
+    if div_val is not None and float(div_val) >= 4:  return "Thu Nhập Cổ Tức", "Chiến lược Thu Nhập – Cổ Tức Cao"
+    if roe_val is not None and float(roe_val) >= 15: return "Chất Lượng Cao", "Chiến lược Chất Lượng – ROE Vượt Trội"
+    return "Phòng Thủ", "Chiến lược Phòng Thủ – Bảo Toàn Vốn"
 
 
 # ══════════════════════════════════════════════════════════════
-# CHUẨN BỊ DATA
+# DATA PREP
 # ══════════════════════════════════════════════════════════════
-def _calc_target_stoploss(price: float, sma20=None, sma50=None) -> tuple:
-    """
-    Tính vùng giá mua và ngưỡng cắt lỗ kỹ thuật.
-    - Target Zone: Price ×0.97 – Price (hỗ trợ ±3%)
-    - Stop-loss: SMA20 nếu có, không thì price × 0.92
-    Trả về (target_str, stoploss_str) dạng string.
-    """
+def _calc_target_stoploss(price, sma20=None, sma50=None):
     try:
         p = float(price)
-        if p <= 0: return "—", "—"
-
-        lo     = p * 0.97
-        target = f"{lo:,.0f}-{p:,.0f}"
-
-        if sma20 and float(sma20) > 0:
-            sl_val = float(sma20) * 0.99
-        elif sma50 and float(sma50) > 0:
-            sl_val = float(sma50) * 0.99
-        else:
-            sl_val = p * 0.92
-        stoploss = f"{sl_val:,.0f}"
-
-        return target, stoploss
+        if p <= 0: return "—","—"
+        target = f"{p*0.97:,.0f}–{p:,.0f}"
+        sl_val = (float(sma20)*0.99 if sma20 and float(sma20) > 0 else
+                  float(sma50)*0.99 if sma50 and float(sma50) > 0 else p*0.92)
+        return target, f"{sl_val:,.0f}"
     except Exception:
-        return "—", "—"
+        return "—","—"
 
-
-def _prepare_ncn_rows(df_source: pd.DataFrame, top_n: int = 3) -> list:
-    """
-    NCN Defensive Pick:
-    - Loại ngành Tài chính (lợi nhuận chu kỳ, không phải dòng tiền lõi)
-    - Lọc: ROE>=15%, D/E<=1.5, Net Margin>=5%, Gross Margin>=15%
-    - Sort: VGM > ROE
-    - Top n (mặc định 3)
-    - Thêm: tên công ty (Company Common Name), sàn (Exchange)
-    - Thêm: Vùng mua (Target Zone), Cắt lỗ (Stop-loss)
-    - Bỏ cột Perf 1T
-    """
+def _recommend_action(roe, pe, rsi, de, vgm):
     try:
-        df_ncn = df_source.copy()
-        num_cols = ["ROE (%)","D/E","Net Margin (%)","Gross Margin (%)","Price Close",
-                    "SMA20","SMA50"]
-        for col in num_cols:
+        rsi_v = float(rsi) if rsi else 50
+        pe_v  = float(pe)  if pe  else 99
+        roe_v = float(roe) if roe else 0
+        vgm_s = str(vgm).strip().upper()
+        if rsi_v > 72: return "Hạn chế mua"
+        if rsi_v < 35 and vgm_s in ("A","B"): return "Có thể mua thêm"
+        if pe_v < 12 and roe_v > 20 and vgm_s in ("A","B"): return "Tích lũy"
+        if vgm_s in ("D","F"): return "Cẩn thận"
+        if pe_v < 15 and roe_v > 15: return "Mua / Tích lũy"
+        return "Theo dõi"
+    except Exception:
+        return "—"
+
+# 🟢 THÊM THAM SỐ red_flags
+def _prepare_main_table(df: pd.DataFrame, max_rows: int = 20, red_flags: set = None) -> list:
+    if red_flags is None: red_flags = set()
+    rows = []
+    num_cols = ["Price Close","P/E","ROE (%)","D/E","RSI_14","RS_1M","SMA20","SMA50","Avg_Vol_20D"]
+    for col in num_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    if "Avg_Vol_20D" in df.columns:
+        df = df[df["Avg_Vol_20D"].fillna(0) >= MIN_LIQUIDITY]
+    if "Price Close" in df.columns:
+        df = df[df["Price Close"].fillna(0) >= 3000]
+    if "P/E" in df.columns:
+        pe_s = df["P/E"]
+        df = df[pe_s.isna() | ((pe_s > 0) & (pe_s < 150))]
+    grade_order = {"A":1,"B":2,"C":3,"D":4,"F":5}
+    if "VGM Score" in df.columns:
+        df["_sort"] = df["VGM Score"].map(grade_order).fillna(6)
+        df = df.sort_values("_sort").drop(columns=["_sort"])
+    for _, r in df.head(max_rows).iterrows():
+        ticker  = str(r.get("Ticker","—"))
+        company = str(r.get("Company Common Name", r.get("organ_name","")) or "")[:22]
+        vgm     = str(r.get("VGM Score","—")).strip().upper()
+        price   = r.get("Price Close")
+        target, stoploss = _calc_target_stoploss(price, r.get("SMA20"), r.get("SMA50"))
+        action  = _recommend_action(r.get("ROE (%)"), r.get("P/E"),
+                                    r.get("RSI_14"), r.get("D/E"), vgm)
+        # 🟢 GHI ĐÈ KHUYẾN NGHỊ: Nếu mã nằm trong Red Flags, tuyệt đối không cho Mua
+        if ticker in red_flags:
+            action = "Theo dõi (Có Rủi Ro)"
+        rows.append([
+            vgm, ticker, company, action, target, stoploss,
+            _sv(r.get("P/E"),     "dec1"),
+            _sv(r.get("ROE (%)"), "dec1", "%"),
+        ])
+    return rows
+
+# 🟢 THÊM THAM SỐ red_flags
+def _prepare_ncn_rows(df: pd.DataFrame, top_n: int = 3, red_flags: set = None) -> list:
+    if red_flags is None: red_flags = set()
+    try:
+        df_ncn = df.copy()
+        
+        # 🟢 LỌC BỎ NGAY CÁC MÃ DÍNH RED FLAG KHỎI DANH MỤC PHÒNG THỦ
+        if "Ticker" in df_ncn.columns:
+            df_ncn = df_ncn[~df_ncn["Ticker"].isin(red_flags)]
+        for col in ["ROE (%)","D/E","Net Margin (%)","Price Close","SMA20","SMA50","Avg_Vol_20D"]:
             if col in df_ncn.columns:
                 df_ncn[col] = pd.to_numeric(df_ncn[col], errors="coerce")
-
-        # [v5] Loại ngành Tài chính
         sec_col = next((c for c in ["Sector","GICS Sector Name"] if c in df_ncn.columns), None)
-        if sec_col:
-            df_ncn = df_ncn[~df_ncn[sec_col].isin(EXCLUDE_SECTORS_NCN)]
-
-        if "ROE (%)"          in df_ncn.columns:
-            df_ncn = df_ncn[df_ncn["ROE (%)"].fillna(0)        >= 15]
-        if "D/E"              in df_ncn.columns:
-            df_ncn = df_ncn[df_ncn["D/E"].fillna(999)          <= 1.5]
-        if "Net Margin (%)"   in df_ncn.columns:
-            df_ncn = df_ncn[df_ncn["Net Margin (%)"].fillna(0) >= 5]
-        if "Gross Margin (%)" in df_ncn.columns:
-            gm = df_ncn["Gross Margin (%)"]
-            df_ncn = df_ncn[gm.isna() | (gm >= 15)]
-
+        if sec_col: df_ncn = df_ncn[~df_ncn[sec_col].isin(EXCLUDE_SECTORS_NCN)]
+        if "Avg_Vol_20D"   in df_ncn.columns: df_ncn = df_ncn[df_ncn["Avg_Vol_20D"].fillna(0)  >= MIN_LIQUIDITY]
+        if "ROE (%)"       in df_ncn.columns: df_ncn = df_ncn[df_ncn["ROE (%)"].fillna(0)       >= 15]
+        if "D/E"           in df_ncn.columns: df_ncn = df_ncn[df_ncn["D/E"].fillna(999)         <= 1.5]
+        if "Net Margin (%)" in df_ncn.columns: df_ncn = df_ncn[df_ncn["Net Margin (%)"].fillna(0) >= 5]
         grade_order = {"A":1,"B":2,"C":3,"D":4,"F":5}
-        if "VGM Score" in df_ncn.columns:
-            df_ncn["_sort_vgm"] = df_ncn["VGM Score"].map(grade_order).fillna(6)
-        else:
-            df_ncn["_sort_vgm"] = 6
-        df_ncn["_sort_roe"] = (df_ncn["ROE (%)"] if "ROE (%)" in df_ncn.columns
-                               else pd.Series([0]*len(df_ncn))).fillna(0)
-        df_ncn = df_ncn.sort_values(["_sort_vgm","_sort_roe"],
-                                     ascending=[True, False])
-
+        df_ncn["_g"]   = df_ncn.get("VGM Score", pd.Series(dtype=str)).map(grade_order).fillna(6)
+        df_ncn["_roe"] = df_ncn["ROE (%)"].fillna(0) if "ROE (%)" in df_ncn.columns else 0
+        df_ncn = df_ncn.sort_values(["_g","_roe"], ascending=[True,False])
         rows = []
         for _, r in df_ncn.head(top_n).iterrows():
-            ticker = str(r.get("Ticker","—"))
-
-            cs_raw = r.get("CANSLIM Score")
-            try:    cs_str = f"{int(float(cs_raw))}/7"
-            except: cs_str = "—"
-
-            company_raw = (r.get("Company Common Name") or
-                           r.get("company_name_vi") or
-                           r.get("organ_name") or "")
-            company = str(company_raw).strip()[:30] or "—"
-
-            exchange = str(r.get("Exchange","") or "").strip() or "—"
-
-            price   = r.get("Price Close")
-            sma20   = r.get("SMA20")
-            sma50   = r.get("SMA50")
-            target, stoploss = _calc_target_stoploss(price, sma20, sma50)
-
+            price = r.get("Price Close")
+            _, stoploss = _calc_target_stoploss(price, r.get("SMA20"), r.get("SMA50"))
             rows.append({
-                "ticker":       ticker,
-                "company":      company,
-                "exchange":     exchange,
-                "vgm":          str(r.get("VGM Score","—")),
-                "canslim":      cs_str,
-                "roe":          _sv(r.get("ROE (%)"),          "dec1", "%"),
-                "gross_margin": _sv(r.get("Gross Margin (%)"), "dec1", "%"),
-                "de":           _sv(r.get("D/E"),              "dec2"),
-                "net_margin":   _sv(r.get("Net Margin (%)"),   "dec1", "%"),
-                "pe":           _sv(r.get("P/E"),              "dec1"),
-                "target":       target,
-                "stoploss":     stoploss,
+                "ticker":   str(r.get("Ticker","—")),
+                "company":  str(r.get("Company Common Name","") or "")[:20],
+                "exchange": str(r.get("Exchange","") or "")[:5],
+                "vgm":      str(r.get("VGM Score","—")),
+                "roe":      _sv(r.get("ROE (%)"), "dec1", "%"),
+                "pe":       _sv(r.get("P/E"), "dec1"),
+                "stoploss": stoploss,
             })
         return rows
     except Exception as e:
         logger.warning(f"NCN rows: {e}"); return []
 
-
-def _prepare_flag_rows(df: pd.DataFrame, max_flags: int = 8) -> list:
-    """
-    Red Flags – quét TOÀN BỘ df, ưu tiên: D/E cao > P/E cao > Momentum âm
-    Trả về danh sách tuple (ticker, tiêu_chí, giá_trị, ngưỡng, đánh_giá)
-    """
-    flags_de, flags_pe, flags_mom = [], [], []
+def _prepare_flag_rows(df: pd.DataFrame, max_flags: int = 12) -> list:
+    flags_de, flags_pe, flags_rsi, flags_mom = [], [], [], []
     seen = set()
-
+    def _action(reason):
+        if "D/E"      in reason: return "Giảm tỷ trọng, kiểm tra nợ vay"
+        if "P/E"      in reason: return "Hạn chế mua đuổi, chờ điều chỉnh"
+        if "RSI"      in reason: return "Tránh mua đuổi, đặt stop-loss"
+        if "Momentum" in reason: return "Theo dõi, chưa vào thêm"
+        return "Cẩn thận"
     for _, r in df.iterrows():
         ticker = str(r.get("Ticker","—"))
         if ticker in seen: continue
-
         try:
             de = float(r.get("D/E")) if pd.notnull(r.get("D/E")) else None
             if de and de > 2.0:
-                flags_de.append(
-                    (ticker, "D/E cao", f"{de:.2f}x", "<= 2.0x",
-                     "[!] Đòn bẩy cao")
-                )
+                flags_de.append((ticker,"D/E cao",f"{de:.2f}x","≤2.0x","⚠ Đòn bẩy cao",_action("D/E")))
+                seen.add(ticker); continue
+        except: pass
+        try:
+            rsi = float(r.get("RSI_14")) if pd.notnull(r.get("RSI_14")) else None
+            if rsi and rsi > 72:
+                flags_rsi.append((ticker,"RSI > 72",f"{rsi:.0f}","≤70","⚠ Quá mua",_action("RSI")))
                 seen.add(ticker); continue
         except: pass
         try:
             pe = float(r.get("P/E")) if pd.notnull(r.get("P/E")) else None
             if pe and pe > 30:
-                flags_pe.append(
-                    (ticker, "P/E cao", f"{pe:.1f}x", "<= 30x",
-                     "[!] Định giá đắt")
-                )
+                flags_pe.append((ticker,"P/E cao",f"{pe:.1f}x","≤30x","⚠ Định giá đắt",_action("P/E")))
                 seen.add(ticker); continue
         except: pass
         try:
             pm = float(r.get("Perf_1M")) if pd.notnull(r.get("Perf_1M")) else None
             if pm is not None and pm < 0:
-                flags_mom.append(
-                    (ticker, "Momentum âm", f"{pm:+.1f}%", "> 0%",
-                     "[!] Đã giảm 1T")
-                )
+                flags_mom.append((ticker,"Momentum âm",f"{pm:+.1f}%",">0%","⚠ Giảm 1 tháng",_action("Momentum")))
                 seen.add(ticker)
         except: pass
-
-    combined = flags_de + flags_pe + flags_mom
-    return combined[:max_flags]
+    return (flags_de + flags_rsi + flags_pe + flags_mom)[:max_flags]
 
 
 # ══════════════════════════════════════════════════════════════
-# TRANG 1: HOOK
+# TRANG 1 – THE PITCH & THE PORTFOLIO
 # ══════════════════════════════════════════════════════════════
-def _render_cover(c, stats, ai_text, filter_params, strategy_title,
-                  fig_sector, fig_vgm, fig_perf):
+# 🟢 Thêm red_flags vào tham số
+def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red_flags):
     _bg(c)
 
-    c.setFillColor(C_ACCENT)
+    # ══════════════════════════════════════════════════════
+    # HEADER TRANG 1 — Light professional style
+    # Nền trắng xanh nhạt, chữ tối rõ ràng, 3 dòng tách biệt
+    # ══════════════════════════════════════════════════════
+    HDR_BAND_H = 68
+
+    # Nền header xanh nhạt gradient-ish (2 rect để tạo hiệu ứng)
+    c.setFillColor(colors.HexColor("#EBF4FF"))
+    c.rect(0, PH - HDR_BAND_H, PW, HDR_BAND_H, fill=1, stroke=0)
+    c.setFillColor(colors.HexColor("#F5F9FF"))
+    c.rect(0, PH - HDR_BAND_H + 20, PW, 20, fill=1, stroke=0)
+
+    # Accent bar trên 4pt xanh đậm
+    c.setFillColor(colors.HexColor("#0057B8"))
     c.rect(0, PH - 4, PW, 4, fill=1, stroke=0)
 
-    c.setFillColor(colors.HexColor("#f0f7ff"))
-    c.rect(0, PH - 80, PW, 76, fill=1, stroke=0)
-    c.setStrokeColor(colors.HexColor("#b8d4f0")); c.setLineWidth(0.8)
-    c.line(0, PH - 80, PW, PH - 80)
+    # Đường kẻ dưới header
+    c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
+    c.line(0, PH - HDR_BAND_H, PW, PH - HDR_BAND_H)
 
-    y_top = PH - 24
-    c.setFont("VnFont-Bold", 11); c.setFillColor(C_ACCENT)
-    c.drawString(MARGIN, y_top, "VSS")
-    lw = pdfmetrics.stringWidth("VSS","VnFont-Bold",11)
-    c.setFont("VnFont", 11); c.setFillColor(C_HEADER)
-    c.drawString(MARGIN + lw + 3, y_top, " Smart Screener")
-    c.setFont("VnFont", 7.5); c.setFillColor(C_TEXT)
-    c.drawString(MARGIN + 140, y_top,
-                 "Phân tích danh mục định lượng – Thị trường VN")
-    c.setFont("VnFont-Bold", 8.5); c.setFillColor(C_ACCENT)
-    c.drawRightString(PW - MARGIN, y_top, "BÁO CÁO DANH MỤC LỌC")
-    c.setFont("VnFont", 7); c.setFillColor(C_GREY)
-    c.drawRightString(PW - MARGIN, y_top - 11,
-                      datetime.now().strftime("%d/%m/%Y %H:%M"))
+    # ── DÒNG 1 (y=PH-22): Logo VSS | tagline | "BÁO CÁO" | datetime ──
+    y1 = PH - 21
 
-    c.setFont("VnFont-Bold", 17); c.setFillColor(C_HEADER)
-    c.drawString(MARGIN, PH - 54, strategy_title[:55])
-    c.setFont("VnFont", 8.5); c.setFillColor(C_GREY)
-    c.drawString(MARGIN, PH - 67,
-        f"Xuất từ Vietcap Smart Screener  ·  {stats['total']} mã phù hợp bộ lọc")
+    # "VSS" xanh đậm bold
+    c.setFont("VnFont-Bold", 14); c.setFillColor(colors.HexColor("#0057B8"))
+    c.drawString(MARGIN, y1, "VSS")
+    lw_vss = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 14)
 
-    card_h = 46
-    y_kpi  = PH - 80 - 8
-    kpi_data = [
-        ("Tổng mã lọc",  str(stats["total"]),           C_ACCENT),
-        ("Hiển thị PDF", str(stats["display"]),          C_BLUE),
-        ("Mã VGM A",     str(stats["grade_a_count"]),    C_GREEN),
-        ("P/E TB",       stats["avg_pe"],                C_HEADER),
-        ("ROE TB",       stats["avg_roe"],               C_GREEN),
-        ("Số ngành",     str(stats["sectors_count"]),    C_PURPLE),
+    # Divider dọc
+    c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.2)
+    c.line(MARGIN + lw_vss + 6, y1 - 2, MARGIN + lw_vss + 6, y1 + 12)
+
+    # "Smart Screener" xám đậm
+    c.setFont("VnFont", 11); c.setFillColor(colors.HexColor("#1A3A5C"))
+    c.drawString(MARGIN + lw_vss + 12, y1, "Smart Screener")
+    sw_ss = pdfmetrics.stringWidth("Smart Screener", "VnFont", 11)
+
+    # Tagline nhỏ xám nhạt
+    c.setFont("VnFont", 7.5); c.setFillColor(colors.HexColor("#5A80A0"))
+    c.drawString(MARGIN + lw_vss + sw_ss + 20, y1 + 1,
+                 "Phân tích cổ phiếu chuyên sâu · Thị trường VN")
+
+    # Góc phải: "BÁO CÁO DANH MỤC LỌC" xanh đậm bold
+    c.setFont("VnFont-Bold", 8.5); c.setFillColor(colors.HexColor("#0057B8"))
+    c.drawRightString(PW - MARGIN, y1, "BÁO CÁO DANH MỤC LỌC")
+
+    # ── DÒNG 2 (y=PH-41): Tên chiến lược to + datetime bên phải ──
+    y2 = PH - 41
+
+    # Tên chiến lược — đen đậm lớn, nổi bật
+    c.setFont("VnFont-Bold", 16); c.setFillColor(colors.HexColor("#0A1E35"))
+    c.drawString(MARGIN, y2, strategy_title[:48])
+
+    # Datetime — góc phải, xám nhạt
+    c.setFont("VnFont", 7.5); c.setFillColor(colors.HexColor("#4A7090"))
+    c.drawRightString(PW - MARGIN, y2,
+                      datetime.now().strftime("%d/%m/%Y  %H:%M"))
+
+    # ── DÒNG 3 (y=PH-57): Số mã phù hợp + Exchange badges ──
+    y3 = PH - 57
+
+    # Số mã — xám đậm vừa
+    c.setFont("VnFont", 7.5); c.setFillColor(colors.HexColor("#3A6080"))
+    c.drawString(MARGIN, y3,
+                 f"{stats['total']:,} mã phù hợp bộ lọc  ·  Top {stats['display']} mã hiển thị")
+
+    # Exchange badges nhỏ — căn phải, KHÔNG đè lên chữ
+    badge_items = [
+        ("HOSE",  "#0057B8"),
+        ("HNX",   "#1B7A4A"),
+        ("UPCoM", "#6A0DAD"),
     ]
-    card_w = (CW - 5*5) / 6
+    bx_right = PW - MARGIN
+    for exch, bg_hex in reversed(badge_items):
+        bw = pdfmetrics.stringWidth(exch, "VnFont-Bold", 6.5) + 12
+        bx_right -= bw
+        c.setFillColor(colors.HexColor(bg_hex))
+        c.roundRect(bx_right, y3 - 2, bw, 13, radius=3, fill=1, stroke=0)
+        c.setFont("VnFont-Bold", 6.5); c.setFillColor(colors.white)
+        c.drawCentredString(bx_right + bw/2, y3 + 2, exch)
+        bx_right -= 5
+
+    # ══════════════════════════════════════════════════════
+    # 6 KPI CARDS — nền trắng, viền nhạt, số đậm màu
+    # ══════════════════════════════════════════════════════
+    kpi_h = 42; kpi_gap = 6
+    kpi_y_top = PH - HDR_BAND_H - 8
+    kpi_w = (CW - 5 * kpi_gap) / 6
+
+    kpi_data = [
+        ("TỔNG MÃ LỌC",    f"{stats['total']:,}",      colors.HexColor("#0057B8")),
+        ("HIỂN THỊ",        str(stats["display"]),       colors.HexColor("#0284C7")),
+        ("MÃ VGM A",        str(stats["grade_a_count"]), colors.HexColor("#059669")),
+        ("P/E TRUNG BÌNH",  stats["avg_pe"],             colors.HexColor("#D97706")),
+        ("ROE TRUNG BÌNH",  stats["avg_roe"],            colors.HexColor("#16A34A")),
+        ("SỐ NGÀNH",        str(stats["sectors_count"]), colors.HexColor("#7C3AED")),
+    ]
     for i, (lbl, val, col) in enumerate(kpi_data):
-        _kpi_card(c, MARGIN + i*(card_w+5), y_kpi - card_h,
-                  card_w, card_h, lbl, val, col)
+        _kpi_card(c,
+                  MARGIN + i * (kpi_w + kpi_gap),
+                  kpi_y_top - kpi_h,
+                  kpi_w, kpi_h, lbl, val, col)
 
-    y0 = y_kpi - card_h - 12
+    y0 = kpi_y_top - kpi_h - 14
 
+    # ── Filter tags ──
     if filter_params:
-        n_rows  = max(1, math.ceil(len(filter_params) / 5))
-        box_h   = 18 + n_rows * 13
-        c.setFillColor(colors.HexColor("#f0f7ff"))
-        c.setStrokeColor(colors.HexColor("#b8d4f0")); c.setLineWidth(0.6)
-        c.roundRect(MARGIN, y0 - box_h, CW, box_h, radius=4, fill=1, stroke=1)
+        n_rows = max(1, math.ceil(len(filter_params) / 6))
+        box_h  = 18 + n_rows * 13
+        c.setFillColor(colors.HexColor("#F0F7FF"))
+        c.setStrokeColor(C_CARD_BORDER); c.setLineWidth(0.5)
+        c.roundRect(MARGIN, y0 - box_h, CW, box_h, radius=3, fill=1, stroke=1)
         c.setFillColor(C_BLUE)
-        c.rect(MARGIN, y0 - box_h, 3, box_h, fill=1, stroke=0)
-        c.setFont("VnFont-Bold", 7.5); c.setFillColor(C_BLUE)
-        c.drawString(MARGIN+8, y0-12, "Thông số bộ lọc đang áp dụng:")
-        tx, ty = MARGIN+8, y0-24
+        c.rect(MARGIN, y0-box_h, 3, box_h, fill=1, stroke=0)
+        c.setFont("VnFont-Bold", 7); c.setFillColor(C_BLUE)
+        c.drawString(MARGIN+7, y0-11, "Bộ lọc đang áp dụng:")
+        tx, ty = MARGIN + 110, y0 - 11
         for param in filter_params:
-            tw_p = pdfmetrics.stringWidth(param,"VnFont",6.8)+10
-            if tx + tw_p > PW - MARGIN:
-                tx = MARGIN+8; ty -= 13
-            c.setFillColor(colors.HexColor("#dce8f0"))
-            c.roundRect(tx, ty-8, tw_p, 11, radius=3, fill=1, stroke=0)
-            c.setFont("VnFont", 6.8); c.setFillColor(C_HEADER)
-            c.drawString(tx+4, ty-5, param)
+            tw_p = pdfmetrics.stringWidth(param,"VnFont",6.5) + 10
+            if tx + tw_p > PW - MARGIN - 4:
+                tx = MARGIN + 7; ty -= 13
+            c.setFillColor(colors.HexColor("#DCE8F8"))
+            c.roundRect(tx, ty-7, tw_p, 11, radius=3, fill=1, stroke=0)
+            c.setFont("VnFont", 6.5); c.setFillColor(C_TEXT)
+            c.drawString(tx+4, ty-4, param)
             tx += tw_p + 4
         y0 -= box_h + 10
 
-    # ── AI Executive Summary ──────────────────────────────────
-    _sec(c, "Chiến lược & Góc nhìn (AI Executive Summary)", MARGIN, y0)
+    # ── AI Market Overview ──
+    _sec_title(c, "Bối Cảnh Vĩ Mô & Chiến Lược Chung  ·  AI Market Overview",
+               MARGIN, y0, color=C_PURPLE)
+    y0 -= 11
+    y0 = _ai_box(c, ai_texts.get("market",""),
+                 MARGIN, y0, CW,
+                 box_color=C_PURPLE_SOFT,
+                 border_color=C_PURPLE_BORDER,
+                 accent_color=C_PURPLE,
+                 badge_label="Gemini 2.5 Flash Lite",
+                 badge_color=C_PURPLE)
     y0 -= 12
 
-    lines = [l.strip() for l in ai_text.split("\n") if l.strip()]
-    n_ai_lines = min(4, max(3, len(lines)))
-    ai_box_h   = 16 + n_ai_lines * 13
+    # ── Bảng Danh Mục Chính ──
+    n_show = min(stats["display"], 20)
+    _sec_title(c, f"Danh Mục Cổ Phiếu Lọc  ·  Top {n_show} mã  ·  Đã lọc thanh khoản",
+               MARGIN, y0)
+    y0 -= 12
 
-    c.setFillColor(colors.HexColor("#f5f0ff"))
-    c.setStrokeColor(colors.HexColor("#c7d8f0")); c.setLineWidth(0.6)
-    c.roundRect(MARGIN, y0 - ai_box_h, CW, ai_box_h, radius=4, fill=1, stroke=1)
-    c.setFillColor(C_PURPLE)
-    c.rect(MARGIN, y0 - ai_box_h, 3, ai_box_h, fill=1, stroke=0)
+    col_props = [
+        ("VGM",        0.050),
+        ("Mã CK",      0.080),
+        ("Tên công ty",0.178),
+        ("Khuyến nghị",0.118),
+        ("Vùng mua",   0.145),
+        ("Cắt lỗ",     0.100),
+        ("P/E",        0.068),
+        ("ROE %",      0.082),
+    ]
+    tot_w = sum(p for _,p in col_props)
+    main_widths = [CW * p / tot_w for _,p in col_props]
+    main_hdrs   = [h for h,_ in col_props]
 
-    c.setFillColor(C_PURPLE)
-    c.roundRect(MARGIN+8, y0-15, 18, 12, radius=3, fill=1, stroke=0)
-    c.setFont("VnFont-Bold", 6.5); c.setFillColor(colors.white)
-    c.drawCentredString(MARGIN+17, y0-11, "AI")
-    c.setFont("VnFont-Bold", 7.5); c.setFillColor(C_PURPLE)
-    c.drawString(MARGIN+30, y0-11, "Gemini 2.5 Flash Lite")
+    available_h = y0 - Y_MIN
+    row_h = 20; hdr_h = 19
+    max_rows = max(3, int((available_h - hdr_h) / row_h))
+    # Kéo xuống phần gọi _prepare_main_table, thêm red_flags vào:
+    table_rows = _prepare_main_table(df_top, max_rows=min(max_rows, n_show), red_flags=red_flags)
 
-    ty = y0 - 26
-    c.setFont("VnFont", 7.5); c.setFillColor(C_TEXT)
-    for line in lines[:n_ai_lines]:
-        ty = _wrap_text(c, line, MARGIN+10, ty,
-                        max_w=CW-18, font="VnFont", size=7.5,
-                        line_h=10.5, max_lines=2)
-        ty -= 2
-
-    y0 -= ai_box_h + 12
-
-    # ── Biểu đồ ──────────────────────────────────────────────
-    avail_h = y0 - Y_MIN - 14
-    if avail_h > 70:
-        _sec(c, "Phân tích trực quan", MARGIN, y0)
-        y0 -= 12
-        chart_figs = [f for f in [fig_sector, fig_vgm, fig_perf] if f is not None]
-        if chart_figs:
-            ch_h = max(80, y0 - Y_MIN)
-            ch_w = (CW - (len(chart_figs)-1)*8) / len(chart_figs)
-            for i, fig in enumerate(chart_figs):
-                _embed(c, fig,
-                       MARGIN + i*(ch_w+8), y0 - ch_h,
-                       ch_w, ch_h)
+    if table_rows:
+        _table_draw(c, main_hdrs, table_rows, MARGIN, y0, main_widths,
+                    row_h=row_h, hdr_h=hdr_h, font_sz=7.0,
+                    right_cols={6,7}, center_cols={3}, vgm_col_idx=0)
+    else:
+        c.setFont("VnFont", 9); c.setFillColor(C_GREY)
+        c.drawCentredString(PW/2, y0-22, "Không có mã nào phù hợp sau khi lọc thanh khoản.")
 
     _footer(c, 1)
 
 
 # ══════════════════════════════════════════════════════════════
-# TRANG 2: CORE – NCN Top3 | Red Flags | ROE Chart
+# TRANG 2 – VALUATION & FUNDAMENTALS
 # ══════════════════════════════════════════════════════════════
-def _render_core_page(c, ncn_rows, flag_rows, fig_sector_roe):
+def _render_page2(c, df_top, ncn_tickers, ai_texts):
     _bg(c)
-    _page_header_mini(c,
-        "Vietcap Defensive Pick & Cảnh Báo Rủi Ro",
-        "Top 3 mã chất lượng cao  ·  Red Flags tự động  ·  ROE theo ngành")
+    _page2_mini_header(c,
+        "Phân Tích Định Giá & Sức Khỏe Tài Chính",
+        "Định vị P/E vs ROE  ·  Phân bổ ngành  ·  ROE theo ngành",
+        page_color=colors.HexColor("#071830"))
 
-    y0 = PH - 54
+    y0 = PH - 58
 
-    # ── PHẦN 1: NCN Top 3 ────────────────────────────────────
-    _sec(c, "Vietcap Defensive Pick – Top 3 Cổ Phiếu Chất Lượng (không Tài chính)",
-         MARGIN, y0)
+    # AI Valuation Insight
+    _sec_title(c, "Nhận Xét Định Giá & ROE  ·  AI Valuation Insight",
+               MARGIN, y0, color=C_BLUE)
     y0 -= 11
-
-    box_h = 28
-    c.setFillColor(colors.HexColor("#f0faf5"))
-    c.setStrokeColor(colors.HexColor("#b2dfdb")); c.setLineWidth(0.6)
-    c.roundRect(MARGIN, y0-box_h, CW, box_h, radius=4, fill=1, stroke=1)
-    c.setFillColor(C_GREEN); c.rect(MARGIN, y0-box_h, 3, box_h, fill=1, stroke=0)
-    c.setFont("VnFont-Bold", 7.2); c.setFillColor(C_DARK_GREEN)
-    c.drawString(MARGIN+8, y0-11,
-        "Bộ lọc: ROE >= 15%  ·  D/E <= 1.5  ·  Net Margin >= 5%  ·  Loại ngành Tài chính")
-    c.setFont("VnFont", 7); c.setFillColor(C_TEXT)
-    c.drawString(MARGIN+8, y0-22,
-        "Tập trung DN chất lượng lợi nhuận lõi, dòng tiền hoạt động bền vững, "
-        "nợ vay thấp. Kèm vùng giá mua & cắt lỗ kỹ thuật.")
-    y0 -= box_h + 7
-
-    if ncn_rows:
-        col_props = [
-            ("Mã CK",       0.08),
-            ("Tên công ty", 0.18),
-            ("Sàn",         0.06),
-            ("VGM",         0.05),
-            ("CANSLIM",     0.08),
-            ("ROE %",       0.08),
-            ("Biên Gộp",    0.08),
-            ("D/E",         0.07),
-            ("Biên Ròng",   0.08),
-            ("P/E",         0.06),
-            ("Vùng mua",    0.12),
-            ("Cắt lỗ",      0.08),
-        ]
-        ncn_hdrs   = [h for h,_ in col_props]
-        ncn_widths = [CW * p for _,p in col_props]
-        tot = sum(ncn_widths)
-        ncn_widths = [w * CW / tot for w in ncn_widths]
-
-        ncn_data = [[
-            r["ticker"],
-            r["company"],
-            r["exchange"],
-            r["vgm"],
-            r["canslim"],
-            r["roe"],
-            r["gross_margin"],
-            r["de"],
-            r["net_margin"],
-            r["pe"],
-            r["target"],
-            r["stoploss"],
-        ] for r in ncn_rows]
-
-        y0 = _table(c, ncn_hdrs, ncn_data, MARGIN, y0, ncn_widths,
-                    row_h=16, hdr_h=17, font_sz=7.2,
-                    right_cols={4,5,6,7,8,9,10,11},
-                    center_cols={2},
-                    vgm_col_idx=3)
-    else:
-        c.setFont("VnFont", 8); c.setFillColor(C_GREY)
-        c.drawString(MARGIN, y0-16,
-            "Không có mã nào đạt chuẩn NCN trong danh mục hiện tại.")
-        y0 -= 30
-
+    y0 = _ai_box(c, ai_texts.get("valuation",""),
+                 MARGIN, y0, CW,
+                 box_color=C_BLUE_SOFT,
+                 border_color=C_BLUE_BORDER,
+                 accent_color=C_BLUE,
+                 badge_label="Gemini 2.5 Flash Lite",
+                 badge_color=C_BLUE)
     y0 -= 13
 
-    # ── PHẦN 2: Red Flags ────────────────────────────────────
-    _sec(c, "Cảnh Báo Rủi Ro (Red Flags)", MARGIN, y0)
-    y0 -= 11
+    # Scatter full-width
+    _sec_title(c, "Định Vị P/E vs ROE  (◆ = Defensive Pick)", MARGIN, y0)
+    y0 -= 10
+    scatter_h = 268
+    fig_scatter = _chart_scatter_pe_roe(df_top, highlight_tickers=ncn_tickers)
+    if fig_scatter:
+        _embed(c, fig_scatter, MARGIN, y0 - scatter_h, CW, scatter_h)
+    y0 -= scatter_h + 14
 
-    if flag_rows:
-        fw  = [CW*p for p in [0.10, 0.16, 0.14, 0.14, 0.46]]
-        fh2 = ["Mã CK", "Tiêu chí", "Giá trị HT", "Ngưỡng AT", "Đánh giá"]
-        y0  = _table(c, fh2, flag_rows, MARGIN, y0, fw,
-                     row_h=13, hdr_h=15, font_sz=7.2, right_cols={2,3})
-    else:
-        c.setFont("VnFont", 8); c.setFillColor(C_GREY)
-        c.drawString(MARGIN, y0-14, "Không phát hiện red flag trong danh mục hiện tại.")
-        y0 -= 24
+    # 2-col: Donut | ROE Bar
+    half_w   = (CW - 12) / 2
+    chart2_h = 210
 
-    y0 -= 8
+    _sec_title(c, "Phân Bổ Ngành", MARGIN, y0, width=half_w, color=C_PURPLE)
+    _sec_title(c, "ROE Trung Bình Theo Ngành",
+               MARGIN + half_w + 12, y0, width=half_w, color=C_GREEN)
+    y0 -= 10
 
-    disc_h = 24
-    if y0 - disc_h > Y_MIN + 50:
-        c.setFillColor(colors.HexColor("#fffbeb"))
-        c.setStrokeColor(colors.HexColor("#fde68a")); c.setLineWidth(0.5)
-        c.roundRect(MARGIN, y0-disc_h, CW, disc_h, radius=3, fill=1, stroke=1)
-        c.setFillColor(C_AMBER); c.rect(MARGIN, y0-disc_h, 3, disc_h, fill=1, stroke=0)
-        c.setFont("VnFont-Bold", 6.8); c.setFillColor(colors.HexColor("#78350f"))
-        c.drawString(MARGIN+8, y0-9, "Lưu ý:")
-        c.setFont("VnFont", 6.5)
-        c.drawString(MARGIN+8, y0-20,
-            "P/E cao không nhất thiết xấu nếu EPS tăng trưởng mạnh (PEG < 1.5). "
-            "D/E cao có thể chấp nhận với ngành Tài chính, BĐS.")
-        y0 -= disc_h + 10
-
-    # ── PHẦN 3: ROE theo ngành ───────────────────────────────
-    y_remain = y0 - Y_MIN
-    if fig_sector_roe and y_remain > 80:
-        _sec(c, "ROE trung bình theo ngành (danh mục lọc)", MARGIN, y0)
-        y0 -= 12
-        chart_h = min(170, y_remain - 14)
-        _embed(c, fig_sector_roe, MARGIN, y0 - chart_h, CW, chart_h)
+    fig_donut = _chart_sector_donut(df_top)
+    fig_roe   = _chart_roe_sector_bar(df_top)
+    if fig_donut:
+        _embed(c, fig_donut, MARGIN, y0 - chart2_h, half_w, chart2_h)
+    if fig_roe:
+        _embed(c, fig_roe, MARGIN + half_w + 12, y0 - chart2_h, half_w, chart2_h)
 
     _footer(c, 2)
 
 
 # ══════════════════════════════════════════════════════════════
-# TRANG 3: PROOF – Scatter P/E vs ROE
+# TRANG 3 – RISK MANAGEMENT & MOMENTUM
 # ══════════════════════════════════════════════════════════════
-def _render_proof_page(c, fig_scatter):
+def _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts):
     _bg(c)
-    _page_header_mini(c,
-        "Định Vị Danh Mục – Bằng Chứng Định Lượng",
-        "Phân tích P/E vs ROE  ·  Góc phần tư lý tưởng = P/E thấp + ROE cao")
+    _page2_mini_header(c,
+        "Quản Trị Rủi Ro & Động Lượng Ngắn Hạn",
+        "Red Flags X-Ray  ·  Hiệu suất  ·  VGM Radar  ·  Defensive Pick",
+        page_color=colors.HexColor("#1A0A0A"))
 
-    y0 = PH - 54
+    y0 = PH - 58
 
-    _sec(c, "Định vị danh mục: P/E vs ROE  (◆ = Defensive Pick)", MARGIN, y0)
-    y0 -= 12
+    # AI Risk Assessment
+    _sec_title(c, "Cảnh Báo Rủi Ro & Xu Hướng Dòng Tiền  ·  AI Risk Assessment",
+               MARGIN, y0, color=C_RED)
+    y0 -= 11
+    y0 = _ai_box(c, ai_texts.get("risk",""),
+                 MARGIN, y0, CW,
+                 box_color=C_RED_SOFT,
+                 border_color=C_RED_BORDER,
+                 accent_color=C_ORANGE,
+                 badge_label="Gemini 2.5 Flash Lite",
+                 badge_color=C_RED)
+    y0 -= 13
 
-    note_h = 34
-    c.setFillColor(colors.HexColor("#f0f7ff"))
-    c.setStrokeColor(C_LIGHT_GREY); c.setLineWidth(0.5)
-    c.roundRect(MARGIN, y0-note_h, CW, note_h, radius=4, fill=1, stroke=1)
-    c.setFillColor(C_ACCENT); c.rect(MARGIN, y0-note_h, 3, note_h, fill=1, stroke=0)
-    c.setFont("VnFont", 7.5); c.setFillColor(C_TEXT)
-    c.drawString(MARGIN+10, y0-11,
-        "Biểu đồ chứng minh vị thế áp đảo của các mã Defensive Pick (◆ xanh lá):")
-    c.drawString(MARGIN+10, y0-22,
-        "ROE cao hơn rõ rệt và định giá (P/E) ở mức hợp lý so với phần còn lại.")
-    c.drawString(MARGIN+10, y0-32,
-        "Đường đỏ đứt: ROE = 15% và P/E = 15x – ngưỡng tối thiểu chiến lược phòng thủ.")
-    y0 -= note_h + 10
+    # 2-col: Perf Bar | Radar
+    half_w   = (CW - 12) / 2
+    chart3_h = 205
 
-    y_remain = y0 - Y_MIN
-    if fig_scatter and y_remain > 100:
-        _embed(c, fig_scatter, MARGIN, Y_MIN, CW, y_remain)
+    _sec_title(c, "Hiệu Suất 1T & 3T (%)",
+               MARGIN, y0, width=half_w, color=C_BLUE)
+    _sec_title(c, "VGM Score Radar  (Điểm TB danh mục)",
+               MARGIN + half_w + 12, y0, width=half_w, color=C_PURPLE)
+    y0 -= 10
+
+    fig_perf  = _chart_perf_grouped(df_top)
+    fig_radar = _chart_vgm_radar_or_bar(df_top)
+    if fig_perf:
+        _embed(c, fig_perf,  MARGIN, y0 - chart3_h, half_w, chart3_h)
+    if fig_radar:
+        _embed(c, fig_radar, MARGIN + half_w + 12, y0 - chart3_h, half_w, chart3_h)
+    y0 -= chart3_h + 14
+
+    # Red Flags table
+    _sec_title(c, "Cảnh Báo Rủi Ro  ·  Red Flags X-Ray", MARGIN, y0, color=C_RED)
+    y0 -= 11
+
+    if flag_rows:
+        fw = [CW * p for p in [0.086, 0.120, 0.105, 0.105, 0.210, 0.374]]
+        fh = ["Mã CK","Tiêu chí","Giá trị HT","Ngưỡng AT","Đánh giá","Hành động đề xuất"]
+        flag_data = [list(row) for row in flag_rows]
+        bold_red = set()
+        for ri, row in enumerate(flag_data):
+            criteria = str(row[1]) if len(row) > 1 else ""
+            if "D/E" in criteria or "P/E" in criteria:
+                bold_red.add((ri, 2)); bold_red.add((ri, 4))
+        _table_draw(c, fh, flag_data, MARGIN, y0, fw,
+                    row_h=14, hdr_h=16, font_sz=6.8,
+                    right_cols={2,3}, bold_red_cols=bold_red)
+        y0 -= (len(flag_rows) * 14 + 16 + 10)
+    else:
+        c.setFont("VnFont", 8); c.setFillColor(C_GREY)
+        c.drawString(MARGIN, y0-12, "✓  Không phát hiện red flag trong danh mục hiện tại.")
+        y0 -= 22
+
+    # Defensive Pick
+    if ncn_rows and y0 > Y_MIN + 65:
+        _sec_title(c, "Vietcap Defensive Pick  ·  Top 3 Mã Phòng Thủ",
+                   MARGIN, y0, color=C_GREEN)
+        y0 -= 11
+
+        # Criteria info box
+        info_h = 24
+        c.setFillColor(C_GREEN_SOFT)
+        c.setStrokeColor(C_GREEN_BORDER); c.setLineWidth(0.5)
+        c.roundRect(MARGIN, y0 - info_h, CW * 0.65, info_h, radius=3, fill=1, stroke=1)
+        c.setFillColor(C_GREEN)
+        c.roundRect(MARGIN, y0-info_h, 4, info_h, radius=2, fill=1, stroke=0)
+        c.setFont("VnFont-Bold", 6.8); c.setFillColor(colors.HexColor("#1B5E20"))
+        c.drawString(MARGIN+8, y0-9, "Tiêu chuẩn sàng lọc:  ROE ≥ 15%  ·  D/E ≤ 1.5  ·  Net Margin ≥ 5%")
+        c.setFont("VnFont", 6.3); c.setFillColor(C_TEXT)
+        c.drawString(MARGIN+8, y0-19, "Loại ngành Tài chính  ·  Lọc thanh khoản Avg_Vol ≥ 300,000 cp/ngày")
+        y0 -= info_h + 6
+
+        ncn_prop = [
+            ("Mã",0.13),("Tên",0.30),("Sàn",0.10),
+            ("VGM",0.10),("ROE",0.13),("P/E",0.11),("Cắt lỗ",0.13),
+        ]
+        tot_n   = sum(p for _,p in ncn_prop)
+        ncn_w   = [CW * p / tot_n for _,p in ncn_prop]
+        ncn_hdr = [h for h,_ in ncn_prop]
+        ncn_data = [[
+            r["ticker"], r["company"][:24], r["exchange"],
+            r["vgm"], r["roe"], r["pe"], r["stoploss"]
+        ] for r in ncn_rows]
+        _table_draw(c, ncn_hdr, ncn_data, MARGIN, y0, ncn_w,
+                    row_h=15, hdr_h=16, font_sz=7.2,
+                    right_cols={4,5,6}, center_cols={2}, vgm_col_idx=3)
+        y0 -= len(ncn_rows) * 15 + 16 + 8
+
+    # Disclaimer
+    if y0 > Y_MIN + 16:
+        disc_y = max(Y_MIN + 6, y0 - 16)
+        c.setFillColor(C_AMBER_SOFT)
+        c.setStrokeColor(C_AMBER_BORDER); c.setLineWidth(0.5)
+        c.roundRect(MARGIN, disc_y, CW, 14, radius=2, fill=1, stroke=1)
+        c.setFillColor(C_AMBER)
+        c.roundRect(MARGIN, disc_y, 4, 14, radius=2, fill=1, stroke=0)
+        c.setFont("VnFont-Bold", 6.2); c.setFillColor(C_AMBER)
+        c.drawString(MARGIN+8, disc_y+4.5, "Lưu ý: ")
+        c.setFont("VnFont", 6.2); c.setFillColor(C_TEXT)
+        c.drawString(MARGIN+40, disc_y+4.5,
+            "P/E cao không nhất thiết xấu nếu EPS tăng trưởng mạnh (PEG < 1.5). "
+            "D/E cao có thể chấp nhận với ngành Tài chính, BĐS. "
+            "Không là khuyến nghị mua/bán.")
 
     _footer(c, 3)
 
@@ -1077,101 +1520,121 @@ def _render_proof_page(c, fig_scatter):
 # ══════════════════════════════════════════════════════════════
 def generate_screener_pdf(row_data: list, active_filters: dict = None) -> bytes:
     df = pd.DataFrame(row_data) if row_data else pd.DataFrame()
+    
+    if not df.empty:
+        # 1. CHẶN BLACKLIST VĨNH VIỄN (Loại bỏ hàng rác, dính án)
+        BLACKLIST_TICKERS = {"TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI"}
+        if "Ticker" in df.columns:
+            df = df[~df["Ticker"].isin(BLACKLIST_TICKERS)]
+            
+        # 2. SIẾT THANH KHOẢN & VỐN HÓA (Chuẩn Khách VIP)
+        if "Avg_Vol_20D" in df.columns:
+            df["Avg_Vol_20D"] = pd.to_numeric(df["Avg_Vol_20D"], errors="coerce").fillna(0)
+            df = df[df["Avg_Vol_20D"] >= 500000]
+            
+        if "Market Cap" in df.columns: # Lưu ý: File của em đang dùng tên cột "Market Cap" có khoảng trắng
+            df["Market Cap"] = pd.to_numeric(df["Market Cap"], errors="coerce").fillna(0)
+            df = df[df["Market Cap"] >= 5000]
+            
+        # 3. SIẾT ĐỊNH GIÁ & DÒNG TIỀN (Chỉ lọc nếu cột tồn tại để tránh lỗi mảng rỗng 0 mã)
+        if "P/E" in df.columns:
+            df["P/E"] = pd.to_numeric(df["P/E"], errors="coerce")
+            df = df[(df["P/E"] > 0) & (df["P/E"] < 15)]
+            
+        if "Dividend_Yield" in df.columns:
+            df["Dividend_Yield"] = pd.to_numeric(df["Dividend_Yield"], errors="coerce")
+            df = df[df["Dividend_Yield"] >= 5.0]
+        elif "Div Yield" in df.columns: # Dự phòng nếu cột tên là Div Yield
+            df["Div Yield"] = pd.to_numeric(df["Div Yield"], errors="coerce")
+            df = df[df["Div Yield"] >= 5.0]
+            
+        if "CFO" in df.columns:
+            df["CFO"] = pd.to_numeric(df["CFO"], errors="coerce")
+            df = df[df["CFO"] > 0]
 
+    # 4. CHUẨN HÓA CÁC CỘT SỐ LIỆU KHÁC (Code cũ của em)
     num_cols = ["Price Close","P/E","P/B","ROE (%)","D/E","Net Margin (%)",
                 "Perf_1W","Perf_1M","Perf_3M","RS_1M","Market Cap",
-                "CANSLIM Score","Gross Margin (%)","SMA20","SMA50"]
+                "CANSLIM Score","Gross Margin (%)","SMA20","SMA50",
+                "Avg_Vol_20D","RSI_14"]
     for col in num_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # Loại mã rác: penny (< 3000 VND) & ROE cực âm
-    if "Price Close" in df.columns:
-        df = df[pd.to_numeric(df["Price Close"], errors="coerce").fillna(0) >= 3000]
-    if "ROE (%)" in df.columns:
-        roe_num = pd.to_numeric(df["ROE (%)"], errors="coerce")
-        df = df[roe_num.isna() | (roe_num >= -50)]
-
     grade_order = {"A":1,"B":2,"C":3,"D":4,"F":5}
     if "VGM Score" in df.columns:
-        df["_sort_vgm"] = df["VGM Score"].map(grade_order).fillna(6)
-        df = df.sort_values("_sort_vgm").drop(columns=["_sort_vgm"])
-
+        df["_sort"] = df["VGM Score"].map(grade_order).fillna(6)
+        df = df.sort_values("_sort").drop(columns=["_sort"])
+        
+    # Lúc này total_count sẽ phản ánh ĐÚNG số lượng mã thật sự có thể đầu tư
     total_count = len(df)
-    df_top      = df.head(30)
+    df_top = df.head(30).copy()
 
     stats = {
         "total":         total_count,
-        "display":       min(30, total_count),
-        "avg_pe":        _sv(df_top["P/E"].dropna().mean()     if "P/E"     in df_top.columns else None, "dec1"),
-        "avg_roe":       _sv(df_top["ROE (%)"].dropna().mean() if "ROE (%)" in df_top.columns else None, "dec1", "%"),
-        "avg_perf_1m":   _sv(df_top["Perf_1M"].dropna().mean() if "Perf_1M" in df_top.columns else None, "pct", "%"),
-        "grade_a_count": int((df_top["VGM Score"]=="A").sum()) if "VGM Score" in df_top.columns else 0,
-        "sectors_count": int(df_top["Sector"].nunique())       if "Sector"   in df_top.columns else 0,
+        "display":       min(20, total_count),
+        "avg_pe":        _sv(df_top["P/E"].dropna().mean()       if "P/E"     in df_top.columns else None, "dec1"),
+        "avg_roe":       _sv(df_top["ROE (%)"].dropna().mean()   if "ROE (%)" in df_top.columns else None, "dec1", "%"),
+        "grade_a_count": int((df_top["VGM Score"]=="A").sum())   if "VGM Score" in df_top.columns else 0,
+        "sectors_count": int(df_top["Sector"].nunique())         if "Sector"   in df_top.columns else 0,
     }
 
     strategy_label, strategy_title = _detect_strategy(active_filters)
+    
+    # 5. GỌI RED FLAGS TRƯỚC ĐỂ LÀM BỘ LỌC ĐẦU VÀO CHO CÁC HÀM SAU (Xóa đoạn gọi bị lặp)
+    flag_rows = _prepare_flag_rows(df_top, max_flags=12)
+    # Lấy danh sách các mã dính cờ đỏ (row[0] chính là Ticker)
+    red_flag_tickers = {row[0] for row in flag_rows} 
 
-    # NCN Top 3 từ TOÀN BỘ df
-    ncn_rows    = _prepare_ncn_rows(df, top_n=3)
+    # Truyền Red Flags vào bảng Phòng thủ để cấm cửa mã xấu
+    ncn_rows = _prepare_ncn_rows(df, top_n=3, red_flags=red_flag_tickers)
     ncn_tickers = [r["ticker"] for r in ncn_rows]
+    
+    # CHỈ GỌI AI ĐÚNG 1 LẦN DUY NHẤT ĐỂ TRÁNH LAG API
+    ai_texts = _gemini_summary(df_top, ncn_tickers, strategy_label)
 
-    flag_rows   = _prepare_flag_rows(df_top, max_flags=8)
-    ai_text     = _gemini_summary(df_top, ncn_tickers, strategy_label)
-
+    # 6. HIỂN THỊ THAM SỐ LỌC
     filter_params = []
     if active_filters:
         label_map = {
-            "filter-pe":            "P/E",
-            "filter-pb":            "P/B",
-            "filter-roe":           "ROE (%)",
-            "filter-de":            "D/E",
-            "filter-market-cap":    "Vốn hóa",
-            "filter-vgm-score":     "VGM Score",
-            "filter-canslim":       "CANSLIM",
-            "filter-perf-1m":       "Hiệu suất 1T",
-            "filter-net-margin":    "Net Margin",
-            "filter-div-yield":     "Div Yield",
-            "filter-current-ratio": "Current Ratio",
+            "filter-pe":"P/E","filter-pb":"P/B","filter-roe":"ROE(%)","filter-de":"D/E",
+            "filter-market-cap":"Vốn hóa","filter-vgm-score":"VGM Score",
+            "filter-canslim":"CANSLIM","filter-perf-1m":"Hiệu suất 1T",
+            "filter-net-margin":"Net Margin","filter-div-yield":"Div Yield",
+            "filter-current-ratio":"Current Ratio","filter-rsi14":"RSI",
         }
         for fid, entry in active_filters.items():
-            if isinstance(entry, dict):
-                label = entry.get("label") or label_map.get(fid, fid)
-                val   = entry.get("value")
-                if isinstance(val, list) and len(val) == 2:
-                    filter_params.append(f"{label}: {val[0]} -> {val[1]}")
-                elif isinstance(val, list):
-                    filter_params.append(f"{label}: {', '.join(str(v) for v in val)}")
-                elif val is not None:
-                    filter_params.append(f"{label}: {val}")
+            if not isinstance(entry, dict): continue
+            label = entry.get("label") or label_map.get(fid, fid.replace("filter-","").replace("-"," ").title())
+            val   = entry.get("value")
+            if isinstance(val, list) and len(val) == 2:
+                filter_params.append(f"{label}: {val[0]} → {val[1]}")
+            elif val is not None:
+                filter_params.append(f"{label}: {val}")
 
-    fig_sector  = _chart_sector_pie(df_top)
-    fig_vgm     = _chart_vgm_bar(df_top)
-    fig_perf    = _chart_perf_bar(df_top)
-    fig_sec_roe = _chart_sector_roe(df_top)
-    fig_scatter = _chart_pe_roe_scatter(df_top, highlight_tickers=ncn_tickers)
-
+    # 7. VẼ BÁO CÁO PDF BẰNG REPORTLAB
     buf = io.BytesIO()
     c   = rl_canvas.Canvas(buf, pagesize=A4)
-    c.setTitle("Vietcap Smart Screener - Báo cáo Danh mục Lọc")
+    c.setTitle("Vietcap Smart Screener - Báo Cáo Danh Mục Lọc")
     c.setAuthor("Vietcap Smart Screener")
+    c.setSubject(f"Chiến lược {strategy_label} - {datetime.now().strftime('%d/%m/%Y')}")
 
-    pages = [
-        lambda: _render_cover(c, stats, ai_text, filter_params, strategy_title,
-                               fig_sector, fig_vgm, fig_perf),
-        lambda: _render_core_page(c, ncn_rows, flag_rows, fig_sec_roe),
-        lambda: _render_proof_page(c, fig_scatter),
-    ]
-
-    for i, fn in enumerate(pages, start=1):
-        try:
-            fn()
-        except Exception as e:
-            logger.error(f"Screener PDF trang {i}: {e}")
-            traceback.print_exc()
-            _bg(c)
-            c.setFont("VnFont", 11); c.setFillColor(C_RED)
-            c.drawCentredString(PW/2, PH/2, f"Lỗi trang {i}: {str(e)[:80]}")
+    try:
+        # NHỚ TRUYỀN red_flag_tickers VÀO _render_page1 NHƯ ĐÃ SỬA Ở TRƯỚC
+        _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red_flag_tickers)
+        c.showPage()
+        _render_page2(c, df_top, ncn_tickers, ai_texts)
+        c.showPage()
+        _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts)
+        c.showPage()
+    except Exception as e:
+        logger.error(f"Screener PDF render error: {e}")
+        traceback.print_exc()
+        _bg(c)
+        c.setFont("VnFont", 11)
+        # Sử dụng màu đỏ thuần nếu biến C_RED chưa được import đúng cách
+        c.setFillColorRGB(0.8, 0.1, 0.1) 
+        c.drawCentredString(PW/2, PH/2, f"Loi render: {str(e)[:90]}")
         c.showPage()
 
     c.save()
@@ -1180,7 +1643,7 @@ def generate_screener_pdf(row_data: list, active_filters: dict = None) -> bytes:
 
 
 # ══════════════════════════════════════════════════════════════
-# DASH CALLBACK
+# DASH CALLBACK (giữ nguyên interface)
 # ══════════════════════════════════════════════════════════════
 @app.callback(
     [Output("screener-pdf-download", "data"),
@@ -1192,15 +1655,11 @@ def generate_screener_pdf(row_data: list, active_filters: dict = None) -> bytes:
     running=[
         (Output("btn-export-screener-pdf", "disabled"), True, False),
         (Output("btn-export-screener-pdf", "children"),
-         [html.I(className="fas fa-spinner fa-spin",
-                 style={"marginRight": "5px"}), "Đang tạo PDF..."],
-         [html.I(className="fas fa-file-pdf",
-                 style={"marginRight": "5px"}), "PDF Danh mục"]),
+         [html.I(className="fas fa-spinner fa-spin", style={"marginRight":"5px"}), "Đang tạo PDF..."],
+         [html.I(className="fas fa-file-pdf",        style={"marginRight":"5px"}), "PDF Danh mục"]),
         (Output("btn-export-screener-pdf", "style"),
-         {"borderRadius":"6px","fontSize":"11px","padding":"4px 10px",
-          "opacity":"0.6","cursor":"wait","whiteSpace":"nowrap"},
-         {"borderRadius":"6px","fontSize":"11px","padding":"4px 10px",
-          "opacity":"1","cursor":"pointer","whiteSpace":"nowrap"}),
+         {"borderRadius":"6px","fontSize":"11px","padding":"4px 10px","opacity":"0.6","cursor":"wait","whiteSpace":"nowrap"},
+         {"borderRadius":"6px","fontSize":"11px","padding":"4px 10px","opacity":"1","cursor":"pointer","whiteSpace":"nowrap"}),
     ]
 )
 def export_screener_pdf(n_clicks, row_data, active_filters):
@@ -1209,7 +1668,7 @@ def export_screener_pdf(n_clicks, row_data, active_filters):
     try:
         pdf_bytes = generate_screener_pdf(row_data, active_filters)
         fname = f"Vietcap_DanhMucLoc_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-        return dcc.send_bytes(pdf_bytes, fname), f"Đã xuất {len(row_data)} mã"
+        return dcc.send_bytes(pdf_bytes, fname), f"✔"
     except Exception as e:
         logger.error(f"Screener PDF error: {e}")
         traceback.print_exc()

@@ -18,8 +18,10 @@ import dash_bootstrap_components as dbc
 
 
 # ── Màu sắc và typography nhất quán với dark theme của VSS ──────────────────
+_BG_MODAL   = "#0a192f"  # Thêm màu nền cho modal body
 _BG_CARD    = "#0d1d36"
 _BG_CARD2   = "#112340"
+_BORDER2    = "#214a78"  # Thêm màu viền nhạt hơn cho nút bấm
 _BORDER     = "#1a3a60"
 _TEXT_PRI   = "#e8f4ff"
 _TEXT_SEC   = "#7aafcc"

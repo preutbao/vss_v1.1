@@ -3581,3 +3581,11 @@ clientside_callback(
     Input("nav-input", "value"),
     prevent_initial_call=True
 )
+
+@app.callback(
+    Output("about-vss-modal", "is_open"),
+    Input("btn-about-vss", "n_clicks"),
+    prevent_initial_call=True,
+)
+def open_about_vss_modal(n):
+    return True if n else no_update

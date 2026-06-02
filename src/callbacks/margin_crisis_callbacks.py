@@ -1260,7 +1260,7 @@ def render_result_panel(result):
 
     if keep_tickers:
         action_items.append(html.Div([
-            html.I(className="fas fa-shield-check",
+            html.I(className="fas fa-shield",
                    style={"color": _C["green"], "marginRight": "8px"}),
             html.Span([
                 html.Strong("Giữ nguyên: ", style={"color": _C["green"]}),

@@ -1119,6 +1119,8 @@ def get_filter_ranges() -> dict:
         "filter-vol-vs-sma10",
         "filter-vol-vs-sma20",
         "filter-net-cash-assets",
+        "filter-beta",    # ← thêm
+        "filter-rs-3d",   # ← thêm
     }
 
     # CLIP_P5_P95: cột phân phối lệch rất nặng, cần clip mạnh hơn
@@ -1139,8 +1141,9 @@ def get_filter_ranges() -> dict:
         "filter-canslim":          (0.0,   5.0),
         "filter-consec-down":      (0.0,  10.0),
         "filter-vol-vs-sma5":      (0.0,   5.0),
-        "filter-beta":             (-1.0,  3.0),
-        "filter-rs-3d":            (-25.0, 25.0),
+        # XÓA 2 DÒNG NÀY nếu muốn đọc từ data thực tế:
+        #"filter-beta":             (-1.0,  3.0),
+        #"filter-rs-3d":            (-25.0, 25.0),
     }
 
     try:

@@ -242,3 +242,24 @@ def toggle_auth_buttons(auth_data):
     if logged_in:
         return {"display": "none"}, {"display": "flex", "alignItems": "center", "gap": "8px"}
     return {}, {"display": "none"}
+
+@app.callback(
+    Output("chat-paywall", "style", allow_duplicate=True),
+    Input("chat-paywall-close-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def close_paywall(n):
+    if not n:
+        return no_update
+    return {"display": "none"}
+
+@app.callback(
+    Output("login-modal",           "is_open", allow_duplicate=True),
+    Output("chat-paywall",          "style",   allow_duplicate=True),
+    Input("chat-paywall-login-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def paywall_open_login(n):
+    if not n:
+        return no_update, no_update
+    return True, {"display": "none"}

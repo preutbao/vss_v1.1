@@ -94,7 +94,7 @@ def compute_risk_profile(goal: str, will: str, pct_savings: int,
         risk_profile   = "conservative"
         risk_label_vi  = "Thận trọng (Conservative)"
         risk_color     = _GREEN
-        risk_icon      = "fas fa-shield-check"
+        risk_icon      = "fas fa-shield"
         target_return  = (7, 10)
         max_drawdown   = -8
         num_stocks     = (15, 25)

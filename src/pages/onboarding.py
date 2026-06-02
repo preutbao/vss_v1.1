@@ -241,9 +241,62 @@ layout = html.Div(
             ], className="vss-logo-bar"),
 
             html.P(
+                "Hệ thống lọc & chấm điểm cổ phiếu tự động — Ra quyết định trong 30 giây dựa trên 100% dữ liệu thực.",
+                className="vss-logo-tagline",
+                style={"fontWeight": "600"},
+            ),
+            html.P(
                 "Trước khi bắt đầu, hãy để VSS hiểu rõ hơn về bạn — chỉ mất 2 phút để thiết lập hồ sơ đầu tư cá nhân.",
                 className="vss-logo-tagline",
             ),
+
+            # ── MISSION CARD (Trust Builder) ─────────────────────────────────────
+            html.Div([
+                html.Div([
+                    html.Div([
+                        html.I(className="fas fa-shield-alt",
+                            style={"color": _GREEN, "fontSize": "18px",
+                                    "marginRight": "10px", "flexShrink": "0"}),
+                        html.Span("Sứ mệnh của VSS",
+                                style={"fontWeight": "800", "color": _TEXT_PRI,
+                                        "fontSize": "15px", "fontFamily": _FONT_DISPLAY}),
+                    ], style={"display": "flex", "alignItems": "center",
+                            "marginBottom": "10px"}),
+                    html.P(
+                        "Bảo vệ tài sản nhà đầu tư trước các rủi ro tiềm ẩn của thị trường. "
+                        "VSS mang đến công cụ minh bạch giúp bạn loại bỏ tâm lý FOMO, "
+                        "rà soát rủi ro và đầu tư bền vững hơn.",
+                        style={"fontSize": "13px", "color": _TEXT_SEC,
+                            "lineHeight": "1.7", "margin": "0 0 12px 0"},
+                    ),
+                    html.Div([
+                        html.Div([
+                            html.I(className="fas fa-shield",
+                                style={"color": _GREEN, "marginRight": "8px",
+                                        "fontSize": "12px"}),
+                            html.Span("Phòng thủ chặt: Loại bỏ DN xào nấu sổ sách, "
+                                    "lãi giả lỗ thật — dựa trên dòng tiền thực.",
+                                    style={"fontSize": "12px", "color": _TEXT_SEC}),
+                        ], style={"display": "flex", "alignItems": "flex-start",
+                                "marginBottom": "6px"}),
+                        html.Div([
+                            html.I(className="fas fa-crosshairs",
+                                style={"color": _CYAN, "marginRight": "8px",
+                                        "fontSize": "12px"}),
+                            html.Span("Tấn công chuẩn: Xác định thời điểm mua/bán tối ưu "
+                                    "theo dòng tiền lớn và sức mạnh giá.",
+                                    style={"fontSize": "12px", "color": _TEXT_SEC}),
+                        ], style={"display": "flex", "alignItems": "flex-start"}),
+                    ]),
+                ], style={
+                    "background": "linear-gradient(135deg, "
+                                "rgba(0,230,118,0.06), rgba(0,229,255,0.04))",
+                    "border": "1px solid rgba(0,230,118,0.18)",
+                    "borderLeft": f"3px solid {_GREEN}",
+                    "borderRadius": "10px",
+                    "padding": "16px 20px",
+                }),
+            ], style={"marginBottom": "28px"}),
 
             # Progress rail (được render bởi callback render_step_visibility)
             html.Div(id="ips-progress-bar", className="vss-progress-rail",
@@ -313,7 +366,7 @@ layout = html.Div(
                             "fontSize": "72px", "lineHeight": "0.82",
                             "letterSpacing": "-0.04em", "color": _TEXT_PRI, "margin": "0"
                         }),
-                html.P("Giải đáp nhanh gọn các thắc mắc trước khi bạn bắt đầu hành trình đầu tư.",
+                html.P("Giải đáp nhanh các thắc mắc trước khi bạn bắt đầu hành trình đầu tư.",
                        style={"color": _TEXT_SEC, "fontSize": "14px",
                               "maxWidth": "250px", "marginTop": "24px", "lineHeight": "1.55"}),
             ], style={"flex": "0 0 320px", "marginBottom": "40px"}),
@@ -354,6 +407,9 @@ layout = html.Div(
                      "Khác biệt ở chức năng 'Phòng khám danh mục'. VSS không chỉ hiển thị Lãi/Lỗ mà còn dự báo kịch bản sập hầm, đo lường tỷ lệ Margin và chỉ định nên Bán/Giữ mã nào để cứu tài khoản."),
                     (6, "Có thể tự tạo bộ lọc cá nhân không?",
                      "Hoàn toàn được. Ở tab Chiến lược, bạn có thể chọn các mẫu có sẵn (CANSLIM, Tích sản...) hoặc tự kết hợp các chỉ số cơ bản/kỹ thuật để tạo nên 'chén thánh' của riêng mình."),
+                     # THÊM DÒNG MỚI VÀO ĐÂY:
+                    (7, "VSS chọn lọc cổ phiếu dựa trên nguyên tắc nào?",
+                    "VSS vận hành trên 2 nguyên tắc cốt lõi: (1) Phòng thủ chặt — tự động quét và loại bỏ các công ty xào nấu sổ sách, lãi giả lỗ thật, giúp bạn an tâm giải ngân; (2) Tấn công chuẩn — xác định thời điểm mua/bán tối ưu bằng cách theo dõi sát dòng tiền lớn và sức mạnh giá của từng cổ phiếu so với thị trường chung."),
                 ]],
             ], style={"flex": "1", "borderTop": f"1px solid {_BORDER}"}),
 

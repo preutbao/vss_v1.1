@@ -53,7 +53,7 @@ jobs:
             Write-Host "No changes to commit"
           }
 
-      - name: Đồng bộ sang Hugging Face Space
+        - name: Đồng bộ sang Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -67,14 +67,17 @@ jobs:
           # 2. Tẩy não Git: Xóa sạch ký ức về các file cũ để làm mới hoàn toàn
           git rm -rf --cached .
           
-          # 3. Gom file lại (Git sẽ tự động chừa các file trong .gitignore ra)
+          # 3. Gom file lại (Git sẽ chừa các file trong .gitignore ra)
           git add .
+          
+          # VÁ LỖI: Ép Git thêm thư mục chứa data vào commit (bỏ qua .gitignore)
+          git add -f data/processed/
           
           # 4. Ép "nhả" thư mục raw ra (Lớp phòng ngự thép)
           git reset data/raw/
           
           # 5. Đóng gói
-          git commit -m "Auto-deploy clean version"
+          git commit -m "Auto-deploy clean version with data"
           
           # 6. Ép đẩy nhánh tạm này đè thẳng lên nhánh main của Hugging Face
           git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener" "${branchName}:main"

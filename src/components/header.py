@@ -102,7 +102,7 @@ def _create_login_modal():
                 html.Div(style={"flex": "1 1 40%", "padding": "48px 32px", "display": "flex", "flexDirection": "column", "justifyContent": "center"}, children=[
                     html.Div([
                         html.Div([
-                            html.I(className="fas fa-chart-network", style={"color": "#fff", "fontSize": "16px"}),
+                            html.I(className="fas fa-user", style={"color": "#fff", "fontSize": "16px"}),
                         ], style={
                             "width": "40px", "height": "40px",
                             "background": "linear-gradient(135deg, #00a651, #00c85a)",
@@ -294,7 +294,16 @@ def create_topbar(id_suffix=""):
                     ),
                 ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
             ])
-        ]),
+        ], style={
+            "position": "fixed",
+            "top": "0",
+            "left": "0",
+            "right": "0",
+            "zIndex": "9000",
+            "width": "100%",
+            "backgroundColor": "#000000", # <--- THÊM DÒNG NÀY Ở ĐÂY
+            "borderBottom": "1px solid #333", # <--- (Tùy chọn) Thêm viền dưới mỏng cho đẹp
+        }),
         html.Div(id="navbar-user-menu", style={"display": "none"}),
     ])
 
