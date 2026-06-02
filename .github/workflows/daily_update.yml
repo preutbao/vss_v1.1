@@ -53,7 +53,7 @@ jobs:
             Write-Host "No changes to commit"
           }
 
-        - name: Đồng bộ sang Hugging Face Space
+      - name: Đồng bộ sang Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
