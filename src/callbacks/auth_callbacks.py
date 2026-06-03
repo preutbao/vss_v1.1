@@ -263,3 +263,53 @@ def paywall_open_login(n):
     if not n:
         return no_update, no_update
     return True, {"display": "none"}
+
+# =============================================================================
+# 7. XỬ LÝ NHẬP MÃ KÍCH HOẠT (INVITE CODE → VIP)
+# =============================================================================
+@app.callback(
+    Output("invite-code-msg",    "children"),
+    Output("invite-code-msg",    "style"),
+    Output("auth-store",         "data",    allow_duplicate=True),
+    Output("invite-code-input",  "value"),
+    Input("invite-code-submit-btn", "n_clicks"),
+    State("invite-code-input",   "value"),
+    State("auth-store",          "data"),
+    State("user-phone-store",    "data"),
+    prevent_initial_call=True,
+)
+def redeem_invite_code(n_clicks, code, auth_data, phone):
+    if not n_clicks or not code:
+        return no_update, no_update, no_update, no_update
+
+    from src.backend.database import validate_and_redeem_code, get_or_create_user
+
+    identifier = phone or (auth_data or {}).get("username", "anonymous")
+
+    # Tạo display_name thân thiện nếu chưa có
+    _existing_name = (auth_data or {}).get("display_name", "")
+    _display_name  = _existing_name if _existing_name else "Coupon Guest"
+
+    get_or_create_user(
+        phone=identifier,
+        display_name=_display_name,
+    )
+
+    success, msg = validate_and_redeem_code(code, identifier)
+
+    style_ok  = {"fontSize": "11px", "marginTop": "6px",
+                 "color": "#00e676", "fontWeight": "600"}
+    style_err = {"fontSize": "11px", "marginTop": "6px",
+                 "color": "#f85149"}
+
+    if success:
+        new_auth = {
+            **(auth_data or {}),
+            "tier":         "vip",
+            "logged_in":    True,
+            "display_name": _display_name,   # ← thêm dòng này
+            "username":     identifier,       # ← đảm bảo có username
+        }
+        return msg, style_ok, new_auth, ""
+    else:
+        return msg, style_err, no_update, no_update

@@ -742,13 +742,15 @@ layout = html.Div([
                                 "marginRight": "10px", "cursor": "pointer",
                                 "verticalAlign": "middle",
                                 "transition": "color 0.15s",
+                                "zIndex": "10001",
                             },
-                            title="Về Vietcap Smart Screener",
                         ),
                         dbc.Tooltip(
                             "Về VSS & Cách hoạt động",
                             target="btn-about-vss",
                             placement="right",
+                            className="custom-vss-tooltip", # <--- Thêm class name này
+                            style={"zIndex": "10001"}       # <--- Ép z-index cao hơn header (9000)
                         ),
                         html.B("VIETCAP SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
                         
@@ -1232,7 +1234,8 @@ layout = html.Div([
                         "suppressNoRowsOverlay": False,
                         "columnSizeOptions": {"skipHeader": False},
                     }
-                )
+                ),
+                html.Div(id="filter-null-alert", style={"padding": "0 16px 8px 16px"})
             ], className="info-card mb-3")
         ]),
 

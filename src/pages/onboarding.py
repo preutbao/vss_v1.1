@@ -94,13 +94,30 @@ def _hero_section():
 def _step1():
     return html.Div(id="ips-step-1", children=[
         _step_header(1,
-            "Mục tiêu Lợi nhuận (Return Objective)",
-            "Xác định Required Return vs. Desired Return để định hình cấu trúc Core-Satellite của danh mục."),
+            "Kỳ vọng & Mục tiêu Đầu tư",
+            "Bạn muốn tiền của mình làm gì? Chọn phong cách sinh lời "
+            "phù hợp nhất với hoàn cảnh hiện tại."),
         html.Div([
-            _choice_card("goal", "preserve",  "fas fa-shield-alt",       "Bảo toàn Vốn",       "Duy trì sức mua, bù đắp lạm phát. Rủi ro tối thiểu."),
-            _choice_card("goal", "income",    "fas fa-hand-holding-usd", "Tối ưu Dòng tiền",    "Tập trung Dividend Yield và dòng tiền đều đặn thay vì lãi vốn."),
-            _choice_card("goal", "growth",    "fas fa-chart-line",       "Tăng trưởng Lãi vốn", "Tối đa hóa giá trị danh mục dài hạn, chấp nhận biến động."),
-            _choice_card("goal", "speculate", "fas fa-rocket",           "Lợi nhuận Tuyệt đối", "Tìm kiếm Alpha qua chiến lược linh hoạt, không phụ thuộc benchmark."),
+            _choice_card("goal", "preserve",
+                "fas fa-shield-alt",
+                "Bảo toàn & Phòng thủ",
+                "Ưu tiên không mất vốn. Chấp nhận lợi nhuận thấp "
+                "hơn để đổi lấy sự an toàn. Phù hợp khi sắp cần dùng tiền."),
+            _choice_card("goal", "income",
+                "fas fa-coins",
+                "Thu nhập Cổ tức đều đặn",
+                "Muốn nhận dòng tiền hàng năm từ cổ tức. "
+                "Ưu tiên DN chia cổ tức 5–8%/năm, ổn định qua nhiều chu kỳ."),
+            _choice_card("goal", "growth",
+                "fas fa-chart-line",
+                "Tăng trưởng Tài sản",
+                "Mục tiêu tích lũy dài hạn 3–5 năm+. Chấp nhận "
+                "biến động để đổi lấy tăng trưởng 15–25%/năm."),
+            _choice_card("goal", "speculate",
+                "fas fa-bolt",
+                "Lướt sóng & Nắm bắt cơ hội",
+                "Canh bảng điện thường xuyên. Tìm điểm bùng phát "
+                "Volume, Breakout kỹ thuật. Chấp nhận rủi ro ngắn hạn cao."),
         ], className="vss-choice-grid"),
         html.Div(id="ips-step1-error", className="vss-error"),
     ])
@@ -109,13 +126,30 @@ def _step1():
 def _step2():
     return html.Div(id="ips-step-2", children=[
         _step_header(2,
-            "Khẩu vị Rủi ro (Risk Tolerance)",
-            "Hành vi dự kiến của bạn khi danh mục vi phạm giới hạn Maximum Drawdown (VD: giảm 20% trong 1 tháng)."),
+            "Phản ứng khi Thị trường Rung lắc",
+            "VN-Index vừa giảm 50–70 điểm trong 1 tuần (tương đương "
+            "khoảng -4%). Danh mục của bạn đang âm 8%. Bạn sẽ làm gì?"),
         html.Div([
-            _choice_card("will", "panic", "fas fa-exclamation-circle",  "Bảo vệ vốn tuyệt đối", "Rất nhạy cảm. Hạ tỷ trọng ngay lập tức bằng mọi giá."),
-            _choice_card("will", "worry", "fas fa-balance-scale-left",  "Kiểm soát chủ động",   "Lo lắng nhưng sẽ rà soát lại yếu tố cơ bản thay vì hoảng loạn."),
-            _choice_card("will", "hold",  "fas fa-layer-group",          "Tuân thủ kỷ luật",     "Giữ nguyên cấu trúc danh mục nếu Thesis đầu tư chưa phá vỡ."),
-            _choice_card("will", "buy",   "fas fa-chess-knight",         "Contrarian (Đi ngược)", "Sẵn sàng tái cấp vốn (Rebalance) vào tài sản đang bị định giá thấp."),
+            _choice_card("will", "panic",
+                "fas fa-sign-out-alt",
+                "Cắt lỗ, bảo toàn tiền mặt",
+                "Bán ra ngay để dừng lỗ. Chờ thị trường ổn định "
+                "rõ ràng mới tính tiếp. Bảo vệ vốn là ưu tiên số 1."),
+            _choice_card("will", "worry",
+                "fas fa-search",
+                "Rà soát lại, không hành động vội",
+                "Xem lại từng mã trong danh mục. Nếu cơ bản "
+                "vẫn tốt thì giữ nguyên, chỉ cắt những mã yếu nhất."),
+            _choice_card("will", "hold",
+                "fas fa-hand-paper",
+                "Giữ nguyên theo kế hoạch",
+                "Đã xác định được mức giá mua hợp lý từ trước. "
+                "Giảm ngắn hạn không thay đổi câu chuyện dài hạn — giữ."),
+            _choice_card("will", "buy",
+                "fas fa-cart-plus",
+                "Bắt đáy, mua thêm",
+                "Thị trường giảm = hàng tốt đang sale. Giải ngân "
+                "thêm vào những mã đã nghiên cứu kỹ, trung bình giá xuống."),
         ], className="vss-choice-grid"),
         html.Div(id="ips-step2-error", className="vss-error"),
     ])
@@ -124,8 +158,9 @@ def _step2():
 def _step3():
     return html.Div(id="ips-step-3", children=[
         _step_header(3,
-            "Ràng buộc Đầu tư (Constraints)",
-            "Cung cấp các biến số TTLLU (Time, Liquidity, Unique) để hệ thống lượng hóa Năng lực tài chính (Ability Score)."),
+            "Hoàn cảnh & Ràng buộc Cá nhân",
+            "Thêm thông tin để VSS cá nhân hóa bộ lọc phù hợp "
+            "với thực tế tài chính của bạn."),
 
         html.P("1. Đường cong đầu tư (Time Horizon)", className="vss-section-label"),
         html.Div([
@@ -144,32 +179,45 @@ def _step3():
         html.P("3. Chỉ số Tài chính Cá nhân", className="vss-section-label"),
 
         html.Div([
-            html.Div("Tỷ lệ thặng dư thu nhập (Savings Rate)",
+            html.Div("Bạn tiết kiệm được bao nhiêu % thu nhập mỗi tháng?",
                      style={"fontSize": "13px", "fontWeight": "600", "color": _TEXT_SEC, "marginBottom": "4px"}),
-            html.Div("% thu nhập hàng tháng bạn có thể phân bổ vào vốn cổ phần.",
+            html.Div("Phần % này dành cho đầu tư chứng khoán — không tính tiền sinh hoạt.",
                      style={"fontSize": "11px", "color": _TEXT_MUT, "marginBottom": "12px"}),
             dcc.Slider(0, 100, 10, value=30, id="ips-pct-savings-slider",
                        tooltip={"placement": "bottom", "always_visible": True}),
         ], className="vss-slider-row"),
 
         html.Div([
-            html.Div("Đệm thanh khoản (Emergency Buffer)",
+            html.Div("Quỹ dự phòng khẩn cấp của bạn đủ mấy tháng chi tiêu?",
                      style={"fontSize": "13px", "fontWeight": "600", "color": _TEXT_SEC, "marginBottom": "4px"}),
-            html.Div("Số tháng chi phí sinh hoạt bạn đã dự phòng tiền mặt ở bên ngoài.",
+            html.Div("Tiền gửi ngân hàng/tiết kiệm không liên quan đến tài khoản chứng khoán.",
                      style={"fontSize": "11px", "color": _TEXT_MUT, "marginBottom": "12px"}),
             dcc.Slider(0, 12, 1, value=4, id="ips-emergency-slider",
                        tooltip={"placement": "bottom", "always_visible": True}),
         ], className="vss-slider-row"),
 
-        html.P("4. Ràng buộc đặc thù (Unique Circumstances)",
-               className="vss-section-label", style={"marginTop": "20px"}),
+        html.P("4. Tùy chỉnh thêm (không bắt buộc)",
+            className="vss-section-label", style={"marginTop": "20px"}),
 
         html.Div([
             dbc.Checklist(
                 options=[
-                    {"label": "Ưu tiên cấu trúc vốn an toàn & Lợi suất cổ tức cao", "value": "prefer_dividend"},
-                    {"label": "Loại trừ nhóm ngành có rủi ro pháp lý/chu kỳ (BĐS, Ngân hàng)",  "value": "avoid_bank_re"},
-                    {"label": "Kích hoạt giao diện giải thích thuật ngữ (Beginner/Tooltip Mode)", "value": "beginner"},
+                    {
+                        "label": "Ưu tiên cổ phiếu trả cổ tức đều đặn (Dividend ≥ 5%/năm)",
+                        "value": "prefer_dividend",
+                    },
+                    {
+                        "label": "Chỉ lọc BĐS có dòng tiền sạch (Nợ/VCSH < 1, tiền mua trước tăng)",
+                        "value": "safe_realestate",
+                    },
+                    {
+                        "label": "Chỉ lọc Ngân hàng phòng thủ (Bao phủ nợ xấu > 100%, CASA cao)",
+                        "value": "defensive_bank",
+                    },
+                    {
+                        "label": "Hiển thị giải thích đơn giản bên cạnh các chỉ số (Chế độ mới bắt đầu)",
+                        "value": "beginner",
+                    },
                 ],
                 value=["beginner"],
                 id="ips-unique-checklist",
@@ -184,8 +232,9 @@ def _step3():
 def _step4():
     return html.Div(id="ips-step-4", children=[
         _step_header(4,
-            "Hồ sơ Đầu tư (IPS Output)",
-            "VSS đã tổng hợp hồ sơ IPS dựa trên lý thuyết hữu dụng. Xem lại các thông số kỹ thuật trước khi áp dụng."),
+            "Hồ sơ Nhà đầu tư của bạn",
+            "VSS đã tổng hợp chiến lược phù hợp dựa trên câu trả lời của bạn. "
+            "Xem lại ngay trước khi áp dụng vào Screener."),
         html.Div(id="ips-profile-preview"),
     ])
 
@@ -193,8 +242,9 @@ def _step4():
 def _step5():
     return html.Div(id="ips-step-5", children=[
         _step_header(5,
-            "Xác nhận & Khởi tạo",
-            "Lưu hồ sơ và đồng bộ hóa các bộ lọc định lượng vào VSS Smart Screener."),
+            "Xác nhận & Bắt đầu",
+            "Lưu hồ sơ và tự động cấu hình bộ lọc vào Screener. "
+            "Bạn có thể điều chỉnh lại bất cứ lúc nào."),
         html.Div(id="ips-final-summary"),
 
         html.Div([
@@ -207,7 +257,8 @@ def _step5():
             html.Div([
                 html.I(className="fas fa-info-circle",
                        style={"color": _BLUE, "marginRight": "8px", "fontSize": "12px"}),
-                html.Span("Toàn bộ gợi ý chỉ mang tính tham khảo học thuật dựa trên CFA Framework, không phải khuyến nghị mua/bán.",
+                html.Span("Toàn bộ gợi ý chỉ mang tính tham khảo, không phải khuyến nghị mua/bán cụ thể. "
+                        "Nhà đầu tư tự chịu trách nhiệm với quyết định của mình.",
                           style={"fontSize": "12px", "color": _TEXT_SEC}),
             ], style={
                 "backgroundColor": "rgba(0,144,255,0.08)",

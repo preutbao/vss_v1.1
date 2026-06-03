@@ -536,10 +536,61 @@ _col3_filters = html.Div(
                               style={"fontSize": "11px", "fontWeight": "700", "color": "#6e7681"}),
                 ], style={"display": "flex", "alignItems": "center", "flex": "1"}),
 
+                # ── TOGGLE: Bao gồm cổ phiếu khuyết dữ liệu ──────────────────────────
+                html.Div(
+                    [
+                        dbc.Switch(
+                            id="include-null-data-toggle",
+                            value=False,
+                            style={"marginBottom": "0", "cursor": "pointer"},
+                        ),
+                        html.Span(
+                            "Incl. N/A",
+                            style={
+                                "fontSize": "10px",
+                                "fontWeight": "600",
+                                "color": "#6e7681",
+                                "whiteSpace": "nowrap",
+                                "marginLeft": "4px",
+                            },
+                        ),
+                        dbc.Tooltip(
+                            [
+                                html.Strong("⚠️ Chế độ rủi ro", style={"color": "#f59e0b"}),
+                                html.Br(),
+                                "Mặc định: loại bỏ những mã thiếu dữ liệu BCTC (chủ yếu ở UPCoM). ",
+                            ],
+                            target="include-null-wrapper",
+                            placement="top",
+                            style={
+                                "backgroundColor": "#0d1117",
+                                "color": "#c9d1d9",
+                                "border": "1px solid #f59e0b",
+                                "borderRadius": "6px",
+                                "fontSize": "11px",
+                                "padding": "8px 12px",
+                                "maxWidth": "240px",
+                            },
+                        ),
+                    ],
+                    id="include-null-wrapper",
+                    style={
+                        "display": "flex",
+                        "alignItems": "center",
+                        "backgroundColor": "rgba(245,158,11,0.06)",
+                        "border": "1px solid rgba(245,158,11,0.2)",
+                        "borderRadius": "6px",
+                        "padding": "2px 8px",
+                        "flexShrink": "0",
+                        "marginRight": "4px",
+                        "cursor": "pointer",
+                    },
+                ),
+                
                 dcc.Dropdown(
                     id="filter-year-dropdown",
                     options=[{"label": "Toàn bộ năm", "value": "all"}]
-                           + [{"label": str(y), "value": y} for y in range(2019, 2025)],
+                           + [{"label": str(y), "value": y} for y in range(2019, 2026)],
                     value="all",
                     clearable=False,
                     searchable=False,
@@ -1160,6 +1211,7 @@ layout = html.Div(
         # Trạng thái đã setup xong profile chưa, dùng để quyết định có show hint tour khi bấm vào btn-investor-profile lần đầu hay không
         dcc.Store(id='filter-unsaved-flag', data=None),
         dcc.Store(id='filter-year-store', data='all'),
+        dcc.Store(id='include-null-data-store', data=False),
         dcc.Store(id='chart-refresh-store', data=0),
 
         dcc.Store(id='saved-filters-store', data={}, storage_type='local'),

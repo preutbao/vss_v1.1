@@ -13,6 +13,10 @@ import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, no_update
 from dotenv import load_dotenv
 load_dotenv()
+# THÊM VÀO SAU DÒNG load_dotenv()
+from src.backend.database import init_db, seed_demo_codes
+init_db()
+seed_demo_codes()   # comment dòng này khi production
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

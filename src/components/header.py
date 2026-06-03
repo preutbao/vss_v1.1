@@ -193,6 +193,7 @@ def _create_login_modal():
                             _pricing_row("fas fa-check", "#00e676", "Backtest 10 trường phái", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Báo cáo phân tích chuyên sâu", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Tín hiệu Margin Crisis Radar", is_pro=True),
+                            
                             html.A("Nâng cấp ngay", href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi", target="_blank", style={
                                 "display": "block", "textAlign": "center", "marginTop": "18px",
                                 "padding": "10px 0", "background": "rgba(0,166,81,0.15)",
@@ -200,6 +201,57 @@ def _create_login_modal():
                                 "borderRadius": "6px", "textDecoration": "none",
                                 "border": "1px solid rgba(0,166,81,0.4)", "transition": "all 0.2s"
                             }),
+                            
+                            # ── Ô nhập mã kích hoạt ──
+                            html.Div([
+                                html.Div("Đã có mã kích hoạt?",
+                                        style={"fontSize": "11px", "color": "#6b7280",
+                                                "marginBottom": "6px"}),
+                                html.Div([
+                                    dbc.Input(
+                                        id="invite-code-input",
+                                        placeholder="VSS-...",
+                                        style={
+                                            "flex": "1",
+                                            "backgroundColor": "rgba(255,255,255,0.05)",
+                                            "border": "1px solid rgba(0,166,81,0.3)",
+                                            "borderRadius": "6px 0 0 6px",
+                                            "color": "#f3f4f6", "fontSize": "13px",
+                                            "padding": "8px 12px",
+                                            "fontFamily": "'JetBrains Mono', monospace",
+                                            "letterSpacing": "1px",
+                                            "outline": "none",
+                                        },
+                                    ),
+                                    dbc.Button(
+                                        "Kích hoạt",
+                                        id="invite-code-submit-btn",
+                                        n_clicks=0,
+                                        style={
+                                            "backgroundColor": "#00a651",
+                                            "border": "none",
+                                            "borderRadius": "0 6px 6px 0",
+                                            "color": "#000",
+                                            "fontSize": "12px",
+                                            "fontWeight": "700",
+                                            "padding": "8px 14px",
+                                            "whiteSpace": "nowrap",
+                                        }
+                                    ),
+                                ], style={"display": "flex"}),
+                                html.Div(
+                                    id="invite-code-msg",
+                                    style={"fontSize": "11px", "marginTop": "6px",
+                                        "minHeight": "16px"},
+                                ),
+                            ], style={
+                                "backgroundColor": "rgba(0,166,81,0.05)",
+                                "border": "1px solid rgba(0,166,81,0.15)",
+                                "borderRadius": "8px",
+                                "padding": "12px 14px",
+                                "marginBottom": "12px",
+                            }),
+                            
                             html.Div([
                                 html.I(className="fas fa-info-circle", style={"marginRight": "4px", "fontSize": "10px"}),
                                 "Kèm theo ưu tiên hỗ trợ chiến lược từ đội ngũ tư vấn Vietcap."
@@ -246,6 +298,7 @@ def create_topbar(id_suffix=""):
 
     return html.Div(id=wrapper_id, children=[
         dcc.Store(id='auth-store', storage_type='local', data={"logged_in": False}),
+        dcc.Store(id='user-phone-store', storage_type='session', data=None),
         _create_login_modal(),
         scroll_script,
 
@@ -299,7 +352,7 @@ def create_topbar(id_suffix=""):
             "top": "0",
             "left": "0",
             "right": "0",
-            "zIndex": "9000",
+            "zIndex": "8999",
             "width": "100%",
             "backgroundColor": "#000000", # <--- THÊM DÒNG NÀY Ở ĐÂY
             "borderBottom": "1px solid #333", # <--- (Tùy chọn) Thêm viền dưới mỏng cho đẹp

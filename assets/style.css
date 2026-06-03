@@ -3534,3 +3534,20 @@ span[style*="f59e0b"] {
     background-color: #000000 !important;
     border-bottom: 1px solid #1f2937 !important;
 }
+
+/* --- TÙY CHỈNH TOOLTIP VSS --- */
+/* Ép màu nền đen và chữ trắng cho khối text */
+.custom-vss-tooltip .tooltip-inner {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    font-weight: 500;
+    font-size: 13px; /* Có thể chỉnh cỡ chữ ở đây nếu cần */
+    border: 1px solid #333; /* Tùy chọn: Thêm viền mỏng cho đẹp */
+}
+
+/* Ép màu phần mũi tên chĩa ra của Tooltip thành màu đen */
+.custom-vss-tooltip .tooltip-arrow::before,
+.custom-vss-tooltip.bs-tooltip-end .tooltip-arrow::before,
+.custom-vss-tooltip.bs-tooltip-auto[data-popper-placement^="right"] .tooltip-arrow::before {
+    border-right-color: #000000 !important;
+}
