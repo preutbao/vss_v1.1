@@ -41,6 +41,22 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 from dash import Input, Output, State, no_update, dcc, html
 from src.app_instance import app
+from src.callbacks.quant_pdf_page import _render_quant_page
+
+# VSS Predictive 2.0 – import quant engine
+try:
+    from src.backend.portfolio_optimizer import run_full_pipeline, QuantResult
+    _QUANT_AVAILABLE = True
+except ImportError:
+    _QUANT_AVAILABLE = False
+
+# Import Stage 4 PDF page (nếu tách file riêng)
+try:
+    from src.callbacks.quant_pdf_page import (
+        _chart_mc_histogram, _render_quant_page
+    )
+except ImportError:
+    pass  # fallback: paste trực tiếp vào file này
 from src.backend.data_loader import get_snapshot_df
 
 logger = logging.getLogger(__name__)
@@ -1514,11 +1530,287 @@ def _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts):
 
     _footer(c, 3)
 
+# ══════════════════════════════════════════════════════════════
+# MODAL CONTENT BUILDERS
+# ══════════════════════════════════════════════════════════════
+
+def _modal_kpi_strip(row_data: list) -> html.Div:
+    """Tạo KPI strip 5 thẻ cho modal overview."""
+    if not row_data:
+        return html.Div("Không có dữ liệu", style={"color":"#999","fontSize":"12px"})
+
+    df = pd.DataFrame(row_data)
+    for col in ["P/E","ROE (%)","Perf_1M","Market Cap"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    total      = len(df)
+    avg_pe     = df["P/E"].dropna().mean()     if "P/E"     in df.columns else None
+    avg_roe    = df["ROE (%)"].dropna().mean() if "ROE (%)" in df.columns else None
+    n_sectors  = df["Sector"].nunique()        if "Sector"  in df.columns else 0
+    n_grade_a  = int((df["VGM Score"]=="A").sum()) if "VGM Score" in df.columns else 0
+
+    def _card(label, value, color="#0090ff"):
+        return html.Div([
+            html.Div(label, style={"fontSize":"9px","color":"#5a7a99",
+                                   "textTransform":"uppercase","letterSpacing":"0.3px"}),
+            html.Div(value, style={"fontSize":"18px","fontWeight":"900",
+                                   "color":color,"lineHeight":"1.1"}),
+        ], style={
+            "flex":"1","textAlign":"center",
+            "border":"1px solid #dce8f0","borderTop":f"3px solid {color}",
+            "borderRadius":"5px","padding":"8px 6px","background":"#f5f9ff",
+        })
+
+    return html.Div([
+        _card("Tổng mã lọc",  str(total),                          "#0090ff"),
+        _card("Mã VGM A",     str(n_grade_a),                      "#00875a"),
+        _card("P/E TB",       f"{avg_pe:.1f}"  if avg_pe  else "—","#0057b8"),
+        _card("ROE TB",       f"{avg_roe:.1f}%" if avg_roe else "—","#00875a"),
+        _card("Số ngành",     str(n_sectors),                       "#7c3aed"),
+    ], style={"display":"flex","gap":"8px","flexWrap":"wrap"})
+
+
+def _modal_ncn_table(row_data: list):
+    """Mini table NCN Top 3 cho modal – dùng .get() toàn bộ để tránh KeyError."""
+    if not row_data:
+        return html.Div("—", style={"color": "#999", "fontSize": "11px"})
+
+    df_src = pd.DataFrame(row_data)
+    # Gọi đúng signature – không có tham số red_flags
+    ncn = _prepare_ncn_rows(df_src, top_n=3)
+
+    if not ncn:
+        return html.Div(
+            "Không có mã đạt chuẩn NCN (ROE≥15%, D/E≤1.5, Net Margin≥5%)",
+            style={"color": "#5a7a99", "fontSize": "11px", "fontStyle": "italic"},
+        )
+
+    VGM_COLOR_MAP = {
+        "A": "#00875a", "B": "#0057b8", "C": "#f59e0b",
+        "D": "#ff7043", "F": "#D32F2F",
+    }
+    col_style = {"padding": "5px 8px", "fontSize": "11px", "whiteSpace": "nowrap"}
+    hdr_style = {**col_style, "fontWeight": "700", "background": "#00875a",
+                 "color": "white", "textTransform": "uppercase", "fontSize": "10px"}
+
+    header_row = html.Tr([
+        html.Th("Mã CK",    style=hdr_style),
+        html.Th("Tên CT",   style=hdr_style),
+        html.Th("VGM",      style={**hdr_style, "textAlign": "center"}),
+        html.Th("ROE %",    style={**hdr_style, "textAlign": "right"}),
+        html.Th("Biên gộp", style={**hdr_style, "textAlign": "right"}),
+        html.Th("D/E",      style={**hdr_style, "textAlign": "right"}),
+        html.Th("P/E",      style={**hdr_style, "textAlign": "right"}),
+    ])
+
+    data_rows = []
+    for r in ncn:
+        g  = str(r.get("vgm", "—")).upper()
+        gc = VGM_COLOR_MAP.get(g, "#999")
+        data_rows.append(html.Tr([
+            html.Td(
+                html.B(r.get("ticker", "—"),
+                       style={"color": "#065f46", "fontSize": "12px"}),
+                style=col_style,
+            ),
+            html.Td(
+                str(r.get("company", "—"))[:22],
+                style={**col_style, "color": "#374151"},
+            ),
+            html.Td(
+                html.Span(g, style={
+                    "background": gc, "color": "white",
+                    "borderRadius": "50%",
+                    "width": "20px", "height": "20px",
+                    "display": "inline-flex",
+                    "alignItems": "center", "justifyContent": "center",
+                    "fontWeight": "900", "fontSize": "10px",
+                }),
+                style={**col_style, "textAlign": "center"},
+            ),
+            html.Td(
+                r.get("roe", "—"),
+                style={**col_style, "textAlign": "right",
+                       "color": "#00875a", "fontWeight": "700"},
+            ),
+            html.Td(
+                r.get("gross_margin", r.get("bien_gop", "—")),
+                style={**col_style, "textAlign": "right"},
+            ),
+            html.Td(
+                r.get("de", "—"),
+                style={**col_style, "textAlign": "right"},
+            ),
+            html.Td(
+                r.get("pe", "—"),
+                style={**col_style, "textAlign": "right"},
+            ),
+        ]))
+
+    return html.Div(
+        html.Table(
+            [header_row] + data_rows,
+            style={
+                "width": "100%", "borderCollapse": "collapse",
+                "border": "1px solid #d1ead8", "borderRadius": "5px",
+            },
+        ),
+        style={"overflowX": "auto"},
+    )
+
+
+def _modal_flag_table(row_data: list) -> html.Div:
+    """Mini Red Flags table cho modal."""
+    if not row_data:
+        return html.Div("—", style={"color":"#999"})
+
+    df_src = pd.DataFrame(row_data)
+    for col in ["P/E","D/E","Perf_1M"]:
+        if col in df_src.columns:
+            df_src[col] = pd.to_numeric(df_src[col], errors="coerce")
+    df_top = df_src.head(30)
+    flags  = _prepare_flag_rows(df_top, max_flags=6)
+
+    if not flags:
+        return html.Div(
+            "✅ Không phát hiện red flag trong top 30 mã",
+            style={"color":"#00875a","fontSize":"11px","fontWeight":"600"},
+        )
+
+    col_style = {"padding":"4px 8px","fontSize":"11px"}
+    hdr_style = {**col_style,"fontWeight":"700","background":"#7f1d1d",
+                 "color":"white","textTransform":"uppercase","fontSize":"10px"}
+
+    rows = [html.Tr([
+        html.Th("Mã CK",    style=hdr_style),
+        html.Th("Tiêu chí", style=hdr_style),
+        html.Th("Giá trị",  style={**hdr_style,"textAlign":"right"}),
+        html.Th("Ngưỡng",   style={**hdr_style,"textAlign":"right"}),
+        html.Th("Đánh giá", style=hdr_style),
+    ])]
+    for f in flags:
+        rows.append(html.Tr([
+            html.Td(html.B(f[0], style={"color":"#0057b8"}), style=col_style),
+            html.Td(f[1],  style=col_style),
+            html.Td(f[2],  style={**col_style,"textAlign":"right",
+                                  "color":"#D32F2F","fontWeight":"700",
+                                  "fontFamily":"monospace"}),
+            html.Td(f[3],  style={**col_style,"textAlign":"right"}),
+            html.Td(f[4],  style={**col_style,"color":"#D32F2F","fontWeight":"700"}),
+        ]))
+
+    return html.Div(
+        html.Table(rows, style={"width":"100%","borderCollapse":"collapse",
+                                "border":"1px solid #fecaca"}),
+        style={"overflowX":"auto"},
+    )
+
+
+def _modal_mc_results(qr) -> html.Div:
+    """Hiển thị kết quả Monte Carlo trong modal."""
+    if qr is None or qr.status != "ok":
+        msg = getattr(qr, "error_message", "Không đủ dữ liệu.") if qr else "Lỗi pipeline."
+        return html.Div([
+            html.Span("⚠️ ", style={"fontSize":"16px"}),
+            html.Span(msg, style={"color":"#D32F2F","fontSize":"12px"}),
+        ], style={"padding":"12px","background":"#fff5f5",
+                  "border":"1px solid #fecaca","borderRadius":"5px"})
+
+    def _metric(label, value, color, note=""):
+        return html.Div([
+            html.Div(label,  style={"fontSize":"9px","color":"#5a7a99",
+                                    "textTransform":"uppercase"}),
+            html.Div(value,  style={"fontSize":"20px","fontWeight":"900",
+                                    "color":color,"lineHeight":"1.1"}),
+            html.Div(note,   style={"fontSize":"9px","color":"#8a9bb5"}),
+        ], style={
+            "flex":"1","textAlign":"center","padding":"10px 8px",
+            "border":f"1px solid {color}","borderTop":f"3px solid {color}",
+            "borderRadius":"5px","background":"#f9fbff",
+        })
+
+    er_color  = "#00875a" if qr.expected_return_1m >= 0 else "#D32F2F"
+    mdd_color = "#f59e0b" if qr.max_drawdown < 0.15 else "#D32F2F"
+
+    metrics_row = html.Div([
+        _metric("Kỳ vọng 1T",
+                f"{qr.expected_return_1m*100:+.1f}%",
+                er_color, "Trung bình 10K kịch bản"),
+        _metric("VaR 95% (1T)",
+                f"{qr.var_95*100:.1f}%",
+                "#D32F2F", "Mức lỗ tối đa 95% trường hợp"),
+        _metric("Max Drawdown",
+                f"{qr.max_drawdown*100:.1f}%",
+                mdd_color, "Guillotine ≤15%"),
+        _metric("Sharpe Ratio",
+                f"{qr.sharpe_ratio:.2f}",
+                "#0090ff", "Annualized"),
+    ], style={"display":"flex","gap":"8px","marginBottom":"10px"})
+
+    # Allocation mini table
+    alloc_rows_html = []
+    for i, t in enumerate(qr.tickers):
+        w   = qr.weights[i] if i < len(qr.weights) else 0
+        qty = qr.quantities[i] if i < len(qr.quantities) else 0
+        inv = qr.investment_values[i] if i < len(qr.investment_values) else 0
+        alloc_rows_html.append(html.Tr([
+            html.Td(html.B(t, style={"color":"#0057b8"}),
+                    style={"padding":"4px 8px","fontSize":"11px"}),
+            html.Td(f"{w*100:.1f}%",
+                    style={"padding":"4px 8px","fontSize":"11px",
+                           "textAlign":"right","fontWeight":"700"}),
+            html.Td(f"{qty:,} cp",
+                    style={"padding":"4px 8px","fontSize":"11px",
+                           "textAlign":"right","fontFamily":"monospace"}),
+            html.Td(f"{inv/1e6:,.0f}M VND",
+                    style={"padding":"4px 8px","fontSize":"11px",
+                           "textAlign":"right","color":"#065f46",
+                           "fontWeight":"600"}),
+        ]))
+
+    alloc_table = html.Table([
+        html.Thead(html.Tr([
+            html.Th(h, style={"padding":"5px 8px","fontSize":"10px",
+                              "background":"#0a1628","color":"white",
+                              "fontWeight":"700","textTransform":"uppercase",
+                              "textAlign": "right" if i>0 else "left"})
+            for i,h in enumerate(["Mã CK","% Tỷ trọng","Số CP","Giá trị VND"])
+        ])),
+        html.Tbody(alloc_rows_html),
+    ], style={"width":"100%","borderCollapse":"collapse",
+              "border":"1px solid #dce8f0","marginBottom":"8px"})
+
+    guilotine_note = html.Div(
+        f"ℹ️ Guillotine Rule chạy {qr.guillotine_iterations} vòng · "
+        f"Danh mục tối ưu: {', '.join(qr.tickers)}",
+        style={"fontSize":"10px","color":"#5a7a99",
+               "padding":"5px 8px","background":"#f0f7ff",
+               "borderLeft":"3px solid #0090ff","borderRadius":"3px"},
+    )
+
+    return html.Div([
+        html.Div([
+            html.Span("🧮 ", style={"fontSize":"14px"}),
+            html.B("Kết quả Markowitz + Monte Carlo Bootstrap (10,000 kịch bản)",
+                   style={"fontSize":"12px","color":"#0a1628"}),
+        ], style={"marginBottom":"8px"}),
+        metrics_row,
+        alloc_table,
+        guilotine_note,
+    ], style={"padding":"12px","background":"#f8fbff",
+              "border":"1px solid #b8d4f0","borderRadius":"6px"})
+
 
 # ══════════════════════════════════════════════════════════════
 # MAIN GENERATOR
 # ══════════════════════════════════════════════════════════════
-def generate_screener_pdf(row_data: list, active_filters: dict = None) -> bytes:
+def generate_screener_pdf(
+    row_data: list,
+    active_filters: dict = None,
+    nav: float = 1_000_000_000.0,
+    include_quant: bool = False,   # ← True khi toggle MC bật
+) -> bytes:
     df = pd.DataFrame(row_data) if row_data else pd.DataFrame()
     
     if not df.empty:
@@ -1589,6 +1881,21 @@ def generate_screener_pdf(row_data: list, active_filters: dict = None) -> bytes:
     # Truyền Red Flags vào bảng Phòng thủ để cấm cửa mã xấu
     ncn_rows = _prepare_ncn_rows(df, top_n=3, red_flags=red_flag_tickers)
     ncn_tickers = [r["ticker"] for r in ncn_rows]
+
+    # VSS Predictive 2.0 – chạy Markowitz + Monte Carlo
+    qr = None
+    if _QUANT_AVAILABLE and ncn_rows:
+        try:
+            qr = run_full_pipeline(
+                ncn_rows=ncn_rows,
+                nav=nav,
+                target_month=datetime.now().month,
+                max_picks=min(5, len(ncn_rows)),
+            )
+            logger.info(f"[Quant] Pipeline status: {qr.status}")
+        except Exception as _qe:
+            logger.warning(f"[Quant] Pipeline skip: {_qe}")
+            qr = None
     
     # CHỈ GỌI AI ĐÚNG 1 LẦN DUY NHẤT ĐỂ TRÁNH LAG API
     ai_texts = _gemini_summary(df_top, ncn_tickers, strategy_label)
@@ -1627,6 +1934,19 @@ def generate_screener_pdf(row_data: list, active_filters: dict = None) -> bytes:
         c.showPage()
         _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts)
         c.showPage()
+        # Trang 4: VSS Predictive – chỉ render khi include_quant=True
+        if include_quant and _QUANT_AVAILABLE:
+            try:
+                _qr_for_pdf = run_full_pipeline(
+                    ncn_rows=ncn_rows,
+                    nav=nav,
+                    target_month=datetime.now().month,
+                    max_picks=5,
+                )
+                _render_quant_page(c, _qr_for_pdf, nav)
+                c.showPage()
+            except Exception as _qe:
+                logger.warning(f"[Quant page PDF] Skip: {_qe}")
     except Exception as e:
         logger.error(f"Screener PDF render error: {e}")
         traceback.print_exc()
@@ -1643,33 +1963,148 @@ def generate_screener_pdf(row_data: list, active_filters: dict = None) -> bytes:
 
 
 # ══════════════════════════════════════════════════════════════
-# DASH CALLBACK (giữ nguyên interface)
+# CALLBACK 1: Nút PDF → Mở modal (instant, không generate PDF)
 # ══════════════════════════════════════════════════════════════
 @app.callback(
-    [Output("screener-pdf-download", "data"),
-     Output("screener-pdf-status",   "children")],
-    Input("btn-export-screener-pdf", "n_clicks"),
-    [State("screener-table",        "rowData"),
-     State("active-filters-store",  "data")],
+    Output("screener-pdf-modal", "is_open"),
+    Output("modal-kpi-strip",    "children"),
+    Output("modal-ncn-table",    "children"),
+    Output("modal-flag-table",   "children"),
+    [Input("btn-export-screener-pdf", "n_clicks"),
+     Input("btn-modal-close",         "n_clicks")],
+    [State("screener-table",       "rowData"),
+     State("active-filters-store", "data"),
+     State("screener-pdf-modal",   "is_open")],
+    prevent_initial_call=True,
+)
+def toggle_screener_modal(open_click, close_click, row_data, active_filters, is_open):
+    from dash import callback_context
+    triggered = callback_context.triggered[0]["prop_id"].split(".")[0]
+
+    if triggered == "btn-modal-close":
+        return False, no_update, no_update, no_update
+
+    if triggered == "btn-export-screener-pdf" and row_data:
+        return (
+            True,
+            _modal_kpi_strip(row_data),
+            _modal_ncn_table(row_data),
+            _modal_flag_table(row_data),
+        )
+
+    return False, no_update, no_update, no_update
+
+
+# ══════════════════════════════════════════════════════════════
+# CALLBACK 2: Toggle MC → Tính toán và hiển thị kết quả
+# ══════════════════════════════════════════════════════════════
+@app.callback(
+    Output("modal-mc-section", "style"),
+    Output("modal-mc-section", "children"),
+    Input("modal-mc-toggle", "value"),
+    [State("screener-table",  "rowData"),
+     State("modal-nav-input", "value")],
     prevent_initial_call=True,
     running=[
-        (Output("btn-export-screener-pdf", "disabled"), True, False),
-        (Output("btn-export-screener-pdf", "children"),
-         [html.I(className="fas fa-spinner fa-spin", style={"marginRight":"5px"}), "Đang tạo PDF..."],
-         [html.I(className="fas fa-file-pdf",        style={"marginRight":"5px"}), "PDF Danh mục"]),
-        (Output("btn-export-screener-pdf", "style"),
-         {"borderRadius":"6px","fontSize":"11px","padding":"4px 10px","opacity":"0.6","cursor":"wait","whiteSpace":"nowrap"},
-         {"borderRadius":"6px","fontSize":"11px","padding":"4px 10px","opacity":"1","cursor":"pointer","whiteSpace":"nowrap"}),
-    ]
+        (Output("modal-mc-toggle", "disabled"), True, False),
+        (Output("btn-modal-download-pdf", "disabled"), True, False),
+    ],
 )
-def export_screener_pdf(n_clicks, row_data, active_filters):
-    if not row_data:
-        return no_update, "Bảng đang trống — hãy lọc dữ liệu trước"
+def compute_mc_preview(toggle_on, row_data, nav_raw):
+    # Toggle OFF → ẩn section
+    if not toggle_on:
+        return {"display": "none"}, []
+
+    # Parse NAV
+    nav = 1_000_000_000.0
     try:
-        pdf_bytes = generate_screener_pdf(row_data, active_filters)
-        fname = f"Vietcap_DanhMucLoc_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-        return dcc.send_bytes(pdf_bytes, fname), f"✔"
+        if nav_raw:
+            nav = max(100_000_000.0, float(nav_raw))
+    except Exception:
+        pass
+
+    # Chạy pipeline nếu có module
+    if not _QUANT_AVAILABLE or not row_data:
+        return (
+            {"display": "block"},
+            html.Div(
+                "⚠️ Module portfolio_optimizer chưa được cài đặt "
+                "hoặc bảng đang trống.",
+                style={"color":"#D32F2F","fontSize":"12px",
+                       "padding":"10px","background":"#fff5f5",
+                       "border":"1px solid #fecaca","borderRadius":"5px"},
+            ),
+        )
+
+    try:
+        df_src = pd.DataFrame(row_data)
+        # Reuse NCN rows đã compute
+        red_flag_tickers = set()  # simplified cho preview
+        ncn_rows_for_mc  = _prepare_ncn_rows(
+            df_src, top_n=5, red_flags=red_flag_tickers
+        )
+        qr = run_full_pipeline(
+            ncn_rows=ncn_rows_for_mc,
+            nav=nav,
+            target_month=datetime.now().month,
+            max_picks=5,
+        )
     except Exception as e:
-        logger.error(f"Screener PDF error: {e}")
+        logger.error(f"[Modal MC] Pipeline error: {e}")
+        qr = None
+
+    return {"display": "block"}, _modal_mc_results(qr)
+
+
+# ══════════════════════════════════════════════════════════════
+# CALLBACK 3: Nút "Tải PDF" trong modal → Generate & Download
+# ══════════════════════════════════════════════════════════════
+@app.callback(
+    Output("screener-pdf-download", "data"),
+    Output("screener-pdf-status",   "children"),
+    Input("btn-modal-download-pdf", "n_clicks"),
+    [State("screener-table",       "rowData"),
+     State("active-filters-store", "data"),
+     State("modal-mc-toggle",      "value"),
+     State("modal-nav-input",      "value")],
+    prevent_initial_call=True,
+    running=[
+        (Output("btn-modal-download-pdf", "disabled"), True, False),
+        (Output("btn-modal-download-pdf", "children"),
+         [html.I(className="fas fa-spinner fa-spin",
+                 style={"marginRight":"5px"}), "Đang tạo PDF..."],
+         [html.I(className="fas fa-file-pdf",
+                 style={"marginRight":"5px"}), "Tải Báo cáo PDF"]),
+    ],
+)
+def download_pdf_from_modal(n_clicks, row_data, active_filters,
+                            use_quant, nav_raw):
+    if not row_data:
+        return no_update, "⚠️ Bảng đang trống"
+
+    nav = 1_000_000_000.0
+    try:
+        if nav_raw:
+            nav = max(100_000_000.0, float(nav_raw))
+    except Exception:
+        pass
+
+    try:
+        # use_quant=True → PDF có trang Monte Carlo
+        # use_quant=False/None → PDF cũ như thường
+        pdf_bytes = generate_screener_pdf(
+            row_data,
+            active_filters,
+            nav=nav,
+            include_quant=bool(use_quant),
+        )
+        fname = (
+            f"Vietcap_DanhMucLoc"
+            f"{'_MC' if use_quant else ''}"
+            f"_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        )
+        return dcc.send_bytes(pdf_bytes, fname), f"✔ Đã tải: {fname}"
+    except Exception as e:
+        logger.error(f"Modal PDF error: {e}")
         traceback.print_exc()
-        return no_update, f"Lỗi: {str(e)[:100]}"
+        return no_update, f"❌ Lỗi: {str(e)[:80]}"

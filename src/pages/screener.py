@@ -722,6 +722,135 @@ layout = html.Div([
     dcc.Store(id="fin-chart-period-store", data="quarterly"),  # ← period store cho biểu đồ TC
     dcc.Store(id="fin-chart-selection-store", data=[]),  # ← template store (persist across tabs)
 
+    # ── SCREENER PDF MODAL ─────────────────────────────────
+    dbc.Modal(
+        id="screener-pdf-modal",
+        size="xl",
+        scrollable=True,
+        backdrop="static",
+        is_open=False,
+        children=[
+
+            dbc.ModalHeader(
+                dbc.ModalTitle([
+                    html.I(className="fas fa-chart-bar",
+                           style={"marginRight":"8px","color":"#0090ff"}),
+                    "Báo cáo Sàng lọc – Tổng quan & Xuất PDF",
+                ]),
+                style={"backgroundColor":"#0d1829",
+                       "borderBottom":"1px solid #1e3a5f"},
+                close_button=False,
+            ),
+
+            dbc.ModalBody([
+
+                # 1. KPI Strip
+                html.Div(id="modal-kpi-strip",
+                         style={"marginBottom":"14px"}),
+
+                # 2. NCN Top 3
+                html.Div([
+                    html.P([
+                        html.I(className="fas fa-shield-alt",
+                               style={"marginRight":"6px","color":"#00875a"}),
+                        "Vietcap Defensive Pick (Top 3)",
+                    ], style={"fontWeight":"700","fontSize":"12px",
+                              "color":"#a8d8b0","marginBottom":"6px"}),
+                    html.Div(id="modal-ncn-table"),
+                ], style={"marginBottom":"12px"}),
+
+                # 3. Red Flags
+                html.Div([
+                    html.P([
+                        html.I(className="fas fa-exclamation-triangle",
+                               style={"marginRight":"6px","color":"#ef4444"}),
+                        "Cảnh báo rủi ro (Red Flags)",
+                    ], style={"fontWeight":"700","fontSize":"12px",
+                              "color":"#fca5a5","marginBottom":"6px"}),
+                    html.Div(id="modal-flag-table"),
+                ], style={"marginBottom":"14px"}),
+
+                html.Hr(style={"borderColor":"#1e3a5f","margin":"10px 0"}),
+
+                # 4. Toggle + NAV input
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Switch(
+                            id="modal-mc-toggle",
+                            label="Bật Dự báo lợi nhuận tháng tới + Stress Test Monte Carlo",
+                            value=False,
+                            style={"fontWeight":"600","fontSize":"12px",
+                                   "color":"#d6eaf8"},
+                        ),
+                        html.Small(
+                            "Markowitz + 10,000 kịch bản lịch sử (~5–15s). "
+                            "Kết quả sẽ được đính kèm vào PDF tải về.",
+                            style={"color":"#5a7a99","fontSize":"10px",
+                                   "display":"block","marginTop":"3px"},
+                        ),
+                    ], width=8),
+                    dbc.Col([
+                        dbc.Label("Vốn giải ngân (VND):",
+                                  style={"fontSize":"10px","fontWeight":"600",
+                                         "color":"#7fa8cc"}),
+                        dbc.Input(
+                            id="modal-nav-input",
+                            type="number",
+                            placeholder="1000000000",
+                            value=1_000_000_000,
+                            min=100_000_000,
+                            max=100_000_000_000,
+                            step=100_000_000,
+                            size="sm",
+                            style={"fontSize":"11px",
+                                   "backgroundColor":"#091526",
+                                   "color":"#d6eaf8",
+                                   "border":"1px solid #1e3a5f"},
+                        ),
+                    ], width=4),
+                ], style={"marginBottom":"12px"}),
+
+                # 5. MC Results (ẩn mặc định, hiện khi toggle ON)
+                dcc.Loading(
+                    type="circle",
+                    color="#0090ff",
+                    children=html.Div(
+                        id="modal-mc-section",
+                        style={"display":"none"},
+                    ),
+                ),
+
+            ], style={"backgroundColor":"#0d1829","color":"#d6eaf8"}),
+
+            dbc.ModalFooter([
+                html.Span(
+                    id="modal-pdf-status",
+                    style={"fontSize":"10px","color":"#5a7a99",
+                           "marginRight":"auto","fontStyle":"italic"},
+                ),
+                dbc.Button(
+                    [html.I(className="fas fa-file-pdf",
+                            style={"marginRight":"5px"}),
+                     "Tải Báo cáo PDF"],
+                    id="btn-modal-download-pdf",
+                    color="danger",
+                    size="sm",
+                    style={"fontWeight":"700","fontSize":"11px"},
+                ),
+                dbc.Button(
+                    "Đóng",
+                    id="btn-modal-close",
+                    color="secondary",
+                    outline=True,
+                    size="sm",
+                    style={"marginLeft":"8px","fontSize":"11px"},
+                ),
+            ], style={"backgroundColor":"#0d1829",
+                      "borderTop":"1px solid #1e3a5f"}),
+        ],
+    ),
+    # ── END SCREENER PDF MODAL ─────────────────────────────
+
     # Top Filter Panel
     sidebar.layout,
 
