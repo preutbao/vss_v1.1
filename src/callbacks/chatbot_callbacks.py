@@ -373,199 +373,338 @@ def create_chatbot_layout():
         }),
 
         # ── CHAT PANEL ────────────────────────────────────────────────────────
-        html.Div([
-
-            # Header
-            html.Div([
+        html.Div(
+            id="chat-panel-premium-wrapper",
+            children=[
                 html.Div([
-                    html.Div("V", style={
-                        "width": "38px", "height": "38px", "borderRadius": "50%",
-                        "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                        "display": "flex", "alignItems": "center", "justifyContent": "center",
-                        "fontSize": "18px", "fontWeight": "900", "color": "#fff",
-                        "boxShadow": "0 2px 8px rgba(14,165,233,0.4)", "flexShrink": "0",
-                    }),
+
+                    # Header
                     html.Div([
-                        html.Div("VinanceAI - Chuyên gia đầu tư tự động", style={
-                            "fontSize": "12px", "fontWeight": "700", "color": "#f1f5f9",
-                            "fontFamily": "'Inter', 'Segoe UI', sans-serif",
-                            "letterSpacing": "-0.3px",
-                        }),
                         html.Div([
-                            html.Span(className="vinance-status-dot"),
-                            html.Span("Mọi thông tin chỉ mang tính tham khảo!", style={
-                                "fontSize": "10px", "color": "#64748b",
-                                "fontFamily": "'Inter', sans-serif",
+                            html.Div("V", style={
+                                "width": "38px", "height": "38px", "borderRadius": "50%",
+                                "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
+                                "display": "flex", "alignItems": "center", "justifyContent": "center",
+                                "fontSize": "18px", "fontWeight": "900", "color": "#fff",
+                                "boxShadow": "0 2px 8px rgba(14,165,233,0.4)", "flexShrink": "0",
                             }),
-                        ], style={"display": "flex", "alignItems": "center", "gap": "5px"}),
-                    ]),
-                ], style={"display": "flex", "gap": "10px", "alignItems": "center"}),
-
-                html.Div([
-                    html.Span("🗑", id="chat-clear-btn", n_clicks=0, title="Xóa lịch sử", style={
-                        "cursor": "pointer", "fontSize": "14px", "color": "#475569",
-                        "marginRight": "12px", "transition": "color .2s", "userSelect": "none",
-                    }),
-                    html.Span("✕", id="chat-close-btn", n_clicks=0, style={
-                        "cursor": "pointer", "fontSize": "16px", "color": "#475569",
-                        "transition": "color .2s", "fontWeight": "300", "userSelect": "none",
-                    }),
-                ], style={"display": "flex", "alignItems": "center"}),
-            ], style={
-                "display": "flex", "justifyContent": "space-between", "alignItems": "center",
-                "padding": "14px 16px", "background": "#0f172a",
-                "borderBottom": "1px solid rgba(148,163,184,0.08)",
-            }),
-
-            # Context bar
-            html.Div(id="chat-stock-context-bar", children=[]),
-
-            # Messages area
-            html.Div(
-                id="chat-messages-area",
-                children=[
-                    html.Div([
-                        html.Div("V", style={
-                            "width": "32px", "height": "32px", "borderRadius": "50%",
-                            "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                            "display": "flex", "alignItems": "center", "justifyContent": "center",
-                            "fontSize": "14px", "fontWeight": "900", "color": "#fff",
-                            "flexShrink": "0",
-                        }),
-                        html.Div([
                             html.Div([
-                                html.Div("Xin chào! Tôi là VinanceAI 👋", style={
-                                    "fontSize": "13px", "fontWeight": "600",
-                                    "color": "#e2e8f0", "marginBottom": "8px",
-                                }),
-                                html.Div("Tôi có thể giúp:", style={
-                                    "fontSize": "12px", "color": "#94a3b8",
-                                    "marginBottom": "10px", "lineHeight": "1.6",
+                                html.Div("VinanceAI - Chuyên gia đầu tư tự động", style={
+                                    "fontSize": "12px", "fontWeight": "700", "color": "#f1f5f9",
+                                    "fontFamily": "'Inter', 'Segoe UI', sans-serif",
+                                    "letterSpacing": "-0.3px",
                                 }),
                                 html.Div([
-                                    html.Div("📊 Sàng lọc cổ phiếu theo 6 chiến lược",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
-                                    html.Div("⚖️ Tính toán quản lý rủi ro & định giá",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
-                                    html.Div("🎯 Tư vấn cá nhân hóa theo trình độ F0/F1/Pro", style={"fontSize": "12px", "color": "#cbd5e1"}),
-                                ], style={"paddingLeft": "4px"}),
-                                html.Div("Hãy click vào 1 mã ở bảng lọc bên trái để nhận được ngay tư vấn về cổ phiếu đó!", style={
-                                    "fontSize": "12px", "color": "#7dd3fc",
-                                    "marginTop": "10px", "fontStyle": "italic",
-                                }),
-                            ], style={
-                                "background": "#1e293b", "padding": "12px 14px",
-                                "borderRadius": "4px 18px 18px 18px",
-                                "border": "1px solid rgba(148,163,184,0.1)",
-                                "boxShadow": "0 2px 8px rgba(0,0,0,0.2)",
+                                    html.Span(className="vinance-status-dot"),
+                                    html.Span("Mọi thông tin chỉ mang tính tham khảo!", style={
+                                        "fontSize": "10px", "color": "#64748b",
+                                        "fontFamily": "'Inter', sans-serif",
+                                    }),
+                                ], style={"display": "flex", "alignItems": "center", "gap": "5px"}),
+                            ]),
+                        ], style={"display": "flex", "gap": "10px", "alignItems": "center"}),
+
+                        html.Div([
+                            html.Span("🗑", id="chat-clear-btn", n_clicks=0, title="Xóa lịch sử", style={
+                                "cursor": "pointer", "fontSize": "14px", "color": "#475569",
+                                "marginRight": "12px", "transition": "color .2s", "userSelect": "none",
                             }),
-                        ], style={"flex": "1"}),
-                    ], style={"display": "flex", "gap": "10px", "alignItems": "flex-start", "padding": "16px 14px"}),
-                ],
-                style={
-                    "flex": "1", "overflowY": "auto", "padding": "8px 0",
+                            html.Span("✕", id="chat-close-btn", n_clicks=0, style={
+                                "cursor": "pointer", "fontSize": "16px", "color": "#475569",
+                                "transition": "color .2s", "fontWeight": "300", "userSelect": "none",
+                            }),
+                        ], style={"display": "flex", "alignItems": "center"}),
+                    ], style={
+                        "display": "flex", "justifyContent": "space-between", "alignItems": "center",
+                        "padding": "14px 16px", "background": "#0f172a",
+                        "borderBottom": "1px solid rgba(148,163,184,0.08)",
+                    }),
+
+                    # Context bar
+                    html.Div(id="chat-stock-context-bar", children=[]),
+
+                    # Messages area
+                    html.Div(
+                        id="chat-messages-area",
+                        children=[
+                            html.Div([
+                                html.Div("V", style={
+                                    "width": "32px", "height": "32px", "borderRadius": "50%",
+                                    "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
+                                    "display": "flex", "alignItems": "center", "justifyContent": "center",
+                                    "fontSize": "14px", "fontWeight": "900", "color": "#fff",
+                                    "flexShrink": "0",
+                                }),
+                                html.Div([
+                                    html.Div([
+                                        html.Div("Xin chào! Tôi là VinanceAI 👋", style={
+                                            "fontSize": "13px", "fontWeight": "600",
+                                            "color": "#e2e8f0", "marginBottom": "8px",
+                                        }),
+                                        html.Div("Tôi có thể giúp:", style={
+                                            "fontSize": "12px", "color": "#94a3b8",
+                                            "marginBottom": "10px", "lineHeight": "1.6",
+                                        }),
+                                        html.Div([
+                                            html.Div("📊 Sàng lọc cổ phiếu theo 6 chiến lược",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
+                                            html.Div("⚖️ Tính toán quản lý rủi ro & định giá",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
+                                            html.Div("🎯 Tư vấn cá nhân hóa theo trình độ F0/F1/Pro", style={"fontSize": "12px", "color": "#cbd5e1"}),
+                                        ], style={"paddingLeft": "4px"}),
+                                        html.Div("Hãy click vào 1 mã ở bảng lọc bên trái để nhận được ngay tư vấn về cổ phiếu đó!", style={
+                                            "fontSize": "12px", "color": "#7dd3fc",
+                                            "marginTop": "10px", "fontStyle": "italic",
+                                        }),
+                                    ], style={
+                                        "background": "#1e293b", "padding": "12px 14px",
+                                        "borderRadius": "4px 18px 18px 18px",
+                                        "border": "1px solid rgba(148,163,184,0.1)",
+                                        "boxShadow": "0 2px 8px rgba(0,0,0,0.2)",
+                                    }),
+                                ], style={"flex": "1"}),
+                            ], style={"display": "flex", "gap": "10px", "alignItems": "flex-start", "padding": "16px 14px"}),
+                        ],
+                        style={
+                            "flex": "1", "overflowY": "auto", "padding": "8px 0",
+                            "background": "#0f172a",
+                            "scrollbarWidth": "thin",
+                            "scrollbarColor": "#334155 #0f172a",
+                        }
+                    ),
+
+                    # Typing indicator
+                    html.Div(id="chat-typing-indicator", children=[], style={"minHeight": "0"}),
+
+                    # Quick prompts
+                    html.Div([
+                        *[html.Button(
+                            label,
+                            id={"type": "chat-quick-btn", "index": i},
+                            n_clicks=0,
+                            style={
+                                "background": "rgba(30,41,59,0.8)",
+                                "border": "1px solid rgba(148,163,184,0.15)",
+                                "color": "#94a3b8", "fontSize": "11px",
+                                "padding": "5px 10px", "cursor": "pointer",
+                                "whiteSpace": "nowrap", "borderRadius": "20px",
+                                "transition": "all 0.2s ease",
+                                "fontFamily": "'Inter', 'Segoe UI', sans-serif",
+                            }
+                        ) for i, (label, _) in enumerate(quick_prompts)]
+                    ], id="chat-quick-prompts-bar", style={
+                        "display": "flex", "gap": "6px", "padding": "8px 12px",
+                        "overflowX": "auto", "borderTop": "1px solid rgba(148,163,184,0.08)",
+                        "background": "#0f172a",
+                    }),
+
+                    # Input row
+                    html.Div([
+                        dcc.Input(
+                            id="chat-input",
+                            placeholder="Hỏi VinanceAI về đầu tư chứng khoán...",
+                            debounce=False, type="text",
+                            style={
+                                "flex": "1", "background": "#1e293b",
+                                "border": "1px solid rgba(148,163,184,0.2)",
+                                "color": "#e2e8f0", "padding": "10px 14px",
+                                "fontSize": "13px",
+                                "fontFamily": "'Inter', 'Segoe UI', sans-serif",
+                                "outline": "none", "borderRadius": "12px",
+                                "transition": "border-color 0.2s",
+                            },
+                            n_submit=0,
+                        ),
+                        html.Button(
+                            "➤", id="chat-send-btn", n_clicks=0,
+                            style={
+                                "width": "42px", "height": "42px",
+                                "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
+                                "border": "none", "color": "#fff", "cursor": "pointer",
+                                "fontSize": "16px", "fontWeight": "700",
+                                "display": "flex", "alignItems": "center", "justifyContent": "center",
+                                "flexShrink": "0", "borderRadius": "12px",
+                                "boxShadow": "0 2px 8px rgba(14,165,233,0.4)",
+                                "transition": "all .15s ease",
+                            }
+                        ),
+                    ], style={
+                        "display": "flex", "gap": "8px", "alignItems": "center",
+                        "padding": "10px 12px", "borderTop": "1px solid rgba(148,163,184,0.08)",
+                        "background": "#0f172a",
+                    }),
+
+                    # Footer
+                    html.Div(
+                        "Powered by Gemini · Model: {}".format(GEMINI_MODEL),
+                        style={
+                            "textAlign": "center", "fontSize": "10px",
+                            "color": "#334155", "padding": "5px", "background": "#0a1120",
+                            "letterSpacing": "0.3px", "fontFamily": "'Inter', sans-serif",
+                        }
+                    ),
+
+                ], id="chat-panel", style={
+                    "position": "fixed", "bottom": "96px", "right": "28px",
+                    "width": "380px", "height": "600px",
                     "background": "#0f172a",
-                    "scrollbarWidth": "thin",
-                    "scrollbarColor": "#334155 #0f172a",
-                }
-            ),
+                    "border": "1px solid rgba(148,163,184,0.12)",
+                    "boxShadow": "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(14,165,233,0.1)",
+                    "display": "flex", "flexDirection": "column",
+                    "overflow": "hidden", "zIndex": "99999",
+                    "transform": "scale(0.85) translateY(20px)",
+                    "opacity": "0", "pointerEvents": "none",
+                    "transition": "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    "borderRadius": "20px",
+                }),
+                # ── PAYWALL (hiện khi chưa VIP) ──
+                html.Div([
+                    html.Div([
+                        # ── Nút X đóng paywall ──
+                        html.Span(
+                            "✕",
+                            id="chat-paywall-close-btn",
+                            n_clicks=0,
+                            style={
+                                "position": "absolute", "top": "12px", "right": "14px",
+                                "cursor": "pointer", "fontSize": "16px", "color": "#475569",
+                                "fontWeight": "300", "userSelect": "none",
+                                "transition": "color .2s",
+                            },
+                        ),
+                        html.I(className="fas fa-lock",
+                               style={"fontSize": "28px", "color": "#0ea5e9",
+                                      "marginBottom": "12px", "display": "block"}),
+                        html.Div("VinanceAI · Chuyên gia đầu tư",
+                                 style={"fontSize": "14px", "fontWeight": "700",
+                                        "color": "#f1f5f9", "marginBottom": "6px"}),
+                        html.Div("Tính năng dành riêng cho thành viên VIP.",
+                                 style={"fontSize": "12px", "color": "#64748b",
+                                        "marginBottom": "16px", "lineHeight": "1.6"}),
+                        html.Div([
+                            html.Div("✓  Phân tích cổ phiếu cá nhân hóa",
+                                     style={"fontSize": "12px", "color": "#94a3b8",
+                                            "marginBottom": "5px"}),
+                            html.Div("✓  Tư vấn chiến lược theo hồ sơ IPS",
+                                     style={"fontSize": "12px", "color": "#94a3b8",
+                                            "marginBottom": "5px"}),
+                            html.Div("✓  Cảnh báo rủi ro danh mục real-time",
+                                     style={"fontSize": "12px", "color": "#94a3b8"}),
+                        ], style={"marginBottom": "18px", "textAlign": "left",
+                                  "width": "100%"}),
+                        html.Button(
+                            [html.I(className="fas fa-sign-in-alt",
+                                    style={"marginRight": "8px"}),
+                             "Đăng nhập để mở khóa"],
+                            id="chat-paywall-login-btn",
+                            n_clicks=0,
+                            style={
+                                "width": "100%", "padding": "10px",
+                                "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
+                                "border": "none", "borderRadius": "8px",
+                                "color": "#fff", "fontSize": "13px",
+                                "fontWeight": "700", "cursor": "pointer",
+                            }
+                        ),
+                    ], style={
+                        "display": "flex", "flexDirection": "column",
+                        "alignItems": "center", "textAlign": "center",
+                        "padding": "28px 20px",
+                        "position": "relative",   # ← thêm dòng này
+                    }),
+                ], id="chat-paywall", style={"display": "none"}),
 
-            # Typing indicator
-            html.Div(id="chat-typing-indicator", children=[], style={"minHeight": "0"}),
-
-            # Quick prompts
-            html.Div([
-                *[html.Button(
-                    label,
-                    id={"type": "chat-quick-btn", "index": i},
-                    n_clicks=0,
-                    style={
-                        "background": "rgba(30,41,59,0.8)",
-                        "border": "1px solid rgba(148,163,184,0.15)",
-                        "color": "#94a3b8", "fontSize": "11px",
-                        "padding": "5px 10px", "cursor": "pointer",
-                        "whiteSpace": "nowrap", "borderRadius": "20px",
-                        "transition": "all 0.2s ease",
-                        "fontFamily": "'Inter', 'Segoe UI', sans-serif",
-                    }
-                ) for i, (label, _) in enumerate(quick_prompts)]
-            ], id="chat-quick-prompts-bar", style={
-                "display": "flex", "gap": "6px", "padding": "8px 12px",
-                "overflowX": "auto", "borderTop": "1px solid rgba(148,163,184,0.08)",
-                "background": "#0f172a",
-            }),
-
-            # Input row
-            html.Div([
-                dcc.Input(
-                    id="chat-input",
-                    placeholder="Hỏi VinanceAI về đầu tư chứng khoán...",
-                    debounce=False, type="text",
-                    style={
-                        "flex": "1", "background": "#1e293b",
-                        "border": "1px solid rgba(148,163,184,0.2)",
-                        "color": "#e2e8f0", "padding": "10px 14px",
-                        "fontSize": "13px",
-                        "fontFamily": "'Inter', 'Segoe UI', sans-serif",
-                        "outline": "none", "borderRadius": "12px",
-                        "transition": "border-color 0.2s",
-                    },
-                    n_submit=0,
-                ),
-                html.Button(
-                    "➤", id="chat-send-btn", n_clicks=0,
-                    style={
-                        "width": "42px", "height": "42px",
-                        "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                        "border": "none", "color": "#fff", "cursor": "pointer",
-                        "fontSize": "16px", "fontWeight": "700",
-                        "display": "flex", "alignItems": "center", "justifyContent": "center",
-                        "flexShrink": "0", "borderRadius": "12px",
-                        "boxShadow": "0 2px 8px rgba(14,165,233,0.4)",
-                        "transition": "all .15s ease",
-                    }
-                ),
-            ], style={
-                "display": "flex", "gap": "8px", "alignItems": "center",
-                "padding": "10px 12px", "borderTop": "1px solid rgba(148,163,184,0.08)",
-                "background": "#0f172a",
-            }),
-
-            # Footer
-            html.Div(
-                "Powered by Gemini · Model: {}".format(GEMINI_MODEL),
-                style={
-                    "textAlign": "center", "fontSize": "10px",
-                    "color": "#334155", "padding": "5px", "background": "#0a1120",
-                    "letterSpacing": "0.3px", "fontFamily": "'Inter', sans-serif",
-                }
-            ),
-
-        ], id="chat-panel", style={
-            "position": "fixed", "bottom": "96px", "right": "28px",
-            "width": "380px", "height": "600px",
-            "background": "#0f172a",
-            "border": "1px solid rgba(148,163,184,0.12)",
-            "boxShadow": "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(14,165,233,0.1)",
-            "display": "flex", "flexDirection": "column",
-            "overflow": "hidden", "zIndex": "99999",
-            "transform": "scale(0.85) translateY(20px)",
-            "opacity": "0", "pointerEvents": "none",
-            "transition": "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
-            "borderRadius": "20px",
-        }),
+            ],
+        ),
     ])
 
 
 # ── CALLBACKS ─────────────────────────────────────────────────────────────────
+app.clientside_callback(
+    """
+    function(n_open, n_close, chat_style, zalo_style, auth_data) {
+        if (!n_open && !n_close) return [
+            window.dash_clientside.no_update,
+            window.dash_clientside.no_update,
+            window.dash_clientside.no_update,
+        ];
 
-# FIX: toggle_chat_panel CHỈ điều khiển chat-panel, KHÔNG output zalo-chat-window
-# Tránh duplicate output conflict với toggle_zalo trong home_callbacks.py
-@app.callback(
+        var ctx = window.dash_clientside.callback_context;
+        if (!ctx || !ctx.triggered || !ctx.triggered.length)
+            return [window.dash_clientside.no_update,
+                    window.dash_clientside.no_update,
+                    window.dash_clientside.no_update];
+
+        var trigger = ctx.triggered[0].prop_id;
+        var zalo_hidden = Object.assign({}, zalo_style, {display: 'none'});
+
+        var style_open = Object.assign({}, chat_style, {
+            transform: 'scale(1) translateY(0)',
+            opacity: '1',
+            pointerEvents: 'auto'
+        });
+        var style_closed = Object.assign({}, chat_style, {
+            transform: 'scale(0.85) translateY(20px)',
+            opacity: '0',
+            pointerEvents: 'none'
+        });
+
+        var is_closed = (chat_style.opacity === '0' || chat_style.opacity === 0
+                         || chat_style.pointerEvents === 'none');
+
+        // Nút close → đóng panel, ẩn paywall
+        if (trigger.indexOf('chat-close-btn') !== -1) {
+            return [style_closed, zalo_hidden, {display: 'none'}];
+        }
+
+        // Nút toggle (icon V)
+        if (trigger.indexOf('chat-toggle-btn') !== -1) {
+            if (!is_closed) {
+                // Đang mở → đóng
+                return [style_closed, window.dash_clientside.no_update,
+                        {display: 'none'}];
+            }
+
+            // Đang đóng → kiểm tra VIP
+            var isVip = auth_data && auth_data.logged_in
+                        && auth_data.tier === 'vip';
+
+            if (isVip) {
+                // VIP: mở chat panel, ẩn paywall, đóng zalo
+                return [style_open, zalo_hidden, {display: 'none'}];
+            } else {
+                // Non-VIP: KHÔNG mở chat panel, hiện paywall, đóng zalo
+                return [
+                    window.dash_clientside.no_update,
+                    zalo_hidden,
+                    {
+                        display: 'block',
+                        position: 'fixed',
+                        bottom: '96px',
+                        right: '28px',
+                        width: '360px',
+                        backgroundColor: '#0f172a',
+                        border: '1px solid rgba(14,165,233,0.25)',
+                        borderRadius: '16px',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+                        zIndex: '10001',
+                        fontFamily: "'Inter', 'Segoe UI', sans-serif",
+                    }
+                ];
+            }
+        }
+
+        return [window.dash_clientside.no_update,
+                window.dash_clientside.no_update,
+                window.dash_clientside.no_update];
+    }
+    """,
     Output("chat-panel",       "style"),
-    Output("zalo-chat-window", "style", allow_duplicate=True),  # THÊM
+    Output("zalo-chat-window", "style", allow_duplicate=True),
+    Output("chat-paywall",     "style"),
     Input("chat-toggle-btn",   "n_clicks"),
     Input("chat-close-btn",    "n_clicks"),
     State("chat-panel",        "style"),
-    State("zalo-chat-window",  "style"),  # THÊM
+    State("zalo-chat-window",  "style"),
+    State("auth-store",        "data"),
     prevent_initial_call=True,
 )
 def toggle_chat_panel(n_open, n_close, chat_style, zalo_style):

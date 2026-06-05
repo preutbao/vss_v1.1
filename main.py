@@ -13,6 +13,10 @@ import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, no_update
 from dotenv import load_dotenv
 load_dotenv()
+# THÊM VÀO SAU DÒNG load_dotenv()
+from src.backend.database import init_db, seed_demo_codes
+init_db()
+seed_demo_codes()   # comment dòng này khi production
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -139,12 +143,19 @@ from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_help_mo
 from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_help_modal
 from src.callbacks.compare_callbacks import compare_modal, compare_help_modal
 
-
 app.layout = html.Div(
-    style={"margin": "0", "padding": "0", "overflowX": "hidden"},
+    style={"margin": "0", "padding": "0"},
     children=[
         # ── 0. THANH TOPBAR LUÔN HIỂN THỊ Ở MỌI TRANG ─────────────────────
-        create_topbar(),
+        # Bọc topbar vào một Div để dính chặt lên top
+        html.Div(
+            style={
+                "position": "sticky", 
+                "top": "0", 
+                "zIndex": "999999",       # Đảm bảo không bị các modal/chart đè lên
+            },
+            children=[create_topbar()]
+        ),
 
         # ── 1. GLOBAL STORES ──────────────────────────────────────────────
         dcc.Store(id="trading-mode-store",   storage_type="session",  data="all_market"),
@@ -312,7 +323,7 @@ def reopen_onboarding(n_clicks):
 # ============================================================
 # CALLBACK JAVASCRIPT CHO FAQ ONBOARDING (FIXED)
 # ============================================================
-for i in range(1, 7):
+for i in range(1, 8):
     app.clientside_callback(
         f"""
         function(n_clicks) {{

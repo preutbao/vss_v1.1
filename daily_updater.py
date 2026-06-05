@@ -2,7 +2,7 @@
 daily_updater.py — VSS Smart Screener (SSI + VNDirect Fallback Version)
 ═══════════════════════════════════════════════════════════════════════════════
 Script ETL độc lập — KHÔNG liên quan đến Dash Web App.
-Chạy như Cronjob lúc 15:15 sau ATC, ghi đè Parquet.
+Chạy như Cronjob lúc 18:15 sau ATC, ghi đè Parquet.
 
 PIPELINE:
   1. Load danh sách ticker từ market_prices.parquet 

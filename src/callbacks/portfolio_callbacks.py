@@ -515,7 +515,7 @@ def update_margin_health(rtt_input, debt, total_asset):
 
     # Màu sắc theo ngưỡng
     if rtt >= MARGIN_CAUTION:
-        color, label, icon = "#10b981", "AN TOÀN", "fas fa-shield-check"
+        color, label, icon = "#10b981", "AN TOÀN", "fas fa-shield"
     elif rtt >= MARGIN_FORCE_SELL:
         color, label, icon = "#f59e0b", "CẢNH BÁO", "fas fa-exclamation-triangle"
     else:

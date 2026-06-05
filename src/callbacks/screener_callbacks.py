@@ -366,7 +366,8 @@ def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
      Output("filter-stats",   "children"),
      # >>> THÊM 2 OUTPUT NÀY CHO TOAST CẢNH BÁO <<<
      Output("api-error-toast", "is_open"),
-     Output("api-error-toast", "children")],
+     Output("api-error-toast", "children"),
+     Output("filter-null-alert", "children")],
     [
         # ── TRIGGERS chính (thay đổi những thứ này → chạy filter) ──
         Input("btn-reset",                  "n_clicks"),
@@ -377,6 +378,7 @@ def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
         Input("filter-sub-industry",        "value"),
         Input("filter-exchange",             "value"),   # ← lọc theo sàn
         Input("filter-year-store",          "data"),   # ← lọc theo năm
+        Input("include-null-data-store",    "data"),   # ← chế độ incl. null
         Input("trading-mode-store", "data"),   # ← thêm sau filter-year-store
         Input("investor-profile-store", "data"),
 
@@ -469,7 +471,7 @@ def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
 )
 def update_screener_table(
         btn_reset, search_text, current_strategy, selected_sectors, active_filters, selected_subs,
-        selected_exchange, filter_year, trading_mode, investor_profile,
+        selected_exchange, filter_year, include_null, trading_mode, investor_profile,
         filter_index, nav_value,
         # Tổng quan (State)
         price_range, volume_range, market_cap_range, eps_range, perf_1w_range, perf_1m_range,
@@ -559,10 +561,13 @@ def update_screener_table(
             return df.to_dict('records'), col_defs, f"📊 Hiển thị tất cả: {total_stocks} mã", ""
 
         df_filtered = df.copy()
+        df_null_excluded = pd.DataFrame()  # Accumulate mã bị loại vì null
 
         # ── HARD FILTER theo chế độ đầu tư ──────────────────────────────────────────
-        # ── HARD FILTER theo hồ sơ nhà đầu tư (ưu tiên cao hơn mode mặc định) ──────
-        if trading_mode != "all_market" and investor_profile and investor_profile.get("auto_filters"):
+        # ── HARD FILTER theo hồ sơ nhà đầu tư ──────────
+        _has_user_filters = bool(active_filters)  # True nếu còn thẻ nào đó
+
+        if trading_mode != "all_market" and investor_profile and investor_profile.get("auto_filters") and _has_user_filters:   # ← THÊM điều kiện này
             af = investor_profile["auto_filters"]
             min_vol   = af.get("min_vol",   30_000)
             min_cap   = af.get("min_cap",   200_000_000_000)
@@ -587,6 +592,13 @@ def update_screener_table(
             logger.info(f"[Profile Filter] Vốn={investor_profile.get('capital')} "
                         f"→ vol≥{min_vol:,}, cap≥{min_cap/1e9:.0f}tỷ, "
                         f"price≥{min_price:,} → còn {len(df_filtered)} mã")
+
+            # Đưa thông tin hard filter vào result-count để hiển thị
+            _hard_filter_note = (
+                f"  ·  🔒 Lọc tự động theo hồ sơ: KL≥{min_vol//1000}K, "
+                f"Vốn hóa≥{min_cap//1_000_000_000:.0f}tỷ, Giá≥{min_price:,}đ"
+            )
+
         if trading_mode == "trading":
             # === CHẾ ĐỘ LƯỚT SÓNG T+ ===
             # Mục tiêu: Cổ phiếu có thanh khoản đủ để vào/ra nhanh, có momentum
@@ -756,14 +768,29 @@ def update_screener_table(
             active_filters = {}
 
         def apply_range(col_name, rng):
-            nonlocal df_filtered
+            nonlocal df_filtered, df_null_excluded
             if col_name in df_filtered.columns and rng and isinstance(rng, (list, tuple)) and len(rng) == 2:
                 numeric = pd.to_numeric(df_filtered[col_name], errors='coerce')
-                # Cho phép NaN pass qua (không loại mã chỉ vì thiếu dữ liệu chỉ tiêu đó)
-                df_filtered = df_filtered[
-                    numeric.isna() |
-                    ((numeric >= rng[0]) & (numeric <= rng[1]))
-                ]
+
+                mask_in_range = (numeric >= rng[0]) & (numeric <= rng[1])
+                mask_is_null  = numeric.isna()
+
+                # Tách riêng các mã null để có thể tái sử dụng nếu toggle bật
+                null_rows = df_filtered[mask_is_null & ~mask_in_range]
+                df_null_excluded = pd.concat(
+                    [df_null_excluded, null_rows]
+                ).drop_duplicates(subset=["Ticker"])
+
+                if include_null:
+                    # Chế độ rủi ro: giữ lại null, đánh dấu cảnh báo
+                    df_filtered = df_filtered[mask_in_range | mask_is_null]
+                    # Thêm cột cảnh báo nếu chưa có
+                    if "_null_warning" not in df_filtered.columns:
+                        df_filtered["_null_warning"] = ""
+                    df_filtered.loc[mask_is_null, "_null_warning"] = "⚠️ Thiếu dữ liệu"
+                else:
+                    # Chế độ mặc định (chuẩn): loại bỏ null
+                    df_filtered = df_filtered[mask_in_range]
 
         def apply_grade(col_name, grades):
             nonlocal df_filtered
@@ -955,8 +982,32 @@ def update_screener_table(
             except Exception as e:
                 logger.error(f"Lỗi filter NAV: {e}")
                 pass
-        # 🟢 🟢 🟢 KẾT THÚC ĐOẠN THÊM
+        # 🟢 🟢 🟢 KẾT THÚC ĐOẠN THÊM (NAV filter)
+
+        # ── [NULL ALERT] Tạo thông báo số mã bị loại vì thiếu dữ liệu ──────────
+        n_null = len(df_null_excluded["Ticker"].unique()) if not df_null_excluded.empty else 0
+        if n_null > 0 and not include_null:
+            null_alert = html.Span(
+                [
+                    html.I(className="fas fa-info-circle",
+                           style={"marginRight": "6px", "color": "#f59e0b"}),
+                    f"Đã loại trừ các mã không đủ dữ liệu BCTC cho tiêu chí đang lọc "
+                    f"(chủ yếu ở sàn UPCoM). Bật toggle 'Incl. N/A' bên trong tab 'Chiến lược' để xem kèm cảnh báo ⚠️",
+                ],
+                style={
+                    "fontSize": "11px", "color": "#9ca3af",
+                    "backgroundColor": "rgba(245,158,11,0.08)",
+                    "border": "1px solid rgba(245,158,11,0.2)",
+                    "borderRadius": "6px", "padding": "6px 6px",
+                    "display": "block", "marginTop": "6px",
+                },
+            )
+        else:
+            null_alert = None
+        # ── [NULL ALERT] KẾT THÚC ───────────────────────────────────────────────
+
         filtered_count = len(df_filtered)
+
         # Tính Forward P/E và build columnDefs trong cùng 1 lần → AG Grid nhận 1 batch update
         df_filtered = _add_forward_pe(df_filtered)
         if investor_profile and not df_filtered.empty:
@@ -968,8 +1019,9 @@ def update_screener_table(
             col_defs,
             f"Tìm thấy {filtered_count} / {total_stocks} mã phù hợp",
             f"Lọc: {filtered_count} mã | Tổng: {total_stocks} mã",
-            toast_is_open,  # Output("api-error-toast", "is_open")
-            toast_msg       # Output("api-error-toast", "children")
+            toast_is_open,
+            toast_msg,
+            null_alert,      # ← Output mới: "filter-null-alert" "children"
         )
 
     except Exception as e:
@@ -977,7 +1029,7 @@ def update_screener_table(
         import traceback;
         traceback.print_exc()
         # [CẬP NHẬT] Xử lý lỗi cũng phải trả đủ số lượng return (6 Outputs)
-        return [], FIXED_COLS, f"❌ Lỗi: {str(e)}", "Vui lòng thử lại", True, "Lỗi hệ thống khi tải dữ liệu."
+        return [], FIXED_COLS, f"❌ Lỗi: {str(e)}", "Vui lòng thử lại", True, "Lỗi hệ thống khi tải dữ liệu.", None
 
 
 
@@ -3492,6 +3544,17 @@ def reset_selected_rows_on_modal_close(is_open):
     if not is_open:
         return []
     raise PreventUpdate
+
+# Thêm callback sync Store + Sửa logic lọc null
+@app.callback(
+    Output("include-null-data-store", "data"),
+    Input("include-null-data-toggle", "value"),
+    prevent_initial_call=True,
+)
+def sync_include_null_store(toggle_val):
+    """Đồng bộ trạng thái toggle vào Store để các callback khác đọc được."""
+    return bool(toggle_val)
+
 # ============================================================================
 # TỰ ĐỘNG CẬP NHẬT OPTIONS CHO DROPDOWN NGÀNH (GIỮ NGUYÊN Ô SÀN CỦA SIDEBAR)
 # ============================================================================
@@ -3581,3 +3644,11 @@ clientside_callback(
     Input("nav-input", "value"),
     prevent_initial_call=True
 )
+
+@app.callback(
+    Output("about-vss-modal", "is_open"),
+    Input("btn-about-vss", "n_clicks"),
+    prevent_initial_call=True,
+)
+def open_about_vss_modal(n):
+    return True if n else no_update

@@ -744,10 +744,21 @@ def _build_snapshot_df() -> pd.DataFrame:
             .transform(lambda x: x.rolling(20, min_periods=1).mean())
             .round(0).fillna(0)
         )
+        # ADV20 theo giá trị VND (cần cho Liquidity Constraint của Markowitz)
+        df_price["Avg_Vol_20D_VND"] = (
+            df_price["Avg_Vol_20D"] * df_price["Price Close"]
+        ).round(0).fillna(0)
     except Exception as e:
         logger.warning(f"Loi AvgVol: {e}")
 
     df_latest = df_price.drop_duplicates(subset=["Ticker"], keep="last").copy()
+
+    # EPS Growth QoQ proxy — dùng YoY đã có nếu QoQ chưa tính riêng
+    # Khi quant_engine tính xong sẽ override nếu có quarterly data
+    if "EPS Growth YoY (%)" in df_latest.columns:
+        df_latest["EPS_Growth_QoQ"] = df_latest["EPS Growth YoY (%)"]
+    else:
+        df_latest["EPS_Growth_QoQ"] = float("nan")
 
     del df_price
     gc.collect()
@@ -1119,6 +1130,8 @@ def get_filter_ranges() -> dict:
         "filter-vol-vs-sma10",
         "filter-vol-vs-sma20",
         "filter-net-cash-assets",
+        "filter-beta",    # ← thêm
+        "filter-rs-3d",   # ← thêm
     }
 
     # CLIP_P5_P95: cột phân phối lệch rất nặng, cần clip mạnh hơn
@@ -1139,8 +1152,9 @@ def get_filter_ranges() -> dict:
         "filter-canslim":          (0.0,   5.0),
         "filter-consec-down":      (0.0,  10.0),
         "filter-vol-vs-sma5":      (0.0,   5.0),
-        "filter-beta":             (-1.0,  3.0),
-        "filter-rs-3d":            (-25.0, 25.0),
+        # XÓA 2 DÒNG NÀY nếu muốn đọc từ data thực tế:
+        #"filter-beta":             (-1.0,  3.0),
+        #"filter-rs-3d":            (-25.0, 25.0),
     }
 
     try:
