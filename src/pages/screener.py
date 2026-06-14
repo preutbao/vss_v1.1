@@ -1579,7 +1579,7 @@ dbc.Modal([
             html.P(
                 "VSS ban đầu chỉ là một đồ án nhóm môn Phân tích chứng khoán của tụi mình – "
                 "những sinh viên chuyên ngành Fintech tại Đại học Kinh tế - Luật (UEL). "
-                "Khi ngụp lặn trong hàng núi báo cáo tài chính và sự biến động điên rồ của thị trường, "
+                "Khi ngụp lặn trong hàng núi báo cáo tài chính và sự biến động của thị trường, "
                 "tụi mình nhận ra: Rất khó để nhà đầu tư cá nhân chiến thắng nếu chỉ dựa vào cảm xúc hoặc 'phím hàng'.",
                 style={"fontSize": "13px", "color": "#7aafcc", "lineHeight": "1.6", "marginBottom": "6px"},
             ),

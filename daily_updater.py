@@ -253,12 +253,11 @@ def merge_prices_into_parquet(df_new: pd.DataFrame, df_meta: pd.DataFrame) -> pd
     if PRICES_PARQUET.exists():
         df_old = pd.read_parquet(PRICES_PARQUET)
         df_old["Date"] = pd.to_datetime(df_old["Date"]).dt.tz_localize(None)
-        min_new = df_new["Date"].min() if not df_new.empty else pd.Timestamp.max
-        df_old_hist = df_old[df_old["Date"] < min_new]
     else:
-        df_old_hist = pd.DataFrame()
+        df_old = pd.DataFrame()
 
-    frames = [f for f in [df_old_hist, df_new] if not f.empty]
+    # Ưu tiên API: concat old trước, new sau → drop_duplicates keep="last" → API thắng
+    frames = [f for f in [df_old, df_new] if not f.empty]
     if not frames: return pd.DataFrame()
     df_merged = pd.concat(frames, ignore_index=True)
 
