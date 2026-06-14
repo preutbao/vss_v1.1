@@ -735,8 +735,28 @@ layout = html.Div([
                 dbc.ModalTitle([
                     html.I(className="fas fa-chart-bar",
                            style={"marginRight":"8px","color":"#0090ff"}),
-                    "Báo cáo Sàng lọc – Tổng quan & Xuất PDF",
-                ]),
+                    html.Span("Báo cáo Sàng lọc Thị trường: Tổng quan & Xuất PDF"),
+                    
+                    # Nút chữ i mới thêm vào đây
+                    html.I(
+                        className="fas fa-info-circle",
+                        id="btn-open-theory-modal",
+                        style={
+                            "marginLeft": "10px", 
+                            "color": "#38bdf8", 
+                            "cursor": "pointer",
+                            "fontSize": "16px"
+                        }
+                    ),
+                    # Tooltip khi trỏ chuột vào chữ i
+                    dbc.Tooltip(
+                        "Hướng dẫn sàng lọc & Khái niệm lý thuyết",
+                        target="btn-open-theory-modal",
+                        placement="right",
+                        className="cyber-theme-tooltip"
+                    )
+                ], style={"display": "flex", "alignItems": "center", "color": "#e8f4ff"}),
+                
                 style={"backgroundColor":"#0d1829",
                        "borderBottom":"1px solid #1e3a5f"},
                 close_button=False,
@@ -783,7 +803,7 @@ layout = html.Div([
                                    "color":"#d6eaf8"},
                         ),
                         html.Small(
-                            "Markowitz + 10,000 kịch bản lịch sử (~5–15s). "
+                            "Markowitz + 10,000 kịch bản lịch sử (~3–10s). "
                             "Kết quả sẽ được đính kèm vào PDF tải về.",
                             style={"color":"#5a7a99","fontSize":"10px",
                                    "display":"block","marginTop":"3px"},
@@ -850,6 +870,31 @@ layout = html.Div([
         ],
     ),
     # ── END SCREENER PDF MODAL ─────────────────────────────
+
+    # ── MODAL HƯỚNG DẪN MONTE CARLO & MARKOWITZ ─────────────────────────
+    dbc.Modal([
+        dbc.ModalHeader(dbc.ModalTitle([
+            html.I(className="fas fa-brain", style={"marginRight": "8px", "color": "#38bdf8"}),
+            "Lý thuyết Markowitz & Monte Carlo"
+        ], style={"fontSize": "16px", "color": "#e8f4ff"}), 
+        style={"borderBottom": "1px solid #1e3a5f", "backgroundColor": "#0a1628"}, close_button=True),
+        
+        dbc.ModalBody([
+            html.P("Công cụ Quant này giúp tối ưu tỷ trọng vốn đầu tư và dự báo rủi ro thua lỗ thông qua hàng ngàn kịch bản mô phỏng, thay vì chỉ dựa vào cảm tính.", style={"fontSize": "13px", "color": "#c9d1d9", "marginBottom": "16px"}),
+            
+            html.H6([html.I(className="fas fa-1", style={"marginRight": "8px", "color": "#3b82f6"}), "Tối ưu hóa Markowitz (MPT)"], style={"fontSize": "14px", "fontWeight": "700", "color": "#3b82f6"}),
+            html.P("Hệ thống tự động tìm ra tỷ lệ phân bổ vốn hoàn hảo sao cho danh mục đạt được Lợi nhuận kỳ vọng cao nhất với mức Rủi ro (Biến động) thấp nhất.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+            html.H6([html.I(className="fas fa-2", style={"marginRight": "8px", "color": "#10b981"}), "Mô phỏng Monte Carlo Bootstrap"], style={"fontSize": "14px", "fontWeight": "700", "color": "#10b981"}),
+            html.P("Máy tính sẽ bốc mẫu ngẫu nhiên dữ liệu lịch sử để tạo ra 10,000 kịch bản thị trường trong 1 tháng tới. Cách này chính xác hơn phân phối chuẩn vì nó bao trùm cả các sự kiện 'Thiên nga đen'.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+            html.H6([html.I(className="fas fa-3", style={"marginRight": "8px", "color": "#ef4444"}), "VaR 95% (Value at Risk)"], style={"fontSize": "14px", "fontWeight": "700", "color": "#ef4444"}),
+            html.P("Nếu VaR 95% = -11%, nghĩa là trong 1 tháng tới, có 95% xác suất danh mục của bạn sẽ KHÔNG lỗ quá 11%. Chỉ có 5% rủi ro cực đoan nhất là lỗ nặng hơn mức này.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
+
+            html.H6([html.I(className="fas fa-4", style={"marginRight": "8px", "color": "#f59e0b"}), "Luật máy chém (Guillotine Rule)"], style={"fontSize": "14px", "fontWeight": "700", "color": "#f59e0b"}),
+            html.P("Hệ thống liên tục chạy lại thuật toán (nhiều vòng), tự động loại bỏ các mã làm Max Drawdown vượt ngưỡng an toàn, cho đến khi chốt được danh mục sinh tồn tốt nhất.", style={"fontSize": "12px", "color": "#7fa8cc"}),
+        ], style={"backgroundColor": "#0d1117", "border": "1px solid #30363d", "borderRadius": "0 0 8px 8px"}),
+    ], id="theory-modal", size="md", is_open=False, centered=True),
 
     # Top Filter Panel
     sidebar.layout,
@@ -972,27 +1017,6 @@ layout = html.Div([
                                             "whiteSpace": "nowrap"
                                         },
                         ),
-                        # Export CSV
-                        # dbc.Button(
-                        #     [html.I(className="fas fa-download", style={"marginRight": "5px"}),
-                        #      html.Span("CSV", id="label-export-btn")],
-                        #     id="btn-export-csv",
-                        #     color="success", outline=True, size="sm",
-                        #     style={"borderRadius": "6px", "fontSize": "11px",
-                        #            "padding": "4px 10px", "whiteSpace": "nowrap"},
-                        # ),
-                        # Heatmap
-                        dbc.Button([
-                            html.I(className="fas fa-th-large", style={"marginRight": "5px"}),
-                            "Heatmap",
-                        ], id="btn-heatmap", color="secondary", outline=True, size="sm",
-                            style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        }),
                         # Export Excel
                         dbc.Button(
                             [html.I(className="fas fa-file-excel", style={"marginRight": "5px"}),
@@ -1008,6 +1032,28 @@ layout = html.Div([
                                 "borderColor": "#1D6F42", "color": "#1D6F42"
                             },
                         ),
+                        # Export CSV
+                        # dbc.Button(
+                        #     [html.I(className="fas fa-download", style={"marginRight": "5px"}),
+                        #      html.Span("CSV", id="label-export-btn")],
+                        #     id="btn-export-csv",
+                        #     color="success", outline=True, size="sm",
+                        #     style={"borderRadius": "6px", "fontSize": "11px",
+                        #            "padding": "4px 10px", "whiteSpace": "nowrap"},
+                        # ),
+                        # Heatmap
+                        dbc.Button([
+                            html.I(className="fas fa-dollar-sign", style={"marginRight": "5px"}),
+                            "Dòng tiền ngành",
+                        ], id="btn-heatmap", color="success", outline=True, size="sm",
+                            style={
+                                            "borderRadius": "6px", 
+                                            "fontSize": "10px", # Đã giảm kích thước chữ
+                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
+                                            "padding": "4px 10px", 
+                                            "whiteSpace": "nowrap"
+                                        }),
+                        
                         # ============================================================
                         # SNIPPET: Premium Wrapper cho nút "Xuất PDF Danh mục"
                         # Dán vào screener.py thay thế đoạn nút btn-export-screener-pdf cũ.
@@ -1035,9 +1081,9 @@ layout = html.Div([
                                     children=[
                                         dbc.Button(
                                             [
-                                                html.I(className="fas fa-file-pdf",
+                                                html.I(className="fas fa-file",
                                                     style={"marginRight": "5px"}),
-                                                "PDF Danh mục",
+                                                "Danh mục",
                                             ],
                                             id="btn-export-screener-pdf",
                                             color="danger", outline=True, size="sm",
@@ -1088,41 +1134,7 @@ layout = html.Div([
                                 ),
                             ],
                         ),
-                        # Watchlist — PREMIUM
-                        html.Div(
-                            id="pw-watchlist",
-                            className="premium-wrapper premium-locked",
-                            children=[
-                                html.Div(
-                                    dbc.Button(
-                                        [
-                                            html.I(className="fas fa-eye", style={"marginRight": "5px"}),
-                                            html.Span("Watchlist", id="label-watchlist-btn")
-                                        ],
-                                        id="btn-watchlist",
-                                        color="warning", outline=True, size="sm",
-                                        style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        },
-                                    ),
-                                    className="premium-content",
-                                ),
-                                html.Div(
-                                    id={"type": "premium-overlay-btn", "section": "watchlist"},
-                                    n_clicks=0,
-                                    className="premium-overlay",
-                                    children=[
-                                        html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
-                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
-                                    ],
-                                ),
-                            ],
-                        ),
+                        
                         # So sánh — PREMIUM
                         html.Div(
                             id="pw-compare",
@@ -1220,6 +1232,42 @@ layout = html.Div([
                             ],
                         ),
 
+                        # Watchlist — PREMIUM
+                        html.Div(
+                            id="pw-watchlist",
+                            className="premium-wrapper premium-locked",
+                            children=[
+                                html.Div(
+                                    dbc.Button(
+                                        [
+                                            html.I(className="fas fa-eye", style={"marginRight": "5px"}),
+                                            html.Span("Watchlist", id="label-watchlist-btn")
+                                        ],
+                                        id="btn-watchlist",
+                                        color="warning", outline=True, size="sm",
+                                        style={
+                                            "borderRadius": "6px", 
+                                            "fontSize": "10px", # Đã giảm kích thước chữ
+                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
+                                            "padding": "4px 10px", 
+                                            "whiteSpace": "nowrap"
+                                        },
+                                    ),
+                                    className="premium-content",
+                                ),
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "watchlist"},
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(className="fas fa-lock",
+                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
+                                    ],
+                                ),
+                            ],
+                        ),
+
                         # Cảnh báo — PREMIUM
                         html.Div(
                             id="pw-alerts",
@@ -1277,10 +1325,8 @@ layout = html.Div([
                     dbc.Tooltip(
                         "Mở rộng: Xuất PDF/Excel, Heatmap, Cảnh báo & Công cụ VIP",
                         target="btn-toggle-actions",
-                        placement="bottom-end", # Hiển thị ở dưới, căn lề phải
-                        className="cyber-tooltip",
-                        style={
-                               "fontSize": "11px", "color": "#ffffff", "fontColor": "#f2f4f6", "fontFamily": "'Inter', sans-serif"}
+                        placement="bottom-end",
+                        className="cyber-tooltip"
                     )
                 ])
 
@@ -1313,11 +1359,28 @@ layout = html.Div([
                         className="ssi-dropdown-custom",
                         style={"width": "140px"},
                     ),
+                    # Toggle sàn — thêm vào sau dropdown metric
+                    dbc.RadioItems(
+                        id="heatmap-exchange-filter",
+                        options=[
+                            {"label": "HOSE", "value": "HOSE"},
+                            {"label": "HNX",  "value": "HNX"},
+                            {"label": "UPCOM","value": "UPCOM"},
+                            {"label": "Tất cả","value": "ALL"},
+                        ],
+                        value="HOSE",
+                        inline=True,
+                        className="ssi-radio-inline",
+                        style={"fontSize": "11px", "color": "#94a3b8"},
+                    ),
                 ], style={"display": "flex", "alignItems": "center", "gap": "10px",
                           "marginBottom": "8px"}),
                 dcc.Graph(id="sector-heatmap-graph", style={"height": "1px", "visibility": "hidden"},
                           config={"displayModeBar": False}),
                 html.Div(id="heatmap-html-container"),
+                # ── X-RAY DÒNG TIỀN ─────────────────────────────────────────
+                html.Div(id="breadth-xray-container"),
+
             ], style={"padding": "14px", "backgroundColor": "#0c1220",
                       "border": "1px solid #21262d", "borderRadius": "8px",
                       "marginBottom": "14px"}),

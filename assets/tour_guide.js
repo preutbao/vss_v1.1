@@ -636,6 +636,8 @@ window.VssTour = (function () {
       // Trả lại đúng thuộc tính gốc
       el.style.position = el.dataset.tourOrigPos || '';
       el.style.zIndex = el.dataset.tourOrigZ || '';
+      // 🛠 FIX BUG: Xóa hiệu ứng viền đỏ nhấp nháy còn sót lại
+      el.style.animation = '';
     }
   }
 
@@ -729,7 +731,19 @@ window.VssTour = (function () {
   // ── DỪNG TOUR ────────────────────────────────────────────────
   function stopTour(completed) {
     isActive = false;
-    unhighlightTarget(STEPS[currentStep].target);
+
+    // 🛠 FIX BUG: Gỡ bỏ sự kiện click/dblclick đang chờ dở dang trên phần tử
+    if (targetClickHandler && currentStep < STEPS.length && STEPS[currentStep]) {
+      const oldTarget = document.querySelector(STEPS[currentStep].target);
+      const oldEvent = STEPS[currentStep].requireDblClick ? "dblclick" : "click";
+      if (oldTarget) oldTarget.removeEventListener(oldEvent, targetClickHandler);
+      targetClickHandler = null;
+    }
+
+    // Gỡ highlight của bước hiện tại (sau khi thêm dòng bên trên vào, bước này sẽ xóa animation)
+    if (STEPS[currentStep]) {
+        unhighlightTarget(STEPS[currentStep].target);
+    }
 
     const container = document.getElementById("tour-overlay-container");
     const tooltip   = document.getElementById("tour-tooltip");
@@ -739,36 +753,24 @@ window.VssTour = (function () {
     if (tooltip)   tooltip.style.display   = "none";
     if (backdrop)  backdrop.innerHTML       = "";
 
-    // document.body.style.overflow = ""; // Hiện lại scrollbar
-    // 🛠 THÊM ĐOẠN NÀY VÀO ĐỂ DỌN DẸP KHIÊN
+    // Dọn dẹp khiên
     const shield = document.getElementById("tour-interaction-shield");
     if (shield) shield.style.display = "none";
     const warning = document.getElementById("tour-warning-msg");
     if (warning) warning.style.opacity = "0";
-    // 🛠 THÊM 3 DÒNG NÀY ĐỂ GỠ KHÓA KHI ĐÓNG TOUR:
+    
+    // Gỡ khóa cuộn màn hình
     window.removeEventListener('wheel', preventScrollAndZoom);
     window.removeEventListener('touchmove', preventScrollAndZoom);
     window.removeEventListener('keydown', preventScrollKeys);
-
-    window.removeEventListener("resize", onResize); // Gỡ luôn resize cho sạch bộ nhớ
+    window.removeEventListener("resize", onResize);
 
     // Ghi vào Dash Store để không hiện lại
     if (completed) {
-        // Cách chuẩn để update Dash Store từ JS
-        var storeInput = document.getElementById("tour-finish-trigger");
-        if (storeInput) {
-            // Dash theo dõi thay đổi qua mutation observer nội bộ
-            // Dùng dcc.Store với id="tour-finish-trigger" để relay
-        }
-        // Hoặc đơn giản hơn: ghi thẳng localStorage
         localStorage.setItem(
             '_dash_has-seen-tour',
             JSON.stringify({data: true})
         );
-    }
-    if (completed) {
-        // Ghi thẳng vào localStorage theo định dạng dcc.Store của Dash
-        // Lưu ý: ID của store là "has-seen-tour"
         localStorage.setItem('has-seen-tour', JSON.stringify(true));
     }
 }

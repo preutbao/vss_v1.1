@@ -211,7 +211,7 @@ def _step3():
                         "value": "safe_realestate",
                     },
                     {
-                        "label": "Chỉ lọc Ngân hàng phòng thủ (Bao phủ nợ xấu > 100%, CASA cao)",
+                        "label": "Chỉ lọc Ngân hàng mang tính phòng thủ",
                         "value": "defensive_bank",
                     },
                     {

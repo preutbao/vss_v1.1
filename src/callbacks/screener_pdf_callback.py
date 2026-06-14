@@ -1150,25 +1150,25 @@ def _prepare_flag_rows(df: pd.DataFrame, max_flags: int = 12) -> list:
         try:
             de = float(r.get("D/E")) if pd.notnull(r.get("D/E")) else None
             if de and de > 2.0:
-                flags_de.append((ticker,"D/E cao",f"{de:.2f}x","≤2.0x","⚠ Đòn bẩy cao",_action("D/E")))
+                flags_de.append((ticker,"D/E cao",f"{de:.2f}x","≤2.0x","(!) Đòn bẩy cao",_action("D/E")))
                 seen.add(ticker); continue
         except: pass
         try:
             rsi = float(r.get("RSI_14")) if pd.notnull(r.get("RSI_14")) else None
             if rsi and rsi > 72:
-                flags_rsi.append((ticker,"RSI > 72",f"{rsi:.0f}","≤70","⚠ Quá mua",_action("RSI")))
+                flags_rsi.append((ticker,"RSI > 72",f"{rsi:.0f}","≤70","(!) Quá mua",_action("RSI")))
                 seen.add(ticker); continue
         except: pass
         try:
             pe = float(r.get("P/E")) if pd.notnull(r.get("P/E")) else None
             if pe and pe > 30:
-                flags_pe.append((ticker,"P/E cao",f"{pe:.1f}x","≤30x","⚠ Định giá đắt",_action("P/E")))
+                flags_pe.append((ticker,"P/E cao",f"{pe:.1f}x","≤30x","(!) Định giá đắt",_action("P/E")))
                 seen.add(ticker); continue
         except: pass
         try:
             pm = float(r.get("Perf_1M")) if pd.notnull(r.get("Perf_1M")) else None
             if pm is not None and pm < 0:
-                flags_mom.append((ticker,"Momentum âm",f"{pm:+.1f}%",">0%","⚠ Giảm 1 tháng",_action("Momentum")))
+                flags_mom.append((ticker,"Momentum âm",f"{pm:+.1f}%",">0%","(!) Giảm 1 tháng",_action("Momentum")))
                 seen.add(ticker)
         except: pass
     return (flags_de + flags_rsi + flags_pe + flags_mom)[:max_flags]
@@ -1273,10 +1273,10 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
     kpi_data = [
         ("TỔNG MÃ LỌC",    f"{stats['total']:,}",      colors.HexColor("#0057B8")),
         ("HIỂN THỊ",        str(stats["display"]),       colors.HexColor("#0284C7")),
-        ("MÃ VGM A",        str(stats["grade_a_count"]), colors.HexColor("#059669")),
+        ("SỐ MÃ ĐIỂM A (5 SAO)",        str(stats["grade_a_count"]), colors.HexColor("#059669")),
         ("P/E TRUNG BÌNH",  stats["avg_pe"],             colors.HexColor("#D97706")),
         ("ROE TRUNG BÌNH",  stats["avg_roe"],            colors.HexColor("#16A34A")),
-        ("SỐ NGÀNH",        str(stats["sectors_count"]), colors.HexColor("#7C3AED")),
+        ("SỐ NGÀNH (GICS)",        str(stats["sectors_count"]), colors.HexColor("#7C3AED")),
     ]
     for i, (lbl, val, col) in enumerate(kpi_data):
         _kpi_card(c,
@@ -1531,13 +1531,13 @@ def _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts):
     _footer(c, 3)
 
 # ══════════════════════════════════════════════════════════════
-# MODAL CONTENT BUILDERS
+# MODAL CONTENT BUILDERS (PREMIUM DARK THEME TỐI ƯU CHO WEB)
 # ══════════════════════════════════════════════════════════════
 
 def _modal_kpi_strip(row_data: list) -> html.Div:
-    """Tạo KPI strip 5 thẻ cho modal overview."""
+    """Tạo KPI strip 5 thẻ cho modal overview - Dark Theme."""
     if not row_data:
-        return html.Div("Không có dữ liệu", style={"color":"#999","fontSize":"12px"})
+        return html.Div("Không có dữ liệu", style={"color":"#8b949e","fontSize":"12px"})
 
     df = pd.DataFrame(row_data)
     for col in ["P/E","ROE (%)","Perf_1M","Market Cap"]:
@@ -1552,52 +1552,51 @@ def _modal_kpi_strip(row_data: list) -> html.Div:
 
     def _card(label, value, color="#0090ff"):
         return html.Div([
-            html.Div(label, style={"fontSize":"9px","color":"#5a7a99",
+            html.Div(label, style={"fontSize":"9px","color":"#8b949e",
                                    "textTransform":"uppercase","letterSpacing":"0.3px"}),
             html.Div(value, style={"fontSize":"18px","fontWeight":"900",
                                    "color":color,"lineHeight":"1.1"}),
         ], style={
             "flex":"1","textAlign":"center",
-            "border":"1px solid #dce8f0","borderTop":f"3px solid {color}",
-            "borderRadius":"5px","padding":"8px 6px","background":"#f5f9ff",
+            "border":"1px solid #1E3A6A","borderTop":f"3px solid {color}",
+            "borderRadius":"6px","padding":"8px 6px","background":"#112340", # Nền Navy đậm
         })
 
     return html.Div([
-        _card("Tổng mã lọc",  str(total),                          "#0090ff"),
-        _card("Mã VGM A",     str(n_grade_a),                      "#00875a"),
-        _card("P/E TB",       f"{avg_pe:.1f}"  if avg_pe  else "—","#0057b8"),
-        _card("ROE TB",       f"{avg_roe:.1f}%" if avg_roe else "—","#00875a"),
-        _card("Số ngành",     str(n_sectors),                       "#7c3aed"),
+        _card("Tổng mã lọc",  str(total),                          "#38bdf8"), # Xanh cyan
+        _card("SỐ MÃ ĐIỂM A (5 SAO)",     str(n_grade_a),                      "#10b981"), # Xanh lá ngọc
+        _card("P/E TB",       f"{avg_pe:.1f}"  if avg_pe  else "—","#3b82f6"), # Xanh blue
+        _card("ROE TB",       f"{avg_roe:.1f}%" if avg_roe else "—","#10b981"),
+        _card("Số ngành (GICS)",     str(n_sectors),                       "#8b5cf6"), # Tím
     ], style={"display":"flex","gap":"8px","flexWrap":"wrap"})
 
 
 def _modal_ncn_table(row_data: list):
-    """Mini table NCN Top 3 cho modal – dùng .get() toàn bộ để tránh KeyError."""
+    """Mini table NCN Top 3 cho modal - Dark Theme."""
     if not row_data:
-        return html.Div("—", style={"color": "#999", "fontSize": "11px"})
+        return html.Div("—", style={"color": "#8b949e", "fontSize": "11px"})
 
     df_src = pd.DataFrame(row_data)
-    # Gọi đúng signature – không có tham số red_flags
     ncn = _prepare_ncn_rows(df_src, top_n=3)
 
     if not ncn:
         return html.Div(
             "Không có mã đạt chuẩn NCN (ROE≥15%, D/E≤1.5, Net Margin≥5%)",
-            style={"color": "#5a7a99", "fontSize": "11px", "fontStyle": "italic"},
+            style={"color": "#8b949e", "fontSize": "11px", "fontStyle": "italic"},
         )
 
     VGM_COLOR_MAP = {
-        "A": "#00875a", "B": "#0057b8", "C": "#f59e0b",
-        "D": "#ff7043", "F": "#D32F2F",
+        "A": "#10b981", "B": "#3b82f6", "C": "#f59e0b",
+        "D": "#f97316", "F": "#ef4444",
     }
-    col_style = {"padding": "5px 8px", "fontSize": "11px", "whiteSpace": "nowrap"}
-    hdr_style = {**col_style, "fontWeight": "700", "background": "#00875a",
-                 "color": "white", "textTransform": "uppercase", "fontSize": "10px"}
+    col_style = {"padding": "6px 8px", "fontSize": "11px", "whiteSpace": "nowrap", "borderBottom": "1px solid #1E3A6A"}
+    hdr_style = {**col_style, "fontWeight": "700", "background": "#064e3b", # Nền xanh lá cực đậm
+                 "color": "#a7f3d0", "textTransform": "uppercase", "fontSize": "10px", "borderBottom": "none"}
 
     header_row = html.Tr([
         html.Th("Mã CK",    style=hdr_style),
         html.Th("Tên CT",   style=hdr_style),
-        html.Th("VGM",      style={**hdr_style, "textAlign": "center"}),
+        html.Th("ĐIỂM",      style={**hdr_style, "textAlign": "center"}),
         html.Th("ROE %",    style={**hdr_style, "textAlign": "right"}),
         html.Th("Biên gộp", style={**hdr_style, "textAlign": "right"}),
         html.Th("D/E",      style={**hdr_style, "textAlign": "right"}),
@@ -1611,12 +1610,12 @@ def _modal_ncn_table(row_data: list):
         data_rows.append(html.Tr([
             html.Td(
                 html.B(r.get("ticker", "—"),
-                       style={"color": "#065f46", "fontSize": "12px"}),
+                       style={"color": "#34d399", "fontSize": "12px"}), # Màu xanh lá nổi bật
                 style=col_style,
             ),
             html.Td(
                 str(r.get("company", "—"))[:22],
-                style={**col_style, "color": "#374151"},
+                style={**col_style, "color": "#c9d1d9"}, # Chữ trắng xám
             ),
             html.Td(
                 html.Span(g, style={
@@ -1632,38 +1631,39 @@ def _modal_ncn_table(row_data: list):
             html.Td(
                 r.get("roe", "—"),
                 style={**col_style, "textAlign": "right",
-                       "color": "#00875a", "fontWeight": "700"},
+                       "color": "#10b981", "fontWeight": "700"},
             ),
             html.Td(
                 r.get("gross_margin", r.get("bien_gop", "—")),
-                style={**col_style, "textAlign": "right"},
+                style={**col_style, "textAlign": "right", "color": "#c9d1d9"},
             ),
             html.Td(
                 r.get("de", "—"),
-                style={**col_style, "textAlign": "right"},
+                style={**col_style, "textAlign": "right", "color": "#c9d1d9"},
             ),
             html.Td(
                 r.get("pe", "—"),
-                style={**col_style, "textAlign": "right"},
+                style={**col_style, "textAlign": "right", "color": "#c9d1d9"},
             ),
-        ]))
+        ], style={"background": "#0d1117"})) # Nền dòng màu đen
 
     return html.Div(
         html.Table(
             [header_row] + data_rows,
             style={
                 "width": "100%", "borderCollapse": "collapse",
-                "border": "1px solid #d1ead8", "borderRadius": "5px",
+                "border": "1px solid #1E3A6A", "borderRadius": "6px",
+                "overflow": "hidden"
             },
         ),
-        style={"overflowX": "auto"},
+        style={"overflowX": "auto", "borderRadius": "6px"}
     )
 
 
 def _modal_flag_table(row_data: list) -> html.Div:
-    """Mini Red Flags table cho modal."""
+    """Mini Red Flags table cho modal - Dark Theme."""
     if not row_data:
-        return html.Div("—", style={"color":"#999"})
+        return html.Div("—", style={"color":"#8b949e"})
 
     df_src = pd.DataFrame(row_data)
     for col in ["P/E","D/E","Perf_1M"]:
@@ -1675,12 +1675,12 @@ def _modal_flag_table(row_data: list) -> html.Div:
     if not flags:
         return html.Div(
             "✅ Không phát hiện red flag trong top 30 mã",
-            style={"color":"#00875a","fontSize":"11px","fontWeight":"600"},
+            style={"color":"#10b981","fontSize":"11px","fontWeight":"600"},
         )
 
-    col_style = {"padding":"4px 8px","fontSize":"11px"}
-    hdr_style = {**col_style,"fontWeight":"700","background":"#7f1d1d",
-                 "color":"white","textTransform":"uppercase","fontSize":"10px"}
+    col_style = {"padding":"6px 8px","fontSize":"11px", "borderBottom": "1px solid #450a0a", "color": "#c9d1d9"}
+    hdr_style = {**col_style,"fontWeight":"700","background":"#450a0a", # Đỏ đô cực tối
+                 "color":"#fca5a5","textTransform":"uppercase","fontSize":"10px", "borderBottom": "none"}
 
     rows = [html.Tr([
         html.Th("Mã CK",    style=hdr_style),
@@ -1691,47 +1691,47 @@ def _modal_flag_table(row_data: list) -> html.Div:
     ])]
     for f in flags:
         rows.append(html.Tr([
-            html.Td(html.B(f[0], style={"color":"#0057b8"}), style=col_style),
+            html.Td(html.B(f[0], style={"color":"#60a5fa"}), style=col_style), # Xanh sáng
             html.Td(f[1],  style=col_style),
             html.Td(f[2],  style={**col_style,"textAlign":"right",
-                                  "color":"#D32F2F","fontWeight":"700",
+                                  "color":"#f87171","fontWeight":"700", # Đỏ sáng
                                   "fontFamily":"monospace"}),
             html.Td(f[3],  style={**col_style,"textAlign":"right"}),
-            html.Td(f[4],  style={**col_style,"color":"#D32F2F","fontWeight":"700"}),
-        ]))
+            html.Td(f[4],  style={**col_style,"color":"#f87171","fontWeight":"700"}),
+        ], style={"background": "#0d1117"}))
 
     return html.Div(
         html.Table(rows, style={"width":"100%","borderCollapse":"collapse",
-                                "border":"1px solid #fecaca"}),
-        style={"overflowX":"auto"},
+                                "border":"1px solid #7f1d1d", "borderRadius": "6px"}),
+        style={"overflowX":"auto", "borderRadius": "6px"},
     )
 
 
 def _modal_mc_results(qr) -> html.Div:
-    """Hiển thị kết quả Monte Carlo trong modal."""
+    """Hiển thị kết quả Monte Carlo trong modal - Dark Theme."""
     if qr is None or qr.status != "ok":
         msg = getattr(qr, "error_message", "Không đủ dữ liệu.") if qr else "Lỗi pipeline."
         return html.Div([
             html.Span("⚠️ ", style={"fontSize":"16px"}),
-            html.Span(msg, style={"color":"#D32F2F","fontSize":"12px"}),
-        ], style={"padding":"12px","background":"#fff5f5",
-                  "border":"1px solid #fecaca","borderRadius":"5px"})
+            html.Span(msg, style={"color":"#fca5a5","fontSize":"12px"}),
+        ], style={"padding":"12px","background":"#450a0a", # Nền đỏ cực tối
+                  "border":"1px solid #7f1d1d","borderRadius":"6px"})
 
     def _metric(label, value, color, note=""):
         return html.Div([
-            html.Div(label,  style={"fontSize":"9px","color":"#5a7a99",
+            html.Div(label,  style={"fontSize":"9px","color":"#8b949e",
                                     "textTransform":"uppercase"}),
             html.Div(value,  style={"fontSize":"20px","fontWeight":"900",
-                                    "color":color,"lineHeight":"1.1"}),
-            html.Div(note,   style={"fontSize":"9px","color":"#8a9bb5"}),
+                                    "color":color,"lineHeight":"1.1", "margin": "4px 0"}),
+            html.Div(note,   style={"fontSize":"9px","color":"#64748b"}),
         ], style={
             "flex":"1","textAlign":"center","padding":"10px 8px",
-            "border":f"1px solid {color}","borderTop":f"3px solid {color}",
-            "borderRadius":"5px","background":"#f9fbff",
+            "border":f"1px solid #1E3A6A","borderTop":f"3px solid {color}",
+            "borderRadius":"6px","background":"#112340", # Nền xanh navy tối
         })
 
-    er_color  = "#00875a" if qr.expected_return_1m >= 0 else "#D32F2F"
-    mdd_color = "#f59e0b" if qr.max_drawdown < 0.15 else "#D32F2F"
+    er_color  = "#10b981" if qr.expected_return_1m >= 0 else "#ef4444"
+    mdd_color = "#f59e0b" if qr.max_drawdown < 0.15 else "#ef4444"
 
     metrics_row = html.Div([
         _metric("Kỳ vọng 1T",
@@ -1739,14 +1739,14 @@ def _modal_mc_results(qr) -> html.Div:
                 er_color, "Trung bình 10K kịch bản"),
         _metric("VaR 95% (1T)",
                 f"{qr.var_95*100:.1f}%",
-                "#D32F2F", "Mức lỗ tối đa 95% trường hợp"),
+                "#ef4444", "Mức lỗ tối đa 95% trường hợp"),
         _metric("Max Drawdown",
                 f"{qr.max_drawdown*100:.1f}%",
                 mdd_color, "Guillotine ≤15%"),
         _metric("Sharpe Ratio",
                 f"{qr.sharpe_ratio:.2f}",
-                "#0090ff", "Annualized"),
-    ], style={"display":"flex","gap":"8px","marginBottom":"10px"})
+                "#38bdf8", "Annualized"),
+    ], style={"display":"flex","gap":"8px","marginBottom":"10px", "flexWrap": "wrap"})
 
     # Allocation mini table
     alloc_rows_html = []
@@ -1755,52 +1755,50 @@ def _modal_mc_results(qr) -> html.Div:
         qty = qr.quantities[i] if i < len(qr.quantities) else 0
         inv = qr.investment_values[i] if i < len(qr.investment_values) else 0
         alloc_rows_html.append(html.Tr([
-            html.Td(html.B(t, style={"color":"#0057b8"}),
-                    style={"padding":"4px 8px","fontSize":"11px"}),
+            html.Td(html.B(t, style={"color":"#60a5fa"}),
+                    style={"padding":"6px 8px","fontSize":"11px", "borderBottom": "1px solid #1E3A6A"}),
             html.Td(f"{w*100:.1f}%",
-                    style={"padding":"4px 8px","fontSize":"11px",
-                           "textAlign":"right","fontWeight":"700"}),
+                    style={"padding":"6px 8px","fontSize":"11px",
+                           "textAlign":"right","fontWeight":"700", "color": "#c9d1d9", "borderBottom": "1px solid #1E3A6A"}),
             html.Td(f"{qty:,} cp",
-                    style={"padding":"4px 8px","fontSize":"11px",
-                           "textAlign":"right","fontFamily":"monospace"}),
+                    style={"padding":"6px 8px","fontSize":"11px",
+                           "textAlign":"right","fontFamily":"monospace", "color": "#c9d1d9", "borderBottom": "1px solid #1E3A6A"}),
             html.Td(f"{inv/1e6:,.0f}M VND",
-                    style={"padding":"4px 8px","fontSize":"11px",
-                           "textAlign":"right","color":"#065f46",
-                           "fontWeight":"600"}),
-        ]))
+                    style={"padding":"6px 8px","fontSize":"11px",
+                           "textAlign":"right","color":"#34d399",
+                           "fontWeight":"600", "borderBottom": "1px solid #1E3A6A"}),
+        ], style={"background": "#0d1117"}))
 
     alloc_table = html.Table([
         html.Thead(html.Tr([
-            html.Th(h, style={"padding":"5px 8px","fontSize":"10px",
-                              "background":"#0a1628","color":"white",
+            html.Th(h, style={"padding":"6px 8px","fontSize":"10px",
+                              "background":"#0a1628","color":"#c9d1d9",
                               "fontWeight":"700","textTransform":"uppercase",
                               "textAlign": "right" if i>0 else "left"})
             for i,h in enumerate(["Mã CK","% Tỷ trọng","Số CP","Giá trị VND"])
         ])),
         html.Tbody(alloc_rows_html),
     ], style={"width":"100%","borderCollapse":"collapse",
-              "border":"1px solid #dce8f0","marginBottom":"8px"})
+              "border":"1px solid #1E3A6A","marginBottom":"10px", "borderRadius": "6px", "overflow": "hidden"})
 
     guilotine_note = html.Div(
-        f"ℹ️ Guillotine Rule chạy {qr.guillotine_iterations} vòng · "
-        f"Danh mục tối ưu: {', '.join(qr.tickers)}",
-        style={"fontSize":"10px","color":"#5a7a99",
-               "padding":"5px 8px","background":"#f0f7ff",
-               "borderLeft":"3px solid #0090ff","borderRadius":"3px"},
+        f"ℹ️ Guillotine Rule chạy {qr.guillotine_iterations} vòng · Danh mục tối ưu: {', '.join(qr.tickers)}",
+        style={"fontSize":"10px","color":"#93c5fd",
+               "padding":"8px 10px","background":"#082f49", # Xanh dương cực tối
+               "borderLeft":"3px solid #38bdf8","borderRadius":"4px"},
     )
 
     return html.Div([
         html.Div([
             html.Span("🧮 ", style={"fontSize":"14px"}),
             html.B("Kết quả Markowitz + Monte Carlo Bootstrap (10,000 kịch bản)",
-                   style={"fontSize":"12px","color":"#0a1628"}),
-        ], style={"marginBottom":"8px"}),
+                   style={"fontSize":"13px","color":"#e8f4ff"}), # Chữ trắng sáng
+        ], style={"marginBottom":"10px"}),
         metrics_row,
-        alloc_table,
+        html.Div(alloc_table, style={"borderRadius": "6px", "overflow": "hidden"}),
         guilotine_note,
-    ], style={"padding":"12px","background":"#f8fbff",
-              "border":"1px solid #b8d4f0","borderRadius":"6px"})
-
+    ], style={"padding":"16px","background":"#0d1117", # Nền trùng với web
+              "border":"1px solid #1E3A6A","borderRadius":"8px", "boxShadow": "0 4px 12px rgba(0,0,0,0.5)"})
 
 # ══════════════════════════════════════════════════════════════
 # MAIN GENERATOR
@@ -2108,3 +2106,14 @@ def download_pdf_from_modal(n_clicks, row_data, active_filters,
         logger.error(f"Modal PDF error: {e}")
         traceback.print_exc()
         return no_update, f"❌ Lỗi: {str(e)[:80]}"
+
+@app.callback(
+    Output("theory-modal", "is_open"),
+    Input("btn-open-theory-modal", "n_clicks"),
+    State("theory-modal", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_theory_modal(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open

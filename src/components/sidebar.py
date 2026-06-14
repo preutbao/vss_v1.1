@@ -562,15 +562,7 @@ _col3_filters = html.Div(
                             ],
                             target="include-null-wrapper",
                             placement="top",
-                            style={
-                                "backgroundColor": "#0d1117",
-                                "color": "#c9d1d9",
-                                "border": "1px solid #f59e0b",
-                                "borderRadius": "6px",
-                                "fontSize": "11px",
-                                "padding": "8px 12px",
-                                "maxWidth": "240px",
-                            },
+                            className="cyber-theme-tooltip-warning" # Gọi class cảnh báo
                         ),
                     ],
                     id="include-null-wrapper",
@@ -590,7 +582,7 @@ _col3_filters = html.Div(
                 dcc.Dropdown(
                     id="filter-year-dropdown",
                     options=[{"label": "Toàn bộ năm", "value": "all"}]
-                           + [{"label": str(y), "value": y} for y in range(2019, 2026)],
+                            + [{"label": str(y), "value": y} for y in range(2019, 2026)],
                     value="all",
                     clearable=False,
                     searchable=False,
@@ -605,6 +597,7 @@ _col3_filters = html.Div(
                 ),
 
                 html.Div([
+                    # 1. Nút Tải lại kết quả
                     dbc.Button(
                         [html.I(className="fas fa-sync-alt",
                                 style={"fontSize": "10px", "marginRight": "4px"}),
@@ -615,7 +608,15 @@ _col3_filters = html.Div(
                                "backgroundColor": "transparent",
                                "border": "1px solid #30363d", "color": "#8b949e", "display": "none"},
                     ),
-                    # NÚT "XÓA TẤT CẢ" ĐÃ ĐƯỢC XÓA KHỎI ĐÂY
+                    # Tooltip cho nút Tải lại
+                    dbc.Tooltip(
+                        "Cập nhật và tải lại danh sách cổ phiếu theo bộ lọc hiện tại.",
+                        target="btn-filter",
+                        placement="top",
+                        className="cyber-theme-tooltip"
+                    ),
+
+                    # 2. Nút Lưu bộ lọc (NÚT "XÓA TẤT CẢ" ĐÃ ĐƯỢC XÓA KHỎI ĐÂY)
                     dbc.Button(
                         [html.I(className="fas fa-save", style={"fontSize": "10px", "marginRight": "4px"}),
                          "Lưu bộ lọc"],
@@ -623,6 +624,14 @@ _col3_filters = html.Div(
                         n_clicks=0, size="sm",
                         style={"fontSize": "10px", "padding": "3px 8px"},
                     ),
+                    # Tooltip cho nút Lưu bộ lọc
+                    dbc.Tooltip(
+                        "Lưu lại các tiêu chí đang chọn để sử dụng nhanh cho những lần sau.",
+                        target="btn-save",
+                        placement="top",
+                        className="cyber-theme-tooltip"
+                    ),
+
                 ], style={"display": "flex", "gap": "6px", "alignItems": "center"}),
             ],
             style={
@@ -752,10 +761,18 @@ layout = html.Div(
                     # 1. Nút BỘ LỌC CHI TIẾT
                     dbc.Button(
                         [html.I(className="fas fa-filter", style={"marginRight": "6px"}),
-                        html.Span("BỘ LỌC", id="label-filter-btn", className="btn-filter-shimmer")],
-                        id="toggle-filter-btn",
+                         html.Span("BỘ LỌC", id="label-filter-btn", className="btn-filter-shimmer")],
+                        id="toggle-filter-btn",  # <--- ID này sẽ là target cho Tooltip
                         color="primary", outline=True, size="sm",
                         style={"borderRadius": "20px", "fontSize": "12px", "padding": "6px 16px", "flexShrink": "0", "fontWeight": "bold"},
+                    ),
+                    
+                    # 2. Tooltip cho nút BỘ LỌC
+                    dbc.Tooltip(
+                        "Mở rộng bảng bộ lọc chi tiết để tinh chỉnh các tiêu chí tìm kiếm cổ phiếu.",
+                        target="toggle-filter-btn", # Bắt buộc phải trùng với id của dbc.Button ở trên
+                        placement="bottom",         # Có thể đổi thành 'top', 'left', 'right' tùy ý
+                        className="cyber-theme-tooltip" # Gọi lại theme xịn xò của bạn
                     ),
                     # 2. CỤM CHỌN CHIẾN LƯỢC VIP + T+2.5 (gộp lại để xóa gap thừa)
                     html.Div([
@@ -845,16 +862,9 @@ layout = html.Div(
                             ]),
                             dbc.Tooltip(
                                 "Bật chế độ này để mô phỏng sự kiện rủi ro T+2.5: Cảnh báo kẹt thanh khoản (trắng bên mua) và Call Margin nếu thị trường giảm sâu.",
-                                target="tplus-wrapper", placement="bottom",
-                                style={
-                                    "backgroundColor": "#0d1117", "color": "#cbd5e1",
-                                    "border": "1px solid #334155",
-                                    "borderRadius": "8px",
-                                    "fontFamily": "'Inter', 'Segoe UI', sans-serif",
-                                    "fontSize": "12px", "lineHeight": "1.5",
-                                    "padding": "8px 12px", "boxShadow": "0 8px 20px rgba(0,0,0,0.6)",
-                                    "maxWidth": "260px", "textAlign": "left"
-                                }
+                                target="tplus-wrapper", 
+                                placement="bottom",
+                                className="cyber-theme-tooltip" # ← Chỉ cần gọi class này là nhận toàn bộ CSS
                             )
                         ], id="tplus-wrapper", style={ 
                             "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "4px 10px",
@@ -878,12 +888,7 @@ layout = html.Div(
                         dbc.Tooltip(
                             "Nhập số tiền đầu tư. Hệ thống sẽ tự loại bỏ các cổ phiếu có thị giá quá cao (không đủ mua 1 lô 100 cổ) và AI sẽ gợi ý phân bổ vốn tối ưu.",
                             target="nav-wrapper", placement="bottom",
-                            style={
-                                "backgroundColor": "#0d1117", "color": "#ffffff", "border": "1px solid #3b82f6", 
-                                "borderRadius": "6px", "fontFamily": "'Inter', 'Segoe UI', sans-serif", 
-                                "fontSize": "12px", "padding": "8px 12px", "boxShadow": "0 4px 12px rgba(0,0,0,0.5)",
-                                "maxWidth": "250px", "textAlign": "left"
-                            }
+                            className="cyber-theme-tooltip"
                         )
                     ], id="nav-wrapper", style={ 
                         "display": "flex", "alignItems": "center", "backgroundColor": "#161b22", 
@@ -897,16 +902,23 @@ layout = html.Div(
                         id="btn-reset-ui", color="secondary", outline=True, size="sm",
                         style={"borderRadius": "20px", "fontSize": "12px", "padding": "6px 14px", "flexShrink": "0"}, 
                     ),
+                    
+                    # Tooltip cho nút Xóa tất cả
+                    dbc.Tooltip(
+                        "Xóa toàn bộ các tiêu chí đang lọc và đưa thiết lập về trạng thái mặc định.",
+                        target="btn-reset-ui",
+                        placement="bottom",
+                        className="cyber-theme-tooltip"
+                    ),
                 ], 
-                   id="toolbar-panel-strategy", 
-                   className="toolbar-panel",
-                   style={
-                       "display": "flex", "alignItems": "center", 
-                       "gap": "16px",
-                       "justifyContent": "flex-start",
-                       "width": "100%"
-                   }
-                ),
+                id="toolbar-panel-strategy", 
+                className="toolbar-panel",
+                style={
+                    "display": "flex", "alignItems": "center", 
+                    "gap": "16px",
+                    "justifyContent": "flex-start",
+                    "width": "100%"
+                }),
 
                 # ── PANEL 3: Lọc theo phạm vi ────────────────────────────────────
                 html.Div([

@@ -1399,3 +1399,360 @@ def calculate_robo_allocation(filtered_df, nav):
             })
             
     return allocations, remaining_cash
+
+# ============================================================
+# SECTOR BREADTH SCORE (SBS)
+# ============================================================
+
+_SECTOR_VI = {
+    "Energy":                  "Năng lượng",
+    "Financials":              "Tài chính",
+    "Utilities":               "Tiện ích",
+    "Materials":               "Nguyên vật liệu",
+    "Industrials":             "Công nghiệp",
+    "Consumer Discretionary":  "Tiêu dùng tùy ý",
+    "Health Care":             "Y tế",
+    "Consumer Staples":        "Tiêu dùng thiết yếu",
+    "Information Technology":  "Công nghệ TT",
+    "Real Estate":             "Bất động sản",
+    "Communication Services":  "Dịch vụ TT",
+}
+
+# Ngưỡng phân loại Breadth Regime
+_SBS_TIERS = [
+    (80, "Xác nhận Uptrend",       "#10b981"),
+    (65, "Mạnh — Duy trì tỷ trọng","#34d399"),
+    (50, "Trung tính — Chọn lọc",  "#f59e0b"),
+    (35, "Yếu — Giảm tỷ trọng",    "#f97316"),
+    (0,  "Broad Bear — Rủi ro",    "#ef4444"),
+]
+
+def _sbs_tier(score):
+    """Trả về (label, color) cho một giá trị SBS."""
+    for threshold, label, color in _SBS_TIERS:
+        if score >= threshold:
+            return label, color
+    return "Broad Bear — Rủi ro", "#ef4444"
+
+
+def calculate_sbs_snapshot(df_snap, df_price,
+                            exchange_filter="HOSE",
+                            min_vol=100_000,
+                            min_price=5_000):
+    """
+    Tính Sector Breadth Score (SBS) cho snapshot hiện tại.
+
+    SBS = 0.20*P_MA50 + 0.20*P_MA200 + 0.15*AD_20 +
+          0.15*HL + 0.10*RSI_D + 0.20*VB_20
+
+    Parameters
+    ----------
+    df_snap          : DataFrame snapshot từ get_snapshot_df()
+    df_price         : DataFrame giá lịch sử (Ticker, Date, Price Close, Volume)
+    exchange_filter  : "HOSE" | "HNX" | "UPCOM" | "ALL"
+    min_vol          : Lọc thanh khoản tối thiểu (Avg_Vol_20D)
+    min_price        : Lọc giá tối thiểu (loại penny)
+
+    Returns
+    -------
+    dict với keys:
+        "sector_sbs"    : DataFrame [Sector, SBS, P_MA50, P_MA200, AD_20,
+                                      RSI_D, VB_20, HL, N, SBS_Label, SBS_Color]
+        "market_sbs"    : float — Market composite SBS (weighted by N stocks)
+        "regime"        : str   — Breadth Regime label
+        "regime_color"  : str   — Màu hex tương ứng
+        "top_sectors"   : list  — 3 ngành mạnh nhất
+        "weak_sectors"  : list  — 3 ngành yếu nhất
+    """
+    import pandas as pd
+    import numpy as np
+
+    df = df_snap.copy()
+
+    # ── Lọc sàn ──────────────────────────────────────────────────────────────
+    if exchange_filter != "ALL" and "Exchange" in df.columns:
+        df = df[df["Exchange"] == exchange_filter]
+
+    # ── Lọc chống nhiễu penny / thanh khoản thấp ─────────────────────────────
+    if "Avg_Vol_20D" in df.columns:
+        df = df[pd.to_numeric(df["Avg_Vol_20D"], errors="coerce").fillna(0) >= min_vol]
+    if "Price Close" in df.columns:
+        df = df[pd.to_numeric(df["Price Close"], errors="coerce").fillna(0) >= min_price]
+
+    if df.empty or "Sector" not in df.columns:
+        return None
+
+    df["Sector"] = df["Sector"].fillna("Khác").replace(
+        {"nan": "Khác", "None": "Khác", "": "Khác"})
+
+    # ── Cột flag nhị phân từ snapshot (tính được ngay) ───────────────────────
+    df["_above_ma50"]  = (
+        pd.to_numeric(df.get("Price_vs_SMA50",  pd.Series(dtype=float)),
+                      errors="coerce").fillna(0) > 0
+    ).astype(int)
+    df["_above_ma200"] = (
+        pd.to_numeric(df.get("Price_vs_SMA200", pd.Series(dtype=float)),
+                      errors="coerce").fillna(0) > 0
+    ).astype(int)
+    df["_rsi_above50"] = (
+        pd.to_numeric(df.get("RSI_14", pd.Series(dtype=float)),
+                      errors="coerce").fillna(50) > 50
+    ).astype(int)
+
+    # ── AD_20, VB_20, HL từ df_price 20 phiên ────────────────────────────────
+    # Lấy 22 phiên gần nhất (bù ngày nghỉ)
+    tickers_clean = df["Ticker"].tolist()
+    cutoff = df_price["Date"].max() - pd.Timedelta(days=35)
+    df_px  = (df_price[
+                  (df_price["Ticker"].isin(tickers_clean)) &
+                  (df_price["Date"] >= cutoff)
+              ][["Ticker", "Date", "Price Close", "Volume"]].copy())
+    df_px["Price Close"] = pd.to_numeric(df_px["Price Close"], errors="coerce")
+    df_px["Volume"]      = pd.to_numeric(df_px["Volume"],      errors="coerce").fillna(0)
+    df_px = df_px.sort_values(["Ticker", "Date"])
+
+    # Tính is_up (close > prev_close) và up_volume vectorized
+    df_px["_prev_close"] = df_px.groupby("Ticker")["Price Close"].shift(1)
+    df_px["_is_up"]      = (df_px["Price Close"] > df_px["_prev_close"]).astype(int)
+    df_px["_up_vol"]     = df_px["_is_up"] * df_px["Volume"]
+
+    # Chỉ lấy 20 phiên gần nhất theo từng ticker
+    df_px["_rank"] = df_px.groupby("Ticker")["Date"].rank(method="first", ascending=False)
+    df_px20 = df_px[df_px["_rank"] <= 20]
+
+    adv_dec = df_px20.groupby("Ticker").agg(
+        _adv=("_is_up", "sum"),
+        _dec=("_is_up", lambda x: (x == 0).sum()),
+        _up_vol_sum=("_up_vol", "sum"),
+        _total_vol=("Volume", "sum"),
+    ).reset_index()
+
+    adv_dec["_ad_ratio"] = (
+        adv_dec["_adv"] / (adv_dec["_adv"] + adv_dec["_dec"])
+    ).fillna(0.5) * 100
+
+    adv_dec["_vb"] = np.where(
+        adv_dec["_total_vol"] > 0,
+        adv_dec["_up_vol_sum"] / adv_dec["_total_vol"] * 100,
+        50.0
+    )
+
+    # HL — High-Low Index 52 tuần (dùng cột Break_High_52W nếu có trong snap)
+    if "Break_High_52W" in df.columns:
+        df["_hl_flag"] = pd.to_numeric(
+            df["Break_High_52W"], errors="coerce").fillna(0)
+    else:
+        df["_hl_flag"] = 0
+
+    # Merge AD/VB vào snap
+    df = df.merge(adv_dec[["Ticker", "_ad_ratio", "_vb"]], on="Ticker", how="left")
+    df["_ad_ratio"] = df["_ad_ratio"].fillna(50)
+    df["_vb"]       = df["_vb"].fillna(50)
+
+    # ── Tính SBS theo ngành (groupby vectorized) ──────────────────────────────
+    def sbs_for_group(g):
+        n        = len(g)
+        p_ma50   = g["_above_ma50"].mean()  * 100
+        p_ma200  = g["_above_ma200"].mean() * 100
+        ad_20    = g["_ad_ratio"].mean()
+        rsi_d    = g["_rsi_above50"].mean() * 100
+        vb_20    = g["_vb"].mean()
+        hl       = g["_hl_flag"].mean()     * 100
+
+        sbs = (0.20 * p_ma50 + 0.20 * p_ma200 + 0.15 * ad_20 +
+               0.15 * hl    + 0.10 * rsi_d   + 0.20 * vb_20)
+
+        return pd.Series({
+            "SBS":     round(sbs, 1),
+            "P_MA50":  round(p_ma50, 1),
+            "P_MA200": round(p_ma200, 1),
+            "AD_20":   round(ad_20, 1),
+            "RSI_D":   round(rsi_d, 1),
+            "VB_20":   round(vb_20, 1),
+            "HL":      round(hl, 1),
+            "N":       n,
+        })
+
+    sector_sbs = df.groupby("Sector").apply(
+        sbs_for_group, include_groups=False
+    ).reset_index()
+    sector_sbs = sector_sbs.sort_values("SBS", ascending=False).reset_index(drop=True)
+
+    # Gắn label + color theo tier
+    sector_sbs[["SBS_Label", "SBS_Color"]] = sector_sbs["SBS"].apply(
+        lambda s: pd.Series(_sbs_tier(s))
+    )
+
+    # Market composite SBS (weighted by N)
+    total_n    = sector_sbs["N"].sum()
+    market_sbs = (
+        (sector_sbs["SBS"] * sector_sbs["N"]).sum() / total_n
+        if total_n > 0 else 0
+    )
+    market_sbs    = round(market_sbs, 1)
+    regime, r_clr = _sbs_tier(market_sbs)
+
+    top_sectors  = sector_sbs.head(3)[["Sector","SBS"]].to_dict("records")
+    weak_sectors = sector_sbs.tail(3)[["Sector","SBS"]].to_dict("records")
+
+    return {
+        "sector_sbs":   sector_sbs,
+        "market_sbs":   market_sbs,
+        "regime":       regime,
+        "regime_color": r_clr,
+        "top_sectors":  top_sectors,
+        "weak_sectors": weak_sectors,
+    }
+
+
+def calculate_sbs_history(df_price, df_snap,
+                           lookback=60,
+                           exchange_filter="HOSE",
+                           min_vol=100_000,
+                           min_price=5_000):
+    """
+    Tính SBS theo từng phiên giao dịch trong `lookback` phiên gần nhất.
+    Dùng để vẽ line chart 60 phiên và heatmap sector×day.
+
+    Lưu kết quả ra market_internals.parquet để tái sử dụng.
+
+    Returns
+    -------
+    DataFrame với cột: [Date, Sector, SBS, P_MA50, P_MA200, AD_20, RSI_D, VB_20, HL, N]
+    """
+    import pandas as pd
+    import numpy as np
+    import os
+
+    df_snap_c = df_snap.copy()
+    if exchange_filter != "ALL" and "Exchange" in df_snap_c.columns:
+        df_snap_c = df_snap_c[df_snap_c["Exchange"] == exchange_filter]
+    if "Avg_Vol_20D" in df_snap_c.columns:
+        df_snap_c = df_snap_c[
+            pd.to_numeric(df_snap_c["Avg_Vol_20D"], errors="coerce").fillna(0)
+            >= min_vol
+        ]
+    if "Price Close" in df_snap_c.columns:
+        df_snap_c = df_snap_c[
+            pd.to_numeric(df_snap_c["Price Close"], errors="coerce").fillna(0)
+            >= min_price
+        ]
+
+    tickers_ok  = df_snap_c["Ticker"].tolist()
+    sector_map  = (df_snap_c[["Ticker","Sector"]]
+                   .drop_duplicates("Ticker")
+                   .set_index("Ticker")["Sector"])
+
+    # Lấy đủ lịch sử: lookback phiên + 200 ngày đệm cho MA200
+    # ~200 trading days ≈ 300 calendar days
+    buffer_days = lookback + 300
+    cutoff = df_price["Date"].max() - pd.Timedelta(days=buffer_days * 1.5)
+    df_px  = (df_price[
+                  (df_price["Ticker"].isin(tickers_ok)) &
+                  (df_price["Date"] >= cutoff)
+              ].copy())
+    df_px["Price Close"] = pd.to_numeric(df_px["Price Close"], errors="coerce")
+    df_px["Volume"]      = pd.to_numeric(df_px["Volume"],      errors="coerce").fillna(0)
+    df_px = df_px.sort_values(["Ticker","Date"])
+    df_px["Sector"] = df_px["Ticker"].map(sector_map)
+    df_px = df_px.dropna(subset=["Sector"])
+
+    # Pivot để tính rolling SMA vectorized
+    price_pivot  = df_px.pivot_table(
+        index="Date", columns="Ticker", values="Price Close"
+    ).sort_index()
+    volume_pivot = df_px.pivot_table(
+        index="Date", columns="Ticker", values="Volume"
+    ).sort_index().fillna(0)
+
+    # SMA50, SMA200 vectorized
+    sma50  = price_pivot.rolling(50,  min_periods=25).mean()
+    sma200 = price_pivot.rolling(200, min_periods=100).mean()
+
+    above_ma50  = (price_pivot > sma50).astype(float)
+    above_ma200 = (price_pivot > sma200).astype(float)
+
+    # RSI_14 vectorized theo từng cột
+    delta     = price_pivot.diff()
+    gain      = delta.clip(lower=0)
+    loss      = (-delta).clip(lower=0)
+    avg_gain  = gain.ewm(com=13, min_periods=14).mean()
+    avg_loss  = loss.ewm(com=13, min_periods=14).mean()
+    rsi_pivot = 100 - (100 / (1 + avg_gain / avg_loss.replace(0, np.nan)))
+    above_rsi = (rsi_pivot > 50).astype(float)
+
+    # is_up và volume breadth
+    is_up    = (price_pivot > price_pivot.shift(1)).astype(float)
+    up_vol   = is_up * volume_pivot
+    down_vol = (1 - is_up) * volume_pivot
+
+    # AD_20: rolling 20 phiên advance / (advance+decline)
+    adv_roll = is_up.rolling(20, min_periods=10).sum()
+    dec_roll = (1 - is_up).rolling(20, min_periods=10).sum()
+    ad_ratio = (adv_roll / (adv_roll + dec_roll).replace(0, np.nan)) * 100
+
+    # VB_20: rolling 20 phiên up_vol / total_vol
+    up_vol_roll   = up_vol.rolling(20, min_periods=10).sum()
+    total_vol_roll = volume_pivot.rolling(20, min_periods=10).sum()
+    vb_ratio = (up_vol_roll / total_vol_roll.replace(0, np.nan)) * 100
+
+    # HL: 52-week high/low index (rolling 252 phiên)
+    high_52w = price_pivot.rolling(252, min_periods=126).max()
+    low_52w  = price_pivot.rolling(252, min_periods=126).min()
+    near_high = (price_pivot >= high_52w * 0.99).astype(float)
+    near_low  = (price_pivot <= low_52w  * 1.01).astype(float)
+    hl_index  = (near_high - near_low).clip(lower=0) * 100
+
+    # Lấy lookback phiên cuối
+    all_dates = sorted(price_pivot.index)[-lookback:]
+
+    records = []
+    for date in all_dates:
+        if date not in price_pivot.index:
+            continue
+
+        def _sector_agg(mat_row, weight):
+            """Tổng hợp giá trị theo ngành, bỏ NaN."""
+            row = pd.Series(mat_row, index=price_pivot.columns)
+            row.index.name = "Ticker"
+            row_df = row.to_frame("val")
+            row_df["Sector"] = row_df.index.map(sector_map)
+            return row_df.dropna(subset=["Sector","val"]).groupby("Sector")["val"].mean()
+
+        p50  = _sector_agg(above_ma50.loc[date],  0.20) * 100
+        p200 = _sector_agg(above_ma200.loc[date], 0.20) * 100
+        ad   = _sector_agg(ad_ratio.loc[date],    0.15)
+        rsi  = _sector_agg(above_rsi.loc[date],   0.10) * 100
+        vb   = _sector_agg(vb_ratio.loc[date],    0.20)
+        hl   = _sector_agg(hl_index.loc[date],    0.15)
+        n_df = (pd.Series(price_pivot.loc[date], index=price_pivot.columns)
+                .dropna()
+                .to_frame("v")
+                .assign(Sector=lambda x: x.index.map(sector_map))
+                .dropna(subset=["Sector"])
+                .groupby("Sector")["v"].count())
+
+        all_sectors = set(p50.index) | set(p200.index) | set(ad.index)
+        for sector in all_sectors:
+            def _g(s, fallback=50):
+                return float(s.get(sector, fallback))
+            sbs = (0.20 * _g(p50,  0) +
+                   0.20 * _g(p200, 0) +
+                   0.15 * _g(ad)      +
+                   0.15 * _g(hl,   0) +
+                   0.10 * _g(rsi,  0) +
+                   0.20 * _g(vb))
+            records.append({
+                "Date":    date,
+                "Sector":  sector,
+                "SBS":     round(sbs, 1),
+                "P_MA50":  round(_g(p50,  0), 1),
+                "P_MA200": round(_g(p200, 0), 1),
+                "AD_20":   round(_g(ad),      1),
+                "RSI_D":   round(_g(rsi,  0), 1),
+                "VB_20":   round(_g(vb),      1),
+                "HL":      round(_g(hl,   0), 1),
+                "N":       int(_g(n_df,   0)),
+            })
+
+    return pd.DataFrame(records)

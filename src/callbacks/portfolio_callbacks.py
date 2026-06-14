@@ -42,8 +42,8 @@ portfolio_modal = dbc.Modal([
             html.Div([
                 html.Div([
                     html.I(className="fas fa-briefcase", style={"marginRight": "8px", "color": "#f59e0b"}),
-                    "Phòng Khám Danh Mục",
-                    html.Span(" · Portfolio Hospital", style={"fontSize": "12px", "color": "#5a8ab0", "fontWeight": "400", "marginLeft": "8px"}),
+                    "Kiểm Tra Sức Khỏe Danh Mục",
+                    html.Span(" · Portfolio Risk Management", style={"fontSize": "12px", "color": "#5a8ab0", "fontWeight": "400", "marginLeft": "8px"}),
                 ]),
                 # THÊM NÚT HƯỚNG DẪN Ở ĐÂY:
                 html.I(className="fas fa-info-circle", id="btn-portfolio-help",
@@ -56,9 +56,9 @@ portfolio_modal = dbc.Modal([
         # ── KHỐI 1: Sức khỏe Tài khoản Margin ──────────────────────────────
         html.Div([
             html.Div([
-                html.I(className="fas fa-heartbeat",
+                html.I(className="fas fa-radar",
                        style={"color": "#ef4444", "marginRight": "8px", "fontSize": "12px"}),
-                html.Span("THÔNG SỐ TÀI KHOẢN MARGIN",
+                html.Span("THÔNG SỐ TÀI KHOẢN KÝ QUỸ (MARGIN)",
                           style={"fontSize": "10px", "fontWeight": "700",
                                  "color": "#ef4444", "letterSpacing": "0.1em"}),
             ], style={"marginBottom": "10px"}),
@@ -92,7 +92,7 @@ portfolio_modal = dbc.Modal([
 
                 # Rtt hiện tại (tự tính hoặc nhập tay)
                 html.Div([
-                    html.Label("Tỷ lệ Rtt hiện tại (%)",
+                    html.Label("Tỷ lệ Ký quỹ (Rtt) hiện tại (%)",
                                style={"fontSize": "10px", "color": "#7fa8cc",
                                       "display": "block", "marginBottom": "4px"}),
                     dcc.Input(
@@ -113,7 +113,7 @@ portfolio_modal = dbc.Modal([
                                       "display": "block", "marginBottom": "4px"}),
                     dbc.Switch(
                         id="margin-atc-mode",
-                        label="Cấp cứu ATC",
+                        label="Kỷ luật cắt lỗ (ATC)",
                         value=False,
                         style={"fontSize": "11px", "color": "#ef4444"},
                     ),
@@ -210,10 +210,10 @@ portfolio_modal = dbc.Modal([
 portfolio_help_modal = dbc.Modal([
     dbc.ModalHeader(dbc.ModalTitle([
         html.I(className="fas fa-user-md", style={"marginRight": "8px", "color": "#10b981"}),
-        "Hướng dẫn sử dụng Phòng Khám"
+        "Hướng dẫn Quản trị Danh mục"
     ], style={"fontSize": "16px"})),
     dbc.ModalBody([
-        html.P("Tính năng này hoạt động như một Trợ lý rủi ro, giúp bạn chẩn đoán và đưa ra quyết định mua/bán trong những phiên thị trường biến động mạnh.", style={"fontSize": "13px", "color": "#c9d1d9", "marginBottom": "16px"}),
+        html.P("Tính năng này hoạt động như một Trợ lý Quản trị rủi ro, giúp bạn đánh giá và đưa ra quyết định mua/bán trong những phiên thị trường biến động mạnh.", style={"fontSize": "13px", "color": "#c9d1d9", "marginBottom": "16px"}),
         
         html.H6([html.I(className="fas fa-1", style={"marginRight": "8px", "color": "#3b82f6"}), "Khai báo tình trạng Margin"], style={"fontSize": "14px", "fontWeight": "700", "color": "#3b82f6"}),
         html.P("Nhập Tổng tài sản và Nợ vay. Hệ thống sẽ tự tính tỷ lệ ký quỹ (Rtt). Nếu bạn bật chế độ 'Cấp cứu ATC', hệ thống sẽ áp dụng các tiêu chí cắt lỗ gắt gao hơn để bảo vệ tài khoản.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
@@ -221,11 +221,11 @@ portfolio_help_modal = dbc.Modal([
         html.H6([html.I(className="fas fa-2", style={"marginRight": "8px", "color": "#f59e0b"}), "Thêm vị thế kẹp hàng"], style={"fontSize": "14px", "fontWeight": "700", "color": "#f59e0b"}),
         html.P("Nhập các mã cổ phiếu bạn đang nắm giữ cùng với giá vốn. Hệ thống sẽ tự kéo giá thị trường hiện tại để tính Lời/Lỗ.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
 
-        html.H6([html.I(className="fas fa-3", style={"marginRight": "8px", "color": "#10b981"}), "Đọc phác đồ điều trị"], style={"fontSize": "14px", "fontWeight": "700", "color": "#10b981"}),
+        html.H6([html.I(className="fas fa-3", style={"marginRight": "8px", "color": "#10b981"}), "Xem Khuyến nghị hành động"], style={"fontSize": "14px", "fontWeight": "700", "color": "#10b981"}),
         html.P("Cột 'Hành động' sẽ chỉ định rõ bạn nên làm gì: Ưu tiên cắt bỏ các mã mất thanh khoản (đề phòng kẹt lệnh) hoặc các mã yếu kém (VGM = D, F). Giữ lại các mã khỏe làm phòng thủ.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
 
-        html.H6([html.I(className="fas fa-4", style={"marginRight": "8px", "color": "#ef4444"}), "Xem kịch bản Stress Test"], style={"fontSize": "14px", "fontWeight": "700", "color": "#ef4444"}),
-        html.P("Hệ thống giả lập ngày mai thị trường chung sập 3%. Nếu tỷ lệ Rtt của bạn rớt xuống dưới 30% trong kịch bản này, một khung đỏ Cảnh báo Force Sell sẽ hiện ra kèm danh sách các mã bạn bắt buộc phải bán ngay phiên hôm nay.", style={"fontSize": "12px", "color": "#7fa8cc"}),
+        html.H6([html.I(className="fas fa-4", style={"marginRight": "8px", "color": "#ef4444"}), "Mô phỏng Rủi ro (Stress Test)"], style={"fontSize": "14px", "fontWeight": "700", "color": "#ef4444"}),
+        html.P("Hệ thống giả lập ngày mai thị trường chung sập 3%. Nếu tỷ lệ ký quỹ (Rtt) của bạn rớt xuống dưới 30% trong kịch bản này, một khung đỏ Cảnh báo Force Sell sẽ hiện ra kèm danh sách các mã bạn bắt buộc phải bán ngay phiên hôm nay.", style={"fontSize": "12px", "color": "#7fa8cc"}),
     ], style={"backgroundColor": "#0d1117", "border": "1px solid #30363d", "borderRadius": "0 0 8px 8px"}),
 ], id="portfolio-help-modal", size="md", is_open=False, centered=True)
 
@@ -287,7 +287,7 @@ def _diagnose(ticker, pos_pnl_p, rec, atc_mode=False):
 
     # Rule 1 — Kẹt thanh khoản (Tử huyệt)
     if avg_vol_20 > 0 and vol_today < avg_vol_20 * LIQUIDITY_RATIO:
-        return ("🔴 Kẹt thanh khoản — tuyệt đối KHÔNG dùng Margin mua thêm",
+        return ("🔴 Rủi ro thanh khoản — tuyệt đối KHÔNG dùng Margin mua thêm",
                 "danger",
                 "Theo dõi, chờ volume hồi phục")
 
@@ -300,7 +300,7 @@ def _diagnose(ticker, pos_pnl_p, rec, atc_mode=False):
 
     # Rule 3 — Mã rác đang lỗ
     if vgm in ("D", "F") and pos_pnl_p < 0:
-        return ("🟠 Mã yếu kém (VGM = F/D) đang lỗ — cơ cấu lại danh mục",
+        return ("🟠 Mã yếu kém (VGM = F/D) đang vi phạm giá vốn — cần cơ cấu lại",
                 "warning",
                 "Cân nhắc bán, chuyển sang mã mạnh hơn")
 
@@ -312,13 +312,13 @@ def _diagnose(ticker, pos_pnl_p, rec, atc_mode=False):
 
     # Rule 5 — Mã yếu đang thắng ngắn hạn (cẩn thận bẫy)
     if vgm in ("D", "F") and pos_pnl_p > 0:
-        return ("🟡 Đang lãi nhưng VGM thấp — lãi ngắn hạn, rủi ro dài hạn",
+        return ("🟡 Cổ phiếu đầu cơ đang có lãi — ưu tiên hiện thực hóa lợi nhuận",
                 "caution",
                 "Chốt lời một phần, đừng dùng margin")
 
     # Rule 6 — Mã phòng thủ, đang tốt
     if vgm in ("A", "B") and pos_pnl_p > 0:
-        return ("🟢 Sức khỏe tốt (VGM = %s) — Giữ làm sức mua dự phòng" % vgm,
+        return ("🟢 Nền tảng cơ bản tốt (VGM = %s) — Giữ làm sức mua dự phòng" % vgm,
                 "healthy",
                 "Giữ — có thể dùng làm tài sản ký quỹ")
 
@@ -586,7 +586,7 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
             html.P("Danh mục của bạn đang trống",
                    style={"color": "#3d6a8a", "fontSize": "14px",
                           "fontWeight": "600", "marginBottom": "4px"}),
-            html.P("Thêm cổ phiếu ở ô bên trên để Phòng Khám bắt đầu chẩn đoán",
+            html.P("Thêm cổ phiếu ở ô bên trên để hệ thống bắt đầu phân tích rủi ro cho bạn!",
                    style={"color": "#2a4d6e", "fontSize": "12px"}),
         ], style={"textAlign": "center", "padding": "50px 20px",
                   "border": "1px dashed #1e3a5f", "borderRadius": "8px",
@@ -762,9 +762,9 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
             # Panel chẩn đoán chi tiết
             html.Div([
                 html.Div([
-                    html.I(className="fas fa-stethoscope",
+                    html.I(className="fas fa-search",
                            style={"color": "#a78bfa", "marginRight": "6px", "fontSize": "11px"}),
-                    html.Span("CHẨN ĐOÁN CHI TIẾT",
+                    html.Span("PHÂN TÍCH RỦI RO CHI TIẾT",
                               style={"fontSize": "10px", "fontWeight": "700",
                                      "color": "#a78bfa", "letterSpacing": "0.1em"}),
                 ], style={"marginBottom": "8px"}),
@@ -859,7 +859,7 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
             html.Div([
                 html.I(className="fas fa-bolt",
                        style={"color": "#f59e0b", "marginRight": "8px", "fontSize": "12px"}),
-                html.Span("STRESS TEST — Kịch bản thị trường giảm ngày mai",
+                html.Span("MÔ PHỎNG RỦI RO — Kịch bản thị trường giảm điểm",
                           style={"fontSize": "11px", "fontWeight": "700",
                                  "color": "#f59e0b", "letterSpacing": "0.05em"}),
                 html.Span(f"  (VGM A/B: -{STRESS_STRONG_DROP}%  |  VGM C/D/F: -{STRESS_WEAK_DROP}%  |  Thị trường: -{STRESS_MARKET_DROP}%)",
@@ -878,7 +878,7 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
                           "borderRadius": "6px", "border": "1px solid #21262d"}),
 
                 html.Div([
-                    html.Span("P&L sau stress",
+                    html.Span("Lãi/Lỗ dự kiến",
                               style={"fontSize": "10px", "color": "#7fa8cc", "display": "block"}),
                     html.Span(f"{'+'if stress_pnl>=0 else''}{_fmt(stress_pnl)}  ({stress_pnl_p:+.2f}%)",
                               style={"fontSize": "15px", "fontWeight": "800",
@@ -887,7 +887,7 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
                           "borderRadius": "6px", "border": "1px solid #21262d"}),
 
                 html.Div([
-                    html.Span("Rtt sau stress",
+                    html.Span("Tỷ lệ Rtt dự kiến",
                               style={"fontSize": "10px", "color": "#7fa8cc", "display": "block"}),
                     html.Span(f"{stress_rtt:.1f}%" if stress_rtt is not None else "N/A",
                               style={"fontSize": "15px", "fontWeight": "800",
@@ -906,12 +906,12 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
                            style={"fontSize": "18px", "color": "#ef4444",
                                   "marginRight": "10px", "flexShrink": "0"}),
                     html.Div([
-                        html.Div("🚨 CẢNH BÁO: NGUY CƠ FORCE SELL SÁNG MAI",
+                        html.Div("🚨 CẢNH BÁO: RỦI RO BÁN GIẢI CHẤP (FORCE SELL) 🚨",
                                  style={"fontWeight": "800", "color": "#ef4444",
                                         "fontSize": "13px", "marginBottom": "4px",
                                         "letterSpacing": "0.05em"}),
                         html.Div([
-                            f"Tài khoản sẽ thiếu hụt ",
+                            f"Tài khoản dự kiến thiếu hụt ",
                             html.Strong(f"{_fmt(shortfall)} VNĐ",
                                         style={"color": "#ef4444"}),
                             f" để duy trì Rtt = {MARGIN_FORCE_SELL}%. ",
@@ -948,7 +948,7 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
                     html.I(className="fas fa-check-circle",
                            style={"color": "#10b981", "marginRight": "8px"}),
                     html.Span(
-                        f"Tài khoản an toàn sau stress test. "
+                        f"Tài khoản an toàn sau mô phỏng rủi ro. "
                         f"Rtt dự kiến: {stress_rtt:.1f}% > ngưỡng Force Sell {MARGIN_FORCE_SELL}%"
                         if stress_rtt is not None
                         else "Nhập thông tin Margin để xem cảnh báo Force Sell.",

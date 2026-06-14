@@ -3551,3 +3551,71 @@ span[style*="f59e0b"] {
 .custom-vss-tooltip.bs-tooltip-auto[data-popper-placement^="right"] .tooltip-arrow::before {
     border-right-color: #000000 !important;
 }
+
+/* Tác động trực tiếp vào phần lõi chứa chữ của tooltip */
+.cyber-tooltip .tooltip-inner {
+    font-size: 11px !important;
+    color: #ffffff !important;
+    font-family: 'Inter', sans-serif !important;
+    
+    /* Bạn có thể ép luôn màu nền nếu thích (tùy chọn) */
+    /* background-color: #1a1a1a !important; */
+}
+
+/* 1. Theme chung cho toàn bộ hộp nội dung của tooltip */
+.cyber-theme-tooltip .tooltip-inner {
+    background-color: #0d1117 !important;
+    color: #cbd5e1 !important;
+    border: 1px solid #334155 !important;
+    border-radius: 8px !important;
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6) !important;
+    max-width: 260px !important;
+    text-align: left !important;
+}
+
+/* 2. Đổi màu cái "mũi tên" (arrow) của tooltip để khớp với màu nền #0d1117 */
+/* Bao phủ mọi hướng (top, bottom, left, right) để bạn dùng placement nào cũng đẹp */
+.cyber-theme-tooltip.bs-tooltip-top .tooltip-arrow::before,
+.cyber-theme-tooltip[data-popper-placement^="top"] .tooltip-arrow::before {
+    border-top-color: #0d1117 !important;
+}
+
+.cyber-theme-tooltip.bs-tooltip-bottom .tooltip-arrow::before,
+.cyber-theme-tooltip[data-popper-placement^="bottom"] .tooltip-arrow::before {
+    border-bottom-color: #0d1117 !important;
+}
+
+.cyber-theme-tooltip.bs-tooltip-start .tooltip-arrow::before,
+.cyber-theme-tooltip[data-popper-placement^="left"] .tooltip-arrow::before {
+    border-left-color: #0d1117 !important;
+}
+
+.cyber-theme-tooltip.bs-tooltip-end .tooltip-arrow::before,
+.cyber-theme-tooltip[data-popper-placement^="right"] .tooltip-arrow::before {
+    border-right-color: #0d1117 !important;
+}
+
+/* Biến thể dành cho Tooltip Cảnh báo (Viền cam) */
+.cyber-theme-tooltip-warning .tooltip-inner {
+    background-color: #0d1117 !important;
+    color: #c9d1d9 !important;
+    border: 1px solid #f59e0b !important; /* Viền cam cảnh báo */
+    border-radius: 8px !important;
+    font-family: 'Inter', 'Segoe UI', sans-serif !important;
+    font-size: 11px !important; /* Font nhỏ hơn một chút như code gốc của bạn */
+    line-height: 1.5 !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.15) !important; /* Đổ bóng màu cam nhạt */
+    max-width: 240px !important;
+    text-align: left !important;
+}
+
+/* Đổi màu mũi tên thành viền cam tương ứng */
+.cyber-theme-tooltip-warning.bs-tooltip-top .tooltip-arrow::before,
+.cyber-theme-tooltip-warning[data-popper-placement^="top"] .tooltip-arrow::before {
+    border-top-color: #f59e0b !important;
+}

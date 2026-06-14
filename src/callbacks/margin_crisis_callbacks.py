@@ -142,7 +142,7 @@ def _build_tab1():
             html.Span(
                 "Nhập từng mã đang dùng margin. "
                 "Tỷ lệ vay (%) lấy từ thông báo CTCK — "
-                "SCS bị cắt hạn mức thì nhập 0%.",
+                "Mã nào bị công ty chứng khoán cắt hết hạn mức (hết room) thì nhập 0%.",
                 style={"fontSize": "12px", "color": _C["text_sec"], "lineHeight": "1.6"}
             ),
         ], style={
@@ -253,10 +253,10 @@ def _build_tab2():
                         "label": html.Div([
                             html.I(className="fas fa-skull-crossbones",
                                    style={"color": _C["red"], "marginRight": "8px"}),
-                            html.Span("Xấu nhất (Sập hầm)",
+                            html.Span("Tiêu cực (Giảm mạnh)",
                                       style={"fontWeight": "700", "color": _C["text_pri"]}),
                             html.Br(),
-                            html.Span("Áp Perf_1W tệ nhất 7 ngày qua vào giá hiện tại",
+                            html.Span("Giả định giá ngày mai giảm bằng mức giảm tệ nhất trong 1 tuần qua (Perf_1W). Đây là kịch bản stress test nghiêm ngặt nhất.",
                                       style={"fontSize": "11px", "color": _C["text_sec"]}),
                         ], style={"lineHeight": "1.8"}),
                         "value": "worst",
@@ -286,13 +286,13 @@ def _build_tab2():
         ]),
 
         _card([
-            _label("Thuật toán tự động — Ưu tiên bán mã nào?"),
+            _label("Chiến lược Cơ cấu — Bạn muốn ưu tiên bán mã nào?"),
             dbc.RadioItems(
                 id="crisis-action-mode",
                 options=[
                     {
                         "label": html.Div([
-                            html.Span("Tùy chọn A: Bán mã chất lượng kém (VGM thấp)",
+                            html.Span("Ưu tiên 1: Bán mã có cơ bản yếu (Điểm VGM thấp)",
                                       style={"fontWeight": "700", "color": _C["text_pri"],
                                              "fontSize": "13px"}),
                             html.Br(),
@@ -303,7 +303,7 @@ def _build_tab2():
                     },
                     {
                         "label": html.Div([
-                            html.Span("Tùy chọn B: Bán mã thanh khoản cao (chắc khớp hơn)",
+                            html.Span("Ưu tiên 2: Bán mã thanh khoản cao (Dễ khớp lệnh nhất)",
                                       style={"fontWeight": "700", "color": _C["text_pri"],
                                              "fontSize": "13px"}),
                             html.Br(),
@@ -326,7 +326,7 @@ def _build_tab2():
 
         dbc.Button([
             html.I(className="fas fa-play-circle", style={"marginRight": "8px"}),
-            "Chạy Stress Test & Xuất Khuyến nghị",
+            "Chạy Mô Phỏng & Đưa Ra Khuyến Nghị",
         ], id="crisis-run-btn", color="danger", size="lg",
            style={
                "width": "100%", "borderRadius": "8px",
@@ -365,12 +365,12 @@ crisis_modal = dbc.Modal([
         html.Div([
             html.I(className="fas fa-fire-flame-curved",
                    style={"color": _C["red"], "marginRight": "10px", "fontSize": "16px"}),
-            html.Span("Margin Crisis Backtester", style={
+            html.Span("CÔNG CỤ MÔ PHỎNG & XỬ LÝ MARGIN", style={
                 "fontWeight": "800", "fontSize": "15px",
                 "color": _C["text_pri"],
                 "fontFamily": "'JetBrains Mono', monospace",
             }),
-            html.Span(" — Xử lý khủng hoảng & tránh Force Sell", style={
+            html.Span(" — Dự phóng rủi ro & Tránh bán giải chấp (Force Sell)", style={
                 "fontSize": "12px", "color": _C["text_sec"], "marginLeft": "10px"
             }),
             # 🟢 THÊM NÚT HELP Ở ĐÂY:
@@ -409,10 +409,10 @@ crisis_modal = dbc.Modal([
 crisis_help_modal = dbc.Modal([
     dbc.ModalHeader(dbc.ModalTitle([
         html.I(className="fas fa-fire-flame-curved", style={"marginRight": "8px", "color": "#ef4444"}),
-        "Hướng dẫn Backtest Margin"
+        "Hướng dẫn Mô phỏng Xử lý Margin"
     ], style={"fontSize": "16px"})),
     dbc.ModalBody([
-        html.P("Công cụ này giúp bạn 'diễn tập' trước kịch bản thị trường sập để biết chính xác sáng mai phải bán mã nào, bán bao nhiêu để không bị Công ty Chứng khoán Force Sell.", style={"fontSize": "13px", "color": "#c9d1d9", "marginBottom": "16px"}),
+        html.P("Công cụ này giúp bạn 'diễn tập' trước các kịch bản thị trường tiêu cực để chủ động lên kế hoạch hạ tỷ trọng, tránh bị Công ty Chứng khoán bán giải chấp (Force Sell).", style={"fontSize": "13px", "color": "#c9d1d9", "marginBottom": "16px"}),
         
         html.H6([html.I(className="fas fa-1", style={"marginRight": "8px", "color": "#3b82f6"}), "Nhập danh mục Gốc"], style={"fontSize": "14px", "fontWeight": "700", "color": "#3b82f6"}),
         html.P("Nhập vốn tự có và chi tiết các mã đang kẹp (Khối lượng, Giá vốn, Tỷ lệ vay Margin do CTCK cấp). Hệ thống tự tính ra tổng nợ và Rtt hiện tại.", style={"fontSize": "12px", "color": "#7fa8cc", "marginBottom": "16px"}),
@@ -779,7 +779,7 @@ def render_positions_table(store):
         html.Span("SL (CP)", style={"flex": "0 0 80px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
         html.Span("GIÁ HT",  style={"flex": "0 0 90px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
         html.Span("GIÁ TRỊ", style={"flex": "0 0 100px", "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
-        html.Span("L/L%",    style={"flex": "0 0 70px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
+        html.Span("LÃI/LỖ",    style={"flex": "0 0 70px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
         html.Span("MARGIN",  style={"flex": "0 0 60px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
         html.Span("NỢ VAY",  style={"flex": "0 0 100px", "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
         html.Span("",        style={"flex": "1"}),
@@ -1006,7 +1006,7 @@ def run_stress_test(n, store, target_rtt, scenario, action_mode):
         if e["margin_rate"] == 0:
             action = "BÁN_NGAY"
             qty_sell = e["qty"]
-            reason   = f"Margin bị cắt về 0% — ATO ngày mai sẽ Force Sell toàn bộ {e['ticker']}"
+            reason   = f"Hết Room Margin (0%) — Rủi ro bị CTCK bán giải chấp ATO ngày mai {e['ticker']}"
         elif cash_needed <= 0:
             action   = "GIỮ"
             qty_sell = 0
@@ -1081,7 +1081,7 @@ def render_result_panel(result):
         return html.Div([
             html.I(className="fas fa-arrow-left",
                    style={"fontSize": "20px", "color": _C["text_mut"], "marginBottom": "8px"}),
-            html.P("Quay lại Tab ② để thiết lập kịch bản và bấm \"Chạy Stress Test\"",
+            html.P("Quay lại Tab ② để thiết lập kịch bản và bấm \"Chạy Mô Phỏng\"",
                    style={"color": _C["text_mut"], "fontSize": "13px"}),
         ], style={"textAlign": "center", "padding": "60px 20px"})
 
@@ -1092,7 +1092,7 @@ def render_result_panel(result):
     scenario  = result["scenario"]
     recs      = result["recommendations"]
 
-    scenario_label = "Kịch bản: Sập hầm (Perf_1W tệ nhất)" if scenario == "worst" \
+    scenario_label = "Kịch bản: Tiêu cực (Giảm mạnh)" if scenario == "worst" \
                      else "Kịch bản: Đi ngang"
 
     # ── Biểu đồ Rtt comparison ──
@@ -1175,10 +1175,10 @@ def render_result_panel(result):
 
     summary_cards = html.Div([
         _summary_card("Rtt Hiện Tại",   f"{rtt_now:.1f}%",   _rtt_gauge_color(rtt_now)),
-        _summary_card("Rtt T+1 (KBest)", f"{rtt_t1:.1f}%",  _rtt_gauge_color(rtt_t1)),
+        _summary_card("Rtt Ngày mai (T+1)", f"{rtt_t1:.1f}%",  _rtt_gauge_color(rtt_t1)),
         _summary_card("Rtt Sau Xử Lý",  f"{rtt_after:.1f}%", _rtt_gauge_color(rtt_after),
                       f"Mục tiêu: {target:.0f}%"),
-        _summary_card("Cần Giải Phóng", _fmt_vnd(result["cash_needed"]), _C["amber"]),
+        _summary_card("Cần Bán Thu Tiền", _fmt_vnd(result["cash_needed"]), _C["amber"]),
     ], style={"display": "flex", "gap": "10px", "marginBottom": "14px"})
 
     # ── Actionable Recommendation Text ──
@@ -1243,7 +1243,7 @@ def render_result_panel(result):
     for r in sell_part_recs:
         liq_note = ""
         if r["fill_prob"] < 50:
-            liq_note = f" ⚠ Thanh khoản thấp (~{r['fill_prob']:.0f}% khả năng khớp)"
+            liq_note = f" ⚠ Cảnh báo thanh khoản: Khả năng khớp lệnh chỉ khoảng {r['fill_prob']:.0f}%"
 
         action_items.append(html.Div([
             html.I(className="fas fa-minus-circle",
@@ -1268,7 +1268,7 @@ def render_result_panel(result):
                     "fontFamily": "'JetBrains Mono', monospace",
                     "color": _C["text_pri"],
                 }),
-                html.Span(" (VGM tốt, không cần giải chấp)",
+                html.Span(" (Cơ bản tốt, tỷ lệ an toàn, không cần bán)",
                           style={"color": _C["text_sec"], "fontSize": "12px", "marginLeft": "8px"}),
             ]),
         ], style={"marginBottom": "8px", "lineHeight": "1.6"}))
@@ -1341,8 +1341,8 @@ def render_result_panel(result):
         html.Span("MÃ",          style={"flex": "0 0 80px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "letterSpacing": "1px"}),
         html.Span("HÀNH ĐỘNG",   style={"flex": "0 0 130px", "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700"}),
         html.Span("SL BÁN",      style={"flex": "0 0 90px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
-        html.Span("TIỀN VỀ",     style={"flex": "0 0 100px", "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
-        html.Span("KN KHỚP",     style={"flex": "0 0 70px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
+        html.Span("THU VỀ",     style={"flex": "0 0 100px", "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
+        html.Span("XÁC SUẤT KHỚP",     style={"flex": "0 0 70px",  "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "textAlign": "right"}),
         html.Span("LÝ DO",       style={"flex": "1",         "color": _C["text_mut"], "fontSize": "10px", "fontWeight": "700", "marginLeft": "10px"}),
     ], style={
         "display": "flex", "padding": "6px 12px",
