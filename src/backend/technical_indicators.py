@@ -114,10 +114,6 @@ def calculate_technical_indicators(df_price, df_index=None):
     for w in [5, 10, 20, 50]:
         df[f'_vol_sma{w}'] = grp[volume_col].transform(lambda s, w=w: _sma(s, w))
 
-    # FIX: Cut the bad last date before snapshotting
-    raw_max_date = df['Date'].max()
-    df = df[df['Date'] < raw_max_date]
-
     # Snapshot (last row per ticker)
     snap = df.groupby('Ticker', sort=False).last().reset_index()
     max_date = snap['Date'].max()

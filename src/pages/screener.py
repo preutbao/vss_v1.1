@@ -810,9 +810,11 @@ layout = html.Div([
                         ),
                     ], width=8),
                     dbc.Col([
-                        dbc.Label("Vốn giải ngân (VND):",
-                                  style={"fontSize":"10px","fontWeight":"600",
-                                         "color":"#7fa8cc"}),
+                        dbc.Label([
+                            "Vốn giải ngân (VND): ",
+                            # 🟢 THÊM DÒNG NÀY: Vùng hiển thị số quy đổi ra Tỷ VNĐ
+                            html.Span(id="modal-nav-formatted-display", style={"color": "#3498db", "marginLeft": "6px", "fontWeight": "bold"})
+                        ], style={"fontSize":"10px","fontWeight":"600", "color":"#7fa8cc", "display": "flex", "alignItems": "center"}), # Thêm flex để text trên 1 dòng
                         dbc.Input(
                             id="modal-nav-input",
                             type="number",
@@ -1081,9 +1083,9 @@ layout = html.Div([
                                     children=[
                                         dbc.Button(
                                             [
-                                                html.I(className="fas fa-file",
+                                                html.I(className="fas fa-file-invoice-dollar",
                                                     style={"marginRight": "5px"}),
-                                                "Danh mục",
+                                                "Thị trường",
                                             ],
                                             id="btn-export-screener-pdf",
                                             color="danger", outline=True, size="sm",
@@ -1343,21 +1345,22 @@ layout = html.Div([
         dbc.Collapse(
             html.Div([
                 html.Div([
-                    html.Span("Sector Heatmap", style={
+                    html.Span("HEATMAP THEO NGÀNH - THỊ TRƯỜNG VIỆT NAM", style={
                         "fontSize": "12px", "fontWeight": "700", "color": "#c9d1d9", "flex": "1",
                     }),
                     dcc.Dropdown(
                         id="heatmap-metric",
                         options=[
-                            {"label": "% 1 tuần", "value": "Perf_1W"},
-                            {"label": "% 1 tháng", "value": "Perf_1M"},
-                            {"label": "% 3 tháng", "value": "Perf_3M"},
-                            {"label": "% 1 năm", "value": "Perf_1Y"},
+                            {"label": "% 1 ngày",  "value": "Price_Change_Pct"},
+                            {"label": "% 1 tuần",     "value": "Perf_1W"},
+                            {"label": "% 1 tháng",    "value": "Perf_1M"},
+                            {"label": "% 3 tháng",    "value": "Perf_3M"},
+                            {"label": "% 1 năm",      "value": "Perf_1Y"},
                         ],
-                        value="Perf_1W",
+                        value="Price_Change_Pct",
                         clearable=False,
                         className="ssi-dropdown-custom",
-                        style={"width": "140px"},
+                        style={"width": "150px"},
                     ),
                     # Toggle sàn — thêm vào sau dropdown metric
                     dbc.RadioItems(

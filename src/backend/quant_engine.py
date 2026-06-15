@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import logging
+import scipy.optimize as sco  # <-- THÊM DÒNG NÀY ĐỂ TỐI ƯU HÓA MARKOWITZ
 
 # Cấu hình Logging
 logger = logging.getLogger(__name__)
@@ -1302,10 +1303,14 @@ def calculate_star_rating(df):
     star_mapping = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
     df['Star_Rating'] = df['VGM Score'].map(star_mapping).fillna(1).astype(int)
 
-    # Hard Rule: CFO âm (dùng fcf làm proxy) hoặc GTGD_20D < 5 tỷ
+    # 🟢 FIX: Hard Rule - Chất lượng dòng tiền (CFO / Net Income)
     cfo_penalty = pd.Series(False, index=df.index)
-    if 'fcf' in df.columns:
-        cfo_penalty = cfo_penalty | (pd.to_numeric(df['fcf'], errors='coerce').fillna(0) < 0)
+    if 'fcf' in df.columns and 'net_income' in df.columns:
+        fcf_series = pd.to_numeric(df['fcf'], errors='coerce').fillna(0)
+        ni_series = pd.to_numeric(df['net_income'], errors='coerce').fillna(0)
+        
+        # Phạt nếu FCF âm HOẶC (Net Income > 0 nhưng FCF < 50% Net Income -> Lợi nhuận nằm trên giấy/Phải thu)
+        cfo_penalty = (fcf_series < 0) | ((ni_series > 0) & (fcf_series < 0.5 * ni_series))
 
     gtgd_penalty = pd.Series(False, index=df.index)
     if 'GTGD_20D' in df.columns:
@@ -1318,6 +1323,12 @@ def calculate_star_rating(df):
 
     penalty_mask = cfo_penalty | gtgd_penalty
     df.loc[penalty_mask, 'Star_Rating'] = df.loc[penalty_mask, 'Star_Rating'].clip(upper=2)
+
+    # =====================================================================
+    # 🟢 FIX: ĐỒNG BỘ NGƯỢC LẠI VGM SCORE (Để Trang 1-3 và Trang 4 khớp nhau)
+    # =====================================================================
+    reverse_star_mapping = {5: 'A', 4: 'B', 3: 'C', 2: 'D', 1: 'F'}
+    df['VGM Score'] = df['Star_Rating'].map(reverse_star_mapping)
 
     logger.info(f"   ✅ Star Rating xong — phân bổ: {df['Star_Rating'].value_counts().sort_index().to_dict()}")
     return df
@@ -1355,48 +1366,129 @@ def calculate_vss_smart_rank(df):
     logger.info(f"   ✅ VSS Smart Rank xong — min={df['VSS_Smart_Rank'].min():.3f} max={df['VSS_Smart_Rank'].max():.3f}")
     return df
 
-def calculate_robo_allocation(filtered_df, nav):
+def calculate_robo_allocation(filtered_df, nav, df_price=None):
     """
-    Tính toán số lượng cổ phiếu có thể mua dựa trên NAV và list cổ phiếu đã lọc.
-    Trả về list các dict chứa thông tin đi lệnh và số tiền dư.
+    TỐI ƯU HÓA DANH MỤC MARKOWITZ & MONTE CARLO STRESS TEST
+    Chuẩn Vietcap IQ: Có ràng buộc tỷ trọng, kiểm soát sàn UPCoM và ưu tiên Tiền mặt nếu rủi ro cao.
     """
-    import pandas as pd
     if filtered_df is None or filtered_df.empty or nav <= 0:
         return None, nav
 
-    # 🟢 SỬA LỖI PARADOX: Đảm bảo Data được sắp xếp theo Rank/Sao cao nhất trước khi lấy Top 3
+    # 1. Ưu tiên các mã điểm cao nhất (Lọc Top 5 để chạy thuật toán)
     if 'VSS_Smart_Rank' in filtered_df.columns:
-        filtered_df = filtered_df.sort_values(by='VSS_Smart_Rank', ascending=False)
-    elif 'Star_Rating' in filtered_df.columns:
-        filtered_df = filtered_df.sort_values(by='Star_Rating', ascending=False)
+        df_top = filtered_df.sort_values(by='VSS_Smart_Rank', ascending=False).head(5)
+    else:
+        df_top = filtered_df.sort_values(by='Star_Rating', ascending=False).head(5)
 
-    # Lấy Top 3 mã tốt nhất
-    top_stocks = filtered_df.head(3).to_dict('records')
+    tickers = df_top['Ticker'].tolist()
     
-    # Phân bổ vốn: 3 mã (40%, 30%, 30%), 2 mã (60%, 40%), 1 mã (100%)
-    weights = [0.4, 0.3, 0.3] if len(top_stocks) == 3 else [0.6, 0.4] if len(top_stocks) == 2 else [1.0]
-    
+    # KỊCH BẢN FALLBACK: Nếu không có df_price (giá lịch sử) truyền vào, chia đều an toàn
+    if df_price is None or df_price.empty:
+        logger.warning("⚠️ Không có dữ liệu lịch sử giá, chia tỷ trọng đều (Fallback).")
+        weights = [1.0 / len(tickers)] * len(tickers)
+        expected_ret, max_dd = 0.0, 0.0
+    else:
+        logger.info(f"🧠 Đang chạy Markowitz & Monte Carlo cho: {tickers}")
+        
+        # 2. Xử lý Dữ liệu Lịch sử (Trích xuất chuỗi lợi nhuận ngày)
+        df_px = df_price[df_price['Ticker'].isin(tickers)].pivot(index='Date', columns='Ticker', values='Price Close').sort_index()
+        returns = df_px.pct_change().dropna()
+        
+        if returns.empty or len(returns) < 20:
+            logger.warning("⚠️ Dữ liệu giá quá ngắn, dùng Fallback.")
+            weights = [1.0 / len(tickers)] * len(tickers)
+            expected_ret, max_dd = 0.0, 0.0
+        else:
+            mean_returns = returns.mean() * 20 # Kỳ vọng 1 tháng (20 phiên)
+            cov_matrix = returns.cov() * 20
+
+            # 3. THUẬT TOÁN MARKOWITZ: TỐI ĐA HÓA SHARPE RATIO
+            num_assets = len(tickers)
+            args = (mean_returns, cov_matrix)
+            
+            def portfolio_performance(weights, mean_returns, cov_matrix):
+                returns = np.sum(mean_returns * weights)
+                std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+                return returns, std
+            
+            def negative_sharpe_ratio(weights, mean_returns, cov_matrix, risk_free_rate=0.04/12):
+                p_ret, p_std = portfolio_performance(weights, mean_returns, cov_matrix)
+                return -(p_ret - risk_free_rate) / (p_std + 1e-9)
+
+            # --- LUẬT VIETCAP (CONSTRAINTS) ---
+            # 1. Tổng tỷ trọng <= 1 (Cho phép giữ tiền mặt nếu TT xấu)
+            constraints = [{'type': 'ineq', 'fun': lambda x: 1 - np.sum(x)}] 
+            
+            # 2. Giới hạn sàn UPCoM (Tổng vốn vào UPCoM <= 10%)
+            upcom_indices = [i for i, t in enumerate(tickers) if df_top.iloc[i].get('Exchange', '') == 'UPCOM']
+            if upcom_indices:
+                constraints.append({'type': 'ineq', 'fun': lambda x: 0.10 - np.sum([x[i] for i in upcom_indices])})
+            
+            # 3. Ràng buộc mỗi mã: Tối thiểu 10%, Tối đa 40%
+            bounds = tuple((0.1, 0.4) for asset in range(num_assets))
+            
+            # Chạy thuật toán tối ưu
+            opt_result = sco.minimize(negative_sharpe_ratio, num_assets*[1./num_assets,], args=args,
+                                      method='SLSQP', bounds=bounds, constraints=constraints)
+            weights = opt_result.x
+            
+            # 4. MONTE CARLO STRESS TEST (Lõi kiểm tra sức chịu đựng)
+            n_scenarios = 10000
+            horizon = 20 # 1 tháng
+            daily_returns_arr = returns.values
+            
+            # Vectorized Bootstrapping (Cực nhanh)
+            idx = np.random.randint(0, len(daily_returns_arr), size=(n_scenarios, horizon))
+            sampled_returns = daily_returns_arr[idx] # Shape: (10000, 20, n_assets)
+            portfolio_sim_returns = np.sum(sampled_returns * weights, axis=2) # Shape: (10000, 20)
+            
+            # Tính Max Drawdown của 10.000 kịch bản
+            cum_returns = np.cumprod(1 + portfolio_sim_returns, axis=1)
+            peak = np.maximum.accumulate(cum_returns, axis=1)
+            drawdown = (cum_returns - peak) / peak
+            max_dd = np.abs(np.min(drawdown)) # Giá trị dương
+            
+            # Tính Expected Return
+            expected_ret = np.mean(cum_returns[:, -1] - 1)
+            
+            # Bơm luật Guillotine: Nếu MDD > 15%, ép giảm tỷ trọng cổ phiếu, tăng tiền mặt
+            if max_dd > 0.15:
+                logger.warning(f"🚨 Rủi ro sập hầm cao (MDD={max_dd:.1%}). Tự động hạ tỷ trọng cổ phiếu!")
+                reduction_factor = 0.15 / max_dd # Ép tỷ trọng xuống mức an toàn
+                weights = weights * reduction_factor
+
+    # 5. ĐÓNG GÓI KẾT QUẢ ĐI LỆNH (ACTIONABLE)
     allocations = []
     remaining_cash = nav
-    
-    for idx, stock in enumerate(top_stocks):
-        price = float(stock.get('Price Close', 0))
+    total_invested_pct = np.sum(weights)
+
+    for idx, row in enumerate(df_top.to_dict('records')):
+        w = weights[idx]
+        if w < 0.05: continue # Bỏ qua nếu tỷ trọng < 5%
+        
+        price = float(row.get('Price Close', 0))
         if price <= 0: continue
         
-        # Mua theo lô 100
-        max_shares = int((nav * weights[idx]) / (price * 100)) * 100
+        # Mua theo lô 100 cổ phiếu chẵn
+        max_shares = int((nav * w) / (price * 100)) * 100
         
         if max_shares > 0:
             cost = max_shares * price
             remaining_cash -= cost
             allocations.append({
-                "Ticker": stock.get('Ticker', 'N/A'),
+                "Ticker": row.get('Ticker', 'N/A'),
                 "Volume": max_shares,
                 "Price": price,
                 "Cost": cost,
-                # 🟢 SỬA LỖI KEY: Đổi sang lấy 'Star_Rating' (số 1-5) để render sao
-                "Score": stock.get('Star_Rating', 0)
+                "Weight_Pct": w, # Truyền % ra để UI vẽ
+                "Expected_Ret_1M": expected_ret,
+                "Max_Drawdown": max_dd,
+                "Score": row.get('Star_Rating', 0)
             })
+            
+    # Ghi nhận tiền mặt (Cash) nếu hệ thống phòng thủ
+    if remaining_cash > (nav * 0.05): # Nếu dư hơn 5% tiền
+         logger.info(f"🛡️ Hệ thống phòng thủ: Giữ lại {remaining_cash/nav:.1%} Tiền mặt.")
             
     return allocations, remaining_cash
 

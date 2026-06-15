@@ -22,6 +22,47 @@ import logging, json
 
 logger = logging.getLogger(__name__)
 
+import math as _math
+
+def _safe_float(v, default=0.0):
+    try:
+        f = float(v)
+        return default if _math.isnan(f) or _math.isinf(f) else f
+    except (TypeError, ValueError):
+        return default
+
+def _safe_int(v, default=0):
+    try:
+        f = float(v)
+        return default if _math.isnan(f) or _math.isinf(f) else int(f)
+    except (TypeError, ValueError):
+        return default
+
+# ─── HELPER: Lấy thông tin giá tham chiếu + biên độ theo sàn ────────────────
+def _get_ref_and_band(ticker: str):
+    """
+    Trả về (ref_price, band_pct, exchange_label) từ snapshot.
+    band_pct: biên độ 1 chiều (7 / 10 / 15).
+    """
+    try:
+        from src.backend.data_loader import get_snapshot_df
+        df = get_snapshot_df()
+        row = df[df["Ticker"] == ticker]
+        if row.empty:
+            return None, 15, "?"
+        r   = row.iloc[0]
+        ref = float(r.get("Price Close") or 0)
+        exch = str(r.get("Exchange", "") or "").upper().strip()
+        if exch == "HOSE":
+            band, label = 7,  "HOSE (±7%)"
+        elif exch == "HNX":
+            band, label = 10, "HNX (±10%)"
+        else:
+            band, label = 15, "UPCOM (±15%)"
+        return ref if ref > 0 else None, band, label
+    except Exception:
+        return None, 15, "?"
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS — Ngưỡng Rule Y Tế
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -276,11 +317,20 @@ def _diagnose(ticker, pos_pnl_p, rec, atc_mode=False):
     Bộ Rule Y Tế — trả về (label_text, severity, action)
     severity: 'danger' | 'warning' | 'caution' | 'healthy'
     """
-    vgm         = str(rec.get("VGM Score", "")).strip().upper()
-    vol_today   = float(rec.get("Volume", 0) or 0)
-    avg_vol_20  = float(rec.get("Avg_Vol_20D", 0) or 0)
-    rsi         = float(rec.get("RSI_14", 50) or 50)
-    perf_1w     = float(rec.get("Perf_1W", 0) or 0)
+    import math as _m
+
+    def _sf(v, default=0.0):
+        try:
+            f = float(v)
+            return default if _m.isnan(f) or _m.isinf(f) else f
+        except (TypeError, ValueError):
+            return default
+
+    vgm         = str(rec.get("VGM Score") or "").strip().upper()
+    vol_today   = _sf(rec.get("Volume"),      0.0)
+    avg_vol_20  = _sf(rec.get("Avg_Vol_20D"), 0.0)
+    rsi         = _sf(rec.get("RSI_14"),      50.0)
+    perf_1w     = _sf(rec.get("Perf_1W"),     0.0)
 
     # ATC mode: ngưỡng cắt lỗ gắt hơn (-5% thay vì -7%)
     stop_loss   = -5.0 if atc_mode else STOP_LOSS_PCT
@@ -367,22 +417,29 @@ def load_portfolio_tickers(is_open):
 
 
 @app.callback(
-    Output("portfolio-price-input", "value", allow_duplicate=True),
-    Input("portfolio-ticker-input", "value"),
+    Output("portfolio-price-input",       "value",       allow_duplicate=True),
+    Output("portfolio-price-input",       "placeholder"),
+    Output("portfolio-price-warning",     "children",    allow_duplicate=True),
+    Output("portfolio-price-warning",     "style",       allow_duplicate=True),
+    Input("portfolio-ticker-input",       "value"),
     prevent_initial_call=True,
 )
 def autofill_ref_price(ticker):
+    _hide = {"fontSize": "10px", "color": "#10b981",
+             "marginTop": "3px", "display": "none"}
+    _show_green = {"fontSize": "10px", "color": "#10b981",
+                   "marginTop": "3px", "display": "block"}
+
     if not ticker:
-        return no_update
-    try:
-        from src.backend.data_loader import get_snapshot_df
-        snap  = {r["Ticker"]: r for r in get_snapshot_df().to_dict("records")}
-        price = snap.get(ticker, {}).get("Price Close")
-        if price is not None:
-            return round(float(price))
-    except Exception:
-        pass
-    return no_update
+        return no_update, "Giá mua (VND)", "", _hide
+
+    ref, band, label = _get_ref_and_band(ticker)
+    if ref is None:
+        return no_update, "Giá mua (VND)", "", _hide
+
+    placeholder = f"Tham chiếu: {ref:,.0f} | {label}"
+    info_msg    = f"✓ Giá đóng cửa: {ref:,.0f} VNĐ  ·  Sàn {label}"
+    return round(ref), placeholder, info_msg, _show_green
 
 @app.callback(
     Output("margin-total-asset-fmt", "children"),
@@ -410,32 +467,64 @@ def toggle_portfolio_help(n):
         return True
     return no_update
 
+
 @app.callback(
-    Output("portfolio-price-warning", "children"),
-    Output("portfolio-price-warning", "style"),
+    Output("portfolio-price-warning", "children",  allow_duplicate=True),
+    Output("portfolio-price-warning", "style",     allow_duplicate=True),
     Input("portfolio-price-input",    "value"),
     Input("portfolio-ticker-input",   "value"),
     prevent_initial_call=True,
 )
 def validate_portfolio_price(price_val, ticker):
-    hide = {"fontSize": "10px", "color": "#f59e0b", "marginTop": "3px", "display": "none"}
-    show = {"fontSize": "10px", "color": "#f59e0b", "marginTop": "3px", "display": "block"}
+    _hide       = {"fontSize": "10px", "marginTop": "3px", "display": "none"}
+    _show_warn  = {"fontSize": "10px", "color": "#f59e0b",
+                   "marginTop": "3px", "display": "block", "fontWeight": "600"}
+    _show_err   = {"fontSize": "10px", "color": "#ef4444",
+                   "marginTop": "3px", "display": "block", "fontWeight": "700"}
+    _show_ok    = {"fontSize": "10px", "color": "#10b981",
+                   "marginTop": "3px", "display": "block"}
+
     if not ticker or price_val is None:
-        return "", hide
+        return "", _hide
+
+    ref, band, label = _get_ref_and_band(ticker)
+    if ref is None or ref <= 0:
+        return "", _hide
+
     try:
-        from src.backend.data_loader import get_snapshot_df
-        snap  = {r["Ticker"]: r for r in get_snapshot_df().to_dict("records")}
-        ref   = float(snap.get(ticker, {}).get("Price Close") or 0)
-        if ref <= 0:
-            return "", hide
-        ratio = float(price_val) / ref
-        if ratio > 1.15:
-            return f"⚠ Cao hơn giá tham chiếu {(ratio-1)*100:.1f}%", show
-        if ratio < 0.85:
-            return f"⚠ Thấp hơn giá tham chiếu {(1-ratio)*100:.1f}%", show
+        ratio   = float(price_val) / ref
+        dev_pct = (ratio - 1) * 100
+        ceil    = ref * (1 + band / 100)
+        floor   = ref * (1 - band / 100)
+
+        if float(price_val) > ceil:
+            return (
+                f"🚫 VƯỢT BIÊN ĐỘ {label}: Giá trần = {ceil:,.0f} VNĐ "
+                f"(+{band}%). Lệnh sẽ bị từ chối.",
+                _show_err,
+            )
+        if float(price_val) < floor:
+            return (
+                f"🚫 VƯỢT BIÊN ĐỘ {label}: Giá sàn = {floor:,.0f} VNĐ "
+                f"(-{band}%). Lệnh sẽ bị từ chối.",
+                _show_err,
+            )
+        # Cảnh báo nhẹ nếu lệch >3% dù chưa chạm biên
+        if dev_pct > 3:
+            return (
+                f"⚠ Cao hơn tham chiếu {dev_pct:.1f}% "
+                f"(Trần {label}: {ceil:,.0f})",
+                _show_warn,
+            )
+        if dev_pct < -3:
+            return (
+                f"⚠ Thấp hơn tham chiếu {abs(dev_pct):.1f}% "
+                f"(Sàn {label}: {floor:,.0f})",
+                _show_warn,
+            )
+        return f"✓ Trong biên độ {label}", _show_ok
     except Exception:
-        pass
-    return "", hide
+        return "", _hide
 
 
 @app.callback(

@@ -11,6 +11,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -46,6 +47,7 @@ except ImportError:
         mc_returns: Optional[np.ndarray] = None
         seasonality_scores: dict = field(default_factory=dict)
         nav: float = 1_000_000_000.0
+        scores: list = field(default_factory=list)   # ← THÊM
         guillotine_iterations: int = 0
         error_message: str = ""
 
@@ -67,6 +69,7 @@ C_RED        = colors.HexColor("#C62828")
 C_GREEN      = colors.HexColor("#1B7A4A")
 C_BLUE       = colors.HexColor("#1565C0")
 C_ACCENT     = colors.HexColor("#0078D4")
+C_ACCENT2    = colors.HexColor("#00B4D8")
 C_AMBER      = colors.HexColor("#F59E0B")
 C_PURPLE     = colors.HexColor("#6A0DAD")
 
@@ -115,15 +118,6 @@ def _format_ax(ax):
 def _bg(c):
     c.setFillColor(C_BG)
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
-
-def _footer(c, page_num: int):
-    c.setFillColor(C_ACCENT)
-    c.rect(0, 0, PW * 0.6, 4, fill=1, stroke=0)
-    c.setFillColor(colors.HexColor("#00B4D8"))
-    c.rect(PW * 0.6, 0, PW * 0.4, 4, fill=1, stroke=0)
-    c.setFont("VnFont", 6.5); c.setFillColor(C_GREY)
-    c.drawString(MARGIN, 10, "Vietcap Smart Screener – Dữ liệu mang tính tham khảo (VIP NAV Edition).")
-    c.drawRightString(PW - MARGIN, 10, f"Trang {page_num}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
 def _page_header_quant(c, subtitle: str = ""):
     """Đồng bộ Header với trang 2 & 3"""
@@ -239,7 +233,9 @@ def _table(c, headers, rows, x, y, widths, row_h=14, hdr_h=17, font_sz=7.0, righ
 
             if ci == vgm_col_idx:
                 pad = 3
-                _draw_vgm_badge(c, cx + pad, y - row_h + pad, w - 2*pad, row_h - 2*pad, txt)
+                # 🟢 FIX: Bỏ vẽ vòng tròn nếu là hàng TỔNG hoặc ô bị trống
+                if not is_total and txt.strip() not in ["", "—"]:
+                    _draw_vgm_badge(c, cx + pad, y - row_h + pad, w - 2*pad, row_h - 2*pad, txt)
                 cx += w; continue
 
             c.setFont("VnFont-Bold" if is_total else "VnFont", font_sz)
@@ -347,9 +343,11 @@ def _chart_seasonality(season_scores: dict) -> object:
 # ══════════════════════════════════════════════════════════════
 # MAIN: Render Trang 4 PDF
 # ══════════════════════════════════════════════════════════════
-def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4):
+def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4, ai_texts: dict = None):
+    from src.callbacks.screener_pdf_callback import _footer
+
     _bg(c)
-    subtitle = f"Thuật toán Tối ưu hóa Rủi ro (Mô phỏng {N_SCENARIOS:,} kịch bản lịch sử) | NAV: {nav/1e9:.2f} tỷ VND"
+    subtitle = f"Thuật toán Tối ưu hóa Rủi ro (Mô phỏng {N_SCENARIOS:,} kịch bản lịch sử) - Vốn: {nav/1e9:.2f} tỷ VND"
     _page_header_quant(c, subtitle)
     y0 = PH - 58
 
@@ -362,13 +360,31 @@ def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4):
         c.drawString(MARGIN + 12, y0 - 22, "Không thể chạy tối ưu hóa danh mục")
         c.setFont("VnFont", 8.5); c.setFillColor(C_TEXT)
         c.drawString(MARGIN + 12, y0 - 38, f"Lý do: {err[:90]}")
-        _footer(c, page_num)
+        
+        # Gọi footer bình thường (bỏ dòng import cũ ở đây đi)
+        _footer(c, page_num=4, total=4)
+        return
+    subtitle = f"Thuật toán Tối ưu hóa Rủi ro (Mô phỏng {N_SCENARIOS:,} kịch bản lịch sử) - Vốn: {nav/1e9:.2f} tỷ VND"
+    _page_header_quant(c, subtitle)
+    y0 = PH - 58
+
+    if not qr or qr.status != "ok" or not qr.tickers:
+        err = (getattr(qr, "error_message", "") or "Không có dữ liệu lịch sử giá.") if qr else "Lỗi pipeline."
+        c.setFillColor(colors.HexColor("#FEF2F2")); c.setStrokeColor(colors.HexColor("#FCA5A5")); c.setLineWidth(1.0)
+        c.roundRect(MARGIN, y0 - 80, CW, 80, radius=5, fill=1, stroke=1)
+        c.setFillColor(C_RED); c.rect(MARGIN, y0 - 80, 4, 80, fill=1, stroke=0)
+        c.setFont("VnFont-Bold", 10); c.setFillColor(C_RED)
+        c.drawString(MARGIN + 12, y0 - 22, "Không thể chạy tối ưu hóa danh mục")
+        c.setFont("VnFont", 8.5); c.setFillColor(C_TEXT)
+        c.drawString(MARGIN + 12, y0 - 38, f"Lý do: {err[:90]}")
+        from src.callbacks.screener_pdf_callback import _footer
+        _footer(c, page_num=4, total=4)
         return
 
     # KPI Strip
     kpi_items = [
-        ("Kỳ vọng 1T", f"{qr.expected_return_1m*100:+.1f}%", C_GREEN if qr.expected_return_1m >= 0 else C_RED),
-        ("Rủi ro sụt giảm (Tháng)", f"{qr.var_95*100:.1f}%", C_RED),
+        ("Kỳ vọng 1 tháng", f"{qr.expected_return_1m*100:+.1f}%", C_GREEN if qr.expected_return_1m >= 0 else C_RED),
+        ("Rủi ro giảm", f"{qr.var_95*100:.1f}%", C_RED),
         ("Mức rủi ro lớn nhất", f"{qr.max_drawdown*100:.1f}%", C_AMBER if qr.max_drawdown < 0.15 else C_RED),
         ("Sharpe (năm)", f"{qr.sharpe_ratio:.2f}", C_BLUE),
     ]
@@ -395,10 +411,19 @@ def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4):
         qty = qr.quantities[i] if i < len(qr.quantities) else 0
         prc = qr.prices[i] if i < len(qr.prices) else 0.0
         inv = qr.investment_values[i] if i < len(qr.investment_values) else 0.0
-        cmp = qr.companies[i][:22] if i < len(qr.companies) else t
+        cmp = qr.companies[i][:26] if i < len(qr.companies) else t
         exch = qr.exchanges[i] if i < len(qr.exchanges) else "—"
-        alloc_rows.append([t, cmp, exch, "A", f"{w*100:.1f}%", f"{qty:,}", f"{prc:,.0f}", f"{inv/1e6:,.0f}M", f"{qr.seasonality_scores.get(t, 0.0):.2f}"])
-
+        # 🟢 FIX: Lấy điểm số thực tế (Score) từ kết quả đi lệnh, không gán chết điểm "A"
+        if hasattr(qr, 'scores') and qr.scores and i < len(qr.scores):
+            grade = qr.scores[i]
+        else:
+            grade = "—"   # honest fallback thay vì gán chết "A"
+        
+        alloc_rows.append([
+            t, cmp, exch, grade, f"{w*100:.1f}%", 
+            f"{qty:,}", f"{prc:,.0f}", f"{inv/1e6:,.0f}M", 
+            f"{qr.seasonality_scores.get(t, 0.0):.2f}"
+        ])
     alloc_rows.append(["TỔNG", "", "", "", "100%", "", "", f"{sum(qr.investment_values)/1e6:,.0f}M", ""])
 
     y0 = _table(c, alloc_hdrs, alloc_rows, MARGIN, y0, alloc_widths, row_h=15, hdr_h=18, font_sz=7.2, right_cols={4, 5, 6, 7, 8}, center_cols={2}, vgm_col_idx=3)
@@ -435,6 +460,25 @@ def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4):
         c.drawString(MARGIN + 12, y0 - 32, summary_text_2)
 
     y0 -= summary_h + 16
+
+    # 2. Ngay bên dưới khối code vẽ Summary (KẾT LUẬN CHIẾN LƯỢC TỪ HỆ THỐNG VSS), em chèn thêm đoạn này:
+    if ai_texts and "action" in ai_texts:
+        # Import hàm vẽ box từ file kia sang để đồng bộ UI tuyệt đối (Tránh lỗi vòng lặp)
+        from src.callbacks.screener_pdf_callback import _ai_box
+        
+        y0 -= 8
+        _sec(c, "Khuyến Nghị Hành Động Thực Chiến (AI Advice)", MARGIN, y0, color=C_PURPLE)
+        y0 -= 11
+        
+        # Vẽ Box AI lấy dữ liệu từ key "action"
+        y0 = _ai_box(c, ai_texts.get("action", ""),
+                     MARGIN, y0, CW,
+                     box_color=colors.HexColor("#F5F3FF"), # Nền tím nhạt sang trọng
+                     border_color=colors.HexColor("#DDD6FE"),
+                     accent_color=C_PURPLE,
+                     badge_label="Gemini Action Plan",
+                     badge_color=C_PURPLE)
+        y0 -= 16
 
     # ══════════════════════════════════════════════════════════════
     # Phần Charts bên dưới giữ nguyên
@@ -473,4 +517,5 @@ def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4):
         c.drawString(MARGIN + 10, y0 - 20, f"Danh mục đã vượt qua Stress-test {N_SCENARIOS:,} kịch bản lịch sử. MDD ước tính {qr.max_drawdown*100:.1f}%.")
         c.drawString(MARGIN + 10, y0 - 28, "Đây là phân tích định lượng tự động bằng máy tính, không phải khuyến nghị đầu tư chính thức của Vietcap.")
 
-    _footer(c, page_num)
+    # 🟢 Chỉ cần gọi hàm, không cần import lại
+    _footer(c, page_num=4, total=4)

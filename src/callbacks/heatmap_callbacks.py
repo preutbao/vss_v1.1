@@ -321,7 +321,7 @@ def _card(children, style_extra=None):
 
 
 def _label(text, style_extra=None):
-    s = {"fontSize": "11px", "fontWeight": "700", "letterSpacing": "1.4px",
+    s = {"fontSize": "12px", "fontWeight": "700", "letterSpacing": "1.4px",
          "color": _C["muted"], "textTransform": "uppercase",
          "marginBottom": "10px", "fontFamily": _C["font"]}
     if style_extra:
@@ -347,7 +347,7 @@ def _sbs_bar_row(rank, sector, sbs, delta=None, color="#3b82f6", n_stocks=0):
     return html.Div([
         html.Div([
             html.Span(f"{rank:02d}", style={
-                "fontSize": "12px", "color": _C["muted"],
+                "fontSize": "14px", "color": _C["muted"],
                 "fontFamily": _C["font"], "minWidth": "26px", "flexShrink": "0",
             }),
             html.Div([
@@ -356,7 +356,7 @@ def _sbs_bar_row(rank, sector, sbs, delta=None, color="#3b82f6", n_stocks=0):
                     "color": _C["text"], "fontFamily": _C["font"], "lineHeight": "1.2",
                 }),
                 html.Div(sub, style={
-                    "fontSize": "11px", "color": _C["muted"],
+                    "fontSize": "12px", "color": _C["muted"],
                     "fontFamily": _C["font"], "marginTop": "1px",
                 }),
             ], style={"flex": "1", "minWidth": "0", "overflow": "hidden"}),
@@ -729,9 +729,18 @@ def render_breadth_xray(_, exchange, is_open):
                             range(min(5, len(merged))),
                             merged["VNINDEX_Close"].tail(5).values, 1)[0])
 
-                        diverging = (sbs_slope5 < -0.1 and vnx_slope5 >= 0)
-                        div_label = "⚠️ PHÂN KỲ — Tiềm ẩn rủi ro" if diverging else "✓ Đồng thuận (Khỏe)"
-                        div_color = _C["red"] if diverging else _C["green"]
+                        if sbs_slope5 < -0.1 and vnx_slope5 >= 0:
+                            div_label = "⚠️ PHÂN KỲ ÂM — Kéo trụ xả hàng"
+                            div_color = _C["red"]
+                        elif sbs_slope5 > 0.1 and vnx_slope5 <= 0:
+                            div_label = "🌟 PHÂN KỲ DƯƠNG — Dòng tiền gom đáy"
+                            div_color = _C["green"]
+                        elif sbs_slope5 < 0 and vnx_slope5 < 0:
+                            div_label = "📉 ĐỒNG THUẬN GIẢM — Xác nhận Downtrend"
+                            div_color = _C["yellow"]
+                        else:
+                            div_label = "📈 ĐỒNG THUẬN TĂNG — Xác nhận Uptrend"
+                            div_color = _C["green"]
 
                         fig_div = go.Figure()
                         fig_div.add_trace(go.Scatter(
@@ -770,7 +779,7 @@ def render_breadth_xray(_, exchange, is_open):
 
                         chart_right_1 = html.Div([
                             html.Div([
-                                _label("PHÂN KỲ CHỈ SỐ VS DÒNG TIỀN",
+                                _label("PHÂN KỲ: VN-INDEX VS DÒNG TIỀN",
                                        {"marginBottom": "0"}),
                                 html.Span(div_label, style={
                                     "fontSize": "10px", "fontWeight": "700",
@@ -790,19 +799,30 @@ def render_breadth_xray(_, exchange, is_open):
                         watch_sectors = top_sectors + weak_sectors
 
                         fig_lines = go.Figure()
+                        _colors_top  = ["#10b981", "#3b82f6", "#06b6d4"]
+                        _colors_weak = ["#ef4444", "#f97316", "#f43f5e"]
+                        _top_i = _weak_i = 0
                         for sector in watch_sectors:
                             sh = df_hist[df_hist["Sector"] == sector].sort_values("Date")
                             if sh.empty:
                                 continue
-                            is_top  = sector in top_sectors
-                            s_color = _C["green"] if is_top else _C["red"]
+                            is_top = sector in top_sectors
+                            if is_top:
+                                s_color = _colors_top[_top_i % len(_colors_top)]
+                                _top_i += 1
+                                line_cfg = dict(color=s_color, width=2.2)
+                            else:
+                                s_color = _colors_weak[_weak_i % len(_colors_weak)]
+                                _weak_i += 1
+                                line_cfg = dict(color=s_color, width=1.8, dash="dot")
                             fig_lines.add_trace(go.Scatter(
                                 x=sh["Date"], y=sh["SBS"],
                                 name=sector[:18],
-                                line=dict(color=s_color, width=1.2),
-                                opacity=0.85,
+                                line=line_cfg,
+                                opacity=0.9,
                                 hovertemplate=f"{sector}<br>SBS: %{{y:.1f}}<extra></extra>",
                             ))
+                            
                         # Vẽ đường ngưỡng
                         for thr, lbl, tclr in [(65, "Mạnh", "#34d399"),
                                                 (50, "T.Bình", "#f59e0b"),
@@ -832,7 +852,7 @@ def render_breadth_xray(_, exchange, is_open):
                             font=dict(family=_C["font"]),
                         )
                         chart_right_2 = html.Div([
-                            _label("XU HƯỚNG NHÓM DẪN DẮT vs SUY YẾU",
+                            _label("DÒNG TIỀN: NHÓM DẪN DẮT vs SUY YẾU",
                                    {"marginBottom": "8px"}),
                             dcc.Graph(figure=fig_lines,
                                     config={"displayModeBar": False},
@@ -894,7 +914,7 @@ def render_breadth_xray(_, exchange, is_open):
                 ))
                 fig_hm.update_layout(
                     paper_bgcolor=_C["bg"], plot_bgcolor=_C["card"],
-                    margin=dict(l=150, r=60, t=20, b=40),
+                    margin=dict(l=190, r=60, t=20, b=40),
                     height=300,
                     xaxis=dict(tickfont=dict(color=_C["muted"], size=8),
                                showgrid=False, tickangle=-45, nticks=20),
@@ -932,13 +952,19 @@ def render_breadth_xray(_, exchange, is_open):
                     "letterSpacing": "2px", "color": _C["muted"],
                     "padding": "0 14px", "fontFamily": _C["font"],
                 }),
-                html.Button("ⓘ", id="btn-sbs-info", n_clicks=0, style={
-                    "background": "none", "border": f"1px solid {_C['border']}",
-                    "borderRadius": "50%", "color": _C["muted"],
-                    "fontSize": "12px", "width": "22px", "height": "22px",
-                    "cursor": "pointer", "lineHeight": "1",
-                    "padding": "0", "marginLeft": "4px",
+                html.Button([
+                    "ⓘ Đọc Hiểu Dòng Tiền"
+                ], id="btn-sbs-info", n_clicks=0, style={
+                    "background": "rgba(59,130,246,0.10)",
+                    "border": "1px solid rgba(59,130,246,0.35)",
+                    "borderRadius": "12px",
+                    "color": "#3b82f6",
+                    "fontSize": "11px", "fontWeight": "700",
+                    "cursor": "pointer",
+                    "padding": "4px 12px",
                     "fontFamily": _C["font"],
+                    "marginLeft": "8px",
+                    "letterSpacing": "0.3px",
                 }),
             ], style={"display": "flex", "alignItems": "center"}),
             html.Div(style={"flex": "1", "height": "1px",
@@ -1017,8 +1043,14 @@ def render_sector_detail(selected_sector, exchange):
         sbs, clr = row["SBS"], row["SBS_Color"]
 
         # ── Radar 6 cánh — FIXED SIZE để tránh grow loop ─────────────────────
-        categories    = ["% CP > MA50", "% CP > MA200", "A/D 20 Phiên",
-                         "H-L 52 Tuần", "RSI(14) > 50", "Vol Breadth"]
+        categories = [
+            "% CP > MA50",
+            "% CP > MA200",
+            "Lan tỏa đà tăng (A/D)",
+            "Vượt Đỉnh 52 Tuần",
+            "RSI(14) > 50",
+            "Độ rộng Thanh khoản",
+        ]
         values        = [row["P_MA50"], row["P_MA200"], row["AD_20"],
                          row["HL"],     row["RSI_D"],   row["VB_20"]]
         values_closed = values + [values[0]]
@@ -1062,11 +1094,22 @@ def render_sector_detail(selected_sector, exchange):
                 sector_hist = (df_hist[df_hist["Sector"] == selected_sector]
                                .sort_values("Date"))
                 if not sector_hist.empty:
-                    fig_traj = go.Figure(go.Scatter(
+                    sector_hist = sector_hist.copy()
+                    sector_hist["SBS_MA10"] = sector_hist["SBS"].rolling(10, min_periods=3).mean()
+
+                    fig_traj = go.Figure()
+                    fig_traj.add_trace(go.Scatter(
                         x=sector_hist["Date"], y=sector_hist["SBS"],
                         fill="tozeroy", fillcolor="rgba(59,130,246,0.06)",
                         line=dict(color=_C["accent"], width=1.5),
+                        name="SBS",
                         hovertemplate="SBS: %{y:.1f}<extra></extra>",
+                    ))
+                    fig_traj.add_trace(go.Scatter(
+                        x=sector_hist["Date"], y=sector_hist["SBS_MA10"],
+                        line=dict(color="#f59e0b", width=1.5, dash="dash"),
+                        name="MA10",
+                        hovertemplate="MA10: %{y:.1f}<extra></extra>",
                     ))
                     for thr, lbl, tclr in [(65, "Mạnh", "#34d399"),
                                             (50, "T.Bình", "#f59e0b"),
@@ -1081,6 +1124,12 @@ def render_sector_detail(selected_sector, exchange):
                         paper_bgcolor=_C["bg"], plot_bgcolor=_C["card"],
                         margin=dict(l=40, r=20, t=36, b=40),
                         height=240,
+                        showlegend=True,
+                        legend=dict(
+                            orientation="h", x=0, y=1.12,
+                            font=dict(color=_C["muted"], size=9),
+                            bgcolor="rgba(0,0,0,0)",
+                        ),
                         title=dict(
                             text=f"SBS Score — {selected_sector}",
                             font=dict(color=_C["muted"], size=10, family=_C["font"]),
@@ -1108,22 +1157,22 @@ def render_sector_detail(selected_sector, exchange):
         # ── Factor breakdown bars ─────────────────────────────────────────────
         factor_rows = []
         for fname, val, weight in [
-            ("% Cổ phiếu trên MA50",      row["P_MA50"],  "20%"),
-            ("% Cổ phiếu trên MA200",     row["P_MA200"], "20%"),
-            ("A/D Ratio 20 phiên",        row["AD_20"],   "15%"),
-            ("High-Low Index (52w)",      row["HL"],       "15%"),
-            ("RSI(14) Distribution > 50", row["RSI_D"],   "10%"),
-            ("Volume Breadth 20 phiên",   row["VB_20"],   "20%"),
+            ("% CP > MA50",              row["P_MA50"],  "20%"),
+            ("% CP > MA200",             row["P_MA200"], "20%"),
+            ("Lan tỏa đà tăng (A/D)",   row["AD_20"],   "15%"),
+            ("Vượt Đỉnh 52 Tuần",       row["HL"],       "15%"),
+            ("RSI(14) > 50",             row["RSI_D"],   "10%"),
+            ("Độ rộng Thanh khoản",     row["VB_20"],   "20%"),
         ]:
             _, fcol = _sbs_tier(val)
             factor_rows.append(html.Div([
                 html.Div([
                     html.Span(fname, style={
-                        "fontSize": "11px", "color": _C["text"],
+                        "fontSize": "12px", "color": _C["text"],
                         "fontFamily": _C["font"], "flex": "1",
                     }),
                     html.Span(f"w={weight}", style={
-                        "fontSize": "9px", "color": _C["muted"],
+                        "fontSize": "10px", "color": _C["muted"],
                         "fontFamily": _C["font"],
                     }),
                 ], style={"display": "flex", "justifyContent": "space-between",
@@ -1189,6 +1238,11 @@ def render_sector_detail(selected_sector, exchange):
                        {"marginTop": "16px"}),
                 html.Div(badges, style={
                     "display": "flex", "flexWrap": "wrap", "gap": "6px",
+                    "maxHeight": "200px",
+                    "overflowY": "auto",
+                    "padding": "4px",
+                    "borderRadius": "6px",
+                    "border": f"1px solid {_C['border2']}",
                 }),
             ])
 

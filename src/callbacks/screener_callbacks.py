@@ -3700,3 +3700,22 @@ clientside_callback(
 )
 def open_about_vss_modal(n):
     return True if n else no_update
+
+from dash import Input, Output, callback, no_update
+
+# ============================================================
+# CALLBACK: QUY ĐỔI SỐ NAV THÀNH TỶ ĐỒNG TRÊN MODAL
+# ============================================================
+@callback(
+    Output("modal-nav-formatted-display", "children"),
+    Input("modal-nav-input", "value")
+)
+def update_nav_display(nav_val):
+    if nav_val is None or nav_val == "":
+        return "(= 0.00 Tỷ VNĐ)"
+    
+    try:
+        val = float(nav_val)
+        return f"(= {val / 1e9:,.2f} Tỷ VNĐ)"
+    except Exception:
+        return "(Lỗi định dạng)"

@@ -42,6 +42,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from dash import Input, Output, State, no_update, dcc, html
 from src.app_instance import app
 from src.callbacks.quant_pdf_page import _render_quant_page
+import json # Nhớ đảm bảo có import json ở đầu file
 
 # VSS Predictive 2.0 – import quant engine
 try:
@@ -60,6 +61,54 @@ except ImportError:
 from src.backend.data_loader import get_snapshot_df
 
 logger = logging.getLogger(__name__)
+
+# ── Map tên tiếng Việt từ COMP INFO.csv ──────────────────────────────────────
+_VN_NAME_MAP: dict = {}
+
+def _get_vn_name_map() -> dict:
+    global _VN_NAME_MAP
+    if _VN_NAME_MAP:
+        return _VN_NAME_MAP
+    try:
+        import os, pandas as pd
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(
+                       os.path.abspath(__file__))))
+        csv_path = os.path.join(BASE_DIR, "data", "raw", "COMP INFO.csv")
+        if not os.path.exists(csv_path):
+            return {}
+        df_info = pd.read_csv(csv_path, encoding="utf-8-sig")
+        for _, r in df_info.iterrows():
+            sym = str(r.get("symbol", r.get("Ticker", ""))).strip()
+            sym = sym.replace(".HM","").replace(".HN","").replace(".UPCOM","").strip()
+            name = (str(r.get("organ_name", "") or "").strip()
+                    or str(r.get("company_name_vi", "") or "").strip()
+                    or str(r.get("Company Common Name", "") or "").strip())
+            if sym and name and name.lower() not in ("nan","none"):
+                _VN_NAME_MAP[sym] = name
+    except Exception as e:
+        logger.warning(f"[VN name map] {e}")
+    return _VN_NAME_MAP
+
+
+def _company_name(ticker: str, row_dict: dict, max_len: int = 28) -> str:
+    """Trả về tên tiếng Việt nếu có, fallback tiếng Anh, cắt tại ranh giới từ."""
+    vn_map  = _get_vn_name_map()
+
+    # Ưu tiên 1: tên tiếng Việt từ COMP INFO.csv
+    name_vi = vn_map.get(str(ticker).strip(), "")
+
+    # Ưu tiên 2: fallback tiếng Anh từ snapshot
+    name_en = str(row_dict.get("Company Common Name",
+                  row_dict.get("organ_name", "")) or "").strip()
+    if name_en.lower() in ("nan", "none"):
+        name_en = ""
+
+    name = name_vi or name_en or "—"
+
+    if len(name) <= max_len:
+        return name
+    cut = name[:max_len].rsplit(" ", 1)[0]
+    return cut.rstrip(",.-(") + "…"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -219,7 +268,10 @@ MPL_AMBER   = "#F59E0B"
 EXCLUDE_SECTORS_NCN = {"Tài chính","Financial","Financials","Banks","Ngân hàng","Bảo hiểm","Insurance"}
 MIN_LIQUIDITY = 300_000  # 🟢 Tăng gấp 10 lần: Thanh khoản tối thiểu 300k cp/phiên
 # 🟢 THÊM BLACKLIST chặn vĩnh viễn các mã có rủi ro pháp lý/thao túng/thanh khoản ảo
-BLACKLIST_TICKERS = {"TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI"}
+BLACKLIST_TICKERS = {
+    "TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI",
+    "HHS", "TCH", "NVL", "PDR", "HPX", "IBC", "LDG", "QCG", "TTF", "JVC"
+}
 
 
 # ══════════════════════════════════════════════════════════════
@@ -270,32 +322,67 @@ def _bg(c):
     c.setFillColor(C_BG)
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
 
-def _footer(c, page_num, total=3):
+def _footer(c, page_num, total=4):
     # 1. Dải màu trang trí dưới cùng
     c.setFillColor(C_ACCENT)
     c.rect(0, 0, PW * 0.6, 4, fill=1, stroke=0)
     c.setFillColor(C_ACCENT2)
     c.rect(PW * 0.6, 0, PW * 0.4, 4, fill=1, stroke=0)
 
-    # 2. CHÈN CALL-TO-ACTION (LEAD GEN) TRUNG TÂM
+    # =====================================================================
+    # 2. CHÈN CALL-TO-ACTION (LEAD GEN) - GIAO DIỆN NÚT BẤM (BUTTON PILL)
+    # =====================================================================
     url_link = "https://huggingface.co/spaces/preut/VietcapSmartScreener"
-    cta_text = f"🚀 Trải nghiệm tùy biến bộ lọc VSS Live tại: {url_link}"
-    
-    c.setFont("VnFont-Bold", 7.5)
-    c.setFillColor(C_BLUE) # Dùng màu xanh nổi bật để kích thích click
-    c.drawCentredString(PW / 2, 22, cta_text) # Nâng y=22 để tạo không gian
-    
-    # Kỹ thuật quan trọng: Tạo vùng (Box) ẩn có thể click bao quanh đoạn Text
-    cta_width = pdfmetrics.stringWidth(cta_text, "VnFont-Bold", 7.5)
-    rect_x = (PW - cta_width) / 2
-    c.linkURL(url_link, (rect_x, 20, rect_x + cta_width, 30), relative=0)
+    cta_label = "Tự tạo danh mục đầu tư theo gu của bạn tại: "
+    cta_link_text = "VSS Live Web App" # Rút gọn text hiển thị cho sang trọng
 
-    # 3. Disclaimer góc trái (Giữ nguyên)
-    c.setFont("VnFont", 6.5); c.setFillColor(C_GREY)
-    c.drawString(MARGIN, 10, "Vietcap Smart Screener – Báo cáo chỉ mang tính tham khảo (VIP NAV Edition).")
+    # Tính toán kích thước Nút bấm
+    c.setFont("VnFont", 7.5)
+    label_w = pdfmetrics.stringWidth(cta_label, "VnFont", 7.5)
+    c.setFont("VnFont-Bold", 7.5)
+    link_w = pdfmetrics.stringWidth(cta_link_text, "VnFont-Bold", 7.5)
     
-    # 4. Trang / Ngày giờ góc phải (Giữ nguyên)
-    c.drawRightString(PW - MARGIN, 10, f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    box_padding_x = 12
+    box_h = 16
+    box_w = label_w + link_w + (box_padding_x * 2)
+    
+    box_x = (PW - box_w) / 2
+    box_y = 15 # Nâng box lên để không sát mép dưới
+    
+    # 2.1 Vẽ nền Nút bấm (Pill background) - Nền xanh nhạt, viền xanh dương
+    c.setFillColor(colors.HexColor("#EFF1FF"))
+    c.setStrokeColor(colors.HexColor("#C7BFFE"))
+    c.setLineWidth(0.5)
+    c.roundRect(box_x, box_y, box_w, box_h, radius=box_h/2, fill=1, stroke=1)
+    
+    # 2.2 In chữ Label (Màu xám than chuyên nghiệp)
+    text_y = box_y + 4.5 # Căn giữa chữ theo chiều dọc
+    c.setFillColor(colors.HexColor("#374151")) 
+    c.setFont("VnFont", 7.5)
+    c.drawString(box_x + box_padding_x, text_y, cta_label)
+    
+    # 2.3 In chữ Link (Màu xanh dương đậm, Font Bold)
+    c.setFillColor(colors.HexColor("#2563EB")) 
+    c.setFont("VnFont-Bold", 7.5)
+    c.drawString(box_x + box_padding_x + label_w, text_y, cta_link_text)
+    
+    # 2.4 Gạch chân chữ Link (Tạo cảm giác "Có thể Click" của giao diện Web)
+    c.setStrokeColor(colors.HexColor("#2563EB"))
+    c.setLineWidth(0.5)
+    c.line(box_x + box_padding_x + label_w, text_y - 1, 
+           box_x + box_padding_x + label_w + link_w, text_y - 1)
+
+    # 2.5 Tạo vùng Click Box bọc toàn bộ Nút bấm
+    c.linkURL(url_link, (box_x, box_y, box_x + box_w, box_y + box_h), relative=0)
+
+    # =====================================================================
+    # 3. Disclaimer và Phân trang
+    # =====================================================================
+    c.setFont("VnFont", 6.5)
+    c.setFillColor(colors.HexColor("#9CA3AF")) # Chuyển màu xám mờ để tập trung mắt vào CTA
+    c.drawString(MARGIN, 8, "Vietcap Smart Screener – Báo cáo VIP NAV Edition.")
+    
+    c.drawRightString(PW - MARGIN, 8, f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
 def _draw_vgm_badge(c, x, y, w, h, grade):
     grade  = str(grade).strip().upper()
@@ -390,7 +477,8 @@ def _ai_box(c, text, x, y, w,
     FONT_AI  = 7.5
     LINE_H   = 11.5
     MAX_W    = w - 28
-
+    text = str(text).strip()
+    
     def _wrap(txt):
         words = txt.split()
         wrapped, cur = [], ""
@@ -412,8 +500,9 @@ def _ai_box(c, text, x, y, w,
     while wrapped_lines and wrapped_lines[-1] is None:
         wrapped_lines.pop()
 
-    content_h = len(wrapped_lines) * LINE_H
-    ai_h = 20 + content_h + 10  # badge 20 + content + padding bottom
+    # 🟢 SỬA Ở ĐÂY: Tính toán chiều cao chính xác (Dòng chữ = 11.5pt, Khoảng ngắt ý = 4pt)
+    content_h = sum(LINE_H if line is not None else 4 for line in wrapped_lines)
+    ai_h = 26 + content_h + 8  # 26 là khoảng trống phía trên (chứa badge), 8 là padding ôm sát đáy
 
     # Shadow
     c.setFillColor(colors.HexColor("#D8E8F2"))
@@ -931,26 +1020,34 @@ def _chart_vgm_radar_or_bar(df: pd.DataFrame):
 
 
 # ============================================================
-# AI SUMMARY (Gemini) – JSON format 3 keys (VIP CLIENT MINDSET)
+# AI SUMMARY (Gemini) – JSON format 4 keys (VIP CLIENT MINDSET)
+# ============================================================
+import json
+
+# ============================================================
+# AI SUMMARY (Gemini) – JSON format 3 keys (VIP CLIENT MINDSET - 4 BULLETS/KEY)
 # ============================================================
 def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
                     strategy_label: str = "Phong Thu") -> dict:
-    # 1. Cập nhật Default Fallback sang văn phong "Thực chiến - Khách VIP"
+    # 1. Cập nhật Default Fallback: THÊM Ý THỨ 4 CHO MỖI MỤC
     default = {
         "market": (
             "- Ưu tiên bảo toàn vốn lên hàng đầu trong bối cảnh vĩ mô biến động.\n"
             "- Dòng tiền hoạt động kinh doanh (CFO) dương liên tục là bộ lọc thép để loại bỏ lợi nhuận ảo.\n"
-            "- Phân bổ trọng tâm vào nhóm doanh nghiệp chia cổ tức tiền mặt đều đặn, không pha loãng vốn."
+            "- Phân bổ trọng tâm vào nhóm doanh nghiệp chia cổ tức tiền mặt đều đặn, không pha loãng vốn.\n"
+            "- Khuyến nghị: Duy trì tỷ trọng tiền mặt dự phòng 15-20% để sẵn sàng gom hàng khi thị trường rung lắc." # <== Ý 4
         ),
         "valuation": (
             "- P/E trung bình danh mục được ép chặt, loại bỏ hoàn toàn bẫy định giá đắt.\n"
             "- Tỷ suất cổ tức cao đóng vai trò là 'tấm đệm an toàn' (Yield Cushion) bảo vệ NAV.\n"
-            "- Lợi thế cạnh tranh được chứng minh bằng ROE thực, không đến từ đòn bẩy D/E."
+            "- Lợi thế cạnh tranh được chứng minh bằng ROE thực, không đến từ đòn bẩy D/E.\n"
+            "- Hành động: Kiên nhẫn chờ đợi cổ phiếu điều chỉnh về vùng mua an toàn, tuyệt đối không FOMO mua đuổi." # <== Ý 4
         ),
         "risk": (
             "- Rủi ro kẹp thanh khoản là án tử với NAV lớn, tuyệt đối né các mã có Vol < 500,000 cp/phiên.\n"
             "- Các mã có tỷ lệ D/E > 1.5x đang bị cảnh báo đỏ (Red Flags), cần cơ cấu giảm tỷ trọng.\n"
-            "- Kỷ luật thiết lập vùng cắt lỗ và đứng ngoài các game thao túng giá."
+            "- Đứng ngoài các game thao túng giá, tập trung vào tài sản có tính minh bạch cao.\n"
+            "- Kỷ luật: Tuân thủ chặt chẽ các mốc cắt lỗ tự động để bảo vệ tài khoản khỏi những sự cố bất ngờ." # <== Ý 4
         ),
     }
     
@@ -967,7 +1064,7 @@ def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
         avg_de  = df_top["D/E"].dropna().mean()     if "D/E"     in df_top.columns else None
         ncn_str = ", ".join(ncn_tickers[:3]) if ncn_tickers else "N/A"
         
-        # 3. Ép số liệu thực tế của Top 3 Pick vào chuỗi String
+        # 3. Ép số liệu thực tế
         top3_stats_str = "N/A"
         if ncn_tickers and "Ticker" in df_top.columns:
             df_top3 = df_top[df_top["Ticker"].isin(ncn_tickers[:3])]
@@ -976,39 +1073,63 @@ def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
                 tk = row.get("Ticker", "")
                 pe = row.get("P/E", 0)
                 roe = row.get("ROE (%)", 0)
-                # Dùng get() có giá trị mặc định để tránh lỗi nếu DF chưa có cột này
                 cfo = row.get("CFO", "Dương") 
                 div = row.get("Dividend_Yield", ">5%")
                 stats_list.append(f"{tk} (P/E:{pe:.1f}, ROE:{roe:.1f}%, Cổ tức:{div}, CFO:{cfo})")
             top3_stats_str = " | ".join(stats_list)
 
-        # 4. Kỹ thuật Prompt Engineering (Ép Role + Đưa Constraint)
+        # 4. Prompt Engineering: Yêu cầu AI viết 4 gạch đầu dòng và cấm text rác
         prompt = f"""Đóng vai trò là Giám đốc Tư vấn Đầu tư cấp cao tại Vietcap, đang thuyết trình cho tệp khách VIP (NAV > 50 tỷ).
 Chiến lược hiện tại: [{strategy_label}]. Triết lý: Lợi nhuận có thể là giả, nhưng dòng tiền (CFO) phải là thật.
 Dữ liệu tổng quan: P/E TB: {f'{avg_pe:.1f}' if avg_pe else 'N/A'}x, ROE TB: {f'{avg_roe:.1f}' if avg_roe else 'N/A'}%, D/E TB: {f'{avg_de:.2f}' if avg_de else 'N/A'}x.
 Dữ liệu Top 3 Phòng Thủ: {top3_stats_str}.
 
-Yêu cầu: Viết BẰNG TIẾNG VIỆT CÓ DẤU, giọng văn thực chiến, sắc bén, dứt khoát. TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON:
+Yêu cầu: Viết BẰNG TIẾNG VIỆT CÓ DẤU, giọng văn thực chiến, sắc bén, dứt khoát.
+
+QUAN TRỌNG NHẤT BẮT BUỘC PHẢI TUÂN THỦ:
+1. TRẢ VỀ DUY NHẤT MỘT OBJECT JSON.
+2. KHÔNG BAO GIỜ thêm các câu giao tiếp như "Dưới đây là...", "Tuyệt vời!".
+3. KHÔNG sử dụng thẻ markdown (như ```json hay ```).
+
+TRẢ VỀ ĐÚNG ĐỊNH DẠNG OBJECT JSON NHƯ SAU (Bắt buộc phải có 3 keys, mỗi key phải có đúng 4 gạch đầu dòng):
 {{
-  "market": "- (Viết 3 gạch đầu dòng, mỗi gạch dưới 25 chữ, đánh giá vĩ mô và nhấn mạnh tầm quan trọng của việc bảo toàn vốn và dòng tiền CFO dương lúc này)",
-  "valuation": "- (Viết 3 gạch đầu dòng, BẮT BUỘC đưa số liệu P/E, ROE, Cổ tức của các mã {ncn_str} vào để chứng minh đây là tấm đệm an toàn tuyệt đối cho NAV lớn)",
-  "risk": "- (Viết 3 gạch đầu dòng, chỉ ra rủi ro thanh khoản yếu hoặc đòn bẩy D/E cao ở các mã rác, và khẳng định rổ danh mục này đã chặn đứng rủi ro đó ra sao)"
+  "market": "- (Viết 4 gạch đầu dòng, mỗi gạch dưới 25 chữ. 3 ý đầu đánh giá vĩ mô/bảo toàn vốn, ý 4 đưa ra lời khuyên tỷ trọng nắm giữ tiền mặt dự phòng hợp lý)",
+  "valuation": "- (Viết 4 gạch đầu dòng. 3 ý đầu BẮT BUỘC dùng số liệu P/E, ROE, Cổ tức của {ncn_str} làm dẫn chứng, ý 4 khuyên khách hàng kiên nhẫn chờ điểm mua an toàn, không FOMO)",
+  "risk": "- (Viết 4 gạch đầu dòng. 3 ý đầu chỉ ra rủi ro thanh khoản yếu/đòn bẩy D/E cao ở các mã rác, ý 4 chốt lại kỷ luật tuân thủ vùng cắt lỗ tự động)"
 }}"""
         
-        # 5. Parsing & Error Handling
-        resp = model.generate_content(prompt).text.strip()
-        resp = resp.replace("```json","").replace("```","").strip()
-        parsed = json.loads(resp)
+        # 5. Parsing & Error Handling (Bộ giáp chống lỗi "Tuyệt vời! Dưới đây là...")
+        raw  = model.generate_content(prompt).text or ""
+        
+        # Tiền xử lý: Cắt gọt text rác
+        cleaned_text = raw.replace("```json", "").replace("```", "").strip()
+        start_idx = cleaned_text.find('{')
+        end_idx = cleaned_text.rfind('}')
+        
+        if start_idx != -1 and end_idx != -1:
+            cleaned_text = cleaned_text[start_idx:end_idx+1]
+        else:
+            cleaned_text = "" 
+
+        if not cleaned_text or not cleaned_text.startswith("{"):
+            logger.warning(f"Gemini trả về text không hợp lệ. Raw: {repr(raw[:80])}")
+            return default
+
+        # Bóc tách JSON
+        parsed = json.loads(cleaned_text)
         
         for k in ("market", "valuation", "risk"):
             if k not in parsed or not parsed[k]:
                 parsed[k] = default[k]
+                
         return parsed
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Lỗi JSON Decode từ Gemini: {e}. Cleaned text: {cleaned_text}")
+        return default
     except Exception as e:
         logger.warning(f"Gemini API Error/Skip: {e}")
         return default
-
 
 # ══════════════════════════════════════════════════════════════
 # DETECT STRATEGY
@@ -1080,7 +1201,7 @@ def _prepare_main_table(df: pd.DataFrame, max_rows: int = 20, red_flags: set = N
         df = df.sort_values("_sort").drop(columns=["_sort"])
     for _, r in df.head(max_rows).iterrows():
         ticker  = str(r.get("Ticker","—"))
-        company = str(r.get("Company Common Name", r.get("organ_name","")) or "")[:22]
+        company = _company_name(ticker, r.to_dict(), max_len=30)
         vgm     = str(r.get("VGM Score","—")).strip().upper()
         price   = r.get("Price Close")
         target, stoploss = _calc_target_stoploss(price, r.get("SMA20"), r.get("SMA50"))
@@ -1124,7 +1245,7 @@ def _prepare_ncn_rows(df: pd.DataFrame, top_n: int = 3, red_flags: set = None) -
             _, stoploss = _calc_target_stoploss(price, r.get("SMA20"), r.get("SMA50"))
             rows.append({
                 "ticker":   str(r.get("Ticker","—")),
-                "company":  str(r.get("Company Common Name","") or "")[:20],
+                "company":  _company_name(str(r.get("Ticker","—")), r.to_dict(), max_len=26),
                 "exchange": str(r.get("Exchange","") or "")[:5],
                 "vgm":      str(r.get("VGM Score","—")),
                 "roe":      _sv(r.get("ROE (%)"), "dec1", "%"),
@@ -1140,6 +1261,7 @@ def _prepare_flag_rows(df: pd.DataFrame, max_flags: int = 12) -> list:
     seen = set()
     def _action(reason):
         if "D/E"      in reason: return "Giảm tỷ trọng, kiểm tra nợ vay"
+        if "P/E <"    in reason: return "Nghi ngờ xào nấu BCTC" # Thêm dòng này
         if "P/E"      in reason: return "Hạn chế mua đuổi, chờ điều chỉnh"
         if "RSI"      in reason: return "Tránh mua đuổi, đặt stop-loss"
         if "Momentum" in reason: return "Theo dõi, chưa vào thêm"
@@ -1161,8 +1283,9 @@ def _prepare_flag_rows(df: pd.DataFrame, max_flags: int = 12) -> list:
         except: pass
         try:
             pe = float(r.get("P/E")) if pd.notnull(r.get("P/E")) else None
-            if pe and pe > 30:
-                flags_pe.append((ticker,"P/E cao",f"{pe:.1f}x","≤30x","(!) Định giá đắt",_action("P/E")))
+            # 🟢 FIX: Bắt bẫy giá trị (Value Trap) khi P/E quá thấp một cách vô lý
+            if pe and 0 < pe < 3.5:
+                flags_pe.append((ticker, "P/E < 3.5x", f"{pe:.1f}x", "> 5.0x", "(!) Lợi nhuận đột biến", "Tránh bẫy giá trị, soi LN khác"))
                 seen.add(ticker); continue
         except: pass
         try:
@@ -1320,7 +1443,7 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
                  accent_color=C_PURPLE,
                  badge_label="Gemini 2.5 Flash Lite",
                  badge_color=C_PURPLE)
-    y0 -= 12
+    y0 -= 13
 
     # ── Bảng Danh Mục Chính ──
     n_show = min(stats["display"], 20)
@@ -1331,7 +1454,7 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
     col_props = [
         ("VGM",        0.050),
         ("Mã CK",      0.080),
-        ("Tên công ty",0.178),
+        ("Tên công ty",0.218),
         ("Khuyến nghị",0.118),
         ("Vùng mua",   0.145),
         ("Cắt lỗ",     0.100),
@@ -1350,7 +1473,7 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
 
     if table_rows:
         _table_draw(c, main_hdrs, table_rows, MARGIN, y0, main_widths,
-                    row_h=row_h, hdr_h=hdr_h, font_sz=7.0,
+                    row_h=row_h, hdr_h=hdr_h, font_sz=6.8,
                     right_cols={6,7}, center_cols={3}, vgm_col_idx=0)
     else:
         c.setFont("VnFont", 9); c.setFillColor(C_GREY)
@@ -1385,7 +1508,39 @@ def _render_page2(c, df_top, ncn_tickers, ai_texts):
     y0 -= 13
 
     # Scatter full-width
-    _sec_title(c, "Định Vị P/E vs ROE  (◆ = Defensive Pick)", MARGIN, y0)
+    # 1. Vẽ tiêu đề chính (Cắt bỏ đoạn text bị lỗi ở phía sau)
+    _sec_title(c, "Định Vị P/E vs ROE", MARGIN, y0)
+
+    # 2. Tính toán khoảng cách để vẽ phần Legend (Chú thích) ngay sau tiêu đề
+    # Tính chiều rộng chữ tiêu đề để biết chỗ bắt đầu vẽ tiếp
+    title_w = pdfmetrics.stringWidth("Định Vị P/E vs ROE", "VnFont-Bold", 9)
+    legend_x = MARGIN + title_w + 12
+    
+    # Vẽ dấu ngoặc đơn mở
+    c.setFont("VnFont", 7.5)
+    c.setFillColor(colors.HexColor("#5A7A99")) # Màu xám cho chữ chú thích
+    c.drawString(legend_x, y0, "(")
+    
+    # 3. VẼ HÌNH THOI (DIAMOND) MÀU XANH BẰNG TỌA ĐỘ
+    dia_x = legend_x + 9  # Tọa độ X tâm hình thoi
+    dia_y = y0 + 2.5      # Tọa độ Y tâm hình thoi
+    dia_r = 2.5           # Bán kính (Kích thước) hình thoi
+    
+    c.setFillColor(colors.HexColor("#1B7A4A")) # Màu C_GREEN
+    # Dùng công cụ Path của ReportLab để vẽ đa giác
+    p = c.beginPath()
+    p.moveTo(dia_x, dia_y + dia_r)    # Điểm 1: Đỉnh trên
+    p.lineTo(dia_x + dia_r, dia_y)    # Điểm 2: Đỉnh phải
+    p.lineTo(dia_x, dia_y - dia_r)    # Điểm 3: Đỉnh dưới
+    p.lineTo(dia_x - dia_r, dia_y)    # Điểm 4: Đỉnh trái
+    p.close()                         # Nối điểm cuối về điểm đầu
+    
+    # Tô màu và in ra PDF
+    c.drawPath(p, fill=1, stroke=0)
+    
+    # 4. Vẽ nốt đoạn chữ còn lại
+    c.setFillColor(colors.HexColor("#5A7A99")) # Đổi lại màu xám
+    c.drawString(dia_x + 6, y0, "= Defensive Pick )")
     y0 -= 10
     scatter_h = 268
     fig_scatter = _chart_scatter_pe_roe(df_top, highlight_tickers=ncn_tickers)
@@ -1497,14 +1652,15 @@ def _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts):
         y0 -= info_h + 6
 
         ncn_prop = [
-            ("Mã",0.13),("Tên",0.30),("Sàn",0.10),
-            ("VGM",0.10),("ROE",0.13),("P/E",0.11),("Cắt lỗ",0.13),
+            ("Mã",0.11),("Tên công ty",0.34),("Sàn",0.08),
+            ("VGM",0.09),("ROE",0.12),("P/E",0.10),("Cắt lỗ",0.16),
         ]
         tot_n   = sum(p for _,p in ncn_prop)
         ncn_w   = [CW * p / tot_n for _,p in ncn_prop]
         ncn_hdr = [h for h,_ in ncn_prop]
         ncn_data = [[
-            r["ticker"], r["company"][:24], r["exchange"],
+            r["ticker"], r["company"],   # đã cắt đúng trong _prepare_ncn_rows
+            r["exchange"],
             r["vgm"], r["roe"], r["pe"], r["stoploss"]
         ] for r in ncn_rows]
         _table_draw(c, ncn_hdr, ncn_data, MARGIN, y0, ncn_w,
@@ -1614,7 +1770,7 @@ def _modal_ncn_table(row_data: list):
                 style=col_style,
             ),
             html.Td(
-                str(r.get("company", "—"))[:22],
+                str(r.get("company", "—")),
                 style={**col_style, "color": "#c9d1d9"}, # Chữ trắng xám
             ),
             html.Td(
@@ -1813,7 +1969,10 @@ def generate_screener_pdf(
     
     if not df.empty:
         # 1. CHẶN BLACKLIST VĨNH VIỄN (Loại bỏ hàng rác, dính án)
-        BLACKLIST_TICKERS = {"TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI"}
+        BLACKLIST_TICKERS = {
+            "TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI",
+            "HHS", "TCH", "NVL", "PDR", "HPX", "IBC", "LDG", "QCG", "TTF", "JVC"
+        }
         if "Ticker" in df.columns:
             df = df[~df["Ticker"].isin(BLACKLIST_TICKERS)]
             
@@ -1871,16 +2030,20 @@ def generate_screener_pdf(
 
     strategy_label, strategy_title = _detect_strategy(active_filters)
     
-    # 5. GỌI RED FLAGS TRƯỚC ĐỂ LÀM BỘ LỌC ĐẦU VÀO CHO CÁC HÀM SAU (Xóa đoạn gọi bị lặp)
+    # ============================================================
+    # 🟢 FIX LUỒNG DỮ LIỆU ĐỒNG BỘ (ORDER OF EXECUTION)
+    # ============================================================
+    
+    # Bước 1: Quét và lập danh sách Red Flags (Cảnh báo rủi ro) trước
     flag_rows = _prepare_flag_rows(df_top, max_flags=12)
-    # Lấy danh sách các mã dính cờ đỏ (row[0] chính là Ticker)
-    red_flag_tickers = {row[0] for row in flag_rows} 
+    red_flag_tickers = {row[0] for row in flag_rows} # Trích xuất các Ticker dính cờ đỏ
 
-    # Truyền Red Flags vào bảng Phòng thủ để cấm cửa mã xấu
+    # Bước 2: Truyền Red Flags vào hàm lọc danh mục Phòng thủ (NCN) 
+    # để chặn đứng không cho các mã xấu lọt vào Top khuyến nghị
     ncn_rows = _prepare_ncn_rows(df, top_n=3, red_flags=red_flag_tickers)
     ncn_tickers = [r["ticker"] for r in ncn_rows]
 
-    # VSS Predictive 2.0 – chạy Markowitz + Monte Carlo
+    # Bước 3: Đẩy danh sách đã sạch rủi ro vào lõi tối ưu hóa Markowitz
     qr = None
     if _QUANT_AVAILABLE and ncn_rows:
         try:
@@ -1890,12 +2053,11 @@ def generate_screener_pdf(
                 target_month=datetime.now().month,
                 max_picks=min(5, len(ncn_rows)),
             )
-            logger.info(f"[Quant] Pipeline status: {qr.status}")
         except Exception as _qe:
-            logger.warning(f"[Quant] Pipeline skip: {_qe}")
-            qr = None
-    
-    # CHỈ GỌI AI ĐÚNG 1 LẦN DUY NHẤT ĐỂ TRÁNH LAG API
+            logger.warning(f"❌ Lỗi tối ưu hóa danh mục PDF: {_qe}")
+
+    # Bước 4: Chỉ gọi AI Gemini ĐÚNG 1 LẦN để nhận xét dựa trên danh mục đã tối ưu
+    # Tránh việc gọi lặp đi lặp lại làm giảm tốc độ xuất file
     ai_texts = _gemini_summary(df_top, ncn_tickers, strategy_label)
 
     # 6. HIỂN THỊ THAM SỐ LỌC
@@ -2014,12 +2176,10 @@ def compute_mc_preview(toggle_on, row_data, nav_raw):
         return {"display": "none"}, []
 
     # Parse NAV
-    nav = 1_000_000_000.0
     try:
-        if nav_raw:
-            nav = max(100_000_000.0, float(nav_raw))
+        nav = max(100_000_000.0, float(nav_raw)) if nav_raw not in (None, "") else 1_000_000_000.0
     except Exception:
-        pass
+        nav = 1_000_000_000.0
 
     # Chạy pipeline nếu có module
     if not _QUANT_AVAILABLE or not row_data:
@@ -2080,12 +2240,10 @@ def download_pdf_from_modal(n_clicks, row_data, active_filters,
     if not row_data:
         return no_update, "⚠️ Bảng đang trống"
 
-    nav = 1_000_000_000.0
     try:
-        if nav_raw:
-            nav = max(100_000_000.0, float(nav_raw))
+        nav = max(100_000_000.0, float(nav_raw)) if nav_raw not in (None, "") else 1_000_000_000.0
     except Exception:
-        pass
+        nav = 1_000_000_000.0
 
     try:
         # use_quant=True → PDF có trang Monte Carlo

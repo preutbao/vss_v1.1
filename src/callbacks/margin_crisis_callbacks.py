@@ -25,8 +25,44 @@ from dash import (
 from src.app_instance import app
 import dash_bootstrap_components as dbc
 import logging
+import math
 
 logger = logging.getLogger(__name__)
+
+def _safe_float(v, default=0.0):
+    try:
+        f = float(v)
+        return default if math.isnan(f) or math.isinf(f) else f
+    except (TypeError, ValueError):
+        return default
+
+def _safe_int(v, default=0):
+    try:
+        f = float(v)
+        return default if math.isnan(f) or math.isinf(f) else int(f)
+    except (TypeError, ValueError):
+        return default
+
+# ─── HELPER: Giá tham chiếu + biên độ theo sàn ──────────────────────────────
+def _get_ref_and_band(ticker: str):
+    try:
+        from src.backend.data_loader import get_snapshot_df
+        df  = get_snapshot_df()
+        row = df[df["Ticker"] == ticker]
+        if row.empty:
+            return None, 15, "?"
+        r    = row.iloc[0]
+        ref  = float(r.get("Price Close") or 0)
+        exch = str(r.get("Exchange", "") or "").upper().strip()
+        if exch == "HOSE":
+            band, label = 7,  "HOSE ±7%"
+        elif exch == "HNX":
+            band, label = 10, "HNX ±10%"
+        else:
+            band, label = 15, "UPCOM ±15%"
+        return ref if ref > 0 else None, band, label
+    except Exception:
+        return None, 15, "?"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONSTANTS
@@ -186,6 +222,11 @@ def _build_tab1():
                     html.Div([
                         _label("Giá vốn (VND)"),
                         _input("crisis-cost-input", "VD: 35000", width="100%"),
+                        # ← THÊM DIV NÀY — hiển thị autofill info + cảnh báo biên độ
+                        html.Div(
+                            id="crisis-price-warning",
+                            style={"fontSize": "10px", "marginTop": "3px", "display": "none"},
+                        ),
                     ], style={"flex": "2"}),
                 ], style={"display": "flex", "gap": "10px", "marginBottom": "10px"}),
 
@@ -460,6 +501,84 @@ def open_crisis_modal(n):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# CALLBACK: Autofill giá đóng cửa khi chọn mã + cảnh báo biên độ
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.callback(
+    Output("crisis-cost-input",    "value",       allow_duplicate=True),
+    Output("crisis-cost-input",    "placeholder"),
+    Output("crisis-price-warning", "children"),
+    Output("crisis-price-warning", "style"),
+    Input("crisis-ticker-input",   "value"),
+    prevent_initial_call=True,
+)
+def autofill_crisis_price(ticker):
+    _hide      = {"fontSize": "10px", "marginTop": "3px", "display": "none"}
+    _show_ok   = {"fontSize": "10px", "color": "#10b981",
+                  "marginTop": "3px", "display": "block"}
+
+    if not ticker:
+        return no_update, "Giá vốn (VND)", "", _hide
+
+    ref, band, label = _get_ref_and_band(ticker)
+    if ref is None:
+        return no_update, "Giá vốn (VND)", "", _hide
+
+    placeholder = f"Tham chiếu: {ref:,.0f} | Sàn {label}"
+    info        = f"✓ Giá đóng cửa phiên gần nhất: {ref:,.0f} VNĐ  ·  {label}"
+    return round(ref), placeholder, info, _show_ok
+
+
+@app.callback(
+    Output("crisis-price-warning", "children",  allow_duplicate=True),
+    Output("crisis-price-warning", "style",     allow_duplicate=True),
+    Input("crisis-cost-input",     "value"),
+    State("crisis-ticker-input",   "value"),
+    prevent_initial_call=True,
+)
+def validate_crisis_price(price_val, ticker):
+    _hide      = {"fontSize": "10px", "marginTop": "3px", "display": "none"}
+    _show_ok   = {"fontSize": "10px", "color": "#10b981",
+                  "marginTop": "3px", "display": "block"}
+    _show_warn = {"fontSize": "10px", "color": "#f59e0b",
+                  "marginTop": "3px", "display": "block", "fontWeight": "600"}
+    _show_err  = {"fontSize": "10px", "color": "#ef4444",
+                  "marginTop": "3px", "display": "block", "fontWeight": "700"}
+
+    if not ticker or price_val is None:
+        return "", _hide
+
+    ref, band, label = _get_ref_and_band(ticker)
+    if ref is None or ref <= 0:
+        return "", _hide
+
+    try:
+        ratio   = float(price_val) / ref
+        dev_pct = (ratio - 1) * 100
+        ceil    = ref * (1 + band / 100)
+        floor   = ref * (1 - band / 100)
+
+        if float(price_val) > ceil:
+            return (
+                f"🚫 VƯỢT BIÊN ĐỘ {label}: Trần = {ceil:,.0f} VNĐ. "
+                f"Lệnh ATC/MP sẽ bị từ chối.",
+                _show_err,
+            )
+        if float(price_val) < floor:
+            return (
+                f"🚫 VƯỢT BIÊN ĐỘ {label}: Sàn = {floor:,.0f} VNĐ. "
+                f"Lệnh ATC/MP sẽ bị từ chối.",
+                _show_err,
+            )
+        if dev_pct > 3:
+            return f"⚠ Giá vốn cao hơn giá HT {dev_pct:.1f}% — đang lỗ", _show_warn
+        if dev_pct < -3:
+            return f"⚠ Giá vốn thấp hơn giá HT {abs(dev_pct):.1f}% — đang lời", _show_ok
+        return f"✓ Trong biên độ {label} · Tham chiếu {ref:,.0f}", _show_ok
+    except Exception:
+        return "", _hide
+
+# ─────────────────────────────────────────────────────────────────────────────
 # CALLBACK: Hiển thị số tiền vay tự động khi nhập qty + giá + tỷ lệ margin
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -644,13 +763,13 @@ def render_positions_table(store):
         if df_snap is not None and not df_snap.empty:
             for _, row in df_snap.iterrows():
                 t = str(row.get("Ticker", ""))
-                price_map[t]       = float(row.get("Price Close", 0) or 0)
-                perf1w_map[t]      = float(row.get("Perf_1W", 0) or 0)
-                vgm_map[t]         = str(row.get("VGM Score", "F") or "F")
-                vol_sma20_map[t]   = float(row.get("Vol_vs_SMA20", 1) or 1)
-                avg_vol_map[t]     = float(row.get("Avg_Vol_20D", 0) or 0)
-                consec_down_map[t] = int(row.get("Consec_Down", 0) or 0)
-                canslim_map[t]     = int(row.get("CANSLIM Score", 0) or 0)
+                price_map[t]       = _safe_float(row.get("Price Close"), 0.0)
+                perf1w_map[t]      = _safe_float(row.get("Perf_1W"),     0.0)
+                vgm_map[t]         = str(row.get("VGM Score") or "F").strip() or "F"
+                vol_sma20_map[t]   = _safe_float(row.get("Vol_vs_SMA20"), 1.0)
+                avg_vol_map[t]     = _safe_float(row.get("Avg_Vol_20D"),  0.0)
+                consec_down_map[t] = _safe_int(row.get("Consec_Down"),   0)
+                canslim_map[t]     = _safe_int(row.get("CANSLIM Score"), 0)
     except Exception as e:
         logger.warning(f"[Crisis] Snapshot load error: {e}")
 
@@ -902,13 +1021,13 @@ def run_stress_test(n, store, target_rtt, scenario, action_mode):
             for _, row in df_snap.iterrows():
                 t = str(row.get("Ticker", ""))
                 snap_data[t] = {
-                    "price":        float(row.get("Price Close", 0) or 0),
-                    "perf_1w":      float(row.get("Perf_1W", 0) or 0),
-                    "vgm":          str(row.get("VGM Score", "F") or "F"),
-                    "canslim":      int(row.get("CANSLIM Score", 0) or 0),
-                    "vol_sma20":    float(row.get("Vol_vs_SMA20", 1) or 1),
-                    "avg_vol":      float(row.get("Avg_Vol_20D", 0) or 0),
-                    "consec_down":  int(row.get("Consec_Down", 0) or 0),
+                    "price":       _safe_float(row.get("Price Close"), 0.0),
+                    "perf_1w":     _safe_float(row.get("Perf_1W"),     0.0),
+                    "vgm":         str(row.get("VGM Score") or "F").strip() or "F",
+                    "canslim":     _safe_int(row.get("CANSLIM Score"), 0),
+                    "vol_sma20":   _safe_float(row.get("Vol_vs_SMA20"), 1.0),
+                    "avg_vol":     _safe_float(row.get("Avg_Vol_20D"),  0.0),
+                    "consec_down": _safe_int(row.get("Consec_Down"),   0),
                 }
     except Exception as e:
         logger.error(f"[Crisis StressTest] Snapshot error: {e}")

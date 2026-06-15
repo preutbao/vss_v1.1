@@ -977,7 +977,7 @@ def trigger_vinance_popup(grid_data, nav_str, current_style):
         ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", 
                   "fontWeight": "700", "color": "#38bdf8", "marginBottom": "8px", "fontSize": "14px"}),
         
-        html.Div(f"💰 Vốn khả dụng: {nav:,.0f} đ", style={"fontSize": "11px", "color": "#94a3b8", "marginBottom": "6px"})
+        html.Div(f"💰 Vốn: {nav:,.0f} đ", style={"fontSize": "11px", "color": "#94a3b8", "marginBottom": "6px"})
     ]
     
     for item in allocations:

@@ -427,7 +427,7 @@ def _step3_layout():
                          "value": "beginner"},
                         {"label": "Ưu tiên cổ phiếu trả cổ tức đều đặn",
                          "value": "prefer_dividend"},
-                        {"label": "Tránh cổ phiếu ngân hàng / bất động sản",
+                        {"label": "Tránh cổ phiếu ngân hàng / BDS",
                          "value": "avoid_bank_re"},
                         {"label": "Ưu tiên doanh nghiệp có quản trị tốt (ESG)",
                          "value": "prefer_esg"},

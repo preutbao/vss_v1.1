@@ -886,7 +886,7 @@ layout = html.Div(
                             }
                         ),
                         dbc.Tooltip(
-                            "Nhập số tiền đầu tư. Hệ thống sẽ tự loại bỏ các cổ phiếu có thị giá quá cao (không đủ mua 1 lô 100 cổ) và AI sẽ gợi ý phân bổ vốn tối ưu.",
+                            "Nhập số tiền đầu tư. Hệ thống sẽ tự loại bỏ các cổ phiếu có thị giá quá cao (không đủ mua 1 lô 100 cổ) và gợi ý phân bổ vốn tối ưu.",
                             target="nav-wrapper", placement="bottom",
                             className="cyber-theme-tooltip"
                         )
