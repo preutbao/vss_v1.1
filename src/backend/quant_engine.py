@@ -1642,7 +1642,8 @@ def calculate_sbs_snapshot(df_snap, df_price,
     df["_vb"]       = df["_vb"].fillna(50)
 
     # ── Tính SBS theo ngành (groupby vectorized) ──────────────────────────────
-    def sbs_for_group(g):
+    # 🟢 THÊM **kwargs để hứng các tham số dư thừa do Pandas phiên bản cũ nhả ra
+    def sbs_for_group(g, **kwargs):
         n        = len(g)
         p_ma50   = g["_above_ma50"].mean()  * 100
         p_ma200  = g["_above_ma200"].mean() * 100
