@@ -92,5 +92,5 @@ def click_trending_chip(n1, n2, n3, n4):
         raise PreventUpdate
     
     button_id = ctx.triggered_id
-    ticker = button_id.split("-")[-1] # Lấy đuôi FPT, VIC...
+    ticker = button_id.split("-")[-1]  # Lấy đuôi FPT, VIC...
     return ticker

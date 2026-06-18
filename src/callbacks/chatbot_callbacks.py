@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 from dash import Input, Output, State, html, dcc, no_update, callback_context, ALL, clientside_callback
 from src.app_instance import app
-import google.generativeai as genai
+# import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,10 @@ def _call_gemini(messages: list, stock_context: dict = None, screener_context: s
         return "⚠️ Chưa cấu hình GEMINI_API_KEY."
 
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
     except ImportError:
-        return "❌ Chưa cài google-generativeai. Chạy: pip install google-generativeai"
+        return "❌ Chưa cài google-genai. Chạy: pip install google-genai"
 
     # ── Xây dựng system prompt ──
     system_text = VINANCE_SYSTEM_PROMPT
@@ -107,27 +108,28 @@ def _call_gemini(messages: list, stock_context: dict = None, screener_context: s
         return "Vui lòng nhập câu hỏi."
 
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            generation_config={
-                "max_output_tokens": 600,
-                "temperature": 0.7,
-            }
-        )
+        client = genai.Client(api_key=GEMINI_API_KEY)
 
-        # Tách message cuối cùng ra để gửi
-        last_message = gemini_history[-1]
-        history_to_send = gemini_history[:-1]
-        
-        # Tạo chat session với history
-        if history_to_send:
-            chat = model.start_chat(history=history_to_send)
-        else:
-            chat = model.start_chat(history=[])
-        
-        response = chat.send_message(last_message["parts"][0]["text"])
+        # Chuyển đổi history sang format mới (Content objects)
+        contents = []
+        for msg in gemini_history:
+            role = msg["role"]  # "user" hoặc "model"
+            text = msg["parts"][0]["text"]
+            contents.append(
+                types.Content(
+                    role=role,
+                    parts=[types.Part(text=text)]
+                )
+            )
+
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                max_output_tokens=600,
+                temperature=0.7,
+            ),
+        )
         return response.text
 
     except Exception as e:
@@ -975,7 +977,7 @@ def trigger_vinance_popup(grid_data, nav_str, current_style):
         ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center", 
                   "fontWeight": "700", "color": "#38bdf8", "marginBottom": "8px", "fontSize": "14px"}),
         
-        html.Div(f"💰 Vốn khả dụng: {nav:,.0f} đ", style={"fontSize": "11px", "color": "#94a3b8", "marginBottom": "6px"})
+        html.Div(f"💰 Vốn: {nav:,.0f} đ", style={"fontSize": "11px", "color": "#94a3b8", "marginBottom": "6px"})
     ]
     
     for item in allocations:

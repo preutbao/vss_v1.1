@@ -152,7 +152,7 @@ app.layout = html.Div(
             style={
                 "position": "sticky", 
                 "top": "0", 
-                "zIndex": "999999",       # Đảm bảo không bị các modal/chart đè lên
+                "zIndex": "1030",       # Đặt thấp để luôn nằm dưới Popup/Modal (Bootstrap chuẩn 1040+)
             },
             children=[create_topbar()]
         ),

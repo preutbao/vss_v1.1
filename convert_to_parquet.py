@@ -8,6 +8,15 @@ RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 PROCESSED_DIR = os.path.join(BASE_DIR, "data", "processed")
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
+# --- 0. XÓA VÀ TẠO LẠI THƯ MỤC PROCESSED ---
+def reset_processed_dir():
+    import shutil
+    if os.path.exists(PROCESSED_DIR):
+        print(f"🗑️  Đang xóa thư mục cũ: {PROCESSED_DIR}")
+        shutil.rmtree(PROCESSED_DIR)
+    os.makedirs(PROCESSED_DIR, exist_ok=True)
+    print(f"✅ Đã tạo lại thư mục sạch: {PROCESSED_DIR}\n")
+
 FILES = {
     "yearly": "BCTC THEO NĂM.xlsx",
     "quarterly": "BCTC THEO QUÝ.xlsx",
@@ -326,6 +335,7 @@ def convert_index_only():
         print(f"   ❌ Lỗi Index: {e}")
 
 if __name__ == "__main__":
+    reset_processed_dir()
     convert_financial_yearly()
     convert_financial_quarterly_split()
     convert_price_only()

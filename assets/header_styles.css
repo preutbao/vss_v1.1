@@ -61,7 +61,7 @@ header img:not([src*="logo"]) {
         rgba(6, 15, 30, 0.95) 30%,
         rgba(6, 15, 30, 1) 100%
     );
-    z-index: 9999;
+    z-index: 1030;
     pointer-events: none;
 }
 
@@ -418,12 +418,3 @@ header img:not([src*="logo"]) {
     }
 }
 
-
-/* ========== DARK MODE SUPPORT ========== */
-
-@media (prefers-color-scheme: light) {
-    /* Náº¿u cáº§n support light mode */
-    #main-header {
-        /* Custom light mode styles */
-    }
-}

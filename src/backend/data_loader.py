@@ -896,6 +896,101 @@ def get_snapshot_df() -> pd.DataFrame:
         logger.info(f"Snapshot xong: {len(df_final)} ma | {time.perf_counter()-t0:.1f}s")
         return df_final
 
+# ── market_internals cache ────────────────────────────────────────────────────
+_market_internals_cache: dict | None = None
+
+def get_market_internals(force_rebuild: bool = False,
+                         exchange_filter: str = "HOSE") -> dict | None:
+    """
+    Load hoặc build Sector Breadth Score data.
+    Cache trong RAM, rebuild khi stale (>4 giờ hoặc force_rebuild=True).
+
+    Returns dict từ calculate_sbs_snapshot() hoặc None nếu lỗi.
+    """
+    import time, os
+    global _market_internals_cache
+
+    CACHE_TTL = 4 * 3600  # 4 giờ
+
+    # Dùng cache RAM nếu còn mới
+    if (not force_rebuild
+            and _market_internals_cache is not None
+            and _market_internals_cache.get("_exchange") == exchange_filter
+            and time.time() - _market_internals_cache.get("_ts", 0) < CACHE_TTL):
+        return _market_internals_cache
+
+    try:
+        from src.backend.quant_engine import calculate_sbs_snapshot
+        df_snap  = get_snapshot_df()
+        from src.backend.data_loader import load_market_data
+        df_price = load_market_data()
+        if df_snap is None or df_snap.empty:
+            return None
+
+        result = calculate_sbs_snapshot(df_snap, df_price,
+                                        exchange_filter=exchange_filter)
+        if result:
+            result["_ts"]       = time.time()
+            result["_exchange"] = exchange_filter
+            _market_internals_cache = result
+        return result
+
+    except Exception as e:
+        logger.error(f"get_market_internals error: {e}")
+        return None
+
+
+def get_market_internals_history(force_rebuild: bool = False,
+                                  exchange_filter: str = "HOSE") -> "pd.DataFrame | None":
+    """
+    Load SBS lịch sử 60 phiên từ market_internals.parquet.
+    Nếu file không tồn tại hoặc stale (>24h), rebuild và lưu lại.
+    """
+    import os, time
+    import pandas as pd
+
+    BASE_DIR      = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    INTERNALS_PATH = os.path.join(BASE_DIR, "data", "processed", "market_internals.parquet")
+
+    # Kiểm tra file có tồn tại và còn mới không
+    REBUILD_TTL = 20 * 3600  # rebuild mỗi 20 giờ (1 lần/ngày)
+    need_rebuild = force_rebuild
+
+    if os.path.exists(INTERNALS_PATH):
+        age = time.time() - os.path.getmtime(INTERNALS_PATH)
+        if age > REBUILD_TTL:
+            need_rebuild = True
+    else:
+        need_rebuild = True
+
+    if need_rebuild:
+        try:
+            logger.info("[market_internals] Rebuilding SBS history...")
+            from src.backend.quant_engine import calculate_sbs_history
+            df_snap  = get_snapshot_df()
+            from src.backend.data_loader import load_market_data
+            df_price = load_market_data()
+            if df_snap is None or df_snap.empty:
+                return None
+
+            df_hist = calculate_sbs_history(df_price, df_snap,
+                                             lookback=60,
+                                             exchange_filter=exchange_filter)
+            if df_hist is not None and not df_hist.empty:
+                df_hist.to_parquet(INTERNALS_PATH, index=False)
+                logger.info(f"[market_internals] Saved {len(df_hist)} rows to {INTERNALS_PATH}")
+            return df_hist
+
+        except Exception as e:
+            logger.error(f"get_market_internals_history rebuild error: {e}")
+            return None
+    else:
+        try:
+            return pd.read_parquet(INTERNALS_PATH)
+        except Exception as e:
+            logger.error(f"get_market_internals_history load error: {e}")
+            return None
+
 def get_latest_snapshot(df_price=None) -> list:
     """
     Backward-compatible wrapper — trả list[dict] như mọi code cũ kỳ vọng.

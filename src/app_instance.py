@@ -24,6 +24,7 @@ app = dash.Dash(
         "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&family=Barlow+Semi+Condensed:wght@600;700&display=swap",
     ],
     title="Vietcap Screener - iBoard",
+    update_title=None,                # 🚀 TẮT TÍNH NĂNG CHỚP NHÁY "UPDATING..." CỦA DASH
     meta_tags=[
         {"name": "viewport", "content": "width=device-width, initial-scale=1"}
     ],

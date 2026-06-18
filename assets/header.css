@@ -13,7 +13,7 @@
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 64px;
-    z-index: 9999;
+    z-index: 1030;
     /* Transparent by default – overlays hero seamlessly */
     background: transparent;
     transition: background 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease;

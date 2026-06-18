@@ -42,6 +42,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from dash import Input, Output, State, no_update, dcc, html
 from src.app_instance import app
 from src.callbacks.quant_pdf_page import _render_quant_page
+import json # Nhớ đảm bảo có import json ở đầu file
 
 # VSS Predictive 2.0 – import quant engine
 try:
@@ -60,6 +61,54 @@ except ImportError:
 from src.backend.data_loader import get_snapshot_df
 
 logger = logging.getLogger(__name__)
+
+# ── Map tên tiếng Việt từ COMP INFO.csv ──────────────────────────────────────
+_VN_NAME_MAP: dict = {}
+
+def _get_vn_name_map() -> dict:
+    global _VN_NAME_MAP
+    if _VN_NAME_MAP:
+        return _VN_NAME_MAP
+    try:
+        import os, pandas as pd
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(
+                       os.path.abspath(__file__))))
+        csv_path = os.path.join(BASE_DIR, "data", "raw", "COMP INFO.csv")
+        if not os.path.exists(csv_path):
+            return {}
+        df_info = pd.read_csv(csv_path, encoding="utf-8-sig")
+        for _, r in df_info.iterrows():
+            sym = str(r.get("symbol", r.get("Ticker", ""))).strip()
+            sym = sym.replace(".HM","").replace(".HN","").replace(".UPCOM","").strip()
+            name = (str(r.get("organ_name", "") or "").strip()
+                    or str(r.get("company_name_vi", "") or "").strip()
+                    or str(r.get("Company Common Name", "") or "").strip())
+            if sym and name and name.lower() not in ("nan","none"):
+                _VN_NAME_MAP[sym] = name
+    except Exception as e:
+        logger.warning(f"[VN name map] {e}")
+    return _VN_NAME_MAP
+
+
+def _company_name(ticker: str, row_dict: dict, max_len: int = 28) -> str:
+    """Trả về tên tiếng Việt nếu có, fallback tiếng Anh, cắt tại ranh giới từ."""
+    vn_map  = _get_vn_name_map()
+
+    # Ưu tiên 1: tên tiếng Việt từ COMP INFO.csv
+    name_vi = vn_map.get(str(ticker).strip(), "")
+
+    # Ưu tiên 2: fallback tiếng Anh từ snapshot
+    name_en = str(row_dict.get("Company Common Name",
+                  row_dict.get("organ_name", "")) or "").strip()
+    if name_en.lower() in ("nan", "none"):
+        name_en = ""
+
+    name = name_vi or name_en or "—"
+
+    if len(name) <= max_len:
+        return name
+    cut = name[:max_len].rsplit(" ", 1)[0]
+    return cut.rstrip(",.-(") + "…"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -219,7 +268,10 @@ MPL_AMBER   = "#F59E0B"
 EXCLUDE_SECTORS_NCN = {"Tài chính","Financial","Financials","Banks","Ngân hàng","Bảo hiểm","Insurance"}
 MIN_LIQUIDITY = 300_000  # 🟢 Tăng gấp 10 lần: Thanh khoản tối thiểu 300k cp/phiên
 # 🟢 THÊM BLACKLIST chặn vĩnh viễn các mã có rủi ro pháp lý/thao túng/thanh khoản ảo
-BLACKLIST_TICKERS = {"TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI"}
+BLACKLIST_TICKERS = {
+    "TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI",
+    "HHS", "TCH", "NVL", "PDR", "HPX", "IBC", "LDG", "QCG", "TTF", "JVC"
+}
 
 
 # ══════════════════════════════════════════════════════════════
@@ -270,32 +322,67 @@ def _bg(c):
     c.setFillColor(C_BG)
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
 
-def _footer(c, page_num, total=3):
+def _footer(c, page_num, total=4):
     # 1. Dải màu trang trí dưới cùng
     c.setFillColor(C_ACCENT)
     c.rect(0, 0, PW * 0.6, 4, fill=1, stroke=0)
     c.setFillColor(C_ACCENT2)
     c.rect(PW * 0.6, 0, PW * 0.4, 4, fill=1, stroke=0)
 
-    # 2. CHÈN CALL-TO-ACTION (LEAD GEN) TRUNG TÂM
+    # =====================================================================
+    # 2. CHÈN CALL-TO-ACTION (LEAD GEN) - GIAO DIỆN NÚT BẤM (BUTTON PILL)
+    # =====================================================================
     url_link = "https://huggingface.co/spaces/preut/VietcapSmartScreener"
-    cta_text = f"🚀 Trải nghiệm tùy biến bộ lọc VSS Live tại: {url_link}"
-    
-    c.setFont("VnFont-Bold", 7.5)
-    c.setFillColor(C_BLUE) # Dùng màu xanh nổi bật để kích thích click
-    c.drawCentredString(PW / 2, 22, cta_text) # Nâng y=22 để tạo không gian
-    
-    # Kỹ thuật quan trọng: Tạo vùng (Box) ẩn có thể click bao quanh đoạn Text
-    cta_width = pdfmetrics.stringWidth(cta_text, "VnFont-Bold", 7.5)
-    rect_x = (PW - cta_width) / 2
-    c.linkURL(url_link, (rect_x, 20, rect_x + cta_width, 30), relative=0)
+    cta_label = "Tự tạo danh mục đầu tư theo gu của bạn tại: "
+    cta_link_text = "VSS Live Web App" # Rút gọn text hiển thị cho sang trọng
 
-    # 3. Disclaimer góc trái (Giữ nguyên)
-    c.setFont("VnFont", 6.5); c.setFillColor(C_GREY)
-    c.drawString(MARGIN, 10, "Vietcap Smart Screener – Báo cáo chỉ mang tính tham khảo (VIP NAV Edition).")
+    # Tính toán kích thước Nút bấm
+    c.setFont("VnFont", 7.5)
+    label_w = pdfmetrics.stringWidth(cta_label, "VnFont", 7.5)
+    c.setFont("VnFont-Bold", 7.5)
+    link_w = pdfmetrics.stringWidth(cta_link_text, "VnFont-Bold", 7.5)
     
-    # 4. Trang / Ngày giờ góc phải (Giữ nguyên)
-    c.drawRightString(PW - MARGIN, 10, f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    box_padding_x = 12
+    box_h = 16
+    box_w = label_w + link_w + (box_padding_x * 2)
+    
+    box_x = (PW - box_w) / 2
+    box_y = 15 # Nâng box lên để không sát mép dưới
+    
+    # 2.1 Vẽ nền Nút bấm (Pill background) - Nền xanh nhạt, viền xanh dương
+    c.setFillColor(colors.HexColor("#EFF1FF"))
+    c.setStrokeColor(colors.HexColor("#C7BFFE"))
+    c.setLineWidth(0.5)
+    c.roundRect(box_x, box_y, box_w, box_h, radius=box_h/2, fill=1, stroke=1)
+    
+    # 2.2 In chữ Label (Màu xám than chuyên nghiệp)
+    text_y = box_y + 4.5 # Căn giữa chữ theo chiều dọc
+    c.setFillColor(colors.HexColor("#374151")) 
+    c.setFont("VnFont", 7.5)
+    c.drawString(box_x + box_padding_x, text_y, cta_label)
+    
+    # 2.3 In chữ Link (Màu xanh dương đậm, Font Bold)
+    c.setFillColor(colors.HexColor("#2563EB")) 
+    c.setFont("VnFont-Bold", 7.5)
+    c.drawString(box_x + box_padding_x + label_w, text_y, cta_link_text)
+    
+    # 2.4 Gạch chân chữ Link (Tạo cảm giác "Có thể Click" của giao diện Web)
+    c.setStrokeColor(colors.HexColor("#2563EB"))
+    c.setLineWidth(0.5)
+    c.line(box_x + box_padding_x + label_w, text_y - 1, 
+           box_x + box_padding_x + label_w + link_w, text_y - 1)
+
+    # 2.5 Tạo vùng Click Box bọc toàn bộ Nút bấm
+    c.linkURL(url_link, (box_x, box_y, box_x + box_w, box_y + box_h), relative=0)
+
+    # =====================================================================
+    # 3. Disclaimer và Phân trang
+    # =====================================================================
+    c.setFont("VnFont", 6.5)
+    c.setFillColor(colors.HexColor("#9CA3AF")) # Chuyển màu xám mờ để tập trung mắt vào CTA
+    c.drawString(MARGIN, 8, "Vietcap Smart Screener – Báo cáo VIP NAV Edition.")
+    
+    c.drawRightString(PW - MARGIN, 8, f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
 def _draw_vgm_badge(c, x, y, w, h, grade):
     grade  = str(grade).strip().upper()
@@ -390,7 +477,8 @@ def _ai_box(c, text, x, y, w,
     FONT_AI  = 7.5
     LINE_H   = 11.5
     MAX_W    = w - 28
-
+    text = str(text).strip()
+    
     def _wrap(txt):
         words = txt.split()
         wrapped, cur = [], ""
@@ -412,8 +500,9 @@ def _ai_box(c, text, x, y, w,
     while wrapped_lines and wrapped_lines[-1] is None:
         wrapped_lines.pop()
 
-    content_h = len(wrapped_lines) * LINE_H
-    ai_h = 20 + content_h + 10  # badge 20 + content + padding bottom
+    # 🟢 SỬA Ở ĐÂY: Tính toán chiều cao chính xác (Dòng chữ = 11.5pt, Khoảng ngắt ý = 4pt)
+    content_h = sum(LINE_H if line is not None else 4 for line in wrapped_lines)
+    ai_h = 26 + content_h + 8  # 26 là khoảng trống phía trên (chứa badge), 8 là padding ôm sát đáy
 
     # Shadow
     c.setFillColor(colors.HexColor("#D8E8F2"))
@@ -931,26 +1020,34 @@ def _chart_vgm_radar_or_bar(df: pd.DataFrame):
 
 
 # ============================================================
-# AI SUMMARY (Gemini) – JSON format 3 keys (VIP CLIENT MINDSET)
+# AI SUMMARY (Gemini) – JSON format 4 keys (VIP CLIENT MINDSET)
+# ============================================================
+import json
+
+# ============================================================
+# AI SUMMARY (Gemini) – JSON format 3 keys (VIP CLIENT MINDSET - 4 BULLETS/KEY)
 # ============================================================
 def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
                     strategy_label: str = "Phong Thu") -> dict:
-    # 1. Cập nhật Default Fallback sang văn phong "Thực chiến - Khách VIP"
+    # 1. Cập nhật Default Fallback: THÊM Ý THỨ 4 CHO MỖI MỤC
     default = {
         "market": (
             "- Ưu tiên bảo toàn vốn lên hàng đầu trong bối cảnh vĩ mô biến động.\n"
             "- Dòng tiền hoạt động kinh doanh (CFO) dương liên tục là bộ lọc thép để loại bỏ lợi nhuận ảo.\n"
-            "- Phân bổ trọng tâm vào nhóm doanh nghiệp chia cổ tức tiền mặt đều đặn, không pha loãng vốn."
+            "- Phân bổ trọng tâm vào nhóm doanh nghiệp chia cổ tức tiền mặt đều đặn, không pha loãng vốn.\n"
+            "- Khuyến nghị: Duy trì tỷ trọng tiền mặt dự phòng 15-20% để sẵn sàng gom hàng khi thị trường rung lắc." # <== Ý 4
         ),
         "valuation": (
             "- P/E trung bình danh mục được ép chặt, loại bỏ hoàn toàn bẫy định giá đắt.\n"
             "- Tỷ suất cổ tức cao đóng vai trò là 'tấm đệm an toàn' (Yield Cushion) bảo vệ NAV.\n"
-            "- Lợi thế cạnh tranh được chứng minh bằng ROE thực, không đến từ đòn bẩy D/E."
+            "- Lợi thế cạnh tranh được chứng minh bằng ROE thực, không đến từ đòn bẩy D/E.\n"
+            "- Hành động: Kiên nhẫn chờ đợi cổ phiếu điều chỉnh về vùng mua an toàn, tuyệt đối không FOMO mua đuổi." # <== Ý 4
         ),
         "risk": (
             "- Rủi ro kẹp thanh khoản là án tử với NAV lớn, tuyệt đối né các mã có Vol < 500,000 cp/phiên.\n"
             "- Các mã có tỷ lệ D/E > 1.5x đang bị cảnh báo đỏ (Red Flags), cần cơ cấu giảm tỷ trọng.\n"
-            "- Kỷ luật thiết lập vùng cắt lỗ và đứng ngoài các game thao túng giá."
+            "- Đứng ngoài các game thao túng giá, tập trung vào tài sản có tính minh bạch cao.\n"
+            "- Kỷ luật: Tuân thủ chặt chẽ các mốc cắt lỗ tự động để bảo vệ tài khoản khỏi những sự cố bất ngờ." # <== Ý 4
         ),
     }
     
@@ -967,7 +1064,7 @@ def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
         avg_de  = df_top["D/E"].dropna().mean()     if "D/E"     in df_top.columns else None
         ncn_str = ", ".join(ncn_tickers[:3]) if ncn_tickers else "N/A"
         
-        # 3. Ép số liệu thực tế của Top 3 Pick vào chuỗi String
+        # 3. Ép số liệu thực tế
         top3_stats_str = "N/A"
         if ncn_tickers and "Ticker" in df_top.columns:
             df_top3 = df_top[df_top["Ticker"].isin(ncn_tickers[:3])]
@@ -976,39 +1073,63 @@ def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
                 tk = row.get("Ticker", "")
                 pe = row.get("P/E", 0)
                 roe = row.get("ROE (%)", 0)
-                # Dùng get() có giá trị mặc định để tránh lỗi nếu DF chưa có cột này
                 cfo = row.get("CFO", "Dương") 
                 div = row.get("Dividend_Yield", ">5%")
                 stats_list.append(f"{tk} (P/E:{pe:.1f}, ROE:{roe:.1f}%, Cổ tức:{div}, CFO:{cfo})")
             top3_stats_str = " | ".join(stats_list)
 
-        # 4. Kỹ thuật Prompt Engineering (Ép Role + Đưa Constraint)
+        # 4. Prompt Engineering: Yêu cầu AI viết 4 gạch đầu dòng và cấm text rác
         prompt = f"""Đóng vai trò là Giám đốc Tư vấn Đầu tư cấp cao tại Vietcap, đang thuyết trình cho tệp khách VIP (NAV > 50 tỷ).
 Chiến lược hiện tại: [{strategy_label}]. Triết lý: Lợi nhuận có thể là giả, nhưng dòng tiền (CFO) phải là thật.
 Dữ liệu tổng quan: P/E TB: {f'{avg_pe:.1f}' if avg_pe else 'N/A'}x, ROE TB: {f'{avg_roe:.1f}' if avg_roe else 'N/A'}%, D/E TB: {f'{avg_de:.2f}' if avg_de else 'N/A'}x.
 Dữ liệu Top 3 Phòng Thủ: {top3_stats_str}.
 
-Yêu cầu: Viết BẰNG TIẾNG VIỆT CÓ DẤU, giọng văn thực chiến, sắc bén, dứt khoát. TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON:
+Yêu cầu: Viết BẰNG TIẾNG VIỆT CÓ DẤU, giọng văn thực chiến, sắc bén, dứt khoát.
+
+QUAN TRỌNG NHẤT BẮT BUỘC PHẢI TUÂN THỦ:
+1. TRẢ VỀ DUY NHẤT MỘT OBJECT JSON.
+2. KHÔNG BAO GIỜ thêm các câu giao tiếp như "Dưới đây là...", "Tuyệt vời!".
+3. KHÔNG sử dụng thẻ markdown (như ```json hay ```).
+
+TRẢ VỀ ĐÚNG ĐỊNH DẠNG OBJECT JSON NHƯ SAU (Bắt buộc phải có 3 keys, mỗi key phải có đúng 4 gạch đầu dòng):
 {{
-  "market": "- (Viết 3 gạch đầu dòng, mỗi gạch dưới 25 chữ, đánh giá vĩ mô và nhấn mạnh tầm quan trọng của việc bảo toàn vốn và dòng tiền CFO dương lúc này)",
-  "valuation": "- (Viết 3 gạch đầu dòng, BẮT BUỘC đưa số liệu P/E, ROE, Cổ tức của các mã {ncn_str} vào để chứng minh đây là tấm đệm an toàn tuyệt đối cho NAV lớn)",
-  "risk": "- (Viết 3 gạch đầu dòng, chỉ ra rủi ro thanh khoản yếu hoặc đòn bẩy D/E cao ở các mã rác, và khẳng định rổ danh mục này đã chặn đứng rủi ro đó ra sao)"
+  "market": "- (Viết 4 gạch đầu dòng, mỗi gạch dưới 25 chữ. 3 ý đầu đánh giá vĩ mô/bảo toàn vốn, ý 4 đưa ra lời khuyên tỷ trọng nắm giữ tiền mặt dự phòng hợp lý)",
+  "valuation": "- (Viết 4 gạch đầu dòng. 3 ý đầu BẮT BUỘC dùng số liệu P/E, ROE, Cổ tức của {ncn_str} làm dẫn chứng, ý 4 khuyên khách hàng kiên nhẫn chờ điểm mua an toàn, không FOMO)",
+  "risk": "- (Viết 4 gạch đầu dòng. 3 ý đầu chỉ ra rủi ro thanh khoản yếu/đòn bẩy D/E cao ở các mã rác, ý 4 chốt lại kỷ luật tuân thủ vùng cắt lỗ tự động)"
 }}"""
         
-        # 5. Parsing & Error Handling
-        resp = model.generate_content(prompt).text.strip()
-        resp = resp.replace("```json","").replace("```","").strip()
-        parsed = json.loads(resp)
+        # 5. Parsing & Error Handling (Bộ giáp chống lỗi "Tuyệt vời! Dưới đây là...")
+        raw  = model.generate_content(prompt).text or ""
+        
+        # Tiền xử lý: Cắt gọt text rác
+        cleaned_text = raw.replace("```json", "").replace("```", "").strip()
+        start_idx = cleaned_text.find('{')
+        end_idx = cleaned_text.rfind('}')
+        
+        if start_idx != -1 and end_idx != -1:
+            cleaned_text = cleaned_text[start_idx:end_idx+1]
+        else:
+            cleaned_text = "" 
+
+        if not cleaned_text or not cleaned_text.startswith("{"):
+            logger.warning(f"Gemini trả về text không hợp lệ. Raw: {repr(raw[:80])}")
+            return default
+
+        # Bóc tách JSON
+        parsed = json.loads(cleaned_text)
         
         for k in ("market", "valuation", "risk"):
             if k not in parsed or not parsed[k]:
                 parsed[k] = default[k]
+                
         return parsed
         
+    except json.JSONDecodeError as e:
+        logger.error(f"Lỗi JSON Decode từ Gemini: {e}. Cleaned text: {cleaned_text}")
+        return default
     except Exception as e:
         logger.warning(f"Gemini API Error/Skip: {e}")
         return default
-
 
 # ══════════════════════════════════════════════════════════════
 # DETECT STRATEGY
@@ -1080,7 +1201,7 @@ def _prepare_main_table(df: pd.DataFrame, max_rows: int = 20, red_flags: set = N
         df = df.sort_values("_sort").drop(columns=["_sort"])
     for _, r in df.head(max_rows).iterrows():
         ticker  = str(r.get("Ticker","—"))
-        company = str(r.get("Company Common Name", r.get("organ_name","")) or "")[:22]
+        company = _company_name(ticker, r.to_dict(), max_len=30)
         vgm     = str(r.get("VGM Score","—")).strip().upper()
         price   = r.get("Price Close")
         target, stoploss = _calc_target_stoploss(price, r.get("SMA20"), r.get("SMA50"))
@@ -1124,7 +1245,7 @@ def _prepare_ncn_rows(df: pd.DataFrame, top_n: int = 3, red_flags: set = None) -
             _, stoploss = _calc_target_stoploss(price, r.get("SMA20"), r.get("SMA50"))
             rows.append({
                 "ticker":   str(r.get("Ticker","—")),
-                "company":  str(r.get("Company Common Name","") or "")[:20],
+                "company":  _company_name(str(r.get("Ticker","—")), r.to_dict(), max_len=26),
                 "exchange": str(r.get("Exchange","") or "")[:5],
                 "vgm":      str(r.get("VGM Score","—")),
                 "roe":      _sv(r.get("ROE (%)"), "dec1", "%"),
@@ -1140,6 +1261,7 @@ def _prepare_flag_rows(df: pd.DataFrame, max_flags: int = 12) -> list:
     seen = set()
     def _action(reason):
         if "D/E"      in reason: return "Giảm tỷ trọng, kiểm tra nợ vay"
+        if "P/E <"    in reason: return "Nghi ngờ xào nấu BCTC" # Thêm dòng này
         if "P/E"      in reason: return "Hạn chế mua đuổi, chờ điều chỉnh"
         if "RSI"      in reason: return "Tránh mua đuổi, đặt stop-loss"
         if "Momentum" in reason: return "Theo dõi, chưa vào thêm"
@@ -1150,25 +1272,26 @@ def _prepare_flag_rows(df: pd.DataFrame, max_flags: int = 12) -> list:
         try:
             de = float(r.get("D/E")) if pd.notnull(r.get("D/E")) else None
             if de and de > 2.0:
-                flags_de.append((ticker,"D/E cao",f"{de:.2f}x","≤2.0x","⚠ Đòn bẩy cao",_action("D/E")))
+                flags_de.append((ticker,"D/E cao",f"{de:.2f}x","≤2.0x","(!) Đòn bẩy cao",_action("D/E")))
                 seen.add(ticker); continue
         except: pass
         try:
             rsi = float(r.get("RSI_14")) if pd.notnull(r.get("RSI_14")) else None
             if rsi and rsi > 72:
-                flags_rsi.append((ticker,"RSI > 72",f"{rsi:.0f}","≤70","⚠ Quá mua",_action("RSI")))
+                flags_rsi.append((ticker,"RSI > 72",f"{rsi:.0f}","≤70","(!) Quá mua",_action("RSI")))
                 seen.add(ticker); continue
         except: pass
         try:
             pe = float(r.get("P/E")) if pd.notnull(r.get("P/E")) else None
-            if pe and pe > 30:
-                flags_pe.append((ticker,"P/E cao",f"{pe:.1f}x","≤30x","⚠ Định giá đắt",_action("P/E")))
+            # 🟢 FIX: Bắt bẫy giá trị (Value Trap) khi P/E quá thấp một cách vô lý
+            if pe and 0 < pe < 3.5:
+                flags_pe.append((ticker, "P/E < 3.5x", f"{pe:.1f}x", "> 5.0x", "(!) Lợi nhuận đột biến", "Tránh bẫy giá trị, soi LN khác"))
                 seen.add(ticker); continue
         except: pass
         try:
             pm = float(r.get("Perf_1M")) if pd.notnull(r.get("Perf_1M")) else None
             if pm is not None and pm < 0:
-                flags_mom.append((ticker,"Momentum âm",f"{pm:+.1f}%",">0%","⚠ Giảm 1 tháng",_action("Momentum")))
+                flags_mom.append((ticker,"Momentum âm",f"{pm:+.1f}%",">0%","(!) Giảm 1 tháng",_action("Momentum")))
                 seen.add(ticker)
         except: pass
     return (flags_de + flags_rsi + flags_pe + flags_mom)[:max_flags]
@@ -1273,10 +1396,10 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
     kpi_data = [
         ("TỔNG MÃ LỌC",    f"{stats['total']:,}",      colors.HexColor("#0057B8")),
         ("HIỂN THỊ",        str(stats["display"]),       colors.HexColor("#0284C7")),
-        ("MÃ VGM A",        str(stats["grade_a_count"]), colors.HexColor("#059669")),
+        ("SỐ MÃ ĐIỂM A (5 SAO)",        str(stats["grade_a_count"]), colors.HexColor("#059669")),
         ("P/E TRUNG BÌNH",  stats["avg_pe"],             colors.HexColor("#D97706")),
         ("ROE TRUNG BÌNH",  stats["avg_roe"],            colors.HexColor("#16A34A")),
-        ("SỐ NGÀNH",        str(stats["sectors_count"]), colors.HexColor("#7C3AED")),
+        ("SỐ NGÀNH (GICS)",        str(stats["sectors_count"]), colors.HexColor("#7C3AED")),
     ]
     for i, (lbl, val, col) in enumerate(kpi_data):
         _kpi_card(c,
@@ -1320,7 +1443,7 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
                  accent_color=C_PURPLE,
                  badge_label="Gemini 2.5 Flash Lite",
                  badge_color=C_PURPLE)
-    y0 -= 12
+    y0 -= 13
 
     # ── Bảng Danh Mục Chính ──
     n_show = min(stats["display"], 20)
@@ -1331,7 +1454,7 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
     col_props = [
         ("VGM",        0.050),
         ("Mã CK",      0.080),
-        ("Tên công ty",0.178),
+        ("Tên công ty",0.218),
         ("Khuyến nghị",0.118),
         ("Vùng mua",   0.145),
         ("Cắt lỗ",     0.100),
@@ -1350,7 +1473,7 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
 
     if table_rows:
         _table_draw(c, main_hdrs, table_rows, MARGIN, y0, main_widths,
-                    row_h=row_h, hdr_h=hdr_h, font_sz=7.0,
+                    row_h=row_h, hdr_h=hdr_h, font_sz=6.8,
                     right_cols={6,7}, center_cols={3}, vgm_col_idx=0)
     else:
         c.setFont("VnFont", 9); c.setFillColor(C_GREY)
@@ -1385,7 +1508,39 @@ def _render_page2(c, df_top, ncn_tickers, ai_texts):
     y0 -= 13
 
     # Scatter full-width
-    _sec_title(c, "Định Vị P/E vs ROE  (◆ = Defensive Pick)", MARGIN, y0)
+    # 1. Vẽ tiêu đề chính (Cắt bỏ đoạn text bị lỗi ở phía sau)
+    _sec_title(c, "Định Vị P/E vs ROE", MARGIN, y0)
+
+    # 2. Tính toán khoảng cách để vẽ phần Legend (Chú thích) ngay sau tiêu đề
+    # Tính chiều rộng chữ tiêu đề để biết chỗ bắt đầu vẽ tiếp
+    title_w = pdfmetrics.stringWidth("Định Vị P/E vs ROE", "VnFont-Bold", 9)
+    legend_x = MARGIN + title_w + 12
+    
+    # Vẽ dấu ngoặc đơn mở
+    c.setFont("VnFont", 7.5)
+    c.setFillColor(colors.HexColor("#5A7A99")) # Màu xám cho chữ chú thích
+    c.drawString(legend_x, y0, "(")
+    
+    # 3. VẼ HÌNH THOI (DIAMOND) MÀU XANH BẰNG TỌA ĐỘ
+    dia_x = legend_x + 9  # Tọa độ X tâm hình thoi
+    dia_y = y0 + 2.5      # Tọa độ Y tâm hình thoi
+    dia_r = 2.5           # Bán kính (Kích thước) hình thoi
+    
+    c.setFillColor(colors.HexColor("#1B7A4A")) # Màu C_GREEN
+    # Dùng công cụ Path của ReportLab để vẽ đa giác
+    p = c.beginPath()
+    p.moveTo(dia_x, dia_y + dia_r)    # Điểm 1: Đỉnh trên
+    p.lineTo(dia_x + dia_r, dia_y)    # Điểm 2: Đỉnh phải
+    p.lineTo(dia_x, dia_y - dia_r)    # Điểm 3: Đỉnh dưới
+    p.lineTo(dia_x - dia_r, dia_y)    # Điểm 4: Đỉnh trái
+    p.close()                         # Nối điểm cuối về điểm đầu
+    
+    # Tô màu và in ra PDF
+    c.drawPath(p, fill=1, stroke=0)
+    
+    # 4. Vẽ nốt đoạn chữ còn lại
+    c.setFillColor(colors.HexColor("#5A7A99")) # Đổi lại màu xám
+    c.drawString(dia_x + 6, y0, "= Defensive Pick )")
     y0 -= 10
     scatter_h = 268
     fig_scatter = _chart_scatter_pe_roe(df_top, highlight_tickers=ncn_tickers)
@@ -1497,14 +1652,15 @@ def _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts):
         y0 -= info_h + 6
 
         ncn_prop = [
-            ("Mã",0.13),("Tên",0.30),("Sàn",0.10),
-            ("VGM",0.10),("ROE",0.13),("P/E",0.11),("Cắt lỗ",0.13),
+            ("Mã",0.11),("Tên công ty",0.34),("Sàn",0.08),
+            ("VGM",0.09),("ROE",0.12),("P/E",0.10),("Cắt lỗ",0.16),
         ]
         tot_n   = sum(p for _,p in ncn_prop)
         ncn_w   = [CW * p / tot_n for _,p in ncn_prop]
         ncn_hdr = [h for h,_ in ncn_prop]
         ncn_data = [[
-            r["ticker"], r["company"][:24], r["exchange"],
+            r["ticker"], r["company"],   # đã cắt đúng trong _prepare_ncn_rows
+            r["exchange"],
             r["vgm"], r["roe"], r["pe"], r["stoploss"]
         ] for r in ncn_rows]
         _table_draw(c, ncn_hdr, ncn_data, MARGIN, y0, ncn_w,
@@ -1531,13 +1687,13 @@ def _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts):
     _footer(c, 3)
 
 # ══════════════════════════════════════════════════════════════
-# MODAL CONTENT BUILDERS
+# MODAL CONTENT BUILDERS (PREMIUM DARK THEME TỐI ƯU CHO WEB)
 # ══════════════════════════════════════════════════════════════
 
 def _modal_kpi_strip(row_data: list) -> html.Div:
-    """Tạo KPI strip 5 thẻ cho modal overview."""
+    """Tạo KPI strip 5 thẻ cho modal overview - Dark Theme."""
     if not row_data:
-        return html.Div("Không có dữ liệu", style={"color":"#999","fontSize":"12px"})
+        return html.Div("Không có dữ liệu", style={"color":"#8b949e","fontSize":"12px"})
 
     df = pd.DataFrame(row_data)
     for col in ["P/E","ROE (%)","Perf_1M","Market Cap"]:
@@ -1552,52 +1708,51 @@ def _modal_kpi_strip(row_data: list) -> html.Div:
 
     def _card(label, value, color="#0090ff"):
         return html.Div([
-            html.Div(label, style={"fontSize":"9px","color":"#5a7a99",
+            html.Div(label, style={"fontSize":"9px","color":"#8b949e",
                                    "textTransform":"uppercase","letterSpacing":"0.3px"}),
             html.Div(value, style={"fontSize":"18px","fontWeight":"900",
                                    "color":color,"lineHeight":"1.1"}),
         ], style={
             "flex":"1","textAlign":"center",
-            "border":"1px solid #dce8f0","borderTop":f"3px solid {color}",
-            "borderRadius":"5px","padding":"8px 6px","background":"#f5f9ff",
+            "border":"1px solid #1E3A6A","borderTop":f"3px solid {color}",
+            "borderRadius":"6px","padding":"8px 6px","background":"#112340", # Nền Navy đậm
         })
 
     return html.Div([
-        _card("Tổng mã lọc",  str(total),                          "#0090ff"),
-        _card("Mã VGM A",     str(n_grade_a),                      "#00875a"),
-        _card("P/E TB",       f"{avg_pe:.1f}"  if avg_pe  else "—","#0057b8"),
-        _card("ROE TB",       f"{avg_roe:.1f}%" if avg_roe else "—","#00875a"),
-        _card("Số ngành",     str(n_sectors),                       "#7c3aed"),
+        _card("Tổng mã lọc",  str(total),                          "#38bdf8"), # Xanh cyan
+        _card("SỐ MÃ ĐIỂM A (5 SAO)",     str(n_grade_a),                      "#10b981"), # Xanh lá ngọc
+        _card("P/E TB",       f"{avg_pe:.1f}"  if avg_pe  else "—","#3b82f6"), # Xanh blue
+        _card("ROE TB",       f"{avg_roe:.1f}%" if avg_roe else "—","#10b981"),
+        _card("Số ngành (GICS)",     str(n_sectors),                       "#8b5cf6"), # Tím
     ], style={"display":"flex","gap":"8px","flexWrap":"wrap"})
 
 
 def _modal_ncn_table(row_data: list):
-    """Mini table NCN Top 3 cho modal – dùng .get() toàn bộ để tránh KeyError."""
+    """Mini table NCN Top 3 cho modal - Dark Theme."""
     if not row_data:
-        return html.Div("—", style={"color": "#999", "fontSize": "11px"})
+        return html.Div("—", style={"color": "#8b949e", "fontSize": "11px"})
 
     df_src = pd.DataFrame(row_data)
-    # Gọi đúng signature – không có tham số red_flags
     ncn = _prepare_ncn_rows(df_src, top_n=3)
 
     if not ncn:
         return html.Div(
             "Không có mã đạt chuẩn NCN (ROE≥15%, D/E≤1.5, Net Margin≥5%)",
-            style={"color": "#5a7a99", "fontSize": "11px", "fontStyle": "italic"},
+            style={"color": "#8b949e", "fontSize": "11px", "fontStyle": "italic"},
         )
 
     VGM_COLOR_MAP = {
-        "A": "#00875a", "B": "#0057b8", "C": "#f59e0b",
-        "D": "#ff7043", "F": "#D32F2F",
+        "A": "#10b981", "B": "#3b82f6", "C": "#f59e0b",
+        "D": "#f97316", "F": "#ef4444",
     }
-    col_style = {"padding": "5px 8px", "fontSize": "11px", "whiteSpace": "nowrap"}
-    hdr_style = {**col_style, "fontWeight": "700", "background": "#00875a",
-                 "color": "white", "textTransform": "uppercase", "fontSize": "10px"}
+    col_style = {"padding": "6px 8px", "fontSize": "11px", "whiteSpace": "nowrap", "borderBottom": "1px solid #1E3A6A"}
+    hdr_style = {**col_style, "fontWeight": "700", "background": "#064e3b", # Nền xanh lá cực đậm
+                 "color": "#a7f3d0", "textTransform": "uppercase", "fontSize": "10px", "borderBottom": "none"}
 
     header_row = html.Tr([
         html.Th("Mã CK",    style=hdr_style),
         html.Th("Tên CT",   style=hdr_style),
-        html.Th("VGM",      style={**hdr_style, "textAlign": "center"}),
+        html.Th("ĐIỂM",      style={**hdr_style, "textAlign": "center"}),
         html.Th("ROE %",    style={**hdr_style, "textAlign": "right"}),
         html.Th("Biên gộp", style={**hdr_style, "textAlign": "right"}),
         html.Th("D/E",      style={**hdr_style, "textAlign": "right"}),
@@ -1611,12 +1766,12 @@ def _modal_ncn_table(row_data: list):
         data_rows.append(html.Tr([
             html.Td(
                 html.B(r.get("ticker", "—"),
-                       style={"color": "#065f46", "fontSize": "12px"}),
+                       style={"color": "#34d399", "fontSize": "12px"}), # Màu xanh lá nổi bật
                 style=col_style,
             ),
             html.Td(
-                str(r.get("company", "—"))[:22],
-                style={**col_style, "color": "#374151"},
+                str(r.get("company", "—")),
+                style={**col_style, "color": "#c9d1d9"}, # Chữ trắng xám
             ),
             html.Td(
                 html.Span(g, style={
@@ -1632,38 +1787,39 @@ def _modal_ncn_table(row_data: list):
             html.Td(
                 r.get("roe", "—"),
                 style={**col_style, "textAlign": "right",
-                       "color": "#00875a", "fontWeight": "700"},
+                       "color": "#10b981", "fontWeight": "700"},
             ),
             html.Td(
                 r.get("gross_margin", r.get("bien_gop", "—")),
-                style={**col_style, "textAlign": "right"},
+                style={**col_style, "textAlign": "right", "color": "#c9d1d9"},
             ),
             html.Td(
                 r.get("de", "—"),
-                style={**col_style, "textAlign": "right"},
+                style={**col_style, "textAlign": "right", "color": "#c9d1d9"},
             ),
             html.Td(
                 r.get("pe", "—"),
-                style={**col_style, "textAlign": "right"},
+                style={**col_style, "textAlign": "right", "color": "#c9d1d9"},
             ),
-        ]))
+        ], style={"background": "#0d1117"})) # Nền dòng màu đen
 
     return html.Div(
         html.Table(
             [header_row] + data_rows,
             style={
                 "width": "100%", "borderCollapse": "collapse",
-                "border": "1px solid #d1ead8", "borderRadius": "5px",
+                "border": "1px solid #1E3A6A", "borderRadius": "6px",
+                "overflow": "hidden"
             },
         ),
-        style={"overflowX": "auto"},
+        style={"overflowX": "auto", "borderRadius": "6px"}
     )
 
 
 def _modal_flag_table(row_data: list) -> html.Div:
-    """Mini Red Flags table cho modal."""
+    """Mini Red Flags table cho modal - Dark Theme."""
     if not row_data:
-        return html.Div("—", style={"color":"#999"})
+        return html.Div("—", style={"color":"#8b949e"})
 
     df_src = pd.DataFrame(row_data)
     for col in ["P/E","D/E","Perf_1M"]:
@@ -1675,12 +1831,12 @@ def _modal_flag_table(row_data: list) -> html.Div:
     if not flags:
         return html.Div(
             "✅ Không phát hiện red flag trong top 30 mã",
-            style={"color":"#00875a","fontSize":"11px","fontWeight":"600"},
+            style={"color":"#10b981","fontSize":"11px","fontWeight":"600"},
         )
 
-    col_style = {"padding":"4px 8px","fontSize":"11px"}
-    hdr_style = {**col_style,"fontWeight":"700","background":"#7f1d1d",
-                 "color":"white","textTransform":"uppercase","fontSize":"10px"}
+    col_style = {"padding":"6px 8px","fontSize":"11px", "borderBottom": "1px solid #450a0a", "color": "#c9d1d9"}
+    hdr_style = {**col_style,"fontWeight":"700","background":"#450a0a", # Đỏ đô cực tối
+                 "color":"#fca5a5","textTransform":"uppercase","fontSize":"10px", "borderBottom": "none"}
 
     rows = [html.Tr([
         html.Th("Mã CK",    style=hdr_style),
@@ -1691,47 +1847,47 @@ def _modal_flag_table(row_data: list) -> html.Div:
     ])]
     for f in flags:
         rows.append(html.Tr([
-            html.Td(html.B(f[0], style={"color":"#0057b8"}), style=col_style),
+            html.Td(html.B(f[0], style={"color":"#60a5fa"}), style=col_style), # Xanh sáng
             html.Td(f[1],  style=col_style),
             html.Td(f[2],  style={**col_style,"textAlign":"right",
-                                  "color":"#D32F2F","fontWeight":"700",
+                                  "color":"#f87171","fontWeight":"700", # Đỏ sáng
                                   "fontFamily":"monospace"}),
             html.Td(f[3],  style={**col_style,"textAlign":"right"}),
-            html.Td(f[4],  style={**col_style,"color":"#D32F2F","fontWeight":"700"}),
-        ]))
+            html.Td(f[4],  style={**col_style,"color":"#f87171","fontWeight":"700"}),
+        ], style={"background": "#0d1117"}))
 
     return html.Div(
         html.Table(rows, style={"width":"100%","borderCollapse":"collapse",
-                                "border":"1px solid #fecaca"}),
-        style={"overflowX":"auto"},
+                                "border":"1px solid #7f1d1d", "borderRadius": "6px"}),
+        style={"overflowX":"auto", "borderRadius": "6px"},
     )
 
 
 def _modal_mc_results(qr) -> html.Div:
-    """Hiển thị kết quả Monte Carlo trong modal."""
+    """Hiển thị kết quả Monte Carlo trong modal - Dark Theme."""
     if qr is None or qr.status != "ok":
         msg = getattr(qr, "error_message", "Không đủ dữ liệu.") if qr else "Lỗi pipeline."
         return html.Div([
             html.Span("⚠️ ", style={"fontSize":"16px"}),
-            html.Span(msg, style={"color":"#D32F2F","fontSize":"12px"}),
-        ], style={"padding":"12px","background":"#fff5f5",
-                  "border":"1px solid #fecaca","borderRadius":"5px"})
+            html.Span(msg, style={"color":"#fca5a5","fontSize":"12px"}),
+        ], style={"padding":"12px","background":"#450a0a", # Nền đỏ cực tối
+                  "border":"1px solid #7f1d1d","borderRadius":"6px"})
 
     def _metric(label, value, color, note=""):
         return html.Div([
-            html.Div(label,  style={"fontSize":"9px","color":"#5a7a99",
+            html.Div(label,  style={"fontSize":"9px","color":"#8b949e",
                                     "textTransform":"uppercase"}),
             html.Div(value,  style={"fontSize":"20px","fontWeight":"900",
-                                    "color":color,"lineHeight":"1.1"}),
-            html.Div(note,   style={"fontSize":"9px","color":"#8a9bb5"}),
+                                    "color":color,"lineHeight":"1.1", "margin": "4px 0"}),
+            html.Div(note,   style={"fontSize":"9px","color":"#64748b"}),
         ], style={
             "flex":"1","textAlign":"center","padding":"10px 8px",
-            "border":f"1px solid {color}","borderTop":f"3px solid {color}",
-            "borderRadius":"5px","background":"#f9fbff",
+            "border":f"1px solid #1E3A6A","borderTop":f"3px solid {color}",
+            "borderRadius":"6px","background":"#112340", # Nền xanh navy tối
         })
 
-    er_color  = "#00875a" if qr.expected_return_1m >= 0 else "#D32F2F"
-    mdd_color = "#f59e0b" if qr.max_drawdown < 0.15 else "#D32F2F"
+    er_color  = "#10b981" if qr.expected_return_1m >= 0 else "#ef4444"
+    mdd_color = "#f59e0b" if qr.max_drawdown < 0.15 else "#ef4444"
 
     metrics_row = html.Div([
         _metric("Kỳ vọng 1T",
@@ -1739,14 +1895,14 @@ def _modal_mc_results(qr) -> html.Div:
                 er_color, "Trung bình 10K kịch bản"),
         _metric("VaR 95% (1T)",
                 f"{qr.var_95*100:.1f}%",
-                "#D32F2F", "Mức lỗ tối đa 95% trường hợp"),
+                "#ef4444", "Mức lỗ tối đa 95% trường hợp"),
         _metric("Max Drawdown",
                 f"{qr.max_drawdown*100:.1f}%",
                 mdd_color, "Guillotine ≤15%"),
         _metric("Sharpe Ratio",
                 f"{qr.sharpe_ratio:.2f}",
-                "#0090ff", "Annualized"),
-    ], style={"display":"flex","gap":"8px","marginBottom":"10px"})
+                "#38bdf8", "Annualized"),
+    ], style={"display":"flex","gap":"8px","marginBottom":"10px", "flexWrap": "wrap"})
 
     # Allocation mini table
     alloc_rows_html = []
@@ -1755,52 +1911,50 @@ def _modal_mc_results(qr) -> html.Div:
         qty = qr.quantities[i] if i < len(qr.quantities) else 0
         inv = qr.investment_values[i] if i < len(qr.investment_values) else 0
         alloc_rows_html.append(html.Tr([
-            html.Td(html.B(t, style={"color":"#0057b8"}),
-                    style={"padding":"4px 8px","fontSize":"11px"}),
+            html.Td(html.B(t, style={"color":"#60a5fa"}),
+                    style={"padding":"6px 8px","fontSize":"11px", "borderBottom": "1px solid #1E3A6A"}),
             html.Td(f"{w*100:.1f}%",
-                    style={"padding":"4px 8px","fontSize":"11px",
-                           "textAlign":"right","fontWeight":"700"}),
+                    style={"padding":"6px 8px","fontSize":"11px",
+                           "textAlign":"right","fontWeight":"700", "color": "#c9d1d9", "borderBottom": "1px solid #1E3A6A"}),
             html.Td(f"{qty:,} cp",
-                    style={"padding":"4px 8px","fontSize":"11px",
-                           "textAlign":"right","fontFamily":"monospace"}),
+                    style={"padding":"6px 8px","fontSize":"11px",
+                           "textAlign":"right","fontFamily":"monospace", "color": "#c9d1d9", "borderBottom": "1px solid #1E3A6A"}),
             html.Td(f"{inv/1e6:,.0f}M VND",
-                    style={"padding":"4px 8px","fontSize":"11px",
-                           "textAlign":"right","color":"#065f46",
-                           "fontWeight":"600"}),
-        ]))
+                    style={"padding":"6px 8px","fontSize":"11px",
+                           "textAlign":"right","color":"#34d399",
+                           "fontWeight":"600", "borderBottom": "1px solid #1E3A6A"}),
+        ], style={"background": "#0d1117"}))
 
     alloc_table = html.Table([
         html.Thead(html.Tr([
-            html.Th(h, style={"padding":"5px 8px","fontSize":"10px",
-                              "background":"#0a1628","color":"white",
+            html.Th(h, style={"padding":"6px 8px","fontSize":"10px",
+                              "background":"#0a1628","color":"#c9d1d9",
                               "fontWeight":"700","textTransform":"uppercase",
                               "textAlign": "right" if i>0 else "left"})
             for i,h in enumerate(["Mã CK","% Tỷ trọng","Số CP","Giá trị VND"])
         ])),
         html.Tbody(alloc_rows_html),
     ], style={"width":"100%","borderCollapse":"collapse",
-              "border":"1px solid #dce8f0","marginBottom":"8px"})
+              "border":"1px solid #1E3A6A","marginBottom":"10px", "borderRadius": "6px", "overflow": "hidden"})
 
     guilotine_note = html.Div(
-        f"ℹ️ Guillotine Rule chạy {qr.guillotine_iterations} vòng · "
-        f"Danh mục tối ưu: {', '.join(qr.tickers)}",
-        style={"fontSize":"10px","color":"#5a7a99",
-               "padding":"5px 8px","background":"#f0f7ff",
-               "borderLeft":"3px solid #0090ff","borderRadius":"3px"},
+        f"ℹ️ Guillotine Rule chạy {qr.guillotine_iterations} vòng · Danh mục tối ưu: {', '.join(qr.tickers)}",
+        style={"fontSize":"10px","color":"#93c5fd",
+               "padding":"8px 10px","background":"#082f49", # Xanh dương cực tối
+               "borderLeft":"3px solid #38bdf8","borderRadius":"4px"},
     )
 
     return html.Div([
         html.Div([
             html.Span("🧮 ", style={"fontSize":"14px"}),
             html.B("Kết quả Markowitz + Monte Carlo Bootstrap (10,000 kịch bản)",
-                   style={"fontSize":"12px","color":"#0a1628"}),
-        ], style={"marginBottom":"8px"}),
+                   style={"fontSize":"13px","color":"#e8f4ff"}), # Chữ trắng sáng
+        ], style={"marginBottom":"10px"}),
         metrics_row,
-        alloc_table,
+        html.Div(alloc_table, style={"borderRadius": "6px", "overflow": "hidden"}),
         guilotine_note,
-    ], style={"padding":"12px","background":"#f8fbff",
-              "border":"1px solid #b8d4f0","borderRadius":"6px"})
-
+    ], style={"padding":"16px","background":"#0d1117", # Nền trùng với web
+              "border":"1px solid #1E3A6A","borderRadius":"8px", "boxShadow": "0 4px 12px rgba(0,0,0,0.5)"})
 
 # ══════════════════════════════════════════════════════════════
 # MAIN GENERATOR
@@ -1815,7 +1969,10 @@ def generate_screener_pdf(
     
     if not df.empty:
         # 1. CHẶN BLACKLIST VĨNH VIỄN (Loại bỏ hàng rác, dính án)
-        BLACKLIST_TICKERS = {"TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI"}
+        BLACKLIST_TICKERS = {
+            "TDH", "L40", "FLC", "ROS", "HNG", "DL1", "TOS", "HAG", "HQC", "ITA", "AMD", "HAI",
+            "HHS", "TCH", "NVL", "PDR", "HPX", "IBC", "LDG", "QCG", "TTF", "JVC"
+        }
         if "Ticker" in df.columns:
             df = df[~df["Ticker"].isin(BLACKLIST_TICKERS)]
             
@@ -1873,16 +2030,20 @@ def generate_screener_pdf(
 
     strategy_label, strategy_title = _detect_strategy(active_filters)
     
-    # 5. GỌI RED FLAGS TRƯỚC ĐỂ LÀM BỘ LỌC ĐẦU VÀO CHO CÁC HÀM SAU (Xóa đoạn gọi bị lặp)
+    # ============================================================
+    # 🟢 FIX LUỒNG DỮ LIỆU ĐỒNG BỘ (ORDER OF EXECUTION)
+    # ============================================================
+    
+    # Bước 1: Quét và lập danh sách Red Flags (Cảnh báo rủi ro) trước
     flag_rows = _prepare_flag_rows(df_top, max_flags=12)
-    # Lấy danh sách các mã dính cờ đỏ (row[0] chính là Ticker)
-    red_flag_tickers = {row[0] for row in flag_rows} 
+    red_flag_tickers = {row[0] for row in flag_rows} # Trích xuất các Ticker dính cờ đỏ
 
-    # Truyền Red Flags vào bảng Phòng thủ để cấm cửa mã xấu
+    # Bước 2: Truyền Red Flags vào hàm lọc danh mục Phòng thủ (NCN) 
+    # để chặn đứng không cho các mã xấu lọt vào Top khuyến nghị
     ncn_rows = _prepare_ncn_rows(df, top_n=3, red_flags=red_flag_tickers)
     ncn_tickers = [r["ticker"] for r in ncn_rows]
 
-    # VSS Predictive 2.0 – chạy Markowitz + Monte Carlo
+    # Bước 3: Đẩy danh sách đã sạch rủi ro vào lõi tối ưu hóa Markowitz
     qr = None
     if _QUANT_AVAILABLE and ncn_rows:
         try:
@@ -1892,12 +2053,11 @@ def generate_screener_pdf(
                 target_month=datetime.now().month,
                 max_picks=min(5, len(ncn_rows)),
             )
-            logger.info(f"[Quant] Pipeline status: {qr.status}")
         except Exception as _qe:
-            logger.warning(f"[Quant] Pipeline skip: {_qe}")
-            qr = None
-    
-    # CHỈ GỌI AI ĐÚNG 1 LẦN DUY NHẤT ĐỂ TRÁNH LAG API
+            logger.warning(f"❌ Lỗi tối ưu hóa danh mục PDF: {_qe}")
+
+    # Bước 4: Chỉ gọi AI Gemini ĐÚNG 1 LẦN để nhận xét dựa trên danh mục đã tối ưu
+    # Tránh việc gọi lặp đi lặp lại làm giảm tốc độ xuất file
     ai_texts = _gemini_summary(df_top, ncn_tickers, strategy_label)
 
     # 6. HIỂN THỊ THAM SỐ LỌC
@@ -2016,12 +2176,10 @@ def compute_mc_preview(toggle_on, row_data, nav_raw):
         return {"display": "none"}, []
 
     # Parse NAV
-    nav = 1_000_000_000.0
     try:
-        if nav_raw:
-            nav = max(100_000_000.0, float(nav_raw))
+        nav = max(100_000_000.0, float(nav_raw)) if nav_raw not in (None, "") else 1_000_000_000.0
     except Exception:
-        pass
+        nav = 1_000_000_000.0
 
     # Chạy pipeline nếu có module
     if not _QUANT_AVAILABLE or not row_data:
@@ -2082,12 +2240,10 @@ def download_pdf_from_modal(n_clicks, row_data, active_filters,
     if not row_data:
         return no_update, "⚠️ Bảng đang trống"
 
-    nav = 1_000_000_000.0
     try:
-        if nav_raw:
-            nav = max(100_000_000.0, float(nav_raw))
+        nav = max(100_000_000.0, float(nav_raw)) if nav_raw not in (None, "") else 1_000_000_000.0
     except Exception:
-        pass
+        nav = 1_000_000_000.0
 
     try:
         # use_quant=True → PDF có trang Monte Carlo
@@ -2108,3 +2264,14 @@ def download_pdf_from_modal(n_clicks, row_data, active_filters,
         logger.error(f"Modal PDF error: {e}")
         traceback.print_exc()
         return no_update, f"❌ Lỗi: {str(e)[:80]}"
+
+@app.callback(
+    Output("theory-modal", "is_open"),
+    Input("btn-open-theory-modal", "n_clicks"),
+    State("theory-modal", "is_open"),
+    prevent_initial_call=True
+)
+def toggle_theory_modal(n_clicks, is_open):
+    if n_clicks:
+        return not is_open
+    return is_open

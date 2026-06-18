@@ -2,7 +2,7 @@
 daily_updater.py — VSS Smart Screener (SSI + VNDirect Fallback Version)
 ═══════════════════════════════════════════════════════════════════════════════
 Script ETL độc lập — KHÔNG liên quan đến Dash Web App.
-Chạy như Cronjob lúc 18:15 sau ATC, ghi đè Parquet.
+Chạy như Cronjob lúc 15:15 sau ATC, ghi đè Parquet.
 
 PIPELINE:
   1. Load danh sách ticker từ market_prices.parquet 
@@ -54,7 +54,7 @@ SNAPSHOT_PARQUET = PROCESSED_DIR / "snapshot_cache.parquet"
 # Lưu ý: Nên để dư ra vài ngày (ví dụ 30) làm vùng đệm, code merge sẽ tự động xử lý phần dư.
 HISTORY_DAYS = 60   
 
-API_SLEEP    = 0.45 # Trễ 450ms giữa các request để giảm nguy cơ bị chặn IP (SSI có thể chặn nếu quá nhanh)
+API_SLEEP    = 0.33 # Trễ 330ms giữa các request để giảm nguy cơ bị chặn IP (SSI có thể chặn nếu quá nhanh)
 
 INDEX_SYMBOL = "^VNINDEX"
 INDEX_COL    = "VNINDEX_Close"
@@ -212,7 +212,7 @@ def download_all_prices_sequential(tickers: list[str], days: int = HISTORY_DAYS)
         except Exception as e:
              print(f"⚠️ Lỗi: {e}")
             
-        time.sleep(API_SLEEP) # Trễ 0.5s giữa các mã
+        time.sleep(API_SLEEP) # Trễ 0.33s giữa các mã
 
     elapsed = time.time() - t_start
     logger.info(f"Download xong: {success:,}/{total:,} mã thành công | Thời gian: {elapsed:.1f}s")
@@ -253,12 +253,11 @@ def merge_prices_into_parquet(df_new: pd.DataFrame, df_meta: pd.DataFrame) -> pd
     if PRICES_PARQUET.exists():
         df_old = pd.read_parquet(PRICES_PARQUET)
         df_old["Date"] = pd.to_datetime(df_old["Date"]).dt.tz_localize(None)
-        min_new = df_new["Date"].min() if not df_new.empty else pd.Timestamp.max
-        df_old_hist = df_old[df_old["Date"] < min_new]
     else:
-        df_old_hist = pd.DataFrame()
+        df_old = pd.DataFrame()
 
-    frames = [f for f in [df_old_hist, df_new] if not f.empty]
+    # Ưu tiên API: concat old trước, new sau → drop_duplicates keep="last" → API thắng
+    frames = [f for f in [df_old, df_new] if not f.empty]
     if not frames: return pd.DataFrame()
     df_merged = pd.concat(frames, ignore_index=True)
 

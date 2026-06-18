@@ -347,15 +347,17 @@ def create_topbar(id_suffix=""):
                     ),
                 ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
             ])
+        # TÌM ĐOẠN NÀY TRONG HÀM create_topbar():
         ], style={
             "position": "fixed",
             "top": "0",
             "left": "0",
             "right": "0",
-            "zIndex": "8999",
+            "zIndex": "1030",  # 🟢 SỬA TỪ 8999 -> 1030: Đảm bảo luôn nằm dưới mọi Popup/Modal (chuẩn Bootstrap)
             "width": "100%",
-            "backgroundColor": "#000000", # <--- THÊM DÒNG NÀY Ở ĐÂY
-            "borderBottom": "1px solid #333", # <--- (Tùy chọn) Thêm viền dưới mỏng cho đẹp
+            # 🟢 SỬA THÀNH BIẾN CSS: Hãy thay '--bg-color' bằng biến màu nền bạn đang dùng trong file style.css
+            "backgroundColor": "var(--bg-color, #000000)", 
+            "borderBottom": "1px solid var(--border-color, #333)", # Tương tự cho màu viền
         }),
         html.Div(id="navbar-user-menu", style={"display": "none"}),
     ])

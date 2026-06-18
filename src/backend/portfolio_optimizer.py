@@ -66,7 +66,7 @@ class QuantResult:
 
     mc_returns: Optional[np.ndarray] = None   # shape (N_SCENARIOS,)
     seasonality_scores: dict = field(default_factory=dict)
-
+    scores: list = field(default_factory=list)   # VGM grade per ticker
     nav: float = 1_000_000_000.0
     guillotine_iterations: int = 0
     error_message: str = ""
@@ -714,6 +714,22 @@ def run_full_pipeline(
         inv_values.append(inv_val)
         current_prices.append(p)
 
+    # Map VGM grade từ ncn_rows theo đúng thứ tự final_tickers
+    vgm_map = {r["ticker"]: str(r.get("vgm", "—")).strip().upper()
+               for r in ncn_rows}
+    final_scores = [vgm_map.get(t, "—") for t in final_tickers]
+
+    # Lấy tên tiếng Việt nếu có
+    try:
+        from src.callbacks.screener_pdf_callback import _get_vn_name_map
+        vn_map = _get_vn_name_map()
+    except Exception:
+        vn_map = {}
+
+    def _cmp_name(t):
+        return (vn_map.get(t)
+                or company_map.get(t, t))
+
     result = QuantResult(
         status="ok",
         tickers=final_tickers,
@@ -721,8 +737,9 @@ def run_full_pipeline(
         quantities=quantities,
         investment_values=inv_values,
         prices=current_prices,
-        companies=[company_map.get(t, t) for t in final_tickers],
+        companies=[_cmp_name(t) for t in final_tickers],
         exchanges=[exchange_map.get(t, "—") for t in final_tickers],
+        scores=final_scores,                          # ← THÊM DÒNG NÀY
 
         expected_return    = mk_metrics.get("expected_return", 0.0),
         expected_return_1m = risk_metrics.get("expected_return_1m", 0.0),

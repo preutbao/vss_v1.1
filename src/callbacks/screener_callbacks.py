@@ -525,7 +525,7 @@ def update_screener_table(
         # Load Snapshot trực tiếp dưới dạng DataFrame (không qua list[dict] roundtrip)
         df = get_snapshot_df()
         if df is None or df.empty:
-            return [], FIXED_COLS, "⚠️ Không có dữ liệu", ""
+            return [], FIXED_COLS, "⚠️ Không có dữ liệu", "", False, "", None
 
         df = df.copy()  # tránh modify in-place trên cache
         total_stocks = len(df)
@@ -558,7 +558,7 @@ def update_screener_table(
         if triggered_id == 'btn-reset' or triggered_id == 'btn-reset.n_clicks':
             df = _add_forward_pe(df)
             col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
-            return df.to_dict('records'), col_defs, f"📊 Hiển thị tất cả: {total_stocks} mã", ""
+            return df.to_dict('records'), col_defs, f"📊 Hiển thị tất cả: {total_stocks} mã", "", False, "", None
 
         df_filtered = df.copy()
         df_null_excluded = pd.DataFrame()  # Accumulate mã bị loại vì null
@@ -592,6 +592,54 @@ def update_screener_table(
             logger.info(f"[Profile Filter] Vốn={investor_profile.get('capital')} "
                         f"→ vol≥{min_vol:,}, cap≥{min_cap/1e9:.0f}tỷ, "
                         f"price≥{min_price:,} → còn {len(df_filtered)} mã")
+            
+        # ── Hard filter: Loại ngành Ngân hàng / BĐS khi tick avoid_bank_re ──
+        if trading_mode != "all_market" and investor_profile and investor_profile.get("avoid_bank_re"):
+            # Tên ngành trong data sau khi dịch qua GICS_SECTOR_TRANSLATION
+            _EXCLUDE_SECTORS = {
+                # Tiếng Việt (sau khi translate)
+                "Tài chính", "Bất động sản",
+                # Tiếng Anh gốc (fallback nếu chưa dịch)
+                "Financials", "Real Estate",
+            }
+            _EXCLUDE_INDUSTRY_KEYWORDS = [
+                "Ngân hàng", "Bank", "Bất động sản", "Real Estate",
+                "Bảo hiểm", "Insurance", "Chứng khoán",
+            ]
+
+            before_excl = len(df_filtered)
+
+            # Bước 1: Thử lọc qua cột Sector (chuẩn nhất)
+            sec_col = next(
+                (c for c in ["Sector", "GICS Sector Name"] if c in df_filtered.columns),
+                None,
+            )
+            if sec_col:
+                df_filtered = df_filtered[
+                    ~df_filtered[sec_col]
+                    .astype(str)
+                    .str.strip()
+                    .isin(_EXCLUDE_SECTORS)
+                ]
+
+            # Bước 2: Fallback — lọc thêm qua GICS Industry Name nếu còn sót
+            ind_col = next(
+                (c for c in ["GICS Industry Name", "GICS Sub-Industry Name"]
+                 if c in df_filtered.columns),
+                None,
+            )
+            if ind_col:
+                _kw_pattern = "|".join(_EXCLUDE_INDUSTRY_KEYWORDS)
+                df_filtered = df_filtered[
+                    ~df_filtered[ind_col]
+                    .astype(str)
+                    .str.contains(_kw_pattern, case=False, na=False, regex=True)
+                ]
+
+            logger.info(
+                f"[avoid_bank_re] Đã loại ngành Tài chính/BĐS: "
+                f"{before_excl} → {len(df_filtered)} mã"
+            )
 
             # Đưa thông tin hard filter vào result-count để hiển thị
             _hard_filter_note = (
@@ -3652,3 +3700,22 @@ clientside_callback(
 )
 def open_about_vss_modal(n):
     return True if n else no_update
+
+from dash import Input, Output, callback, no_update
+
+# ============================================================
+# CALLBACK: QUY ĐỔI SỐ NAV THÀNH TỶ ĐỒNG TRÊN MODAL
+# ============================================================
+@callback(
+    Output("modal-nav-formatted-display", "children"),
+    Input("modal-nav-input", "value")
+)
+def update_nav_display(nav_val):
+    if nav_val is None or nav_val == "":
+        return "(= 0.00 Tỷ VNĐ)"
+    
+    try:
+        val = float(nav_val)
+        return f"(= {val / 1e9:,.2f} Tỷ VNĐ)"
+    except Exception:
+        return "(Lỗi định dạng)"

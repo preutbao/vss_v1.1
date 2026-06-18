@@ -198,7 +198,7 @@ def build_ips_filter_settings(risk_profile: str, goal: str,
             "filter-value-score":   ["A", "B", "C"],
         })
         if prefer_dividend:
-            settings["filter-div-yield"] = [4.0, 20]
+            settings["filter-div-yield"] = [5.0, 20]
 
     elif risk_profile == "moderate":
         settings.update({
@@ -212,7 +212,7 @@ def build_ips_filter_settings(risk_profile: str, goal: str,
             "filter-growth-score":  ["A", "B"],
         })
         if prefer_dividend:
-            settings["filter-div-yield"] = [3.0, 20]
+            settings["filter-div-yield"] = [5.0, 20]
 
     elif risk_profile == "aggressive":
         settings.update({
@@ -225,6 +225,10 @@ def build_ips_filter_settings(risk_profile: str, goal: str,
             "filter-momentum-score":   ["A", "B"],
             "filter-vgm-score":        ["A", "B"],
         })
+    # ── Nếu loại ngành Tài chính/BĐS: ghi chú vào settings để render tag preview ──
+    # (Việc lọc thực tế xảy ra trong screener_callbacks.py qua investor-profile-store)
+    if avoid_bank_re:
+        settings["_avoid_bank_re_note"] = "Loại: Tài chính, Bất động sản"
 
     return settings
 
@@ -732,18 +736,40 @@ def render_final_summary(step, goal, will, pct_savings, emergency,
         "prefer_dividend" in unique_flags,
         "avoid_bank_re" in unique_flags,
     )
-    filter_tags = [
-        html.Span(fid.replace("filter-", "").upper() + ": " + str(v),
-                  style={
-                      "fontSize": "10px", "fontWeight": "600",
-                      "color": _BLUE,
-                      "backgroundColor": "rgba(59,130,246,0.12)",
-                      "border": "1px solid rgba(59,130,246,0.25)",
-                      "padding": "3px 8px", "borderRadius": "10px",
-                      "fontFamily": _FONT_MONO,
-                  })
-        for fid, v in list(filter_settings.items())[:8]   # chỉ show 8 filters đầu
-    ]
+    filter_tags = []
+    for fid, v in list(filter_settings.items())[:8]:
+        # Bỏ qua key nội bộ bắt đầu bằng "_"
+        if fid.startswith("_"):
+            continue
+        filter_tags.append(
+            html.Span(
+                fid.replace("filter-", "").upper() + ": " + str(v),
+                style={
+                    "fontSize": "10px", "fontWeight": "600",
+                    "color": _BLUE,
+                    "backgroundColor": "rgba(59,130,246,0.12)",
+                    "border": "1px solid rgba(59,130,246,0.25)",
+                    "padding": "3px 8px", "borderRadius": "10px",
+                    "fontFamily": _FONT_MONO,
+                },
+            )
+        )
+
+    # Thêm tag đặc biệt cho avoid_bank_re
+    if "avoid_bank_re" in unique_flags:
+        filter_tags.append(
+            html.Span(
+                "🚫 Loại: Tài chính · Bất động sản",
+                style={
+                    "fontSize": "10px", "fontWeight": "700",
+                    "color": "#ef4444",
+                    "backgroundColor": "rgba(239,68,68,0.12)",
+                    "border": "1px solid rgba(239,68,68,0.3)",
+                    "padding": "3px 8px", "borderRadius": "10px",
+                    "fontFamily": _FONT_MONO,
+                },
+            )
+        )
 
     return html.Div([
         # Profile header
