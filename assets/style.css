@@ -113,39 +113,81 @@ iframe[src*="tradingview" i],
   --radius-md:  8px;
   --radius-lg:  12px;
   --radius-xl:  16px;
+
+  /* ── ⚡ GLASSMORPHISM TOKENS (Light) ──
+     Frosted panels read as soft, milky glass over a pale terminal floor. */
+  --neon-cyan:        #0090c8;
+  --neon-cyan-dim:    rgba(0, 144, 200, 0.10);
+  --glass-bg:         rgba(255, 255, 255, 0.55);
+  --glass-bg-strong:  rgba(255, 255, 255, 0.72);
+  --glass-bg-deep:    rgba(255, 255, 255, 0.85);
+  --glass-border:     rgba(15, 23, 42, 0.08);
+  --glass-border-accent: rgba(16, 185, 129, 0.35);
+  --glass-highlight:  rgba(255, 255, 255, 0.6);
+  --glass-blur:       blur(20px) saturate(180%);
+  --glass-blur-sm:    blur(12px) saturate(160%);
+  --glass-shadow:     0 8px 32px rgba(15, 23, 42, 0.10);
+  --glass-shadow-lg:  0 16px 48px rgba(15, 23, 42, 0.14);
+  --ease-glass:       cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* 2. THEME TỐI */
+/* 2. THEME TỐI — "Gentelella" navy/teal reference palette */
 [data-theme="dark"] {
-  /* Core backgrounds: Đen và xám tối */
-  --bg-void:        #000000;
-  --bg-base:        #0a0a0a;
-  --bg-card:        #121212;
-  --bg-surface:     #1a1a1a;
-  --bg-elevated:    #242424;
-  --bg-hover:       #2a2a2a;
-  --bg-active:      #333333;
+  /* Dark Mode — nền navy đậm kiểu Gentelella, card phẳng viền mảnh,
+     accent teal cổ điển thay cho green Tailwind cũ. */
+  --bg-void:        #0f1623;
+  --bg-base:        #0f1623;
+  --bg-card:        #1a2332;
+  --bg-surface:     #1a2332;
+  --bg-elevated:    #232e41;
+  --bg-hover:       #232e41;
+  --bg-active:      #2d3a50;
 
-  /* Borders: Xám tối */
-  --border-subtle:  #2a2a2a;
-  --border-dim:     #333333;
-  --border-default: #404040;
-  --border-bright:  #22c55e;
+    --border-subtle:  #232e41;
+  --border-dim:     #2a3548;
+  --border-default: #3a4760;
+  --border-bright:  #1abb9c;
 
-  /* Primary accent — Xanh lá cây sáng (Neon-ish) */
-  --accent:         #22c55e;
-  --accent-dim:     rgba(34, 197, 94, 0.12);
-  --accent-glow:    rgba(34, 197, 94, 0.25);
-  --accent-deep:    #16a34a;
+    --accent:         #1abb9c;
+  --accent-dim:     rgba(26, 187, 156, 0.14);
+  --accent-glow:    rgba(26, 187, 156, 0.22);
+  --accent-deep:    #149e85;
 
-  /* Text: Trắng và xám nhạt */
-  --text-primary:   #f8fafc;
+    --text-primary:   #f1f5f9;
   --text-secondary: #cbd5e1;
-  --text-muted:     #94a3b8;
-  --text-ticker:    #22c55e;
+  --text-muted:     #8a99ad;
+  --text-ticker:    #2dd4bf;
 
-  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.6);
-  --shadow-deep:    0 8px 40px rgba(0, 0, 0, 0.8);
+  /* ── Pastel "icon-dim" tones — ô icon mờ trên card tối, lấy mẫu
+     trực tiếp từ ảnh tham khảo Gentelella (KPI card icon boxes) ── */
+  --pastel-teal-bg:    #1a3840;
+  --pastel-teal-fg:    #2dd4bf;
+  --pastel-blue-bg:    #16314a;
+  --pastel-blue-fg:    #60a5fa;
+  --pastel-amber-bg:   #3c3729;
+  --pastel-amber-fg:   #fbbf24;
+  --pastel-red-bg:     #3a2226;
+  --pastel-red-fg:     #f87171;
+  --pastel-purple-bg:  #2a2240;
+  --pastel-purple-fg:  #c084fc;
+
+  --shadow-card:    0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-deep:    0 8px 32px rgba(0, 0, 0, 0.45);
+
+  /* ── Glass tokens (Dark) — kính tối nhẹ, KHÔNG neon ── */
+  --neon-cyan:        #38bdf8;
+  --neon-cyan-dim:    rgba(56, 189, 248, 0.10);
+  --glass-bg:         rgba(26, 35, 50, 0.70);
+  --glass-bg-strong:  rgba(20, 28, 41, 0.88);
+  --glass-bg-deep:    rgba(15, 22, 35, 0.96);
+  --glass-border:     rgba(255, 255, 255, 0.06);
+  --glass-border-accent: rgba(26, 187, 156, 0.30);
+  --glass-highlight:  rgba(255, 255, 255, 0.04);
+  --glass-blur:       blur(14px) saturate(140%);
+  --glass-blur-sm:    blur(8px) saturate(130%);
+  --glass-shadow:     0 8px 32px rgba(0, 0, 0, 0.40);
+  --glass-shadow-lg:  0 16px 48px rgba(0, 0, 0, 0.50);
+  --ease-glass:       cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
@@ -338,7 +380,7 @@ body {
 /* ============================================================================
    AG GRID — Bloomberg Terminal-style data table
    ============================================================================ */
-.ag-theme-alpine-dark {
+[data-theme="dark"] .ag-theme-alpine-dark {
   /* Core tokens */
   --ag-background-color:              #060f1e;
   --ag-header-background-color:       #091526;
@@ -366,16 +408,16 @@ body {
 }
 
 /* ── Header ── */
-.ag-theme-alpine-dark .ag-header {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header {
   background: linear-gradient(180deg, #0d1d30 0%, #091526 100%) !important;
   border-bottom: 2px solid #1d4d80 !important;
 }
 
-.ag-theme-alpine-dark .ag-header-row {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-row {
   background: transparent !important;
 }
 
-.ag-theme-alpine-dark .ag-header-cell {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell {
   font-family: 'JetBrains Mono', monospace !important;
   font-weight: 700 !important;
   font-size: 10px !important;
@@ -387,48 +429,48 @@ body {
   padding: 0 10px !important;
 }
 
-.ag-theme-alpine-dark .ag-header-cell:hover {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell:hover {
   color: #00d4ff !important;
   background: rgba(0, 212, 255, 0.05) !important;
 }
 
 /* Sort icons */
-.ag-theme-alpine-dark .ag-sort-indicator-icon {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-sort-indicator-icon {
   color: #00d4ff !important;
 }
 
 /* ── Rows ── */
-.ag-theme-alpine-dark .ag-row {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row {
   border-bottom: 1px solid #0a1e35 !important;
   transition: background-color 0.15s ease;
 }
 
-.ag-theme-alpine-dark .ag-row-odd {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row-odd {
   background-color: #060f1e !important;
 }
 
-.ag-theme-alpine-dark .ag-row-even {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row-even {
   background-color: #07101f !important;
 }
 
-.ag-theme-alpine-dark .ag-row:hover {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row:hover {
   background-color: #112236 !important;
   /* Subtle left glow on hover */
   box-shadow: inset 3px 0 0 rgba(0, 212, 255, 0.4);
 }
 
 /* Selected row */
-.ag-theme-alpine-dark .ag-row-selected {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected {
   background-color: rgba(0, 212, 255, 0.07) !important;
   box-shadow: inset 3px 0 0 #00d4ff !important;
 }
 
-.ag-theme-alpine-dark .ag-row-selected .ag-cell {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected .ag-cell {
   color: #d6eaf8 !important;
 }
 
 /* ── Cells ── */
-.ag-theme-alpine-dark .ag-cell {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 12px !important;
   border-right: 1px solid #0a1e35 !important;
@@ -438,37 +480,37 @@ body {
 }
 
 /* Right-aligned cells */
-.ag-theme-alpine-dark .ag-cell[class*="rightAligned"],
-.ag-theme-alpine-dark [col-id] .ag-cell-value {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[class*="rightAligned"],
+[data-theme="dark"] .ag-theme-alpine-dark [col-id] .ag-cell-value {
   font-variant-numeric: tabular-nums;
 }
 
 /* Empty/dash values */
-.ag-theme-alpine-dark .ag-cell-value:empty::after {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell-value:empty::after {
   content: '—';
   color: #1d4d80;
 }
 
 /* ── Pinned columns ── */
-.ag-theme-alpine-dark .ag-pinned-left-cols-container {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-pinned-left-cols-container {
   border-right: 2px solid #1d4d80 !important;
   box-shadow: 6px 0 16px rgba(0,0,0,0.5);
   background: #060f1e !important;
 }
 
-.ag-theme-alpine-dark .ag-pinned-left-header {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-pinned-left-header {
   border-right: 2px solid #1d4d80 !important;
   background: linear-gradient(180deg, #0d1d30 0%, #091526 100%) !important;
 }
 
 /* ── Filter input ── */
-.ag-theme-alpine-dark .ag-filter-toolpanel-header,
-.ag-theme-alpine-dark .ag-filter-body-wrapper {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-filter-toolpanel-header,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-filter-body-wrapper {
   background: #091526 !important;
   border-color: #1d4d80 !important;
 }
 
-.ag-theme-alpine-dark .ag-input-field-input {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-input-field-input {
   background: #0d1d30 !important;
   border: 1px solid #1d4d80 !important;
   color: #d6eaf8 !important;
@@ -478,7 +520,7 @@ body {
 }
 
 /* ── Pagination panel ── */
-.ag-theme-alpine-dark .ag-paging-panel {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-panel {
   background: linear-gradient(180deg, #091526 0%, #060f1e 100%) !important;
   border-top: 1px solid #1d4d80 !important;
   color: #3d6a8a !important;
@@ -488,54 +530,54 @@ body {
   padding: 0 16px !important;
 }
 
-.ag-theme-alpine-dark .ag-paging-button {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button {
   color: #3d6a8a !important;
   transition: all 0.2s;
   border-radius: 4px !important;
 }
 
-.ag-theme-alpine-dark .ag-paging-button:hover:not([disabled]) {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button:hover:not([disabled]) {
   background: rgba(0, 212, 255, 0.1) !important;
   color: #00d4ff !important;
 }
 
-.ag-theme-alpine-dark .ag-paging-button[disabled] {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button[disabled] {
   opacity: 0.2 !important;
 }
 
-.ag-theme-alpine-dark .ag-paging-page-summary-panel {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-page-summary-panel {
   color: #7fa8cc !important;
 }
 
 /* ── Scrollbar inside grid ── */
-.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar,
-.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 
-.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-track,
-.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-track {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-track,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-track {
   background: #060f1e;
 }
 
-.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb,
-.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-thumb {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-thumb {
   background: #163660;
   border-radius: 3px;
 }
 
-.ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb:hover,
-.ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-thumb:hover {
   background: #00d4ff;
 }
 
 /* ── No rows overlay ── */
-.ag-theme-alpine-dark .ag-overlay-no-rows-wrapper {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-overlay-no-rows-wrapper {
   background: #060f1e !important;
 }
 
-.ag-theme-alpine-dark .ag-overlay-no-rows-center {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-overlay-no-rows-center {
   color: #2a5070 !important;
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 13px !important;
@@ -1572,7 +1614,7 @@ html, body {
    ============================================================================ */
 
 /* ── 1. AG GRID TABLE — Font mono cho số, header tối hơn ── */
-.ag-theme-alpine-dark {
+[data-theme="dark"] .ag-theme-alpine-dark {
     --ag-background-color: #07111f !important;
     --ag-odd-row-background-color: #07111f !important;
     --ag-header-background-color: #040d18 !important;
@@ -1592,7 +1634,7 @@ html, body {
 }
 
 /* Header chữ mono, uppercase */
-.ag-theme-alpine-dark .ag-header-cell-label {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell-label {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 10px !important;
     font-weight: 700 !important;
@@ -1602,21 +1644,21 @@ html, body {
 }
 
 /* Số trong bảng dùng font mono */
-.ag-theme-alpine-dark .ag-cell[col-id="Price Close"],
-.ag-theme-alpine-dark .ag-cell[col-id="Volume"],
-.ag-theme-alpine-dark .ag-cell[col-id="Market Cap"],
-.ag-theme-alpine-dark .ag-cell[col-id="Perf_1W"],
-.ag-theme-alpine-dark .ag-cell[col-id="Perf_1M"],
-.ag-theme-alpine-dark .ag-cell[col-id="P/E"],
-.ag-theme-alpine-dark .ag-cell[col-id="P/B"],
-.ag-theme-alpine-dark .ag-cell[col-id="ROE (%)"],
-.ag-theme-alpine-dark .ag-cell[col-id="RSI_14"] {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Price Close"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Volume"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Market Cap"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Perf_1W"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Perf_1M"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="P/E"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="P/B"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="ROE (%)"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="RSI_14"] {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 13px !important;
 }
 
 /* Ticker cell đặc biệt */
-.ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 14px !important;
     font-weight: 700 !important;
@@ -1624,19 +1666,19 @@ html, body {
 }
 
 /* Row hover smooth */
-.ag-theme-alpine-dark .ag-row {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row {
     transition: background-color 0.15s ease !important;
     border-bottom: 1px solid rgba(14, 37, 64, 0.8) !important;
 }
 
 /* Selected row glow */
-.ag-theme-alpine-dark .ag-row-selected {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected {
     background-color: rgba(0, 212, 255, 0.08) !important;
     border-left: 3px solid #00d4ff !important;
 }
 
 /* Pagination */
-.ag-theme-alpine-dark .ag-paging-panel {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-panel {
     background-color: #040d18 !important;
     border-top: 1px solid #0e2540 !important;
     color: #5a8ab0 !important;
@@ -1645,11 +1687,11 @@ html, body {
     padding: 8px 16px !important;
 }
 
-.ag-theme-alpine-dark .ag-paging-button {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button {
     color: #7fa8cc !important;
 }
 
-.ag-theme-alpine-dark .ag-paging-button:hover {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button:hover {
     color: #00d4ff !important;
 }
 
@@ -2767,23 +2809,23 @@ span[style*="f59e0b"] {
 }
 
 /* Ép màu AG Grid */
-.ag-theme-alpine-dark {
+[data-theme="dark"] .ag-theme-alpine-dark {
     --ag-selected-row-background-color: rgba(0, 166, 81, 0.08) !important;
     --ag-range-selection-border-color: #00a651 !important;
     --ag-row-hover-color: rgba(0, 166, 81, 0.05) !important;
 }
 
-.ag-theme-alpine-dark .ag-row:hover {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row:hover {
     box-shadow: inset 3px 0 0 rgba(0, 166, 81, 0.4) !important;
 }
 
-.ag-theme-alpine-dark .ag-row-selected {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected {
     box-shadow: inset 3px 0 0 #00a651 !important;
     border-left: 3px solid #00a651 !important;
 }
 
-.ag-theme-alpine-dark .ag-header-cell:hover,
-.ag-theme-alpine-dark .ag-sort-indicator-icon {
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell:hover,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-sort-indicator-icon {
     color: #00c85a !important;
 }
 
@@ -3619,30 +3661,902 @@ span[style*="f59e0b"] {
 .cyber-theme-tooltip-warning[data-popper-placement^="top"] .tooltip-arrow::before {
     border-top-color: #f59e0b !important;
 }
-/* =========================================================
-   ĐỒNG BỘ MÀU XANH LÁ CHO NÚT TRÊN HEADER
-   ========================================================= */
+/* ============================================================================
+   ⚡ CYBERPUNK GLASSMORPHISM — UPGRADE LAYER
+   Thêm vào CUỐI file để cascade ghi đè các khối bề mặt (card/modal/dropdown/
+   tooltip) sang kính mờ thật (backdrop-filter), giữ NGUYÊN class/id/cấu trúc
+   gốc — không đụng đến logic, callback hay layout. An toàn 100% để dán đè.
+   ============================================================================ */
 
-/* 1. Nút Trạm Tâm Lý (Nền xanh nguyên khối) */
-#btn-open-psy-clinic {
-    background-color: #10b981 !important; /* Màu xanh ngọc lục bảo */
-    border-color: #10b981 !important;
-    color: #ffffff !important;
+/* ── 0. Khử nhiễu chuyển động cho người dùng nhạy cảm ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 
-#btn-open-psy-clinic:hover {
-    background-color: #059669 !important; /* Xanh sậm lại khi trỏ chuột */
-    border-color: #059669 !important;
+/* ── 1. NỀN TỔNG: thêm chiều sâu cho void, glass nổi rõ hơn ── */
+[data-theme="dark"] body {
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% -10%, rgba(0, 166, 81, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 10%, rgba(0, 212, 255, 0.04) 0%, transparent 55%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 212, 255, 0.012) 2px, rgba(0, 212, 255, 0.012) 4px);
+  background-attachment: fixed;
 }
 
-/* 2. Nút chuyển Theme (Đổi màu icon sang xanh lá cho tinh tế) */
-/* Cú pháp [id*="theme"] giúp tự động bắt trúng nút đổi theme dù ID của bạn là gì */
-[id*="theme-switch"], [id*="theme-toggle"] {
+/* ── 2. SCROLLBAR — siêu mảnh, tự ẩn cạnh, kính mờ ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border-accent);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background 0.25s var(--ease-glass);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); background-clip: content-box; }
+
+/* ── 3. THẺ THÔNG TIN & METRIC — kính mờ thật ── */
+.info-card,
+.score-box,
+.chart-loading,
+.active-filter-tag,
+.card,
+[id*="selected-filter"],
+.filter-item {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow);
+}
+.info-card:hover,
+.score-box:hover {
+  border-color: var(--glass-border-accent) !important;
+  box-shadow: var(--glass-shadow-lg), 0 0 24px var(--accent-dim);
+}
+
+/* ── 4. AG GRID — chỉ làm kính ở khung viền ngoài, giữ ô dữ liệu sắc nét ── */
+[data-theme="dark"] .ag-theme-alpine-dark {
+  border: 1px solid var(--glass-border-accent) !important;
+  box-shadow: var(--glass-shadow-lg), inset 0 1px 0 rgba(0, 212, 255, 0.06) !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-panel {
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+}
+
+/* ── 5. MODAL — khung kính tối, nội dung vẫn rõ chữ ── */
+.modal-content,
+#login-modal .modal-content {
+  background: var(--glass-bg-strong) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-accent) !important;
+  box-shadow: var(--glass-shadow-lg), 0 0 0 1px rgba(0, 166, 81, 0.06) !important;
+}
+.modal-header {
+  background: rgba(4, 13, 24, 0.35) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+}
+.modal-backdrop.show { backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); opacity: 0.6 !important; }
+
+/* ── 6. DROPDOWN / SELECT MENUS — kính mờ nổi trên mọi nền ── */
+.custom-dropdown .Select-menu-outer,
+.ssi-dropdown-custom .Select-menu-outer,
+.year-filter-dropdown .Select-menu-outer,
+.ticker-search-dropdown .Select-menu-outer,
+.Select-menu-outer,
+#strategy-accordion-popover,
+#strategy-accordion-popover .popover-body > div {
+  background: var(--glass-bg-deep) !important;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border-accent) !important;
+}
+#strategy-preset-dropdown .Select-control,
+#filter-all-industry .Select-control,
+#saved-filters-dropdown .Select-control,
+#search-ticker-input .Select-control {
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+}
+
+/* ── 7. TOOLTIP / TOAST — viên kính nổi nhẹ, glow theo accent ── */
+.cyber-tooltip .tooltip-inner,
+.cyber-theme-tooltip .tooltip-inner,
+.cyber-theme-tooltip-warning .tooltip-inner,
+.custom-vss-tooltip .tooltip-inner,
+.toast,
+.toast-notification {
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  background: var(--glass-bg-deep) !important;
+}
+
+/* ── 8. ONBOARDING (IPS) — đồng bộ kính mờ cho thẻ lựa chọn & tóm tắt ── */
+.choice-card,
+.check-item,
+.summary-card,
+.rail-dot {
+  background: rgba(10, 22, 40, 0.45) !important;
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+}
+#ips-onboarding-wrapper { background: #040810 !important; }
+
+/* ── 9. ACTION BUTTON LIFT — bổ sung micro-interaction cho nút còn thiếu ── */
+.btn-save-ssi, .btn-ghost, #toggle-filter-btn, .hero-btn {
+  will-change: transform;
+}
+.btn-primary, .btn-success {
+  transition: transform 0.25s var(--ease-glass), box-shadow 0.25s var(--ease-glass) !important;
+}
+
+/* ── 10. HỘI TỤ MÀU LẠC (legacy #58a6ff / #3b82f6 / #00d4ff lẻ tẻ) VỀ HỆ THỐNG ── */
+.year-filter-dropdown .Select-arrow,
+.ips-choice-card .check-box.checked {
+  border-top-color: var(--accent) !important;
+}
+[style*="color: #58a6ff" i],
+[style*="color: rgb(88, 166, 255)" i] {
+  color: var(--accent) !important;
+}
+
+/* ── 11. FOCUS VISIBLE — giữ khả năng điều hướng bằng bàn phím rõ ràng ── */
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible,
+input:focus-visible, .Select-control:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+}
+
+/* ── 12. LIGHT MODE — đảm bảo kính mờ vẫn đủ tương phản trên nền sáng ── */
+[data-theme="light"] .info-card,
+[data-theme="light"] .score-box,
+[data-theme="light"] .modal-content,
+[data-theme="light"] .Select-menu-outer {
+  box-shadow: var(--glass-shadow) !important;
+}
+[data-theme="light"] .modal-header { background: rgba(255, 255, 255, 0.5) !important; }
+
+/* ============================================================================
+   ☀️ LIGHT MODE — POWER-BI DASHBOARD STYLE
+   🌙 DARK MODE — TỐI SẠCH, KHÔNG NEON CYBERPUNK
+   Cả 2 khối đều đặt cuối file để thắng cascade. Mỗi khối chỉ áp dụng khi
+   <html data-theme="..."> tương ứng — toggle bật/tắt sẽ đổi đúng theo.
+   ============================================================================ */
+
+:root {
+  --pbi-rose:   #e11d48; --pbi-rose-bg:   rgba(244, 63, 94, 0.08);  --pbi-rose-bd:   rgba(244, 63, 94, 0.20);
+  --pbi-green:  #16a34a; --pbi-green-bg:  rgba(34, 197, 94, 0.08);  --pbi-green-bd:  rgba(34, 197, 94, 0.20);
+  --pbi-purple: #7c3aed; --pbi-purple-bg: rgba(139, 92, 246, 0.08); --pbi-purple-bd: rgba(139, 92, 246, 0.20);
+  --pbi-amber:  #b45309; --pbi-amber-bg:  rgba(245, 158, 11, 0.10); --pbi-amber-bd:  rgba(245, 158, 11, 0.22);
+  --pbi-sky:    #0369a1; --pbi-sky-bg:    rgba(14, 165, 233, 0.08); --pbi-sky-bd:    rgba(14, 165, 233, 0.20);
+  --pbi-teal:   #0f766e; --pbi-teal-bg:   rgba(20, 184, 166, 0.08); --pbi-teal-bd:   rgba(20, 184, 166, 0.20);
+}
+
+/* ── Nền tổng ── */
+[data-theme="light"] body {
+  background-image: none !important;
+  background-color: #f1f5f9 !important;
+}
+[data-theme="dark"] body {
+  background-image: none !important;   /* bỏ scanline/neon texture cũ */
+  background-color: #0f1623 !important;
+}
+
+/* ── Card / Modal / Dropdown — LIGHT: trắng đặc, bóng mềm ── */
+[data-theme="light"] .info-card,
+[data-theme="light"] .score-box,
+[data-theme="light"] .chart-loading,
+[data-theme="light"] .active-filter-tag,
+[data-theme="light"] .card,
+[data-theme="light"] .filter-item,
+[data-theme="light"] .modal-content,
+[data-theme="light"] #login-modal .modal-content,
+[data-theme="light"] .Select-menu-outer,
+[data-theme="light"] .custom-dropdown .Select-menu-outer,
+[data-theme="light"] .ssi-dropdown-custom .Select-menu-outer,
+[data-theme="light"] .year-filter-dropdown .Select-menu-outer,
+[data-theme="light"] #strategy-accordion-popover {
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06) !important;
+}
+[data-theme="light"] .info-card:hover,
+[data-theme="light"] .score-box:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.10) !important;
+  transform: translateY(-2px);
+}
+
+/* ── Card / Modal / Dropdown — DARK: tối trơn, viền mảnh, KHÔNG neon ── */
+[data-theme="dark"] .info-card,
+[data-theme="dark"] .score-box,
+[data-theme="dark"] .chart-loading,
+[data-theme="dark"] .active-filter-tag,
+[data-theme="dark"] .card,
+[data-theme="dark"] .filter-item,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] #login-modal .modal-content,
+[data-theme="dark"] .Select-menu-outer,
+[data-theme="dark"] .custom-dropdown .Select-menu-outer,
+[data-theme="dark"] .ssi-dropdown-custom .Select-menu-outer,
+[data-theme="dark"] .year-filter-dropdown .Select-menu-outer,
+[data-theme="dark"] #strategy-accordion-popover {
+  background: #1a2332 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #2a3548 !important;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30) !important;
+}
+[data-theme="dark"] .info-card:hover,
+[data-theme="dark"] .score-box:hover {
+  border-color: #1abb9c55 !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+  transform: translateY(-2px);
+}
+
+/* ── Toolbar — LIGHT ── */
+[data-theme="light"] .toolbar-panel { background: #ffffff !important; }
+[data-theme="light"] .toolbar-tab { border-right: 1px solid #e2e8f0; }
+[data-theme="light"] .toolbar-tab .toolbar-tab-icon,
+[data-theme="light"] .toolbar-tab .toolbar-tab-label { color: #64748b; }
+[data-theme="light"] .strategy-group-header {
+  background-color: #f8fafc !important;
+  backdrop-filter: none !important;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+/* ── Toolbar — DARK ── */
+[data-theme="dark"] .toolbar-panel { background: #0f1623 !important; }
+[data-theme="dark"] .toolbar-tab { border-right: 1px solid #2a3548; }
+
+/* ── AG GRID — class thật trong DOM luôn là .ag-theme-alpine-dark (Python
+   hardcode cố định, KHÔNG đổi theo toggle) → ta tự đổi MÀU của chính class
+   đó dựa theo data-theme trên <html>, để bảng kết quả lọc cổ phiếu thực sự
+   sáng/tối theo đúng switch. ── */
+
+/* LIGHT: bảng nền trắng */
+[data-theme="light"] .ag-theme-alpine-dark {
+  --ag-background-color:               #ffffff !important;
+  --ag-foreground-color:               #1e293b !important;
+  --ag-header-background-color:        #f8fafc !important;
+  --ag-header-foreground-color:        #334155 !important;
+  --ag-border-color:                   #e2e8f0 !important;
+  --ag-row-border-color:               #f1f5f9 !important;
+  --ag-odd-row-background-color:       #fafbfc !important;
+  --ag-row-hover-color:                rgba(34, 197, 94, 0.06) !important;
+  --ag-selected-row-background-color:  rgba(34, 197, 94, 0.08) !important;
+  --ag-modal-overlay-background-color: rgba(255, 255, 255, 0.7) !important;
+  --ag-disabled-foreground-color:      #94a3b8 !important;
+  --ag-input-background-color:         #ffffff !important;
+  --ag-input-border-color:             #e2e8f0 !important;
+  --ag-secondary-foreground-color:     #64748b !important;
+  --ag-range-selection-background-color: rgba(34, 197, 94, 0.10) !important;
+  --ag-font-family:                    'Inter', sans-serif !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.05) !important;
+  border-radius: 12px;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-header,
+[data-theme="light"] .ag-theme-alpine-dark .ag-header-row {
+  background: #f8fafc !important;
+  background-image: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-header-cell-label,
+[data-theme="light"] .ag-theme-alpine-dark .ag-header-cell-text {
+  color: #334155 !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-root-wrapper {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-row {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-row-odd {
+  background-color: #fafbfc !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-paging-panel {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-icon { color: #94a3b8 !important; }
+
+/* DARK: bảng nền tối kiểu Gentelella — card phẳng, viền mảnh, accent teal */
+[data-theme="dark"] .ag-theme-alpine-dark {
+  --ag-background-color:               #1a2332 !important;
+  --ag-foreground-color:               #f1f5f9 !important;
+  --ag-header-background-color:        #0f1623 !important;
+  --ag-header-foreground-color:        #cbd5e1 !important;
+  --ag-border-color:                   #2a3548 !important;
+  --ag-row-border-color:                #232e41 !important;
+  --ag-odd-row-background-color:       #1d2738 !important;
+  --ag-row-hover-color:                rgba(26, 187, 156, 0.08) !important;
+  --ag-selected-row-background-color:  rgba(26, 187, 156, 0.12) !important;
+  --ag-modal-overlay-background-color: rgba(15, 22, 35, 0.7) !important;
+  --ag-disabled-foreground-color:      #5d6b80 !important;
+  --ag-input-background-color:         #0f1623 !important;
+  --ag-input-border-color:             #2a3548 !important;
+  --ag-secondary-foreground-color:     #8a99ad !important;
+  --ag-range-selection-background-color: rgba(26, 187, 156, 0.14) !important;
+  --ag-font-family:                    'JetBrains Mono', monospace !important;
+  border: 1px solid #2a3548 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30) !important;
+  border-radius: 12px;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-row {
+  background: #0f1623 !important;
+  background-image: none !important;
+  border-bottom: 1px solid #2a3548 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell-label,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell-text {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-root-wrapper {
+  background-color: #1a2332 !important;
+  border-color: #2a3548 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row {
+  background-color: #1a2332 !important;
+  color: #f1f5f9 !important;
+  border-bottom: 1px solid #232e41 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-row-odd {
+  background-color: #1d2738 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-paging-panel {
+  background-color: #0f1623 !important;
+  color: #cbd5e1 !important;
+  border-top: 1px solid #2a3548 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-icon { color: #5d6b80 !important; }
+
+/* ── KPI pastel card utility (cho card metric tô màu xen kẽ, dùng chung) ── */
+.kpi-pastel-rose   { background: var(--pbi-rose-bg)   !important; border-color: var(--pbi-rose-bd)   !important; }
+.kpi-pastel-green  { background: var(--pbi-green-bg)  !important; border-color: var(--pbi-green-bd)  !important; }
+.kpi-pastel-purple { background: var(--pbi-purple-bg) !important; border-color: var(--pbi-purple-bd) !important; }
+.kpi-pastel-amber  { background: var(--pbi-amber-bg)  !important; border-color: var(--pbi-amber-bd)  !important; }
+.kpi-pastel-sky    { background: var(--pbi-sky-bg)    !important; border-color: var(--pbi-sky-bd)    !important; }
+.kpi-pastel-teal   { background: var(--pbi-teal-bg)   !important; border-color: var(--pbi-teal-bd)   !important; }
+
+/* ── DARK: pastel KPI icon-box đậm hơn, lấy mẫu trực tiếp từ ảnh tham khảo
+   Gentelella (ô icon các thẻ VISITORS/REVENUE/CONVERSIONS...) — bản
+   rgba(...,0.08) siêu nhạt phía trên gần như vô hình trên nền navy đậm. ── */
+[data-theme="dark"] .kpi-pastel-rose   { background: var(--pastel-red-bg)    !important; border-color: var(--pastel-red-fg)    !important; color: var(--pastel-red-fg)    !important; }
+[data-theme="dark"] .kpi-pastel-green  { background: var(--pastel-teal-bg)   !important; border-color: var(--pastel-teal-fg)   !important; color: var(--pastel-teal-fg)   !important; }
+[data-theme="dark"] .kpi-pastel-purple { background: var(--pastel-purple-bg) !important; border-color: var(--pastel-purple-fg) !important; color: var(--pastel-purple-fg) !important; }
+[data-theme="dark"] .kpi-pastel-amber  { background: var(--pastel-amber-bg)  !important; border-color: var(--pastel-amber-fg)  !important; color: var(--pastel-amber-fg)  !important; }
+[data-theme="dark"] .kpi-pastel-sky    { background: var(--pastel-blue-bg)   !important; border-color: var(--pastel-blue-fg)   !important; color: var(--pastel-blue-fg)   !important; }
+[data-theme="dark"] .kpi-pastel-teal   { background: var(--pastel-teal-bg)   !important; border-color: var(--pastel-teal-fg)   !important; color: var(--pastel-teal-fg)   !important; }
+
+/* ── Scrollbar — LIGHT riêng (DARK đã có ở lớp Glassmorphism phía trên) ── */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  background-clip: content-box;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; background-clip: content-box; }
+/* ============================================================================
+   CHART CONTROLS (tab BIẾN ĐỘNG GIÁ) — theme-aware
+   Thay cho inline style hard-code dark trong chart_controls.py cũ.
+   Layout này dựng tĩnh 1 lần (Python không biết theme tại thời điểm
+   render) nên dùng CSS variable đổi theo [data-theme] là cách đúng.
+   ============================================================================ */
+.chart-controls-panel {
+  padding: 20px;
+  background: var(--bg-surface);
+  border-radius: 15px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 20px;
+}
+.chart-controls-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+}
+.chart-controls-label i { margin-right: 8px; color: var(--accent); }
+
+.chart-toggle-box {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+.chart-toggle-box span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-right: 10px;
+  font-weight: 500;
+}
+
+.chart-tip-box {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background: var(--pbi-amber-bg, rgba(245,158,11,0.08));
+  border-radius: 8px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-left: 4px solid #f59e0b;
+}
+.chart-tip-box .tip-label { color: #b45309; font-size: 13px; font-weight: 700; }
+[data-theme="dark"] .chart-tip-box .tip-label { color: #fbbf24; }
+.chart-tip-box .tip-text { color: var(--text-muted); font-size: 12px; margin-left: 5px; }
+
+/* Dropdown bên trong chart controls — đè style mặc định của react-select */
+.chart-controls-panel .custom-dropdown .Select-control,
+.chart-controls-panel .custom-dropdown > div {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 8px !important;
+  color: var(--text-primary) !important;
+}
+
+.chart-empty-state { color: var(--text-muted); }
+.chart-empty-state i { color: var(--text-muted); opacity: 0.7; }
+
+/* ============================================================================
+   TAB "BIỂU ĐỒ" — Template picker panel (financial_charts_callbacks.py)
+   ============================================================================ */
+.fin-chart-picker-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.fin-chart-picker-panel .picker-header {
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 14px; font-weight: 700;
+  color: var(--text-primary);
+}
+.fin-chart-picker-panel .picker-toolbar {
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.fin-chart-picker-panel .picker-search-input {
+  width: 100%; padding: 7px 10px 7px 32px;
+  background: var(--bg-card); color: var(--text-primary);
+  border: 1px solid var(--border-subtle); border-radius: 6px;
+  font-size: 12px; outline: none;
+}
+.fin-chart-picker-panel .picker-search-icon {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); font-size: 12px; pointer-events: none;
+}
+.fin-chart-picker-panel .picker-group-title {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  margin-bottom: 8px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle); letter-spacing: 0.5px;
+}
+.fin-chart-picker-panel .picker-checklist label {
+  font-size: 12px; color: var(--text-secondary); cursor: pointer;
+}
+
+.fin-chart-render-box {
+  flex: 1; min-width: 0;
+  background: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+/* ============================================================================
+   🔧 LIGHT MODE FIX — Ghi đè các block dark hard-code không có [data-theme]
+   prefix. Các block toàn cục (.ag-theme-alpine-dark .ag-row-selected v.v.)
+   hard-code màu nền đen/navy → cần ép lại sang trắng khi light mode.
+   ============================================================================ */
+
+/* AG Grid — Row hover & selected: xóa màu dark cứng trong light mode */
+[data-theme="light"] .ag-theme-alpine-dark .ag-row:hover {
+  background-color: rgba(34, 197, 94, 0.06) !important;
+  box-shadow: inset 3px 0 0 rgba(34, 197, 94, 0.4) !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-row-selected {
+  background-color: rgba(34, 197, 94, 0.08) !important;
+  box-shadow: inset 3px 0 0 #16a34a !important;
+  border-left: none !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-row-selected .ag-cell {
+  color: #1e293b !important;
+}
+
+/* AG Grid — Pagination panel light */
+[data-theme="light"] .ag-theme-alpine-dark .ag-paging-panel,
+[data-theme="light"] .ag-theme-alpine-dark .ag-paging-button,
+[data-theme="light"] .ag-theme-alpine-dark .ag-paging-page-summary-panel {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-paging-button:hover:not([disabled]) {
+  background-color: rgba(34, 197, 94, 0.10) !important;
+  color: #16a34a !important;
+}
+
+/* AG Grid — Pinned left panel (cột MÃ CK) light */
+[data-theme="light"] .ag-theme-alpine-dark .ag-pinned-left-cols-container,
+[data-theme="light"] .ag-theme-alpine-dark .ag-pinned-left-header {
+  background-color: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+  box-shadow: 2px 0 8px rgba(15,23,42,0.04) !important;
+}
+
+/* Modal header — nền sáng, chữ tối */
+[data-theme="light"] .modal-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Modal title (span text cạnh PDF) */
+[data-theme="light"] #modal-title {
+  color: #1e293b !important;
+}
+
+/* Modal nav-tabs (tab TỔNG QUAN / BIẾN ĐỘNG GIÁ ...) */
+[data-theme="light"] .modal-body .nav-tabs,
+[data-theme="light"] .nav-tabs {
+  background: #f8fafc !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+[data-theme="light"] .modal-body .nav-tabs .nav-link,
+[data-theme="light"] .nav-tabs .nav-link {
+  color: #64748b !important;
+  background: transparent !important;
+}
+[data-theme="light"] .modal-body .nav-tabs .nav-link:hover,
+[data-theme="light"] .nav-tabs .nav-link:hover {
+  color: #1e293b !important;
+  background: rgba(15, 23, 42, 0.04) !important;
+}
+[data-theme="light"] .modal-body .nav-tabs .nav-link.active,
+[data-theme="light"] .nav-tabs .nav-link.active {
+  color: #0369a1 !important;
+  background: #ffffff !important;
+  border-bottom: 2px solid #0369a1 !important;
+}
+
+/* dbc.Tabs trong modal body — override màu tab đen cứng */
+[data-theme="light"] .modal-body .tab-content {
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+/* ============================================================================
+   ⚡ TAB "BIẾN ĐỘNG GIÁ" — class mới dùng trong chart_callbacks.py
+   Dán đoạn này vào CUỐI style.css (không đụng gì khác trong file của bạn).
+   Tái dùng các biến --positive/--negative/--warning/--bg-card/--text-primary...
+   đã có sẵn trong :root của bạn — nếu bạn đã đổi tên biến gốc, sửa lại tên ở
+   đây cho khớp.
+   ============================================================================ */
+
+/* ── Biến accent riêng cho từng metric chip (không trùng dữ liệu pos/neg) ── */
+:root {
+  --chart-chip-sky:    #0ea5e9;
+  --chart-chip-blue:   #2563eb;
+  --chart-chip-purple: #8b5cf6;
+  --chart-chip-teal:   #14b8a6;
+}
+[data-theme="light"] {
+  --chart-chip-sky:    #0284c7;
+  --chart-chip-blue:   #1d4ed8;
+  --chart-chip-purple: #7c3aed;
+  --chart-chip-teal:   #0f766e;
+}
+[data-theme="dark"] {
+  --chart-chip-sky:    #00d4ff;
+  --chart-chip-blue:   #58a6ff;
+  --chart-chip-purple: #b388ff;
+  --chart-chip-teal:   #2dd4bf;
+}
+
+/* ── Empty / no-data card (dùng chung với .chart-empty-state đã có) ── */
+.chart-no-data-card {
+  background: var(--bg-card);
+  border-radius: 15px;
+  border: 1px solid var(--negative-dim, rgba(239, 68, 68, 0.25));
+}
+.chart-no-data-card--warning {
+  border-color: var(--warning-dim, rgba(245, 158, 11, 0.3));
+}
+.chart-no-data-title {
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+.chart-no-data-reason,
+.chart-no-data-detail {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+.chart-warning-text {
+  color: var(--negative);
+}
+
+/* ── Info bar (dải 7 ô CAO NHẤT KỲ / THẤP NHẤT KỲ / ...) ── */
+.chart-info-bar {
+  display: flex;
+  gap: 10px;
+  padding: 14px 4px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+}
+.chart-info-bar-wrapper {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-card);
+}
+.chart-metric-chip {
+  padding: 12px 18px;
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  border-top: 2px solid; /* màu thật set qua inline borderTopColor theo từng chip */
+  min-width: 130px;
+  flex: 1;
+}
+.chart-metric-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+.chart-metric-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: -0.02em;
+}
+
+/* ── Khung biểu đồ nến ── */
+.chart-graph-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  padding: 8px 4px 4px 4px;
+}
+/* ============================================================================
+   FORCE %-COLUMN COLORS — cellClassRules cho cột % (Price_Change_Pct,
+   Perf_1W, Perf_1M...). Đặt cuối file + dùng class riêng để CHẮC CHẮN
+   thắng mọi rule .ag-cell { color: ... } khác có thể đang ghi đè màu
+   set qua cellStyle JS (một số theme AG Grid áp color qua CSS class với
+   độ ưu tiên cao hơn inline style trong vài trường hợp cấu hình).
+   ============================================================================ */
+.ag-theme-alpine-dark .cell-pct-positive,
+.ag-theme-alpine-dark .cell-pct-positive .ag-cell-value,
+.ag-theme-alpine-dark .cell-pct-positive span {
     color: #10b981 !important;
-    border-color: rgba(16, 185, 129, 0.4) !important;
+    font-weight: 700 !important;
+}
+.ag-theme-alpine-dark .cell-pct-negative,
+.ag-theme-alpine-dark .cell-pct-negative .ag-cell-value,
+.ag-theme-alpine-dark .cell-pct-negative span {
+  color: #ef4444 !important;
+  font-weight: 700 !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .cell-pct-zero,
+[data-theme="light"] .ag-theme-alpine-dark .cell-pct-zero .ag-cell-value {
+  color: #b45309 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .cell-pct-zero,
+[data-theme="dark"] .ag-theme-alpine-dark .cell-pct-zero .ag-cell-value {
+  color: #f5c842 !important;
 }
 
-[id*="theme-switch"]:hover, [id*="theme-toggle"]:hover {
-    color: #10b981 !important;
-    background-color: rgba(16, 185, 129, 0.15) !important; /* Hiệu ứng sáng nền nhẹ */
+/* ============================================================================
+   🌍 EARTH BACKGROUND + TOP MOVERS CARD — vss-hero
+   ============================================================================ */
+
+/* ── Ảnh nền Trái Đất từ không gian — phủ toàn bộ hero banner ───────────────
+   Đặt file ảnh tại: assets/earth-bg.jpg (Dash tự serve mọi file trong assets/
+   qua đường dẫn /assets/<tên file>). Nếu chưa có ảnh, lớp gradient của
+   #vss-hero-bg (định nghĩa ở phần khác của file) vẫn hiển thị làm fallback. */
+#vss-hero {
+  position: relative;
+  overflow: hidden;
+}
+#vss-hero-earth-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(180deg, rgba(2,6,16,0.35) 0%, rgba(2,6,16,0.15) 35%, rgba(2,6,16,0.55) 100%),
+    url('/assets/earth-bg.jpg');
+  background-size: cover;
+  background-position: center 65%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+[data-theme="light"] #vss-hero-earth-bg {
+  background-image:
+    linear-gradient(180deg, rgba(244,246,248,0.55) 0%, rgba(244,246,248,0.30) 35%, rgba(244,246,248,0.70) 100%),
+    url('/assets/earth-bg.jpg');
+}
+
+/* Đảm bảo nội dung hero nổi trên lớp ảnh nền */
+#vss-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Hero right column ──────────────────────────────────────────────────────── */
+.vss-hero-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  height: 100%;
+  flex: 0 0 auto;
+  padding-top: 56px; /* đẩy card xuống, tránh bị navbar che */
+}
+
+/* ── Card "TOP ĐỘNG" — bảng nhỏ góc phải hero, dữ liệu thật ───────────────── */
+.vss-movers-card {
+  width: 240px;
+  background: rgba(8, 14, 26, 0.62);
+  border: 1px solid rgba(120, 160, 210, 0.22);
+  border-radius: 12px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.vss-movers-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid rgba(120, 160, 210, 0.18);
+}
+.vss-movers-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #c9e6d8;
+  text-transform: uppercase;
+}
+
+.vss-movers-col-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 6px;
+  gap: 8px;
+}
+.vss-mover-col-ticker,
+.vss-mover-col-price,
+.vss-mover-col-pct {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(200, 215, 235, 0.55);
+  text-transform: none;
+}
+.vss-mover-col-ticker { flex: 0 0 52px; }
+.vss-mover-col-price   { flex: 1 1 auto; text-align: right; }
+.vss-mover-col-pct     { flex: 0 0 60px; text-align: right; }
+
+/* ── Khung cuộn cố định chiều cao, ẩn phần tràn ra ngoài ───────────────────── */
+.vss-movers-track-wrap {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  /* Mờ dần ở mép trên/dưới để hàng mã "trôi vào/ra" mượt mà, không bị cắt cụt */
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* Danh sách được nhân đôi (xem _build_top_movers_card) → cuộn đúng 50%
+   rồi lặp lại sẽ liền mạch, không giật. Thời gian dựa theo số dòng để
+   tốc độ cuộn luôn đều bất kể có bao nhiêu mã. */
+.vss-movers-list {
+  display: flex;
+  flex-direction: column;
+  animation: vssMoversScroll 22s linear infinite;
+}
+.vss-movers-track-wrap:hover .vss-movers-list {
+  animation-play-state: paused;
+}
+
+@keyframes vssMoversScroll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); } /* danh sách nhân đôi → lùi đúng 1 nửa */
+}
+
+.vss-mover-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.vss-mover-row:hover {
+  background: rgba(120, 160, 210, 0.06);
+}
+
+.vss-mover-ticker {
+  flex: 0 0 52px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #eef4fb;
+  letter-spacing: 0.02em;
+}
+.vss-mover-price {
+  flex: 1 1 auto;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: rgba(220, 230, 245, 0.85);
+}
+.vss-mover-pct {
+  flex: 0 0 60px;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ── #vss-hero-content override để 2 cột đúng layout ───────────────────────── */
+#vss-hero-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 0 40px !important;
+  height: 100% !important;
+  gap: 20px !important;
+}
+.vss-hero-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  z-index: 1;
+}
+
+/* ── Light mode overrides cho card TOP ĐỘNG ─────────────────────────────────── */
+[data-theme="light"] .vss-movers-card {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(10, 40, 100, 0.15);
+}
+[data-theme="light"] .vss-movers-title  { color: #0a4a30; }
+[data-theme="light"] .vss-mover-ticker  { color: #0a2040; }
+[data-theme="light"] .vss-mover-price   { color: #4a6080; }
+[data-theme="light"] .vss-mover-col-ticker,
+[data-theme="light"] .vss-mover-col-price,
+[data-theme="light"] .vss-mover-col-pct { color: rgba(10, 40, 80, 0.55); }
+
+/* ── Responsive: ẩn card trên mobile nhỏ ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .vss-hero-right { display: none; }
+  #vss-hero-content { justify-content: center !important; }
 }
