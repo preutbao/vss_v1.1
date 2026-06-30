@@ -1,0 +1,285 @@
+/* assets/psychology_clinic.css
+ * Style cho "Trạm Cứu Viện Tâm Lý" (psy-clinic-modal).
+ * Dash tự nạp mọi file trong /assets — không cần import thủ công.
+ *
+ * CẬP NHẬT QUAN TRỌNG VỀ THEME (sửa bug bản trước):
+ * Bản trước mình đoán nhầm cơ chế theme là `data-bs-theme` (chuẩn Bootstrap
+ * 5) — SAI. Soi style.css thật của bạn thì cơ chế đúng là:
+ *   - Selector:  [data-theme="light"]  và  [data-theme="dark"]  (đặt trên
+ *     <html>, vì style.css viết `:root, [data-theme="light"] { ... }` rồi
+ *     `[data-theme="dark"] { ... }` override).
+ *   - Biến CSS:  --bg-card, --bg-surface, --bg-elevated, --border-subtle,
+ *     --text-primary, --text-muted, --accent, --accent-dim... (KHÔNG phải
+ *     --bg-color/--border-color mình đoán trước đó).
+ *
+ * File này giờ dùng THẲNG các biến gốc đó (không tự bịa --psy-bg riêng nữa)
+ * — vì style.css đã tự đổi giá trị biến ở cấp :root/[data-theme] rồi, nên
+ * modal này TỰ ĐỘNG ăn theo theme toàn hệ thống, không cần override riêng
+ * cho từng theme nữa. Đây là cách làm đúng/bền hơn nhiều so với bản trước.
+ */
+
+#psy-clinic-modal {
+  /* Alias ngắn cho dễ đọc trong file này — trỏ THẲNG vào biến gốc của
+     style.css, không định nghĩa giá trị riêng. */
+  --psy-bg:           var(--bg-card);
+  --psy-bg-elevated:  var(--bg-surface);
+  --psy-bg-elevated-2: var(--bg-elevated);
+  --psy-border:       var(--border-subtle);
+  --psy-border-dim:   var(--border-dim);
+  --psy-text:         var(--text-primary);
+  --psy-text-muted:   var(--text-muted);
+  --psy-accent:       var(--accent);
+  --psy-accent-soft:  var(--accent-dim);
+}
+
+/* ── Khung modal ─────────────────────────────────────────────────────────
+ * QUAN TRỌNG: mọi selector dưới đây đều có tiền tố ID "#psy-clinic-modal"
+ * (không dùng class trần). Lý do: style.css có sẵn các rule TOÀN CỤC viết
+ * cho "Modal chi tiết cổ phiếu" từ trước khi có tính năng theme sáng/tối
+ * (.modal-header { background:#040d18 !important }, .modal-content {
+ * background: linear-gradient(...#07111f...) !important }, .modal-title
+ * { color:#00d4ff !important }) — các rule này áp dụng cho MỌI modal
+ * trong app, kể cả modal này, và vì cùng độ ưu tiên (class) + cùng
+ * !important nên ai load file sau (style.css load sau psychology_clinic.css
+ * theo alphabet) sẽ thắng — đây chính là lý do khung trên cùng trước đó
+ * vẫn tối bất kể đổi theme. Thêm "#psy-clinic-modal " phía trước nâng độ
+ * ưu tiên lên (1 ID + 1 class) > (1 class trần) của style.css, nên LUÔN
+ * thắng tuyệt đối, không phụ thuộc thứ tự file nữa. ────────────────────── */
+#psy-clinic-modal .modal-content {
+  background: var(--psy-bg) !important;
+  color: var(--psy-text) !important;
+  border: 1px solid var(--psy-border) !important;
+  border-radius: var(--radius-xl, 16px) !important;
+  box-shadow: var(--shadow-deep, 0 25px 60px -15px rgba(0, 0, 0, 0.55)) !important;
+  overflow: visible !important; /* QUAN TRỌNG: không cắt menu dropdown */
+}
+
+#psy-clinic-modal .modal-header {
+  /* Gradient accent nằm TRÊN một lớp nền đặc theo theme (var(--psy-bg)) */
+  background: linear-gradient(135deg, var(--psy-accent-soft), transparent), var(--psy-bg) !important;
+  border-bottom: 1px solid var(--psy-border) !important;
+  border-radius: var(--radius-xl, 16px) var(--radius-xl, 16px) 0 0 !important;
+  padding: 16px 24px !important;
+}
+
+#psy-clinic-modal .modal-title {
+  color: var(--psy-text) !important;
+  font-family: var(--font-display), sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  letter-spacing: -0.01em !important;
+}
+
+[data-theme="light"] #psy-clinic-modal .btn-close {
+  filter: none !important; /* icon X mặc định màu đen, hợp nền sáng */
+}
+[data-theme="dark"] #psy-clinic-modal .btn-close {
+  filter: invert(1) grayscale(1) brightness(2) !important; /* icon X trắng trên nền tối */
+}
+
+#psy-clinic-modal .modal-body {
+  overflow: visible !important; /* QUAN TRỌNG: không cắt menu dropdown */
+  padding: 20px 24px !important;
+  background: var(--psy-bg) !important;
+}
+
+#psy-clinic-modal .modal-footer {
+  border-top: 1px solid var(--psy-border) !important;
+  background: var(--psy-bg) !important;
+  padding: 16px 24px !important;
+}
+
+.psy-clinic-intro {
+  color: var(--psy-text-muted) !important;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.psy-clinic-label {
+  color: var(--psy-text) !important;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+/* ── Dropdown chọn mã — dùng đúng class react-select v1 mà hệ thống đang
+   dùng cho .ticker-search-dropdown (Select-control, Select-menu-outer...)
+   để nhất quán với phần Tìm mã ở Screener chính. ────────────────────── */
+.psy-clinic-ticker-dropdown .Select-control {
+  background-color: var(--psy-bg-elevated) !important;
+  border: 1px solid var(--psy-border) !important;
+  border-radius: var(--radius-md, 8px) !important;
+  min-height: 42px !important;
+}
+
+.psy-clinic-ticker-dropdown input,
+.psy-clinic-ticker-dropdown .Select-value-label {
+  color: var(--psy-text) !important;
+}
+
+.psy-clinic-ticker-dropdown .Select-placeholder {
+  color: var(--psy-text-muted) !important;
+}
+
+/* Menu gợi ý: z-index cao + KHÔNG bị overflow cha cắt mất (fix bug gõ mã
+   không thấy gợi ý) + theo đúng màu nền/viền hiện hành của theme. */
+.psy-clinic-ticker-dropdown .Select-menu-outer {
+  z-index: 4000 !important;
+  background-color: var(--psy-bg-elevated) !important;
+  border: 1px solid var(--psy-border) !important;
+  box-shadow: var(--shadow-deep, 0 12px 28px rgba(0, 0, 0, 0.45));
+}
+
+.psy-clinic-ticker-dropdown .Select-option,
+.psy-clinic-ticker-dropdown .VirtualizedSelectOption {
+  background-color: transparent !important;
+  color: var(--psy-text) !important;
+}
+
+.psy-clinic-ticker-dropdown .Select-option:hover,
+.psy-clinic-ticker-dropdown .VirtualizedSelectOption:hover,
+.psy-clinic-ticker-dropdown .Select-option.is-focused {
+  background-color: var(--psy-accent-soft) !important;
+  color: var(--psy-accent) !important;
+}
+
+/* ── Các nhóm câu hỏi (A/B/C/D/E/F) ──────────────────────────────────── */
+.psy-clinic-section {
+  background: var(--psy-bg-elevated);
+  border: 1px solid var(--psy-border);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-md, 10px);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+.psy-clinic-section:hover {
+  border-left: 3px solid var(--psy-accent);
+  background-color: var(--psy-bg-elevated-2);
+  transform: translateX(2px);
+}
+
+.psy-clinic-section-head {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.psy-clinic-section-title {
+  color: var(--psy-text);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.psy-clinic-section-subtitle {
+  color: var(--psy-text-muted);
+  font-size: 11.5px;
+  margin-top: 2px;
+}
+
+.psy-clinic-checklist .form-check {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.psy-clinic-checklist .form-check-label {
+  color: var(--psy-text) !important;
+  font-size: 13.5px;
+  padding-left: 8px;
+  cursor: pointer;
+}
+
+.psy-clinic-checklist .form-check-input:checked {
+  background-color: var(--psy-accent) !important;
+  border-color: var(--psy-accent) !important;
+  box-shadow: 0 0 8px var(--psy-accent-soft) !important;
+}
+
+/* ── Nút Kiểm chứng ──────────────────────────────────────────────────── */
+.psy-clinic-submit-btn {
+  background: linear-gradient(135deg, var(--accent-deep, #0d6efd), var(--psy-accent)) !important;
+  border: none !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  padding: 11px !important;
+  border-radius: var(--radius-md, 8px) !important;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.psy-clinic-submit-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.psy-clinic-submit-btn:disabled {
+  opacity: 0.7;
+}
+
+/* ── "Chánh niệm tài chính" (Mindful Delay) ─────────────────────────────
+ * Hiển thị khi background callback đang chạy (xem progress=... và
+ * running=... trong psychology_callbacks.py). */
+.psy-clinic-mindful-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 12px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--psy-accent-soft);
+  border: 1px dashed var(--psy-border);
+  color: var(--psy-text) !important;
+  font-size: 13.5px;
+  font-style: italic;
+  text-align: center;
+  animation: psy-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes psy-pulse {
+  0%, 100% { opacity: 0.65; }
+  50%      { opacity: 1; }
+}
+
+/* ── Đồng cảnh ngộ (Peer Context) ────────────────────────────────────── */
+.psy-peer-context {
+  border-radius: var(--radius-md, 10px) !important;
+  border-left: 4px solid currentColor !important;
+}
+
+/* ── Card kết quả ────────────────────────────────────────────────────── */
+#psy-clinic-result .card {
+  background: var(--psy-bg-elevated) !important;
+  border-radius: var(--radius-md, 10px) !important;
+  border-left: 4px solid currentColor !important;
+  box-shadow: var(--shadow-card, 0 4px 12px rgba(0,0,0,0.1));
+  margin-top: 10px;
+  transition: transform 0.15s ease;
+}
+
+#psy-clinic-result .card:hover {
+  transform: translateY(-1px);
+}
+
+#psy-clinic-result .card-body p {
+  color: var(--psy-text) !important;
+}
+
+#psy-clinic-result .badge {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+#psy-clinic-result .progress {
+  background-color: var(--psy-bg) !important;
+  border-radius: 6px;
+}
+
+.psy-text-main {
+  color: var(--psy-text) !important;
+}
+
+.psy-text-muted {
+  color: var(--psy-text-muted) !important;
+}

@@ -3619,3 +3619,30 @@ span[style*="f59e0b"] {
 .cyber-theme-tooltip-warning[data-popper-placement^="top"] .tooltip-arrow::before {
     border-top-color: #f59e0b !important;
 }
+/* =========================================================
+   ĐỒNG BỘ MÀU XANH LÁ CHO NÚT TRÊN HEADER
+   ========================================================= */
+
+/* 1. Nút Trạm Tâm Lý (Nền xanh nguyên khối) */
+#btn-open-psy-clinic {
+    background-color: #10b981 !important; /* Màu xanh ngọc lục bảo */
+    border-color: #10b981 !important;
+    color: #ffffff !important;
+}
+
+#btn-open-psy-clinic:hover {
+    background-color: #059669 !important; /* Xanh sậm lại khi trỏ chuột */
+    border-color: #059669 !important;
+}
+
+/* 2. Nút chuyển Theme (Đổi màu icon sang xanh lá cho tinh tế) */
+/* Cú pháp [id*="theme"] giúp tự động bắt trúng nút đổi theme dù ID của bạn là gì */
+[id*="theme-switch"], [id*="theme-toggle"] {
+    color: #10b981 !important;
+    border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+[id*="theme-switch"]:hover, [id*="theme-toggle"]:hover {
+    color: #10b981 !important;
+    background-color: rgba(16, 185, 129, 0.15) !important; /* Hiệu ứng sáng nền nhẹ */
+}

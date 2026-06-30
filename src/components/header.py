@@ -328,6 +328,18 @@ def create_topbar(id_suffix=""):
                 html.Div([
                     theme_switch,
                     dbc.Button(
+                        [html.I(className="fa-solid fa-kit-medical", style={"marginRight": "6px"}), "Trạm Tâm Lý"],
+                        id="btn-open-psy-clinic", n_clicks=0,
+                        style={
+                            "backgroundColor": "transparent",
+                            "border": "1px solid rgba(255,255,255,0.2)",
+                            "color": "rgba(255,255,255,0.85)",
+                            "fontSize": "13px", "fontWeight": "500",
+                            "padding": "6px 16px", "borderRadius": "6px",
+                            "marginRight": "8px",
+                        }
+                    ),
+                    dbc.Button(
                         [html.I(className="fas fa-sign-in-alt", style={"marginRight": "6px"}), "Đăng nhập"],
                         id="btn-login", n_clicks=0, className="vietcap-nav-login-btn",
                         style={

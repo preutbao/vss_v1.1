@@ -131,6 +131,7 @@ import src.callbacks.tab_dot_callbacks
 import src.callbacks.tplus_callbacks
 import src.callbacks.margin_crisis_callbacks
 import src.callbacks.screener_pdf_callback
+import src.callbacks.psychology_callbacks
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT — hai section: onboarding ↔ main app
@@ -142,6 +143,7 @@ from src.callbacks.chatbot_callbacks import create_chatbot_layout
 from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_help_modal
 from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_help_modal
 from src.callbacks.compare_callbacks import compare_modal, compare_help_modal
+from src.components.psychology_modal import psychology_modal
 
 app.layout = html.Div(
     style={"margin": "0", "padding": "0"},
@@ -162,6 +164,7 @@ app.layout = html.Div(
         dcc.Store(id="tour-selected-mode",   storage_type="memory",   data="investing"),
         dcc.Store(id="hint-shown-store",     storage_type="memory",   data=False),
         dcc.Store(id="tour-step-store",      data=1),
+        dcc.Store(id="psy-history-store", storage_type="local", data=[]), # **thêm dòng này**
 
         # LƯU Ý QUAN TRỌNG: Nếu bạn đã khai báo 2 Store này ở file sidebar.py, 
         # thì bạn PHẢI XÓA CHÚNG Ở ĐÂY (hoặc xóa ở sidebar.py). Chỉ giữ lại 1 nơi duy nhất!
@@ -179,6 +182,7 @@ app.layout = html.Div(
         compare_help_modal,   # Bảng Hướng dẫn So sánh (Popup i)
         crisis_help_modal,    # Bảng Chi tiết Khủng hoảng Ký quỹ (Popup i)
         portfolio_help_modal, # Bảng Hướng dẫn (Popup i)
+        psychology_modal,     # Trạm Cứu Viện Tâm Lý (Rumor Check)
 
         # ── 2. ONBOARDING PAGE ────────────────────────────────────────────
         # Hiển thị khi profile-setup-done = False (lần đầu vào / chưa setup)
