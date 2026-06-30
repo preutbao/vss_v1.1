@@ -1,6 +1,13 @@
 # src/components/chart_controls.py
 """
-UI Controls cho biểu đồ - Nâng cấp phong cách Glassmorphism & Dark Theme từ VnStock Pro
+UI Controls cho biểu đồ — tab "BIẾN ĐỘNG GIÁ".
+
+Lưu ý quan trọng: layout trong file này được dựng TĨNH một lần khi app khởi
+động (không phải trong callback), nên Python không thể biết theme hiện tại
+(sáng/tối) tại thời điểm render. Vì vậy mọi màu sắc ở đây dùng CSS class
+(.chart-controls-panel, .chart-toggle-box, .chart-tip-box...) tham chiếu tới
+biến CSS theo theme trong style.css, thay cho hex cứng — khi người dùng đổi
+theme, CSS tự áp dụng lại mà không cần callback nào.
 """
 
 from dash import html, dcc
@@ -9,29 +16,15 @@ import dash_daq as daq
 
 
 def create_chart_controls():
-    """
-    Tạo các controls để điều khiển biểu đồ với thiết kế hiện đại
-    """
-    # Màu sắc dựa trên theme VnStock Pro
-    glass_bg = "rgba(6, 15, 30, 0.85)"  # Xanh Slate trong suốt
-    glass_border = "rgba(0, 212, 255, 0.12)"
-    primary_color = "#00d4ff"
-    text_color = "#d6eaf8"
-    text_muted = "#7fa8cc"
-
+    """Tạo các controls để điều khiển biểu đồ — theme-aware qua CSS class."""
     return html.Div([
         dbc.Row([
             # Time Period Quick Select
             dbc.Col([
                 html.Label([
-                    html.I(className="fas fa-calendar-alt", style={
-                        "marginRight": "8px", "color": primary_color
-                    }),
+                    html.I(className="fas fa-calendar-alt"),
                     "Khoảng thời gian"
-                ], style={
-                    "color": text_color, "fontSize": "13px", "fontWeight": "600",
-                    "marginBottom": "8px", "display": "flex", "alignItems": "center"
-                }),
+                ], className="chart-controls-label"),
                 dbc.ButtonGroup([
                     dbc.Button("1T", id="period-1w", size="sm", outline=True, color="secondary",
                                className="period-btn"),
@@ -52,14 +45,9 @@ def create_chart_controls():
             # MA Selector
             dbc.Col([
                 html.Label([
-                    html.I(className="fas fa-wave-square", style={
-                        "marginRight": "8px", "color": primary_color
-                    }),
+                    html.I(className="fas fa-wave-square"),
                     "Đường trung bình động (MA)"
-                ], style={
-                    "color": text_color, "fontSize": "13px", "fontWeight": "600",
-                    "marginBottom": "8px", "display": "flex", "alignItems": "center"
-                }),
+                ], className="chart-controls-label"),
                 dcc.Dropdown(
                     id="ma-selector",
                     options=[
@@ -73,12 +61,6 @@ def create_chart_controls():
                     value=[20, 50],  # Mặc định chọn MA20 và MA50
                     multi=True,
                     placeholder="Chọn các kỳ hạn MA...",
-                    style={
-                        "backgroundColor": "#091526",  # Card bg
-                        "color": text_color,
-                        "border": f"1px solid {glass_border}",
-                        "borderRadius": "8px"
-                    },
                     className="custom-dropdown"
                 )
             ], width=12, lg=7),
@@ -89,85 +71,71 @@ def create_chart_controls():
             # Volume Toggle
             dbc.Col([
                 html.Div([
-                    html.I(className="fas fa-chart-bar",
-                           style={"marginRight": "8px", "color": primary_color, "fontSize": "14px"}),
-                    html.Span("Khối lượng", style={"color": text_color, "fontSize": "13px", "marginRight": "10px",
-                                                   "fontWeight": "500"}),
+                    html.I(className="fas fa-chart-bar", style={"marginRight": "8px", "fontSize": "14px"}),
+                    html.Span("Khối lượng"),
                     daq.BooleanSwitch(
                         id="show-volume-toggle",
                         on=True,
-                        color="#00e676",  # Màu xanh positive từ theme
+                        color="#10b981",
                         style={"display": "inline-block"}
                     )
-                ], style={
-                    "display": "flex", "alignItems": "center", "padding": "8px 12px",
-                    "backgroundColor": "#091526", "borderRadius": "8px",
-                    "border": f"1px solid {glass_border}",
-                    "boxShadow": "inset 0 2px 4px rgba(0,0,0,0.1)"
-                })
+                ], className="chart-toggle-box")
             ], width=6, lg=2, className="mb-2 mb-lg-0"),
 
             # RSI Toggle
             dbc.Col([
                 html.Div([
-                    html.I(className="fas fa-chart-line",
-                           style={"marginRight": "8px", "color": "#00d4ff", "fontSize": "14px"}),
-                    html.Span("RSI", style={"color": text_color, "fontSize": "13px", "marginRight": "10px",
-                                            "fontWeight": "500"}),
+                    html.I(className="fas fa-chart-line", style={"marginRight": "8px", "fontSize": "14px"}),
+                    html.Span("RSI"),
                     daq.BooleanSwitch(
                         id="show-rsi-toggle",
                         on=False,
-                        color="#00d4ff",  # Màu cyan accent3
+                        color="#0ea5e9",
                         style={"display": "inline-block"}
                     )
-                ], style={
-                    "display": "flex", "alignItems": "center", "padding": "8px 12px",
-                    "backgroundColor": "#091526", "borderRadius": "8px",
-                    "border": f"1px solid {glass_border}",
-                    "boxShadow": "inset 0 2px 4px rgba(0,0,0,0.1)"
-                })
+                ], className="chart-toggle-box")
             ], width=6, lg=2, className="mb-2 mb-lg-0"),
 
             # MACD Toggle
             dbc.Col([
                 html.Div([
-                    html.I(className="fas fa-chart-area",
-                           style={"marginRight": "8px", "color": "#b388ff", "fontSize": "14px"}),
-                    html.Span("MACD", style={"color": text_color, "fontSize": "13px", "marginRight": "10px",
-                                             "fontWeight": "500"}),
+                    html.I(className="fas fa-chart-area", style={"marginRight": "8px", "fontSize": "14px"}),
+                    html.Span("MACD"),
                     daq.BooleanSwitch(
                         id="show-macd-toggle",
                         on=False,
-                        color="#b388ff",
+                        color="#a78bfa",
                         style={"display": "inline-block"}
                     )
-                ], style={
-                    "display": "flex", "alignItems": "center", "padding": "8px 12px",
-                    "backgroundColor": "#091526", "borderRadius": "8px",
-                    "border": f"1px solid {glass_border}",
-                    "boxShadow": "inset 0 2px 4px rgba(0,0,0,0.1)"
-                })
+                ], className="chart-toggle-box")
+            ], width=6, lg=2, className="mb-2 mb-lg-0"),
+
+            # ADX Toggle
+            dbc.Col([
+                html.Div([
+                    html.I(className="fas fa-tachometer-alt", style={"marginRight": "8px", "fontSize": "14px"}),
+                    html.Span("ADX"),
+                    daq.BooleanSwitch(
+                        id="show-adx-toggle",
+                        on=False,
+                        color="#f59e0b",
+                        style={"display": "inline-block"}
+                    )
+                ], className="chart-toggle-box")
             ], width=6, lg=2, className="mb-2 mb-lg-0"),
 
             # Index Toggle
             dbc.Col([
                 html.Div([
-                    html.I(className="fas fa-globe",
-                           style={"marginRight": "8px", "color": "#fbbf24", "fontSize": "14px"}),
-                    html.Span("Index", style={"color": text_color, "fontSize": "13px", "marginRight": "10px",
-                                              "fontWeight": "500"}),
+                    html.I(className="fas fa-globe", style={"marginRight": "8px", "fontSize": "14px"}),
+                    html.Span("Index"),
                     daq.BooleanSwitch(
                         id="show-index-toggle",
                         on=False,
-                        color="#fbbf24",
+                        color="#f59e0b",
                         style={"display": "inline-block"}
                     )
-                ], style={
-                    "display": "flex", "alignItems": "center", "padding": "8px 12px",
-                    "backgroundColor": "#091526", "borderRadius": "8px",
-                    "border": f"1px solid {glass_border}",
-                    "boxShadow": "inset 0 2px 4px rgba(0,0,0,0.1)"
-                })
+                ], className="chart-toggle-box")
             ], width=6, lg=2, className="mb-2 mb-lg-0"),
 
             # Chart Type Selector
@@ -181,16 +149,9 @@ def create_chart_controls():
                     ],
                     value="candlestick",
                     clearable=False,
-                    style={
-                        "backgroundColor": "#091526",
-                        "color": "#ffffff",
-                        "fontSize": "13px",
-                        "border": f"1px solid {glass_border}",
-                        "borderRadius": "8px",
-                    },
                     className="custom-dropdown chart-type-dd"
                 )
-            ], width=6, lg=2, className="mb-2 mb-lg-0"),
+            ], width=6, lg=3, className="mb-2 mb-lg-0"),
 
             # Action Buttons (nhỏ gọn)
             dbc.Col([
@@ -213,66 +174,44 @@ def create_chart_controls():
             ], width="auto", className="mb-2 mb-lg-0")
         ], className="mb-3"),
 
-        # Row 3: Instructions (Glassmorphism Info Box)
+        # Row 3: Instructions
         html.Div([
             html.Div([
-                html.I(className="fas fa-lightbulb",
-                       style={"marginRight": "10px", "color": "#ffb703", "fontSize": "16px"}),
-                html.Span("Mẹo sử dụng: ", style={"color": "#ffb703", "fontSize": "13px", "fontWeight": "700"}),
+                html.I(className="fas fa-lightbulb", style={"marginRight": "10px", "fontSize": "16px", "color": "#f59e0b"}),
+                html.Span("Mẹo sử dụng: ", className="tip-label"),
                 html.Span(
                     "Lăn chuột để Zoom • Kéo thả để Pan • Double click để Reset view • Sử dụng thanh công cụ bên trên biểu đồ để vẽ",
-                    style={"color": text_muted, "fontSize": "12px", "marginLeft": "5px"})
-            ], style={
-                "display": "flex", "alignItems": "center", "padding": "10px 15px",
-                "backgroundColor": "rgba(251, 191, 36, 0.05)",  # Nền vàng nhạt
-                "borderRadius": "8px",
-                "border": "1px solid rgba(251, 191, 36, 0.2)",
-                "borderLeft": "4px solid #fbbf24"
-            })
+                    className="tip-text")
+            ], className="chart-tip-box")
         ])
 
-    ], style={
-        "padding": "20px",
-        "background": glass_bg,
-        "backdropFilter": "blur(20px) saturate(180%)",
-        "borderRadius": "15px",
-        "border": f"1px solid {glass_border}",
-        "boxShadow": "0 10px 25px rgba(0, 0, 0, 0.2)",
-        "marginBottom": "20px"
-    })
+    ], className="chart-controls-panel")
 
 
 def create_chart_container():
-    """
-    Tạo container chứa biểu đồ nến
-    """
-    glass_border = "rgba(0, 212, 255, 0.12)"
-
+    """Tạo container chứa biểu đồ nến. Khung rỗng này được callback
+    chart_callbacks.py đổ nội dung (đã theme-aware) vào khi người dùng chọn mã."""
     return html.Div([
         # Controls
         create_chart_controls(),
 
-        # Chart Container
+        # Chart Container (placeholder — callback sẽ ghi đè nội dung)
         html.Div([
             html.Div([
                 html.I(className="fas fa-chart-line", style={
-                    "fontSize": "48px", "color": "#475569", "marginBottom": "15px",
+                    "fontSize": "48px", "marginBottom": "15px",
                     "animation": "pulse 2s infinite"
                 }),
                 html.P("Chọn một mã cổ phiếu từ bảng Screener để tải biểu đồ chuyên sâu", style={
-                    "color": "#7fa8cc", "fontSize": "15px", "fontWeight": "500"
+                    "fontSize": "15px", "fontWeight": "500"
                 })
-            ], style={
+            ], className="chart-empty-state", style={
                 "display": "flex", "flexDirection": "column", "alignItems": "center",
                 "justifyContent": "center", "padding": "80px 20px", "textAlign": "center"
             })
-        ], id="candlestick-chart-container", style={
+        ], id="candlestick-chart-container", className="chart-controls-panel", style={
             "minHeight": "600px",
-            "backgroundColor": "#0c1220",  # Background siêu tối cho biểu đồ
-            "borderRadius": "15px",
-            "border": f"1px solid {glass_border}",
             "padding": "0",
-            "boxShadow": "0 15px 35px rgba(0, 0, 0, 0.4)",
-            "overflow": "hidden"  # Để bo góc biểu đồ bên trong
-        })
+            "overflow": "hidden",  # Để bo góc biểu đồ bên trong
+        }),
     ])

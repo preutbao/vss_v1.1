@@ -71,6 +71,9 @@ GROUP_CRITERIA_MAP = {
         ("criteria-rsi-state",        "Trạng thái RSI(14)"),
         ("criteria-macd-hist",        "MACD Histogram"),
         ("criteria-bb-width",         "Mở Band Bollinger (%)"),
+        ("criteria-adx14",            "ADX(14) — Sức mạnh xu hướng"),
+        ("criteria-plus-di14",        "+DI(14) — Lực mua"),
+        ("criteria-minus-di14",       "-DI(14) — Lực bán"),
         ("criteria-consec-up",        "Phiên tăng liên tiếp"),
         ("criteria-consec-down",      "Phiên giảm liên tiếp"),
         # ── Elliott Wave Proxy ── THÊM 3 DÒNG NÀY
@@ -139,6 +142,9 @@ CRITERIA_TO_FILTER = {
     "criteria-rsi-state":      "filter-rsi-state",
     "criteria-macd-hist":      "filter-macd-hist",
     "criteria-bb-width":       "filter-bb-width",
+    "criteria-adx14":          "filter-adx14",
+    "criteria-plus-di14":      "filter-plus-di14",
+    "criteria-minus-di14":     "filter-minus-di14",
     "criteria-consec-up":      "filter-consec-up",
     "criteria-consec-down":    "filter-consec-down",
     # ── Elliott Wave Proxy ── THÊM 3 DÒNG NÀY

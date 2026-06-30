@@ -12,6 +12,21 @@ from src.utils.chart_controls import create_chart_container
 # Các cột động sẽ được bơm vào bởi callback trong column_callbacks.py
 # khi user thêm chỉ tiêu vào bộ lọc.
 
+def _muted_cell_style(font_family, font_size, dark_color, light_color, extra_css=""):
+    """Helper tạo cellStyle theme-aware cho các cột chữ phụ (Ngành, KL, Vốn hóa, BCTC...).
+    dark_color/light_color: màu chữ tương ứng từng theme."""
+    return {
+        "function": f"""
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            return {{
+                'fontFamily': "{font_family}",
+                'fontSize': '{font_size}',
+                'color': isLight ? '{light_color}' : '{dark_color}',
+                {extra_css}
+            }};
+        """
+    }
+
 _GRADE_STYLE = {
     "function": """
         const grade = params.value || 'F';
@@ -68,44 +83,60 @@ _TOOLTIPS = {
 
 # ── Font helpers dùng lại nhiều lần ──────────────────────────────────────────
 # Font cho mã CK (Sora bold — giống heading SSI iBoard)
+# 🎨 Theme-aware: đọc data-theme trên <html> tại thời điểm render cell
 _TICKER_STYLE = {
-    "fontFamily": "'Sora', 'Inter', sans-serif",
-    "fontWeight": "800",
-    "color": "#00e676",
-    "fontSize": "13px",
-    "letterSpacing": "0.8px",
+    "function": """
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        return {
+            'fontFamily': "'Sora', 'Inter', sans-serif",
+            'fontWeight': '800',
+            'color': isLight ? '#15803d' : '#00e676',
+            'fontSize': '13px',
+            'letterSpacing': '0.8px',
+        };
+    """
 }
 
 # Font cho số liệu (Roboto Mono — tabular-nums, thẳng hàng)
+# 🎨 Theme-aware
 _NUM_STYLE_GREEN = {
-    "fontFamily": "'Roboto Mono', 'JetBrains Mono', monospace",
-    "fontWeight": "700",
-    "fontSize": "13px",
-    "color": "#fbbf24",
-    "fontVariantNumeric": "tabular-nums",
-    "letterSpacing": "0.2px",
+    "function": """
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        return {
+            'fontFamily': "'Roboto Mono', 'JetBrains Mono', monospace",
+            'fontWeight': '700',
+            'fontSize': '13px',
+            'color': isLight ? '#b45309' : '#fbbf24',
+            'fontVariantNumeric': 'tabular-nums',
+            'letterSpacing': '0.2px',
+        };
+    """
 }
 
-# cellStyle function cho cột % tăng/giảm (xanh/đỏ)
+# cellStyle function cho cột % tăng/giảm (xanh/đỏ) — theme-aware + có
+# nền tint nhẹ để tăng/giảm thể hiện RÕ hơn (không chỉ dựa vào màu chữ)
 _PCT_CELL_STYLE = {
     "function": (
         "const v = params.value; "
-        "if (v == null) return {"
-        "  'color': '#484f58',"
-        "  'fontFamily': \"'Roboto Mono', monospace\","
-        "  'fontSize': '12.5px',"
-        "  'fontVariantNumeric': 'tabular-nums'"
-        "}; "
+        "const isLight = document.documentElement.getAttribute('data-theme') === 'light'; "
         "const base = {"
         "  'fontFamily': \"'Roboto Mono', monospace\","
         "  'fontSize': '12.5px',"
         "  'fontVariantNumeric': 'tabular-nums',"
-        "  'fontWeight': '600',"
-        "  'letterSpacing': '0.2px'"
+        "  'fontWeight': '700',"
+        "  'letterSpacing': '0.2px',"
+        "  'borderRadius': '4px',"
+        "  'textAlign': 'right',"
         "}; "
-        "return v > 0 ? {...base, 'color': '#10b981'} "
-        "     : v < 0 ? {...base, 'color': '#ef4444'} "
-        "     : {...base, 'color': '#8b949e'};"
+        "if (v == null) return {...base, 'fontWeight': '500', "
+        "  'color': isLight ? '#94a3b8' : '#484f58'}; "
+        "if (v > 0) return {...base, "
+        "  'color': isLight ? '#15803d' : '#10b981', "
+        "  'backgroundColor': isLight ? 'rgba(34,197,94,0.10)' : 'rgba(16,185,129,0.08)'}; "
+        "if (v < 0) return {...base, "
+        "  'color': isLight ? '#b91c1c' : '#ef4444', "
+        "  'backgroundColor': isLight ? 'rgba(244,63,94,0.10)' : 'rgba(239,68,68,0.08)'}; "
+        "return {...base, 'fontWeight': '500', 'color': isLight ? '#64748b' : '#8b949e'};"
     )
 }
 
@@ -128,11 +159,7 @@ columnDefs = [
         "flex": 1,           # ← THÊM: tự co giãn theo nội dung
         "sortable": True,
         "filter": True,
-        "cellStyle": {
-            "fontFamily": "'Inter', sans-serif",
-            "fontSize": "12px",
-            "color": "#c9d1d9",
-        },
+        "cellStyle": _muted_cell_style("'Inter', sans-serif", "12px", "#c9d1d9", "#475569"),
     },
     {
         "field": "Price Close",
@@ -174,13 +201,10 @@ columnDefs = [
         "sortable": True,
         "width": 120,
         "valueFormatter": {"function": "d3.format(',.0f')(params.value)"},
-        "cellStyle": {
-            "fontFamily": "'Roboto Mono', monospace",
-            "fontSize": "12.5px",
-            "fontVariantNumeric": "tabular-nums",
-            "letterSpacing": "0.2px",
-            "color": "#c9d1d9",
-        },
+        "cellStyle": _muted_cell_style(
+            "'Roboto Mono', monospace", "12.5px", "#c9d1d9", "#475569",
+            extra_css="'fontVariantNumeric': 'tabular-nums', 'letterSpacing': '0.2px',"
+        ),
     },
     {"field": "Value Score", "headerName": "VALUE", "headerTooltip": _TOOLTIPS["VALUE"], "width": 90, "sortable": True,
      "cellStyle": _GRADE_STYLE},
@@ -229,12 +253,10 @@ columnDefs = [
         "sortable": True,
         "width": 130,
         "valueFormatter": {"function": "params.value != null ? d3.format(',.0f')(params.value/1e12) + ' T' : '–'"},
-        "cellStyle": {
-            "fontFamily": "'Roboto Mono', monospace",
-            "fontSize": "12px",
-            "fontVariantNumeric": "tabular-nums",
-            "color": "#7fa8cc",
-        },
+        "cellStyle": _muted_cell_style(
+            "'Roboto Mono', monospace", "12px", "#7fa8cc", "#475569",
+            extra_css="'fontVariantNumeric': 'tabular-nums',"
+        ),
     },
     {
         "field": "CANSLIM Score",
@@ -247,14 +269,15 @@ columnDefs = [
         "cellStyle": {
             "function": (
                 "const s = params.value || 0; "
+                "const isLight = document.documentElement.getAttribute('data-theme') === 'light'; "
                 "const base = {"
                 "  'fontFamily': \"'Roboto Mono', monospace\","
                 "  'fontSize': '12.5px',"
                 "  'fontVariantNumeric': 'tabular-nums'"
                 "}; "
-                "if (s >= 5) return {...base, 'color': '#10b981', 'fontWeight': '700'}; "
-                "if (s >= 3) return {...base, 'color': '#3b82f6', 'fontWeight': '600'}; "
-                "return {...base, 'color': '#7fa8cc'};"
+                "if (s >= 5) return {...base, 'color': isLight ? '#15803d' : '#10b981', 'fontWeight': '700'}; "
+                "if (s >= 3) return {...base, 'color': isLight ? '#1d4ed8' : '#3b82f6', 'fontWeight': '600'}; "
+                "return {...base, 'color': isLight ? '#64748b' : '#7fa8cc'};"
             )
         },
     },
@@ -268,12 +291,10 @@ columnDefs = [
         "valueFormatter": {
             "function": "params.value ? new Date(params.value).toLocaleDateString('vi-VN', {month:'2-digit',year:'numeric'}) : '–'"
         },
-        "cellStyle": {
-            "fontFamily": "'Roboto Mono', monospace",
-            "color": "#484f58",
-            "fontSize": "11px",
-            "fontVariantNumeric": "tabular-nums",
-        },
+        "cellStyle": _muted_cell_style(
+            "'Roboto Mono', monospace", "11px", "#484f58", "#94a3b8",
+            extra_css="'fontVariantNumeric': 'tabular-nums',"
+        ),
     },
 ]
 
@@ -418,11 +439,11 @@ def create_tab_chi_so():
         # --- Header & Công tắc Năm/Quý ---
         html.Div([
             html.Div([
-                html.H6(html.I(className="fas fa-chart-pie", style={"marginRight": "8px", "color": "#b388ff"})),
+                html.H6(html.I(className="fas fa-chart-pie", style={"marginRight": "8px", "color": "#a78bfa"})),
                 html.H6("CHỈ SỐ TÀI CHÍNH (FINANCIAL RATIOS)",
-                        style={"color": "#d6eaf8", "margin": "0", "fontWeight": "bold"}),
+                        style={"color": "var(--text-primary)", "margin": "0", "fontWeight": "bold"}),
                 html.Span("(Đơn vị: %, Số lần, VND)",
-                          style={"marginLeft": "10px", "fontSize": "12px", "color": "#7fa8cc", "fontStyle": "italic"})
+                          style={"marginLeft": "10px", "fontSize": "12px", "color": "var(--text-muted)", "fontStyle": "italic"})
             ], style={"display": "flex", "alignItems": "center"}),
 
             dbc.RadioItems(
@@ -440,28 +461,31 @@ def create_tab_chi_so():
         ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center",
                   "marginBottom": "20px"}),
 
+        # --- KPI STRIP: 4 chỉ số nổi bật (ROE/ROA/Biên LN/D-E), đổ bởi callback ---
+        html.Div(id="tab-metrics-kpi-strip", style={"marginBottom": "18px"}),
+
         # --- Vùng chứa 6 Bảng dữ liệu ---
         html.Div([
             dcc.Loading(
-                type="dot", color="#b388ff",
+                type="dot", color="#a78bfa",
                 children=[
                     html.H6("1. CHỈ SỐ MỖI CỔ PHIẾU (Per Share)",
-                            style={"color": "#b388ff", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#a78bfa", "fontWeight": "bold", "fontSize": "14px"}),
                     create_metric_grid("metric-table-1"),
                     html.H6("2. KHẢ NĂNG SINH LỜI (Profitability)",
-                            style={"color": "#b388ff", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#a78bfa", "fontWeight": "bold", "fontSize": "14px"}),
                     create_metric_grid("metric-table-2"),
                     html.H6("3. THANH KHOẢN (Liquidity)",
-                            style={"color": "#b388ff", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#a78bfa", "fontWeight": "bold", "fontSize": "14px"}),
                     create_metric_grid("metric-table-3"),
                     html.H6("4. ĐÒN BẨY & SỨC KHỎE (Leverage)",
-                            style={"color": "#b388ff", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#a78bfa", "fontWeight": "bold", "fontSize": "14px"}),
                     create_metric_grid("metric-table-4"),
                     html.H6("5. HIỆU QUẢ HOẠT ĐỘNG (Efficiency)",
-                            style={"color": "#b388ff", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#a78bfa", "fontWeight": "bold", "fontSize": "14px"}),
                     create_metric_grid("metric-table-5"),
                     html.H6("6. TĂNG TRƯỞNG (Growth)",
-                            style={"color": "#b388ff", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#a78bfa", "fontWeight": "bold", "fontSize": "14px"}),
                     create_metric_grid("metric-table-6"),
                 ]
             )
@@ -495,10 +519,10 @@ def create_tab_tai_chinh():
         html.Div([
             html.Div([
                 html.H6(
-                    html.I(className="fas fa-file-invoice-dollar", style={"marginRight": "8px", "color": "#00a651"})),
-                html.H6("BÁO CÁO TÀI CHÍNH TÓM TẮT", style={"color": "#d6eaf8", "margin": "0", "fontWeight": "bold"}),
+                    html.I(className="fas fa-file-invoice-dollar", style={"marginRight": "8px", "color": "#10b981"})),
+                html.H6("BÁO CÁO TÀI CHÍNH TÓM TẮT", style={"color": "var(--text-primary)", "margin": "0", "fontWeight": "bold"}),
                 html.Span("(Đơn vị: Triệu VND)",
-                          style={"marginLeft": "10px", "fontSize": "12px", "color": "#7fa8cc", "fontStyle": "italic"})
+                          style={"marginLeft": "10px", "fontSize": "12px", "color": "var(--text-muted)", "fontStyle": "italic"})
             ], style={"display": "flex", "alignItems": "center"}),
 
             # CÔNG TẮC NĂM / QUÝ
@@ -517,24 +541,27 @@ def create_tab_tai_chinh():
         ], style={"display": "flex", "justifyContent": "space-between", "alignItems": "center",
                   "marginBottom": "20px"}),
 
+        # --- KPI STRIP: 4 chỉ số nổi bật lấy từ kỳ gần nhất, đổ bởi callback ---
+        html.Div(id="tab-financial-kpi-strip", style={"marginBottom": "18px"}),
+
         # --- 2. Vùng chứa 3 Bảng dữ liệu ---
         html.Div([
             dcc.Loading(
-                type="dot", color="#00a651",
+                type="dot", color="#10b981",
                 children=[
                     # BẢNG 1: Kết quả Kinh Doanh
                     html.H6("1. KẾT QUẢ KINH DOANH (Income Statement)",
-                            style={"color": "#00a651", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#10b981", "fontWeight": "bold", "fontSize": "14px"}),
                     create_grid("fin-table-is"),
 
                     # BẢNG 2: Bảng Cân Đối Kế Toán
                     html.H6("2. BẢNG CÂN ĐỐI KẾ TOÁN (Balance Sheet)",
-                            style={"color": "#00a651", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#10b981", "fontWeight": "bold", "fontSize": "14px"}),
                     create_grid("fin-table-bs"),
 
                     # BẢNG 3: Lưu Chuyển Tiền Tệ
                     html.H6("3. LƯU CHUYỂN TIỀN TỆ (Cash Flow Statement)",
-                            style={"color": "#00a651", "fontWeight": "bold", "fontSize": "14px"}),
+                            style={"color": "#10b981", "fontWeight": "bold", "fontSize": "14px"}),
                     create_grid("fin-table-cf")
                 ]
             )
@@ -659,7 +686,7 @@ detail_tabs = dbc.Tabs([
             ])
         ])
     ),
-], id="detail-tabs", active_tab="tab-overview", style={"marginTop": "10px", "borderBottom": "2px solid #163660"})
+], id="detail-tabs", active_tab="tab-overview", style={"marginTop": "10px", "borderBottom": "2px solid var(--border-subtle)"})
 
 # === MODALS ===
 detail_modal = dbc.Modal(
@@ -680,7 +707,7 @@ detail_modal = dbc.Modal(
                             }),
                 html.Span("Phân tích chi tiết", id="modal-title",
                           style={"fontWeight": "600", "fontSize": "0.95rem",
-                                 "color": "#e6edf3", "verticalAlign": "middle"}),
+                                 "color": "var(--text-primary)", "verticalAlign": "middle"}),
                 dcc.Download(id="pdf-download"),
                 html.Span(id="pdf-export-status",
                           style={"fontSize": "0.75rem", "color": "#8b949e",

@@ -143,9 +143,9 @@ def _build(df, perf_col, W=1560, H=600):
             html.Div(sn, style={
                 "position": "absolute", "top": "0", "left": "0",
                 "width": "100%", "height": f"{HDR}px",
-                "backgroundColor": "#111827",
+                "backgroundColor": "#ffffff",
                 "borderBottom": f"2px solid {accent}",
-                "color": "#f1f5f9", "fontSize": "11px", "fontWeight": "700",
+                "color": "#1e293b", "fontSize": "11px", "fontWeight": "700",
                 "display": "flex", "alignItems": "center", "paddingLeft": "8px",
                 "boxSizing": "border-box", "zIndex": "2",
                 "overflow": "hidden", "whiteSpace": "nowrap",
@@ -164,8 +164,8 @@ def _build(df, perf_col, W=1560, H=600):
             "top":    f"{sy + GAP/2:.1f}px",
             "width":  f"{max(sw - GAP, 1):.1f}px",
             "height": f"{max(sh - GAP, 1):.1f}px",
-            "backgroundColor": "#0d1117",
-            "border": "1px solid #1e2d3d",
+            "backgroundColor": "#f8fafc",
+            "border": "1px solid #e2e8f0",
             "borderRadius": "5px",
             "overflow": "hidden",
         }))
@@ -173,7 +173,7 @@ def _build(df, perf_col, W=1560, H=600):
     return html.Div(out, style={
         "position": "relative",
         "width": "100%", "height": f"{H}px",
-        "backgroundColor": "#0d1117",
+        "backgroundColor": "#f8fafc",
         "borderRadius": "6px", "flexShrink": "0",
     })
 
@@ -219,10 +219,10 @@ def render_heatmap(_, metric, exchange):
                 html.Div(style={
                     "width": "12px", "height": "12px", "borderRadius": "3px",
                     "backgroundColor": c, "marginRight": "6px", "flexShrink": "0",
-                    "border": "1px solid rgba(255,255,255,0.1)",
+                    "border": "1px solid rgba(15,23,42,0.10)",
                 }),
                 html.Span(lbl, style={
-                    "fontSize": "10px", "color": "#94a3b8",
+                    "fontSize": "10px", "color": "#64748b",
                     "fontFamily": "'Sora', sans-serif", "whiteSpace": "nowrap",
                 }),
             ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
@@ -230,9 +230,10 @@ def render_heatmap(_, metric, exchange):
         ], style={
             "display": "flex", "flexDirection": "column",
             "padding": "10px 12px",
-            "backgroundColor": "#0c1220",
+            "backgroundColor": "#ffffff",
             "borderRadius": "8px",
-            "border": "1px solid #1e2d3d",
+            "border": "1px solid #e2e8f0",
+            "boxShadow": "0 4px 24px rgba(15, 23, 42, 0.06)",
             "marginLeft": "10px", "flexShrink": "0",
             "alignSelf": "flex-start",
         })
@@ -257,7 +258,7 @@ def render_heatmap(_, metric, exchange):
 )
 def _stub(_):
     return go.Figure(layout=dict(
-        paper_bgcolor="#0d1117", plot_bgcolor="#0d1117",
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=0, r=0, t=0, b=0), height=10,
     ))
 
@@ -277,18 +278,18 @@ def toggle_heatmap(n, is_open):
 # ══════════════════════════════════════════════════════════════════════════════
 
 _C = {
-    "bg":     "#0d1117",
-    "card":   "#0c1220",
-    "border": "#1e2d3d",
-    "border2":"#21262d",
-    "text":   "#c9d1d9",
-    "muted":  "#8b949e",
-    "accent": "#3b82f6",
-    "green":  "#10b981",
-    "red":    "#ef4444",
+    "bg":     "#f8fafc",
+    "card":   "#ffffff",
+    "border": "#e2e8f0",
+    "border2":"#e2e8f0",
+    "text":   "#1e293b",
+    "muted":  "#64748b",
+    "accent": "#0ea5e9",
+    "green":  "#22c55e",
+    "red":    "#f43f5e",
     "yellow": "#f59e0b",
-    "orange": "#f97316",
-    "font":   "'Sora', 'JetBrains Mono', 'Segoe UI', sans-serif",
+    "orange": "#fb923c",
+    "font":   "'Sora', 'Inter', 'Segoe UI', sans-serif",
 }
 
 _SECTOR_SUB = {
@@ -310,10 +311,11 @@ def _card(children, style_extra=None):
     s = {
         "backgroundColor": _C["card"],
         "border":          f"1px solid {_C['border']}",
-        "borderRadius":    "8px",
+        "borderRadius":    "12px",
         "padding":         "16px 24px",   # padding đều hơn, tránh tràn biên
         "boxSizing":       "border-box",
         "overflow":        "hidden",       # chặn tràn ngang
+        "boxShadow":       "0 4px 24px rgba(15, 23, 42, 0.06)",
     }
     if style_extra:
         s.update(style_extra)
@@ -329,7 +331,7 @@ def _label(text, style_extra=None):
     return html.Div(text, style=s)
 
 
-def _sbs_bar_row(rank, sector, sbs, delta=None, color="#3b82f6", n_stocks=0):
+def _sbs_bar_row(rank, sector, sbs, delta=None, color="#0ea5e9", n_stocks=0):
     """Một hàng clickable trong bảng xếp hạng ngành."""
     delta_el = html.Span()
     if delta is not None:
@@ -376,7 +378,7 @@ def _sbs_bar_row(rank, sector, sbs, delta=None, color="#3b82f6", n_stocks=0):
                 "backgroundColor": color, "borderRadius": "2px",
                 "transition": "width 0.4s ease",
             }),
-            style={"height": "3px", "backgroundColor": "#1e2d3d",
+            style={"height": "3px", "backgroundColor": "#e2e8f0",
                    "borderRadius": "2px", "marginLeft": "36px"},
         ),
     ], style={
@@ -414,7 +416,7 @@ def _methodology_modal():
                     style={
                         "fontFamily": "JetBrains Mono, monospace",
                         "fontSize": "12px", "color": _C["accent"],
-                        "backgroundColor": "#0d1117",
+                        "backgroundColor": "#f8fafc",
                         "padding": "12px 16px", "borderRadius": "6px",
                         "border": f"1px solid {_C['border']}",
                         "marginBottom": "20px", "overflowX": "auto",
@@ -444,7 +446,7 @@ def _methodology_modal():
                 html.Div(formula, style={
                     "fontSize": "11px", "color": _C["muted"],
                     "fontFamily": "JetBrains Mono, monospace",
-                    "backgroundColor": "#0d1117",
+                    "backgroundColor": "#f8fafc",
                     "padding": "4px 8px", "borderRadius": "4px",
                     "marginBottom": "12px",
                 }),
@@ -511,7 +513,7 @@ def _methodology_modal():
                 ),
             ], style={
                 "marginTop": "16px", "padding": "12px 14px",
-                "backgroundColor": "#0d1117", "borderRadius": "6px",
+                "backgroundColor": "#f8fafc", "borderRadius": "6px",
                 "border": f"1px solid {_C['border']}",
             }),
         ], style={"backgroundColor": _C["card"], "padding": "20px 24px",
@@ -768,7 +770,7 @@ def render_breadth_xray(_, exchange, is_open):
                             hovermode="x unified",
                             xaxis=dict(showgrid=False,
                                        tickfont=dict(color=_C["muted"], size=8)),
-                            yaxis=dict(showgrid=True, gridcolor="#1e2d3d",
+                            yaxis=dict(showgrid=True, gridcolor="rgba(15,23,42,0.08)",
                                        tickfont=dict(color="#f59e0b", size=8),
                                        side="left"),
                             yaxis2=dict(overlaying="y", side="right",
@@ -845,7 +847,7 @@ def render_breadth_xray(_, exchange, is_open):
                             ),
                             hovermode="x unified",
                             yaxis=dict(range=[0, 100], showgrid=True,
-                                       gridcolor="#1e2d3d",
+                                       gridcolor="#e2e8f0",
                                        tickfont=dict(color=_C["muted"], size=8)),
                             xaxis=dict(showgrid=False,
                                        tickfont=dict(color=_C["muted"], size=8)),
@@ -1068,12 +1070,12 @@ def render_sector_detail(selected_sector, exchange):
                 radialaxis=dict(
                     visible=True, range=[0, 100],
                     tickfont=dict(color=_C["muted"], size=7),
-                    gridcolor="#1e2d3d", linecolor="#1e2d3d",
+                    gridcolor="#e2e8f0", linecolor="#e2e8f0",
                     tickvals=[25, 50, 75, 100],
                 ),
                 angularaxis=dict(
                     tickfont=dict(color=_C["text"], size=9),
-                    linecolor="#1e2d3d", gridcolor="#1e2d3d",
+                    linecolor="#e2e8f0", gridcolor="#e2e8f0",
                 ),
             ),
             paper_bgcolor=_C["bg"],
@@ -1136,10 +1138,10 @@ def render_sector_detail(selected_sector, exchange):
                             x=0.01, xanchor="left", y=0.97,
                         ),
                         yaxis=dict(range=[0, 100], showgrid=True,
-                                gridcolor="#1e2d3d",
+                                gridcolor="#e2e8f0",
                                 tickfont=dict(color=_C["muted"], size=9),
                                 title=dict(text="SBS", font=dict(color=_C["muted"], size=9))),
-                        xaxis=dict(showgrid=True, gridcolor="#1e2d3d",
+                        xaxis=dict(showgrid=True, gridcolor="#e2e8f0",
                                 tickfont=dict(color=_C["muted"], size=9),
                                 nticks=15, tickangle=-30),
                         font=dict(family=_C["font"]),
@@ -1185,7 +1187,7 @@ def render_sector_detail(selected_sector, exchange):
                             "opacity": "0.85",
                         }),
                         style={"flex": "1", "height": "6px",
-                               "backgroundColor": "#1e2d3d",
+                               "backgroundColor": "#e2e8f0",
                                "borderRadius": "2px"},
                     ),
                     html.Span(f"{val:.1f}", style={

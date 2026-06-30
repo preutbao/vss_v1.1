@@ -143,17 +143,17 @@ iframe[src*="tradingview" i],
   --bg-hover:       #232e41;
   --bg-active:      #2d3a50;
 
-    --border-subtle:  #232e41;
+  --border-subtle:  #232e41;
   --border-dim:     #2a3548;
   --border-default: #3a4760;
   --border-bright:  #1abb9c;
 
-    --accent:         #1abb9c;
+  --accent:         #1abb9c;
   --accent-dim:     rgba(26, 187, 156, 0.14);
   --accent-glow:    rgba(26, 187, 156, 0.22);
   --accent-deep:    #149e85;
 
-    --text-primary:   #f1f5f9;
+  --text-primary:   #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted:     #8a99ad;
   --text-ticker:    #2dd4bf;
@@ -4352,8 +4352,8 @@ input:focus-visible, .Select-control:focus-visible {
 .ag-theme-alpine-dark .cell-pct-positive,
 .ag-theme-alpine-dark .cell-pct-positive .ag-cell-value,
 .ag-theme-alpine-dark .cell-pct-positive span {
-    color: #10b981 !important;
-    font-weight: 700 !important;
+  color: #10b981 !important;
+  font-weight: 700 !important;
 }
 .ag-theme-alpine-dark .cell-pct-negative,
 .ag-theme-alpine-dark .cell-pct-negative .ag-cell-value,
@@ -4559,4 +4559,31 @@ input:focus-visible, .Select-control:focus-visible {
 @media (max-width: 768px) {
   .vss-hero-right { display: none; }
   #vss-hero-content { justify-content: center !important; }
+}
+/* ============================================================================
+   NÚT "TRẠM TÂM LÝ" TRÊN NAVBAR (merge bổ sung từ version trước)
+   ============================================================================ */
+#btn-open-psy-clinic {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+#btn-open-psy-clinic:hover {
+    border-color: #10b981 !important;
+    color: #10b981 !important;
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+[data-theme="light"] #btn-open-psy-clinic {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+[data-theme="light"] #btn-open-psy-clinic:hover {
+    color: #00c85a !important;
+    border-color: #00c85a !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
 }

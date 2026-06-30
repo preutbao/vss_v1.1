@@ -1515,53 +1515,60 @@ def generate_pdf(stock: dict) -> bytes:
 # DASH CALLBACK
 # ─────────────────────────────────────────────────────────────
 
+_BTN_LOADING_STYLE = {
+    "width": "30px", "height": "30px", "backgroundColor": "#D32F2F",
+    "color": "#fff", "border": "none", "borderRadius": "4px",
+    "fontSize": "13px", "fontWeight": "700", "flexShrink": "0",
+    "marginRight": "10px", "display": "inline-flex",
+    "alignItems": "center", "justifyContent": "center", "verticalAlign": "middle",
+    "opacity": "0.5", "cursor": "wait", "boxShadow": "none",
+}
+_BTN_NORMAL_STYLE = {
+    "width": "30px", "height": "30px", "backgroundColor": "#D32F2F",
+    "color": "#fff", "border": "none", "borderRadius": "4px",
+    "fontSize": "13px", "fontWeight": "700", "cursor": "pointer",
+    "flexShrink": "0", "marginRight": "10px", "display": "inline-flex",
+    "alignItems": "center", "justifyContent": "center", "verticalAlign": "middle",
+    "boxShadow": "0 2px 8px rgba(211,47,47,0.45)", "opacity": "1",
+}
+
+
+# Clientside: hiện spinner NGAY khi click (không cần background callback)
+app.clientside_callback(
+    """
+    function(n) {
+        if (!n) return [window.dash_clientside.no_update, window.dash_clientside.no_update, window.dash_clientside.no_update];
+        return [true, %s, [window.React.createElement("i", {className: "fas fa-spinner fa-spin", key:"sp", style:{fontSize:"15px"}})]]
+    }
+    """ % str(_BTN_LOADING_STYLE).replace("'", '"'),
+    [Output("btn-export-pdf", "disabled"),
+     Output("btn-export-pdf", "style"),
+     Output("btn-export-pdf", "children")],
+    Input("btn-export-pdf", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+
 @app.callback(
     [Output("pdf-download", "data"),
-     Output("pdf-export-status", "children")],
+     Output("pdf-export-status", "children"),
+     Output("btn-export-pdf", "disabled", allow_duplicate=True),
+     Output("btn-export-pdf", "style", allow_duplicate=True),
+     Output("btn-export-pdf", "children", allow_duplicate=True)],
     Input("btn-export-pdf", "n_clicks"),
-    State("screener-table", "selectedRows"),
+    State("selected-stock-store", "data"),
     prevent_initial_call=True,
-    # 🟢 TUYỆT CHIÊU RUNNING: Tự động đổi giao diện khi đang xử lý
-    # ================================================================
-    running=[
-        # 1. KHÓA NÚT: Chống người dùng spam click đúp làm sập server
-        (Output("btn-export-pdf", "disabled"), True, False),
-
-        # 2. ĐỔI NỘI DUNG: Chữ "PDF" -> Icon vòng xoay mượt mà
-        (Output("btn-export-pdf", "children"),
-         html.I(className="fas fa-spinner fa-spin", style={"fontSize": "15px"}),  # Lúc đang chạy
-         "PDF"),  # Trả về khi xong
-
-        # 3. LÀM MỜ NÚT: Đổi Style giảm opacity (độ sáng) xuống 50%
-        (Output("btn-export-pdf", "style"),
-         {
-             "width": "30px", "height": "30px", "backgroundColor": "#D32F2F",
-             "color": "#fff", "border": "none", "borderRadius": "4px",
-             "fontSize": "13px", "fontWeight": "700", "flexShrink": "0",
-             "marginRight": "10px", "display": "inline-flex",
-             "alignItems": "center", "justifyContent": "center", "verticalAlign": "middle",
-             "opacity": "0.5", "cursor": "wait", "boxShadow": "none"  # 🔴 Nút mờ đi và tắt bóng đổ
-         },
-         {
-             "width": "30px", "height": "30px", "backgroundColor": "#D32F2F",
-             "color": "#fff", "border": "none", "borderRadius": "4px",
-             "fontSize": "13px", "fontWeight": "700", "cursor": "pointer",
-             "flexShrink": "0", "marginRight": "10px", "display": "inline-flex",
-             "alignItems": "center", "justifyContent": "center", "verticalAlign": "middle",
-             "boxShadow": "0 2px 8px rgba(211,47,47,0.45)", "opacity": "1"  # 🟢 Trở lại bình thường
-         })
-    ]
 )
-def export_pdf_report(n_clicks, selected_rows):
-    if not selected_rows:
-        return no_update, "⚠️ Vui lòng chọn một cổ phiếu trong bảng để xuất PDF"
-    stock = selected_rows[0]
-    ticker = stock.get("Ticker", "STOCK")
+def export_pdf_report(n_clicks, stock_data):
+    if not stock_data:
+        return no_update, "⚠️ Vui lòng chọn một cổ phiếu trong bảng để xuất PDF", False, _BTN_NORMAL_STYLE, "PDF"
+    stock = stock_data if isinstance(stock_data, dict) else stock_data[0]
+    ticker = stock.get("Ticker", stock.get("ticker", "STOCK"))
     try:
         pdf_bytes = generate_pdf(stock)
         fname = f"BaoCaoTVDT_Vietcap_{ticker}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-        return dcc.send_bytes(pdf_bytes, fname), f"✅ Đã xuất: {fname}"
+        return dcc.send_bytes(pdf_bytes, fname), f"✅ Đã xuất: {fname}", False, _BTN_NORMAL_STYLE, "PDF"
     except Exception as e:
-        logger.error(f"PDF export fail: {e}");
+        logger.error(f"PDF export fail: {e}")
         traceback.print_exc()
-        return no_update, f"❌ Lỗi xuất PDF: {str(e)[:120]}"
+        return no_update, f"❌ Lỗi xuất PDF: {str(e)[:120]}", False, _BTN_NORMAL_STYLE, "PDF"

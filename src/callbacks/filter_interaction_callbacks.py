@@ -72,7 +72,10 @@ def _count_matching(filter_id, current_range, filter_year=None):
             "filter-pct-from-high-1y": "Pct_From_High_1Y", "filter-pct-from-low-1y": "Pct_From_Low_1Y",
             "filter-pct-from-high-all": "Pct_From_High_All", "filter-pct-from-low-all": "Pct_From_Low_All",
             "filter-rsi14": "RSI_14", "filter-macd-hist": "MACD_Histogram",
-            "filter-bb-width": "BB_Width", "filter-consec-up": "Consec_Up",
+            "filter-bb-width": "BB_Width", "filter-adx14": "ADX_14",
+            "filter-plus-di14": "Plus_DI_14", "filter-minus-di14": "Minus_DI_14",
+            "filter-adx-state": "ADX_State",
+            "filter-consec-up": "Consec_Up",
             "filter-consec-down": "Consec_Down", "filter-beta": "Beta",
             "filter-alpha": "Alpha", "filter-rs-3d": "RS_3D",
             "filter-rs-1m": "RS_1M", "filter-rs-3m": "RS_3M",
@@ -415,6 +418,53 @@ def create_bool_filter_ui(filter_id, label, true_label="Có", false_label="Khôn
     })
 
 
+# ── Categorical filter UI (multi-select dropdown, ví dụ: Trạng thái ADX) ────
+
+def create_categorical_filter_ui(filter_id, label, options, current_values=None):
+    """
+    Filter card dạng multi-select cho dữ liệu categorical (text), ví dụ ADX_State.
+    Store value: list các giá trị text được chọn. [] hoặc None = không lọc (hiển thị tất cả).
+    """
+    if current_values is None:
+        current_values = []
+    return html.Div([
+        # Header
+        html.Div([
+            html.Span(label, style={
+                "color": "#c9d1d9", "fontSize": "11px", "fontWeight": "600",
+                "flex": "1", "overflow": "hidden", "textOverflow": "ellipsis",
+                "whiteSpace": "nowrap", "marginRight": "4px",
+            }),
+            html.I(
+                className="fas fa-times",
+                id={"type": "remove-filter", "index": filter_id},
+                style={"color": "#6e7681", "cursor": "pointer", "fontSize": "11px",
+                       "marginLeft": "6px", "flexShrink": "0"},
+                n_clicks=0
+            ),
+        ], style={"display": "flex", "alignItems": "center", "marginBottom": "8px"}),
+
+        # Multi-select dropdown
+        dcc.Dropdown(
+            id={"type": "categorical-filter-value", "filter": filter_id},
+            options=options,
+            value=current_values,
+            multi=True,
+            placeholder="Chọn trạng thái... (bỏ trống = tất cả)",
+            className="ssi-dropdown-custom",
+            style={"fontSize": "11px"},
+        ),
+
+    ], id={"type": "selected-filter", "index": filter_id}, style={
+        "padding": "8px 10px",
+        "backgroundColor": "#161b22",
+        "borderRadius": "6px",
+        "border": "1px solid #3fb950",
+        "animation": "fadeIn 0.25s ease-in-out",
+        "minWidth": "0",
+    })
+
+
 def create_range_filter_ui_readonly(filter_id, label, min_val=0, max_val=100, current_range=None):
     """
     Filter card dạng "Tham khảo" — CÙNG layout hàng ngang với card thường,
@@ -619,6 +669,44 @@ CRITERIA_CONFIG = {
                            "max": 1000, "default_value": [-1000, 1000]},
     "criteria-bb-width": {"label": "Mở rộng Bollinger (%)", "filter_id": "filter-bb-width", "type": "range", "min": 0,
                           "max": 50, "default_value": [0, 50]},
+    "criteria-adx14": {
+        "label": "ADX(14) — Sức mạnh xu hướng",
+        "filter_id": "filter-adx14",
+        "type": "range",
+        "min": 0,
+        "max": 100,
+        "default_value": [50, 100],
+    },
+    "criteria-plus-di14": {
+        "label": "+DI(14) — Lực mua",
+        "filter_id": "filter-plus-di14",
+        "type": "range",
+        "min": 0,
+        "max": 100,
+        "default_value": [0, 100],
+    },
+    "criteria-minus-di14": {
+        "label": "-DI(14) — Lực bán",
+        "filter_id": "filter-minus-di14",
+        "type": "range",
+        "min": 0,
+        "max": 100,
+        "default_value": [0, 100],
+    },
+    "criteria-adx-state": {
+        "label": "Trạng thái ADX",
+        "filter_id": "filter-adx-state",
+        "type": "categorical",
+        "options": [
+            {"label": "🔄 Đảo chiều Tăng",  "value": "🔄 Đảo chiều Tăng"},
+            {"label": "🔄 Đảo chiều Giảm",  "value": "🔄 Đảo chiều Giảm"},
+            {"label": "🔥 Siêu Xu Hướng",   "value": "🔥 Siêu Xu Hướng"},
+            {"label": "📈 Xu hướng Tăng",   "value": "📈 Xu hướng Tăng"},
+            {"label": "📉 Xu hướng Giảm",   "value": "📉 Xu hướng Giảm"},
+            {"label": "➖ Đi ngang",        "value": "➖ Đi ngang"},
+        ],
+        "default_value": [],
+    },
     "criteria-consec-up": {"label": "Phiên tăng liên tiếp", "filter_id": "filter-consec-up", "type": "range", "min": 0,
                            "max": 20, "default_value": [0, 20]},
     "criteria-consec-down": {"label": "Phiên giảm liên tiếp", "filter_id": "filter-consec-down", "type": "range",
@@ -753,6 +841,20 @@ _STRATEGY_FILTERS = {
         ("filter-current-ratio", "Thanh toán hiện hành", [0.8, 10]),
         ("filter-de", "D/E (Nợ / VCSH)", [0, 2]),
     ],
+
+    # ── ADX Momentum — Xu hướng & Siêu Cổ Phiếu (Wilder, bản cải tiến v2) ───
+    # Logic lọc THẬT chạy qua Is_Steady_Uptrend AND Is_Super_Stock_ADX (2 cờ
+    # boolean tính sẵn trong quant_engine.py — xem quant_engine_strategies.py
+    # apply_adx_strategy_filter). Các card dưới đây CHỈ MANG TÍNH THAM KHẢO,
+    # minh họa range tương ứng cho người dùng dễ hiểu — không phải filter
+    # đang thực sự áp dụng (vì điều kiện thật có thêm phần "duy trì 20 phiên"
+    # mà 1 range slider đơn giản không biểu diễn được).
+    "STRAT_ADX_MOMENTUM": [
+        ("filter-adx14",      "ADX(14) — Cường độ xu hướng",  [25, 100]),
+        ("filter-plus-di14",  "+DI(14) — Lực mua",             [20, 100]),
+        ("filter-minus-di14", "-DI(14) — Lực bán",             [0, 20]),
+    ],
+
     "STRAT_GROWTH": [
         ("filter-rev-growth-yoy", "% Tăng trưởng DT 1 năm", [15, 300]),
         ("filter-rev-cagr-5y", "CAGR Doanh thu 5 năm (%)", [7, 100]),
@@ -870,6 +972,13 @@ def manage_filter_ui(
                         fl = cfg.get('false_label', 'Không')
                         break
                 children.append(create_bool_filter_ui(fid, label, tl, fl))
+            elif ftype == 'categorical':
+                opts = []
+                for cfg in CRITERIA_CONFIG.values():
+                    if cfg['filter_id'] == fid and cfg.get('type') == 'categorical':
+                        opts = cfg.get('options', [])
+                        break
+                children.append(create_categorical_filter_ui(fid, label, opts, val or []))
             else:
                 if fid in dr:
                     fmin, fmax = dr[fid]
@@ -1060,7 +1169,22 @@ def manage_filter_ui(
                 for o in opts
             ]
             return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO, NO
-            
+
+        if config['type'] == 'categorical':
+            if ch and isinstance(ch[0], str): ch = []
+            ch.append(create_categorical_filter_ui(
+                filter_id, config['label'],
+                options=config.get('options', []),
+                current_values=config.get('default_value', []),
+            ))
+            dirty_opts = [
+                {**o, "label": ("* " + o["label"]) if (o.get("value") == dd_selected
+                                                       and dd_selected and dd_selected != "default"
+                                                       and not o["label"].startswith("* ")) else o["label"]}
+                for o in opts
+            ]
+            return ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, NO, NO
+
         if filter_id in ranges:
             actual_min, actual_max = ranges[filter_id]
             default_val = [actual_min, actual_max]
@@ -1129,7 +1253,8 @@ _ALL_FILTER_STORE_IDS = [
     "filter-price-vs-sma50", "filter-price-vs-sma100", "filter-price-vs-sma200",
     "filter-pct-from-high-1y", "filter-pct-from-low-1y",
     "filter-pct-from-high-all", "filter-pct-from-low-all",
-    "filter-rsi14", "filter-macd-hist", "filter-bb-width",
+    "filter-rsi14", "filter-macd-hist", "filter-bb-width", "filter-adx14",
+    "filter-plus-di14", "filter-minus-di14",
     "filter-consec-up", "filter-consec-down",
     "filter-beta", "filter-alpha",
     "filter-rs-3d", "filter-rs-1m", "filter-rs-3m", "filter-rs-1y", "filter-rs-avg",
@@ -1349,6 +1474,10 @@ def toggle_all_collapses(
     return [not states[i] if triggered_id == b else no_update for i, b in enumerate(btn_ids)]
 
 
+# [ĐÃ GỠ] callback toggle_adx_strategy_collapse — block UI "CHIẾN LƯỢC ADX"
+# đã bị gỡ khỏi sidebar.py, thay bằng preset chính thức trong dropdown.
+
+
 # ============================================================================
 # CALLBACK: SYNC SLIDER → INPUT BOXES (slider di chuyển → cập nhật 2 ô nhập)
 # ============================================================================
@@ -1549,6 +1678,54 @@ def sync_bool_to_active_filters(bool_values, bool_ids, active_filters):
                     label = cfg.get("label", fid)
                     break
             af[fid] = {"label": label, "type": "boolean", "value": val}
+            changed = True
+
+    return af if changed else no_update
+
+
+# ============================================================================
+# CALLBACK: SYNC CATEGORICAL VALUE → active-filters-store (trigger screener)
+# Dropdown multi-select (ví dụ Trạng thái ADX) lưu trực tiếp vào value,
+# không cần Store trung gian như boolean.
+# ============================================================================
+
+@app.callback(
+    Output("active-filters-store", "data", allow_duplicate=True),
+    Input({"type": "categorical-filter-value", "filter": ALL}, "value"),
+    State({"type": "categorical-filter-value", "filter": ALL}, "id"),
+    State("active-filters-store", "data"),
+    prevent_initial_call=True,
+)
+def sync_categorical_to_active_filters(cat_values, cat_ids, active_filters):
+    """
+    Khi user chọn/bỏ chọn trạng thái trên dropdown categorical (ví dụ ADX_State):
+    → cập nhật active-filters-store["filter_id"]["value"] = [list trạng thái]
+    → screener tự trigger vì active-filters-store là Input của nó
+    """
+    ctx = callback_context
+    if not ctx.triggered:
+        return no_update
+
+    af = dict(active_filters or {})
+    changed = False
+
+    for val, id_spec in zip(cat_values, cat_ids):
+        fid = id_spec.get("filter") if isinstance(id_spec, dict) else None
+        if not fid:
+            continue
+        val = val or []
+        if fid in af:
+            if af[fid].get("value") != val:
+                af[fid] = dict(af[fid])
+                af[fid]["value"] = val
+                changed = True
+        else:
+            label = fid
+            for cfg in CRITERIA_CONFIG.values():
+                if cfg.get("filter_id") == fid and cfg.get("type") == "categorical":
+                    label = cfg.get("label", fid)
+                    break
+            af[fid] = {"label": label, "type": "categorical", "value": val}
             changed = True
 
     return af if changed else no_update

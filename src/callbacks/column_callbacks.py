@@ -7,6 +7,20 @@ from dash import Input, Output, no_update
 from src.app_instance import app
 
 # ============================================================================
+# HELPER JS: MÀU TRUNG TÍNH THEO THEME (sáng/tối)
+# Toàn bộ cellStyle bên dưới đang hard-code 1 màu xám tối (#484f58, #8b949e,
+# #c9d1d9, #94a3b8...) làm màu "mặc định/0/null". Các tông đó được chọn cho
+# nền đen nên khi bảng đổi qua theme sáng (nền trắng) chữ bị mờ, nhợt nhạt,
+# không thấy tăng/giảm rõ. Hàm JS này đọc data-theme trên <html> để chọn
+# đúng tông xám cho từng theme — dùng INLINE trong mọi cellStyle function
+# (không thể import JS module vào dict cellStyle của Dash AG Grid).
+# ============================================================================
+_THEME_MUTED_JS = """
+        var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        var __muted = __theme === 'light' ? '#64748b' : '#8b949e';
+"""
+
+# ============================================================================
 # HELPER: GRADE CELL STYLE (dùng chung cho Value/Growth/Momentum/VGM Score)
 # ============================================================================
 _GRADE_CELL_STYLE = {
@@ -28,6 +42,9 @@ _GRADE_CELL_STYLE = {
 
 _PCT_CELL_STYLE = {
     "function": """
+        var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        var __muted = __theme === 'light' ? '#94a3b8' : '#484f58';
+        var __zero  = __theme === 'light' ? '#b45309' : '#f5c842';
         const base = {
             'fontFamily': "'Roboto Mono', monospace",
             'fontSize': '12.5px',
@@ -35,10 +52,10 @@ _PCT_CELL_STYLE = {
             'fontWeight': '600',
             'letterSpacing': '0.2px'
         };
-        if (params.value == null) return {...base, 'color': '#484f58'};
+        if (params.value == null) return {...base, 'color': __muted};
         if (params.value > 0)  return {...base, 'color': '#10b981'};
         if (params.value < 0)  return {...base, 'color': '#ef4444'};
-        return {...base, 'color': '#f5c842'};
+        return {...base, 'color': __zero};
     """
 }
 
@@ -56,7 +73,8 @@ _RSI_CELL_STYLE = {
         if (!params.value) return {};
         if (params.value >= 70) return {'color': '#ef4444', 'fontWeight': '700'};
         if (params.value <= 30) return {'color': '#10b981', 'fontWeight': '700'};
-        return {'color': '#c9d1d9'};
+        var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        return {'color': __theme === 'light' ? '#475569' : '#c9d1d9'};
     """
 }
 
@@ -71,9 +89,9 @@ _MACD_CELL_STYLE = {
 
 _BOOL_CELL_STYLE = {
     "function": """
-        return params.value === 1
-            ? {'color': '#10b981', 'fontWeight': '700'}
-            : {'color': '#8b949e'};
+        if (params.value === 1) return {'color': '#10b981', 'fontWeight': '700'};
+        var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        return {'color': __theme === 'light' ? '#94a3b8' : '#8b949e'};
     """
 }
 
@@ -98,15 +116,22 @@ def _num(field, header, width=100, decimals=2, suffix="", color=None):
 
 
 def _pct(field, header, width=110):
-    """Cột % có màu xanh/đỏ."""
+    """Cột % có màu xanh/đỏ + icon mũi tên ▲▼ tăng/giảm."""
     return {
         "field": field,
         "headerName": header,
         "type": "rightAligned",
         "sortable": True,
         "width": width,
-        "valueFormatter": {"function": "params.value != null ? d3.format(',.2f')(params.value) + '%' : '-'"},
+        "valueFormatter": {
+            "function": "params.value != null ? (Number(params.value) > 0 ? '▲ ' : Number(params.value) < 0 ? '▼ ' : '') + (params.value > 0 ? '+' : '') + d3.format(',.2f')(params.value) + '%' : '-'"
+        },
         "cellStyle": _PCT_CELL_STYLE,
+        "cellClassRules": {
+            "cell-pct-positive": "params.value != null && Number(params.value) > 0",
+            "cell-pct-negative": "params.value != null && Number(params.value) < 0",
+            "cell-pct-zero": "params.value != null && Number(params.value) === 0",
+        },
     }
 
 
@@ -143,16 +168,18 @@ def _ssi_pct_style():
     return {
         "function": """
             var d = params.data;
-            if (!d) return {color: '#94a3b8'};
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            var __muted = __theme === 'light' ? '#94a3b8' : '#94a3b8';
+            if (!d) return {color: __muted};
             var pct = d['Price_Change_Pct'];
             var n = Number(pct);
-            var color = '#94a3b8';
+            var color = __muted;
             if (pct !== null && pct !== undefined && !isNaN(n)) {
-                if      (n >= 6.9)  color = '#38bdf8';
-                else if (n >  0.1)  color = '#4ade80';
-                else if (n >= -0.1) color = '#fde047';
-                else if (n > -6.9)  color = '#f87171';
-                else                color = '#ff6b6b';
+                if      (n >= 6.9)  color = '#0ea5e9';
+                else if (n >  0.1)  color = '#10b981';
+                else if (n >= -0.1) color = (__theme === 'light' ? '#b45309' : '#fde047');
+                else if (n > -6.9)  color = '#ef4444';
+                else                color = '#dc2626';
             }
             return {color: color, fontWeight: '700', fontSize: '12.5px', fontVariantNumeric: 'tabular-nums'};
         """
@@ -197,9 +224,14 @@ FIXED_COLS = [
         "sortable": True,
         "width": 90,
         "valueFormatter": {
-            "function": "params.value != null ? (params.value > 0 ? '+' : '') + d3.format('.2f')(params.value) + '%' : '–'"
+            "function": "params.value != null ? (Number(params.value) > 0.1 ? '▲ ' : Number(params.value) < -0.1 ? '▼ ' : '') + (params.value > 0 ? '+' : '') + d3.format('.2f')(params.value) + '%' : '–'"
         },
         "cellStyle": _ssi_pct_style(),
+        "cellClassRules": {
+            "cell-pct-positive": "params.value != null && Number(params.value) > 0.1",
+            "cell-pct-negative": "params.value != null && Number(params.value) < -0.1",
+            "cell-pct-zero": "params.value != null && Number(params.value) >= -0.1 && Number(params.value) <= 0.1",
+        },
     },
     
     {
@@ -207,20 +239,30 @@ FIXED_COLS = [
         "headerName": "%1T",
         "type": "rightAligned",
         "sortable": True,
-        "width": 82,
+        "width": 88,
         "valueFormatter": {
-            "function": "params.value != null ? (params.value > 0 ? '+' : '') + d3.format('.1f')(params.value) + '%' : '–'"},
+            "function": "params.value != null ? (Number(params.value) > 0 ? '▲ ' : Number(params.value) < 0 ? '▼ ' : '') + (params.value > 0 ? '+' : '') + d3.format('.1f')(params.value) + '%' : '–'"},
         "cellStyle": _PCT_CELL_STYLE,
+        "cellClassRules": {
+            "cell-pct-positive": "params.value != null && Number(params.value) > 0",
+            "cell-pct-negative": "params.value != null && Number(params.value) < 0",
+            "cell-pct-zero": "params.value != null && Number(params.value) === 0",
+        },
     },
     {
         "field": "Perf_1M",
         "headerName": "%1TH",
         "type": "rightAligned",
         "sortable": True,
-        "width": 88,
+        "width": 94,
         "valueFormatter": {
-            "function": "params.value != null ? (params.value > 0 ? '+' : '') + d3.format('.1f')(params.value) + '%' : '–'"},
+            "function": "params.value != null ? (Number(params.value) > 0 ? '▲ ' : Number(params.value) < 0 ? '▼ ' : '') + (params.value > 0 ? '+' : '') + d3.format('.1f')(params.value) + '%' : '–'"},
         "cellStyle": _PCT_CELL_STYLE,
+        "cellClassRules": {
+            "cell-pct-positive": "params.value != null && Number(params.value) > 0",
+            "cell-pct-negative": "params.value != null && Number(params.value) < 0",
+            "cell-pct-zero": "params.value != null && Number(params.value) === 0",
+        },
     },
     {
         "field": "Volume",
@@ -440,7 +482,8 @@ FILTER_TO_COLDEF = {
             if (!params.value) return {};
             if (params.value.includes('Over')) return {'color': '#ef4444', 'fontWeight': '600'};
             if (params.value.includes('Sold')) return {'color': '#10b981', 'fontWeight': '600'};
-            return {'color': '#8b949e'};
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            return {'color': __theme === 'light' ? '#94a3b8' : '#8b949e'};
         """}
     },
     "filter-macd-hist": {
@@ -450,19 +493,85 @@ FILTER_TO_COLDEF = {
         "cellStyle": _MACD_CELL_STYLE
     },
     "filter-bb-width": _pct("BB_Width", "BB WIDTH%", 105),
+    "filter-adx14": {
+        "field": "ADX_14", "headerName": "ADX(14)",
+        "headerTooltip": (
+            "Average Directional Index 14 phiên — đo CƯỜNG ĐỘ xu hướng (không phải hướng). "
+            "< 20: thị trường sideway/tích lũy — MACD/MA dễ tạo tín hiệu giả. "
+            "20–50: xu hướng đang hình thành / trung bình. "
+            "> 50: xu hướng RẤT mạnh — kết hợp +DI/-DI để biết là tăng hay giảm."
+        ),
+        "type": "rightAligned", "sortable": True, "width": 100,
+        "valueFormatter": {"function": "params.value != null ? d3.format('.1f')(params.value) : '-'"},
+        "cellStyle": {"function": """
+            if (params.value == null) return {'color': '#484f58'};
+            if (params.value > 50)    return {'color': '#ef4444', 'fontWeight': '700'};
+            if (params.value >= 20)   return {'color': '#10b981', 'fontWeight': '600'};
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            return {'color': __theme === 'light' ? '#94a3b8' : '#f59e0b'};
+        """},
+    },
+    "filter-plus-di14": {
+        "field": "Plus_DI_14", "headerName": "+DI(14)",
+        "headerTooltip": "Plus Directional Indicator — đo lực mua. +DI > -DI nghĩa là xu hướng đang nghiêng về phía tăng.",
+        "type": "rightAligned", "sortable": True, "width": 95,
+        "valueFormatter": {"function": "params.value != null ? d3.format('.1f')(params.value) : '-'"},
+        "cellStyle": {"function": """
+            if (params.value == null) return {'color': '#484f58'};
+            return {'color': '#10b981', 'fontWeight': '600'};
+        """},
+    },
+    "filter-minus-di14": {
+        "field": "Minus_DI_14", "headerName": "-DI(14)",
+        "headerTooltip": "Minus Directional Indicator — đo lực bán. -DI > +DI nghĩa là xu hướng đang nghiêng về phía giảm.",
+        "type": "rightAligned", "sortable": True, "width": 95,
+        "valueFormatter": {"function": "params.value != null ? d3.format('.1f')(params.value) : '-'"},
+        "cellStyle": {"function": """
+            if (params.value == null) return {'color': '#484f58'};
+            return {'color': '#ef4444', 'fontWeight': '600'};
+        """},
+    },
+    "filter-adx-state": {
+        "field": "ADX_State", "headerName": "TRẠNG THÁI ADX",
+        "headerTooltip": (
+            "Phân loại trạng thái xu hướng dựa trên ADX(14) và +DI/-DI (lookback đảo chiều: 3 phiên): "
+            "🔄 Đảo chiều Tăng (+DI vừa cắt lên -DI trong 3 phiên & ADX dốc lên) · "
+            "🔄 Đảo chiều Giảm (-DI vừa cắt lên +DI trong 3 phiên) · "
+            "🔥 Siêu Xu Hướng (ADX≥50) · 📈 Xu hướng Tăng (25≤ADX<50 & +DI>-DI) · "
+            "📉 Xu hướng Giảm (25≤ADX<50 & -DI>+DI) · ➖ Đi ngang (ADX<25)."
+        ),
+        "sortable": True, "width": 170,
+        "cellStyle": {"function": """
+            if (!params.value) return {};
+            if (params.value.includes('Đảo chiều Tăng'))  return {'color': '#10b981', 'fontWeight': '700'};
+            if (params.value.includes('Đảo chiều Giảm'))  return {'color': '#ef4444', 'fontWeight': '700'};
+            if (params.value.includes('Siêu Xu Hướng'))   return {'color': '#10b981', 'fontWeight': '700'};
+            if (params.value.includes('Xu hướng Tăng'))   return {'color': '#3fb950', 'fontWeight': '600'};
+            if (params.value.includes('Xu hướng Giảm'))   return {'color': '#f87171', 'fontWeight': '600'};
+            if (params.value.includes('Đi ngang'))        return {'color': '#f59e0b', 'fontWeight': '600'};
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            return {'color': __theme === 'light' ? '#94a3b8' : '#8b949e'};
+        """}
+    },
     "filter-consec-up": {
         "field": "Consec_Up", "headerName": "PHIÊN TĂNG",
         "type": "rightAligned", "sortable": True, "width": 110,
         "valueFormatter": {"function": "params.value ? params.value + ' phiên' : '—'"},
-        "cellStyle": {
-            "function": "return params.value > 0 ? {'color': '#10b981', 'fontWeight': '700'} : {'color': '#8b949e'};"}
+        "cellStyle": {"function": """
+            if (params.value > 0) return {'color': '#10b981', 'fontWeight': '700'};
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            return {'color': __theme === 'light' ? '#94a3b8' : '#8b949e'};
+        """}
     },
     "filter-consec-down": {
         "field": "Consec_Down", "headerName": "PHIÊN GIẢM",
         "type": "rightAligned", "sortable": True, "width": 115,
         "valueFormatter": {"function": "params.value ? params.value + ' phiên' : '—'"},
-        "cellStyle": {
-            "function": "return params.value > 0 ? {'color': '#ef4444', 'fontWeight': '700'} : {'color': '#8b949e'};"}
+        "cellStyle": {"function": """
+            if (params.value > 0) return {'color': '#ef4444', 'fontWeight': '700'};
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            return {'color': __theme === 'light' ? '#94a3b8' : '#8b949e'};
+        """}
     },
 
     # ── Kỹ thuật: Momentum / RS ──
@@ -472,9 +581,10 @@ FILTER_TO_COLDEF = {
         "valueFormatter": {"function": "params.value != null ? d3.format('.3f')(params.value) : '-'"},
         "cellStyle": {"function": """
             if (params.value == null) return {};
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
             if (params.value > 1.5) return {'color': '#ef4444'};
-            if (params.value < 0.5) return {'color': '#8b949e'};
-            return {'color': '#c9d1d9'};
+            if (params.value < 0.5) return {'color': __theme === 'light' ? '#94a3b8' : '#8b949e'};
+            return {'color': __theme === 'light' ? '#475569' : '#c9d1d9'};
         """}
     },
     "filter-alpha": _pct("Alpha", "ALPHA %", 90),
@@ -530,6 +640,7 @@ FILTER_TO_COLDEF = {
         "cellStyle": {
             "function": """
                 if (params.value == null) return {};
+                var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
                 // Vùng vàng 38.2–61.8%: đang hồi về Fib lý tưởng
                 if (params.value >= 38.2 && params.value <= 61.8)
                     return {'color': '#f59e0b', 'fontWeight': '700'};
@@ -539,7 +650,7 @@ FILTER_TO_COLDEF = {
                 // Dưới 25%: gần đáy
                 if (params.value < 25)
                     return {'color': '#ef4444'};
-                return {'color': '#c9d1d9'};
+                return {'color': __theme === 'light' ? '#475569' : '#c9d1d9'};
             """
         },
     },
@@ -551,7 +662,8 @@ FILTER_TO_COLDEF = {
         "valueFormatter": {"function": "params.value != null ? params.value.toFixed(0) + ' đ' : '-'"},
         "cellStyle": {
             "function": """
-                if (params.value == null) return {'color':'#484f58'};
+                var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+                if (params.value == null) return {'color': __theme === 'light' ? '#94a3b8' : '#484f58'};
                 if (params.value >= 70) return {'color':'#10b981','fontWeight':'800'};
                 if (params.value >= 50) return {'color':'#3b82f6','fontWeight':'600'};
                 if (params.value >= 30) return {'color':'#f59e0b'};
@@ -590,6 +702,7 @@ INVESTING_MODE_COLS = [
 TRADING_MODE_COLS = [
     FILTER_TO_COLDEF["filter-rsi14"],
     FILTER_TO_COLDEF["filter-macd-hist"],
+    FILTER_TO_COLDEF["filter-adx14"],
     FILTER_TO_COLDEF["filter-vol-vs-sma20"],
     FILTER_TO_COLDEF["filter-pct-from-high-1y"],
     FILTER_TO_COLDEF["filter-price-vs-sma20"],

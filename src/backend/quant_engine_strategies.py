@@ -1687,6 +1687,149 @@ def apply_ncn_filter(df):
     return df
 
 # ══════════════════════════════════════════════════════════════════════════════
+# 11. CHIẾN LƯỢC ADX MOMENTUM (Wilder — bản cải tiến v3)
+# ══════════════════════════════════════════════════════════════════════════════
+# Thay cho preset "Xu hướng tăng mạnh" cũ (đã gỡ vì dùng ngưỡng cứng nhắc).
+# Dùng 2 cờ boolean đã được tính sẵn trong quant_engine.py:
+#   Is_Steady_Uptrend  : +DI>-DI & ADX>=25 — ĐÚNG CHUẨN WILDER GỐC, không thêm
+#                        ràng buộc về động lượng của ADX (v2 từng yêu cầu ADX
+#                        phải đang dốc lên, nhưng điều đó loại NHẦM các xu hướng
+#                        tăng đã trưởng thành/ổn định, ví dụ VHM — ADX đi ngang ở
+#                        vùng cao sau khi đạt đỉnh dù +DI vẫn rõ rệt cao hơn -DI).
+#   Is_Super_Stock_ADX : (+DI>-DI & ADX>=50) đúng >=50% trong 20 phiên gần nhất.
+#                        KHÔNG còn là điều kiện loại trừ (v2 dùng AND làm preset
+#                        ra quá ít/0 mã) — giờ chỉ dùng để XẾP HẠNG, đẩy các mã
+#                        "siêu mạnh" lên đầu danh sách kết quả.
+#
+# Trước khi xét 2 cờ trên, áp dụng HARD GATEKEEPER loại UPCoM + mã thanh khoản
+# thấp (xem apply_adx_strategy_filter) — đặc thù thị trường VN: ADX/+DI/-DI dễ
+# biến động giả tạo trên mã thanh khoản cực thấp, không phản ánh dòng tiền thật.
+
+def calculate_adx_strategy_metrics(df, df_fin=None):
+    """
+    Không cần tính lại gì — Is_Steady_Uptrend/Is_Super_Stock_ADX đã được tính
+    sẵn trong quant_engine.py (cùng lúc với ADX_14/Plus_DI_14/Minus_DI_14).
+    Hàm này chỉ đảm bảo 2 cột tồn tại để apply_fn không lỗi nếu vì lý do gì
+    đó (ví dụ lỗi tính ADX ở snapshot) mà cột bị thiếu.
+    """
+    df = df.copy()
+    for col in ['Is_Steady_Uptrend', 'Is_Super_Stock_ADX']:
+        if col not in df.columns:
+            df[col] = False
+    return df
+
+
+def apply_adx_strategy_filter(df):
+    if 'Is_Steady_Uptrend' not in df.columns or 'Is_Super_Stock_ADX' not in df.columns:
+        logger.warning(
+            "[ADX_MOMENTUM] Thiếu cột Is_Steady_Uptrend/Is_Super_Stock_ADX trong snapshot "
+            "→ KHÔNG lọc gì (trả về nguyên df) — kiểm tra get_snapshot_df() có đang dùng "
+            "cache cũ chưa có cột ADX Momentum không (xem data_loader.invalidate_snapshot_cache)."
+        )
+        return df
+
+    before_gate = len(df)
+    result = df.copy()
+
+    # ── HARD GATEKEEPER — chất lượng & thanh khoản cao (đặc thù thị trường VN) ──
+    # ADX/+DI/-DI có thể biến động giả tạo trên các mã thanh khoản thấp (đặc
+    # biệt UPCoM — biên độ ±15%, dễ bị vài lệnh nhỏ kéo giá tạo xu hướng "ảo"
+    # không phản ánh dòng tiền thật). Preset này PHẢI tự loại các mã này TRƯỚC
+    # khi xét ADX, không phụ thuộc vào trading_mode người dùng chọn.
+    #
+    # Dùng GTGD_10D (Giá Trị Giao Dịch — tổng KL×Giá 10 phiên gần nhất) thay
+    # cho khối lượng thuần (Avg_Vol_20D): GTGD phản ánh đúng QUY MÔ DÒNG TIỀN
+    # thực tế, không bị lệch khi so sánh các mã có thị giá rất khác nhau (mã
+    # giá 5.000đ và mã giá 100.000đ có thể cùng KL nhưng dòng tiền chênh 20 lần).
+    #   1. Loại hoàn toàn sàn UPCoM
+    #   2. GTGD trung bình 10 phiên >= 100 tỷ VNĐ (~10 tỷ/phiên) — chuẩn thanh
+    #      khoản CAO thật sự, đủ để vào/ra mà không gây trượt giá đáng kể.
+    #   3. Giá đóng cửa >= 3,000 VNĐ (loại mã dưới mệnh giá / nguy cơ huỷ niêm yết)
+    #   4. Vốn hóa >= 1.000 tỷ VNĐ (loại cổ vốn hóa nhỏ dễ bị thao túng/bẫy giá)
+    if 'Exchange' in result.columns:
+        result = result[result['Exchange'].astype(str).str.upper() != 'UPCOM']
+
+    if 'GTGD_10D' in result.columns:
+        gtgd_10d = pd.to_numeric(result['GTGD_10D'], errors='coerce').fillna(0)
+        result = result[gtgd_10d >= 100_000_000_000]
+    elif 'Avg_Vol_20D' in result.columns:
+        # Fallback nếu GTGD_10D chưa có trong snapshot (ví dụ cache cũ)
+        logger.warning("[ADX_MOMENTUM] Thiếu cột GTGD_10D — tạm dùng Avg_Vol_20D làm fallback")
+        avg_vol = pd.to_numeric(result['Avg_Vol_20D'], errors='coerce').fillna(0)
+        result = result[avg_vol >= 200_000]
+
+    if 'Price Close' in result.columns:
+        price = pd.to_numeric(result['Price Close'], errors='coerce').fillna(0)
+        result = result[price >= 3_000]
+
+    if 'Market Cap' in result.columns:
+        mc = pd.to_numeric(result['Market Cap'], errors='coerce').fillna(0)
+        result = result[mc >= 1_000_000_000_000]
+
+    logger.info(
+        f"[ADX_MOMENTUM] Sau gatekeeper (loại UPCoM, GTGD 10D≥100 tỷ, Giá≥3.000đ, "
+        f"VHTT≥1.000 tỷ): {before_gate} → {len(result)} mã"
+    )
+
+    # ── Logic lọc ADX thật (chỉ áp dụng trên các mã đã qua gatekeeper) ──
+    # CHỈ dùng Is_Steady_Uptrend làm điều kiện chính — Is_Super_Stock_ADX (ADX>=50
+    # duy trì >=50% trong 20 phiên) quá hiếm khi kết hợp AND với Steady Uptrend
+    # cộng thêm gatekeeper thanh khoản, dễ ra 0 mã ở nhiều thời điểm thị trường.
+    # Is_Super_Stock_ADX vẫn giữ lại trong dữ liệu trả về như cột tham khảo,
+    # giúp người dùng nhận biết mã nào đang ở mức "siêu mạnh" trong danh sách.
+    mask = result['Is_Steady_Uptrend'].fillna(False).astype(bool)
+    result = result[mask].copy()
+
+    # ── Loại trừ Lifecycle Mức 4 (Phân kỳ Âm) & Mức 5 (Sideway Trap) ────────
+    # Theo khung 5 mức độ ADX+RSI: dù vẫn thỏa Is_Steady_Uptrend (+DI>-DI &
+    # ADX>=25), mã đang ở Mức 4 (nội lực dòng tiền cạn kiệt — RSI tạo đỉnh
+    # thấp hơn dù giá tạo đỉnh cao hơn, cảnh báo phân phối sớm) hoặc Mức 5
+    # (ADX vừa rơi mạnh từ vùng cao, RSI giật cục vô hướng — bẫy nhiễu/whipsaw)
+    # đều là tín hiệu RỦI RO, không phải cơ hội — cần loại khỏi kết quả.
+    if 'Is_Lifecycle_Excluded' in result.columns:
+        before_lifecycle = len(result)
+        result = result[~result['Is_Lifecycle_Excluded'].fillna(False).astype(bool)]
+        logger.info(
+            f"[ADX_MOMENTUM] Loại Lifecycle Mức 4/5 (Phân kỳ Âm/Sideway Trap): "
+            f"{before_lifecycle} → {len(result)} mã"
+        )
+
+    # ── Ưu tiên VN30/VN100 — KHÔNG loại trừ mã ngoài 2 rổ này, chỉ xếp hạng
+    # lên đầu danh sách. VN30/VN100 là nhóm vốn hóa lớn, thanh khoản cao, minh
+    # bạch nhất thị trường — giúp người dùng tập trung vào nhóm đáng tin cậy
+    # trước, vẫn không bỏ sót các mã midcap/penny tốt khác đã qua gatekeeper.
+    result['_is_vn30_100'] = False
+    try:
+        from src.backend.data_loader import fetch_index_constituents
+        vn30_tickers, _err30 = fetch_index_constituents('VN30')
+        vn100_tickers, _err100 = fetch_index_constituents('VN100')
+        priority_set = set(vn30_tickers or []) | set(vn100_tickers or [])
+        if priority_set:
+            result['_is_vn30_100'] = result['Ticker'].isin(priority_set)
+            logger.info(f"[ADX_MOMENTUM] Ưu tiên VN30/VN100: {result['_is_vn30_100'].sum()}/{len(result)} mã")
+        else:
+            logger.warning("[ADX_MOMENTUM] Không lấy được danh sách VN30/VN100 — bỏ qua bước ưu tiên")
+    except Exception as e:
+        logger.warning(f"[ADX_MOMENTUM] Lỗi khi lấy danh sách VN30/VN100: {e} — bỏ qua bước ưu tiên")
+
+    # Sắp xếp: VN30/VN100 lên đầu, sau đó mã "Siêu Cổ Phiếu" (đã chứng minh độ
+    # bền 20 phiên), cuối cùng theo ADX_14 giảm dần.
+    sort_cols = ['_is_vn30_100']
+    sort_asc = [False]
+    if 'Is_Super_Stock_ADX' in result.columns:
+        sort_cols.append('Is_Super_Stock_ADX')
+        sort_asc.append(False)
+    if 'ADX_14' in result.columns:
+        sort_cols.append('ADX_14')
+        sort_asc.append(False)
+    result = result.sort_values(by=sort_cols, ascending=sort_asc)
+    result = result.drop(columns=['_is_vn30_100'])
+
+    logger.info(f"[ADX_MOMENTUM] Lọc (Is_Steady_Uptrend): {len(result)}/{before_gate} mã")
+    return result
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # DISPATCHER
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -1701,6 +1844,7 @@ STRATEGY_MAP = {
     "STRAT_GROWTH": (calculate_fisher_metrics, apply_fisher_filter),
     "STRAT_MAGIC": (calculate_magic_formula_metrics, apply_magic_formula_filter),  # ← THÊM MỚI
     "STRAT_NCN":    (calculate_ncn_metrics,    apply_ncn_filter),
+    "STRAT_ADX_MOMENTUM": (calculate_adx_strategy_metrics, apply_adx_strategy_filter),
 }
 
 STRATEGY_META = {
@@ -1714,6 +1858,7 @@ STRATEGY_META = {
     "STRAT_CANSLIM": {"name": "CANSLIM (O'Neil)", "icon": "🚀"},
     "STRAT_GROWTH": {"name": "Tăng trưởng bền vững (Fisher)", "icon": "💎"},
     "STRAT_MAGIC": {"name": "Công Thức Kỳ Diệu (Greenblatt)", "icon": "🪄"},
+    "STRAT_ADX_MOMENTUM": {"name": "ADX Momentum — Xu hướng & Siêu Cổ Phiếu (Wilder)", "icon": "🔥"},
 }
 
 def run_strategy(df_snapshot, strategy_id, df_fin=None):

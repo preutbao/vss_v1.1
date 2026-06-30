@@ -812,6 +812,10 @@ def get_snapshot_df() -> pd.DataFrame:
             if not os.path.exists(snap_path):
                 logger.info("Parquet bị xóa → clear RAM cache để rebuild")
                 _snapshot_df = None
+            elif not {'Is_Steady_Uptrend', 'Is_Super_Stock_ADX', 'ADX_14'}.issubset(_snapshot_df.columns):
+                # RAM cache được build trước khi có tính năng ADX Momentum — clear để rebuild.
+                logger.warning("[ADX] RAM cache thiếu cột ADX Momentum → clear để rebuild")
+                _snapshot_df = None
             else:
                 logger.info(f"Snapshot from memory (DataFrame): {len(_snapshot_df)} ma")
                 return _snapshot_df
@@ -829,6 +833,23 @@ def get_snapshot_df() -> pd.DataFrame:
                 except OSError:
                     pass
                 raise ValueError("Exchange column missing or all-empty — forcing rebuild")
+
+            # ── Cache cũ có thể được build TRƯỚC khi tính năng ADX Momentum
+            # (Is_Steady_Uptrend / Is_Super_Stock_ADX) được thêm vào pipeline.
+            # Nếu thiếu cột này → preset "ADX Momentum" sẽ luôn trả về NGUYÊN
+            # df không lọc (silent no-op), khiến người dùng tưởng preset không
+            # hoạt động. Tự động force-rebuild 1 lần để bù dữ liệu thiếu.
+            _adx_strategy_cols = {'Is_Steady_Uptrend', 'Is_Super_Stock_ADX', 'ADX_14'}
+            if not _adx_strategy_cols.issubset(df.columns):
+                logger.warning(
+                    "[ADX] Snapshot thiếu cột ADX Momentum (Is_Steady_Uptrend/"
+                    "Is_Super_Stock_ADX/ADX_14) → xóa cache để rebuild!"
+                )
+                try:
+                    os.remove(snap_path)
+                except OSError:
+                    pass
+                raise ValueError("ADX strategy columns missing — forcing rebuild")
 
             with _snapshot_lock:
                 _snapshot_df = df
@@ -1080,6 +1101,9 @@ FILTER_COL_MAP = {
     "filter-avg-vol-10d":  "Avg_Vol_10D",
     "filter-avg-vol-50d":  "Avg_Vol_50D",
     "filter-canslim": "CANSLIM Score",
+    "filter-adx14":   "ADX_14",
+    "filter-plus-di14":  "Plus_DI_14",
+    "filter-minus-di14": "Minus_DI_14",
 }
 
 _FALLBACK_RANGES = {
@@ -1137,6 +1161,9 @@ _FALLBACK_RANGES = {
     "filter-avg-vol-10d":  [0, 100000000],
     "filter-avg-vol-50d":  [0, 100000000],
     "filter-canslim": [0, 6],
+    "filter-adx14":   [0, 100],
+    "filter-plus-di14":  [0, 100],
+    "filter-minus-di14": [0, 100],
     "filter-gtgd-1w":  [0, 100000000000],
     "filter-gtgd-10d": [0, 200000000000],
     "filter-gtgd-1m":  [0, 500000000000],
@@ -1246,6 +1273,9 @@ def get_filter_ranges() -> dict:
         "filter-pct-from-high-all":(-100.0, 0.0),
         "filter-canslim":          (0.0,   5.0),
         "filter-consec-down":      (0.0,  10.0),
+        "filter-adx14":            (0.0, 100.0),
+        "filter-plus-di14":        (0.0, 100.0),
+        "filter-minus-di14":       (0.0, 100.0),
         "filter-vol-vs-sma5":      (0.0,   5.0),
         # XÓA 2 DÒNG NÀY nếu muốn đọc từ data thực tế:
         #"filter-beta":             (-1.0,  3.0),

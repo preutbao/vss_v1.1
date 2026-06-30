@@ -17,6 +17,19 @@ clientside_callback(
     Input("theme-switch-button", "value")
 )
 
+# 🎨 Đồng bộ theme hiện tại xuống theme-store (server-side đọc được) —
+# mọi callback Python cần build màu Plotly/HTML theo theme dùng
+# State("theme-store", "data") thay vì cố đọc DOM (server không thấy DOM).
+clientside_callback(
+    """
+    function(is_dark_mode) {
+        return is_dark_mode ? 'dark' : 'light';
+    }
+    """,
+    Output("theme-store", "data"),
+    Input("theme-switch-button", "value")
+)
+
 # ============================================================================
 # CALLBACK 1: Xử lý logic nút bấm Toggle & Bài test Tour Guide
 # ============================================================================

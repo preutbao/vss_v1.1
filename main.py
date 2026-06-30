@@ -176,6 +176,12 @@ app.layout = html.Div(
         # 🛠 THÊM DÒNG NÀY VÀO ĐỂ KHÔNG BỊ LỖI CALLBACK
         dcc.Store(id="tour-finish-trigger", data=False),
 
+        # 🎨 THEME STORE — đồng bộ data-theme (light/dark) từ DOM xuống server.
+        # Các callback Python (Tổng quan, Kỹ thuật, Biểu đồ tài chính...) đọc
+        # State("theme-store", "data") để build màu Plotly/HTML đúng theme,
+        # vì server không tự đọc được document.documentElement của browser.
+        dcc.Store(id="theme-store", storage_type="local", data="dark"),
+
         # ===================================================================
         # 🟢 CHÈN CÁC MODAL ẨN VÀO ĐÂY (NẰM GIỮA STORES VÀ PAGES)
         # ===================================================================

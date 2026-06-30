@@ -2,16 +2,17 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Header gồm:
 #   - Sticky transparent navbar (overlay lên hero, kiểu Finovate)
-#   - Hero banner 2 cột: text bên trái + illustration SVG bên phải
+#   - Hero banner 2 cột: text bên trái + Top Movers card bên phải (data thật)
 #   - Login modal (Premium Split-Layout)
 #   - dcc.Store auth-store (localStorage)
 #   - Dual theme: light / dark (dùng CSS variables từ style.css)
 # ─────────────────────────────────────────────────────────────────────────────
-
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+import pandas as pd
 
 sys_font = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
+
 
 # ── Helper: Input field ────────────────────────────────────────────────────────
 def _login_field(label, input_id, input_type="text", placeholder="", icon_cls=""):
@@ -193,7 +194,7 @@ def _create_login_modal():
                             _pricing_row("fas fa-check", "#00e676", "Backtest 10 trường phái", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Báo cáo phân tích chuyên sâu", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Tín hiệu Margin Crisis Radar", is_pro=True),
-                            
+
                             html.A("Nâng cấp ngay", href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi", target="_blank", style={
                                 "display": "block", "textAlign": "center", "marginTop": "18px",
                                 "padding": "10px 0", "background": "rgba(0,166,81,0.15)",
@@ -201,7 +202,7 @@ def _create_login_modal():
                                 "borderRadius": "6px", "textDecoration": "none",
                                 "border": "1px solid rgba(0,166,81,0.4)", "transition": "all 0.2s"
                             }),
-                            
+
                             # ── Ô nhập mã kích hoạt ──
                             html.Div([
                                 html.Div("Đã có mã kích hoạt?",
@@ -251,7 +252,7 @@ def _create_login_modal():
                                 "padding": "12px 14px",
                                 "marginBottom": "12px",
                             }),
-                            
+
                             html.Div([
                                 html.I(className="fas fa-info-circle", style={"marginRight": "4px", "fontSize": "10px"}),
                                 "Kèm theo ưu tiên hỗ trợ chiến lược từ đội ngũ tư vấn Vietcap."
@@ -268,6 +269,7 @@ def _create_login_modal():
 def _create_coin_svg():
     """
     3D coin / disc SVG illustration loaded via external file.
+    (Hiện không dùng trong hero — giữ lại để tái sử dụng nếu cần.)
     """
     return html.Div(className="vss-coin-wrap", children=[
         html.Img(src="/assets/coin.svg", className="vss-coin-svg", style={"width": "100%", "height": "100%"})
@@ -277,34 +279,29 @@ def _create_coin_svg():
 # ── TOPBAR ────────────────────────────────────────────────────────────────────
 def create_topbar(id_suffix=""):
     wrapper_id = f"vietcap-topbar{id_suffix}" if id_suffix else "vietcap-topbar-only"
-
     theme_switch = html.Div(
-    [
-        dbc.Switch(
-            id="theme-switch-button",
-            value=True, # true = đang ở dark mode
-            style={"cursor": "pointer", "marginBottom": "0"}
-        )
-    ],
-    className="d-flex align-items-center",
-    style={
-        "backgroundColor": "transparent",
-        "padding": "4px 8px",
-        "marginRight": "8px"
-    }
-)
-
+        [
+            dbc.Switch(
+                id="theme-switch-button",
+                value=True,  # true = đang ở dark mode
+                style={"cursor": "pointer", "marginBottom": "0"}
+            )
+        ],
+        className="d-flex align-items-center",
+        style={
+            "backgroundColor": "transparent",
+            "padding": "4px 8px",
+            "marginRight": "8px"
+        }
+    )
     scroll_script = html.Script("")
-
     return html.Div(id=wrapper_id, children=[
         dcc.Store(id='auth-store', storage_type='local', data={"logged_in": False}),
         dcc.Store(id='user-phone-store', storage_type='session', data=None),
         _create_login_modal(),
         scroll_script,
-
         html.Div(id="vss-sticky-nav", children=[
             html.Div(className="vss-nav-inner", children=[
-
                 # Logo
                 html.A([
                     html.Span("Vietcap", className="vss-logo-text"),
@@ -314,7 +311,6 @@ def create_topbar(id_suffix=""):
                     }),
                 ], href="https://www.vietcap.com.vn", target="_blank",
                     style={"textDecoration": "none", "display": "flex", "alignItems": "center"}),
-
                 # Nav links
                 html.Div([
                     html.A("Về Vietcap", href="https://www.vietcap.com.vn/ve-vietcap", target="_blank", className="vietcap-nav-link"),
@@ -323,10 +319,10 @@ def create_topbar(id_suffix=""):
                     html.A("Truyền thông", href="https://www.vietcap.com.vn/chien-dich", target="_blank", className="vietcap-nav-link"),
                     html.A("Screener", href="#screener-scroll-anchor", className="vietcap-nav-link vietcap-nav-screener"),
                 ], className="d-flex align-items-center gap-4"),
-
                 # Auth area
                 html.Div([
                     theme_switch,
+                    # Nút Trạm Tâm Lý (từ version 1)
                     dbc.Button(
                         [html.I(className="fa-solid fa-kit-medical", style={"marginRight": "6px"}), "Trạm Tâm Lý"],
                         id="btn-open-psy-clinic", n_clicks=0,
@@ -368,37 +364,118 @@ def create_topbar(id_suffix=""):
             "zIndex": "1030",  # 🟢 SỬA TỪ 8999 -> 1030: Đảm bảo luôn nằm dưới mọi Popup/Modal (chuẩn Bootstrap)
             "width": "100%",
             # 🟢 SỬA THÀNH BIẾN CSS: Hãy thay '--bg-color' bằng biến màu nền bạn đang dùng trong file style.css
-            "backgroundColor": "var(--bg-color, #000000)", 
-            "borderBottom": "1px solid var(--border-color, #333)", # Tương tự cho màu viền
+            "backgroundColor": "var(--bg-color, #000000)",
+            "borderBottom": "1px solid var(--border-color, #333)",  # Tương tự cho màu viền
         }),
         html.Div(id="navbar-user-menu", style={"display": "none"}),
     ])
 
 
 # ── HERO BANNER ───────────────────────────────────────────────────────────────
+def _get_top_movers():
+    """Lấy top 6 tăng mạnh và 4 giảm mạnh nhất từ snapshot thật."""
+    try:
+        from src.backend.data_loader import get_snapshot_df
+        df = get_snapshot_df()
+        if df is None or df.empty:
+            raise ValueError("empty")
+        perf_col = None
+        for c in ["Perf_1W", "Perf_1D", "Perf_1M"]:
+            if c in df.columns:
+                perf_col = c
+                break
+        if perf_col is None:
+            raise ValueError("no perf col")
+        price_col = "Price Close" if "Price Close" in df.columns else None
+        # ── Lọc bỏ sàn UPCoM ──
+        exchange_col = next((c for c in ["Exchange", "exchange", "San", "Market"] if c in df.columns), None)
+        if exchange_col:
+            df = df[~df[exchange_col].astype(str).str.upper().str.contains("UPCOM|UP-COM")]
+        cols = ["Ticker", perf_col] + ([price_col] if price_col else [])
+        df2 = df[cols].dropna(subset=["Ticker", perf_col]).copy()
+        df2[perf_col] = pd.to_numeric(df2[perf_col], errors="coerce")
+        df2 = df2.dropna(subset=[perf_col])
+        # ── Lọc chỉ lấy mã có giá > 0 ──
+        if price_col:
+            df2[price_col] = pd.to_numeric(df2[price_col], errors="coerce")
+            df2 = df2[df2[price_col] > 0]
+        gainers = df2.nlargest(6, perf_col)[["Ticker", perf_col] + ([price_col] if price_col else [])]
+        losers = df2.nsmallest(4, perf_col)[["Ticker", perf_col] + ([price_col] if price_col else [])]
+        result = []
+        for _, row in gainers.iterrows():
+            pct = row[perf_col]
+            price = f"{row[price_col]:,.0f}" if price_col and pd.notna(row.get(price_col)) else "—"
+            result.append({"ticker": row["Ticker"], "pct": pct, "price": price, "up": True})
+        for _, row in losers.iterrows():
+            pct = row[perf_col]
+            price = f"{row[price_col]:,.0f}" if price_col and pd.notna(row.get(price_col)) else "—"
+            result.append({"ticker": row["Ticker"], "pct": pct, "price": price, "up": False})
+        return result
+    except Exception:
+        # Fallback cứng nếu data chưa ready
+        return [
+            {"ticker": "VCB", "pct": 5.2, "price": "92,000", "up": True},
+            {"ticker": "FPT", "pct": 3.8, "price": "140,000", "up": True},
+            {"ticker": "HPG", "pct": 4.1, "price": "28,500", "up": True},
+            {"ticker": "MBB", "pct": 2.7, "price": "25,250", "up": True},
+            {"ticker": "TCB", "pct": 3.3, "price": "24,000", "up": True},
+            {"ticker": "VNM", "pct": 1.9, "price": "60,500", "up": True},
+            {"ticker": "SSI", "pct": -2.4, "price": "32,000", "up": False},
+            {"ticker": "DXG", "pct": -3.1, "price": "12,800", "up": False},
+            {"ticker": "NVL", "pct": -4.5, "price": "7,500", "up": False},
+            {"ticker": "PDR", "pct": -2.8, "price": "9,200", "up": False},
+        ]
+
+
+def _build_top_movers_card(movers):
+    """Tạo card 'TOP ĐỘNG' tĩnh (kiểu bảng nhỏ góc phải hero), lấy dữ liệu
+    thật từ _get_top_movers(). Thay cho globe SVG + ticker marquee cũ —
+    giờ nền hero dùng ảnh thật Trái Đất chụp từ không gian (assets/earth-bg.jpg)
+    nên không cần dựng quả cầu giả lập nữa."""
+    def _row(m):
+        color = "#00e676" if m["up"] else "#ff4d4f"
+        sign = "+" if m["up"] else ""
+        return html.Div(className="vss-mover-row", children=[
+            html.Span(m["ticker"], className="vss-mover-ticker"),
+            html.Span(m["price"], className="vss-mover-price"),
+            html.Span(f"{sign}{m['pct']:.2f}", className="vss-mover-pct", style={"color": color}),
+        ])
+    rows = [_row(m) for m in movers]
+    return html.Div(className="vss-movers-card", children=[
+        # Header cố định — KHÔNG nằm trong track-wrap nên không bị cuộn
+        html.Div(className="vss-movers-header", children=[
+            html.Span("TOP MÃ BIẾN ĐỘNG", className="vss-movers-title"),
+        ]),
+        html.Div(className="vss-movers-col-header", children=[
+            html.Span("Mã CK", className="vss-mover-col-ticker"),
+            html.Span("Giá", className="vss-mover-col-price"),
+            html.Span("%", className="vss-mover-col-pct"),
+        ]),
+        # Track-wrap chứa list nhân đôi → cuộn liền mạch (translateY -50%)
+        html.Div(className="vss-movers-track-wrap", children=[
+            html.Div(className="vss-movers-list", children=rows + rows),
+        ]),
+    ])
+
+
 def create_banner():
+    movers = _get_top_movers()
     return html.Div(id="vss-hero", children=[
-        # Background layers
+        # Background layers — ảnh Trái Đất thật từ không gian (đặt file tại assets/earth-bg.jpg)
         html.Div(id="vss-hero-bg"),
+        html.Div(id="vss-hero-earth-bg"),
         html.Div(id="vss-hero-grid"),
         html.Div(id="vss-orb-1"),
         html.Div(id="vss-orb-2"),
-
         # 2-column content
         html.Div(id="vss-hero-content", children=[
-
             # ── LEFT: Text ──
             html.Div(className="vss-hero-left", children=[
-
-                # Headline (brand only)
                 html.H1(className="vss-headline", children=[
                     html.Span("Vietcap", className="vss-headline-brand"),
                     html.Span("Smart Screener", className="vss-headline-sub"),
                 ]),
-
-                # Stats row — icon cards
                 html.Div(className="vss-stats", children=[
-                    # Card 1
                     html.Div(className="vss-stat-card", children=[
                         html.Div(html.I(className="fas fa-file-alt"), className="vss-stat-icon"),
                         html.Div(children=[
@@ -406,7 +483,6 @@ def create_banner():
                             html.Div("mã niêm yết", className="vss-stat-label"),
                         ], className="vss-stat-body"),
                     ]),
-                    # Card 2
                     html.Div(className="vss-stat-card", children=[
                         html.Div(html.I(className="fas fa-chart-bar"), className="vss-stat-icon"),
                         html.Div(children=[
@@ -414,7 +490,6 @@ def create_banner():
                             html.Div("chỉ báo định lượng", className="vss-stat-label"),
                         ], className="vss-stat-body"),
                     ]),
-                    # Card 3
                     html.Div(className="vss-stat-card", children=[
                         html.Div(html.I(className="fas fa-shield-alt"), className="vss-stat-icon"),
                         html.Div(children=[
@@ -425,11 +500,10 @@ def create_banner():
                     ]),
                 ]),
             ]),
-
-            # ── RIGHT: Coin illustration ──
-            #html.Div(className="vss-hero-right", children=[
-                #_create_coin_svg()
-            #]),
+            # ── RIGHT: Card "TOP ĐỘNG" (dữ liệu thật từ data_loader) ──
+            html.Div(className="vss-hero-right", children=[
+                _build_top_movers_card(movers),
+            ]),
         ]),
     ])
 

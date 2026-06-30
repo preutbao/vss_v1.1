@@ -25,21 +25,21 @@ def get_chart_theme_colors(theme='dark'):
             'card_bg': '#ffffff',
             'border': '#e2e8f0',
             'text': '#1e293b',
-            'text_secondary': '#475569',
-            'primary': '#3b82f6',
-            'primary_dark': '#1d4ed8',
-            'primary_light': '#60a5fa',
-            'positive': '#10b981',
-            'negative': '#ef4444',
-            'neutral': '#374151',
+            'text_secondary': '#64748b',
+            'primary': '#22c55e',
+            'primary_dark': '#16a34a',
+            'primary_light': '#4ade80',
+            'positive': '#22c55e',
+            'negative': '#f43f5e',
+            'neutral': '#475569',
             'gradient': 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
             'chart_bg': '#ffffff',
-            'grid_color': 'rgba(30, 41, 59, 0.15)',
-            'header_bg': 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #334d73 100%)',
+            'grid_color': 'rgba(15, 23, 42, 0.07)',
+            'header_bg': 'linear-gradient(135deg, #f0fdf4 0%, #e0f7f0 50%, #e0f2fe 100%)',
             'accent1': '#f59e0b',
             'accent2': '#8b5cf6',
-            'accent3': '#06b6d4',
-            'area_fill': 'rgba(59, 130, 246, 0.1)'  # Màu nền cho biểu đồ vùng
+            'accent3': '#0ea5e9',
+            'area_fill': 'rgba(34, 197, 94, 0.10)'  # Màu nền cho biểu đồ vùng
         }
     else:  # Dark theme - Bloomberg Terminal signature
         return {
@@ -121,6 +121,46 @@ def calculate_macd(prices, fast=12, slow=26, signal=9):
     return macd, signal_line, histogram
 
 
+def calculate_adx(df, period=14):
+    """
+    Tính ADX(14) theo Wilder's RMA (chuẩn TradingView).
+    Trả về tuple (adx, plus_di, minus_di) — đều là pd.Series cùng index với df.
+    """
+    high  = pd.to_numeric(df.get('high',  df.get('Price High',  pd.Series(dtype=float))), errors='coerce')
+    low   = pd.to_numeric(df.get('low',   df.get('Price Low',   pd.Series(dtype=float))), errors='coerce')
+    close = pd.to_numeric(df.get('close', df.get('Price Close', pd.Series(dtype=float))), errors='coerce')
+
+    prev_close = close.shift(1)
+    tr = pd.concat([
+        (high - low).abs(),
+        (high - prev_close).abs(),
+        (low  - prev_close).abs(),
+    ], axis=1).max(axis=1)
+
+    up_move   = high - high.shift(1)
+    down_move = low.shift(1) - low
+
+    plus_dm  = np.where((up_move > down_move)   & (up_move > 0),   up_move,   0.0)
+    minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+
+    alpha = 1.0 / period
+
+    def _rma(arr):
+        return pd.Series(arr, index=df.index).ewm(alpha=alpha, adjust=False).mean()
+
+    atr14     = _rma(tr.values)
+    plus_dm14 = _rma(plus_dm)
+    minus_dm14= _rma(minus_dm)
+
+    plus_di  = (100 * plus_dm14  / atr14.replace(0, np.nan)).fillna(0)
+    minus_di = (100 * minus_dm14 / atr14.replace(0, np.nan)).fillna(0)
+
+    dx  = (100 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)).fillna(0)
+    adx = dx.ewm(alpha=alpha, adjust=False).mean()
+
+    return adx, plus_di, minus_di
+
+
 def format_volume_short(value):
     """Format volume thành dạng ngắn gọn"""
     if pd.isna(value) or value == 0: return "0"
@@ -151,7 +191,9 @@ def create_fireant_candlestick(
         rsi_period=14,
         show_macd=False,
         show_index=False,  # VĐ4: overlay VNINDEX index normalized to 100
-        df_index=None,  # VĐ4: DataFrame with Date + VNINDEX_Close columns
+        df_index=None,    # VĐ4: DataFrame with Date + VNINDEX_Close columns
+        show_adx=False,   # ADX(14) subplot
+        adx_period=14,
 ):
     colors = get_chart_theme_colors(theme)
 
@@ -216,6 +258,19 @@ def create_fireant_candlestick(
         else:
             row_heights = [0.4, 0.2, 0.2, 0.2]
         subplot_titles.append('MACD')
+
+    if show_adx:
+        rows += 1
+        n = len(row_heights)
+        if n == 1:
+            row_heights = [0.6, 0.4]
+        elif n == 2:
+            row_heights = [0.45, 0.20, 0.35]
+        elif n == 3:
+            row_heights = [0.40, 0.18, 0.18, 0.24]
+        else:
+            row_heights = [0.35, 0.16, 0.16, 0.16, 0.17]
+        subplot_titles.append('ADX (14)')
 
     fig = make_subplots(
         rows=rows, cols=1, shared_xaxes=True,
@@ -297,14 +352,146 @@ def create_fireant_candlestick(
                                  line=dict(color=colors['primary'], width=1.5)), row=current_row, col=1)
         fig.add_trace(go.Scatter(x=df_plot['date_str'], y=signal, mode='lines', name="Signal",
                                  line=dict(color=colors['accent1'], width=1.5)), row=current_row, col=1)
+        current_row += 1
+
+    # VẼ ADX
+    if show_adx:
+        adx, plus_di, minus_di = calculate_adx(df_plot, adx_period)
+
+        # Lấy giá trị cuối để hiển thị trên legend
+        _adx_last   = adx.iloc[-1]   if not adx.empty   else 0
+        _pdi_last   = plus_di.iloc[-1]  if not plus_di.empty  else 0
+        _mdi_last   = minus_di.iloc[-1] if not minus_di.empty else 0
+
+        # Xác định trạng thái xu hướng để ghi chú
+        if _adx_last >= 50:
+            _adx_state = "⚠️ Quá đà"
+            _state_color = '#ef4444'
+        elif _adx_last >= 25:
+            _adx_state = "✅ Xu hướng mạnh"
+            _state_color = '#10b981'
+        else:
+            _adx_state = "⏸ Sideway"
+            _state_color = '#94a3b8'
+
+        # ADX line — màu vàng cam, độ dày nổi bật
+        fig.add_trace(go.Scatter(
+            x=df_plot['date_str'], y=adx,
+            mode='lines', name=f'ADX  {_adx_last:.1f}',
+            line=dict(color='#f59e0b', width=2),
+            hovertemplate='<b>ADX:</b> %{y:.1f}<extra></extra>',
+            showlegend=True,
+        ), row=current_row, col=1)
+
+        # +DI line — xanh lá (phe mua)
+        fig.add_trace(go.Scatter(
+            x=df_plot['date_str'], y=plus_di,
+            mode='lines', name=f'+DI  {_pdi_last:.1f}',
+            line=dict(color=colors['positive'], width=1.2),
+            hovertemplate='<b>+DI (Mua):</b> %{y:.1f}<extra></extra>',
+            showlegend=True,
+        ), row=current_row, col=1)
+
+        # -DI line — đỏ (phe bán)
+        fig.add_trace(go.Scatter(
+            x=df_plot['date_str'], y=minus_di,
+            mode='lines', name=f'-DI  {_mdi_last:.1f}',
+            line=dict(color=colors['negative'], width=1.2),
+            hovertemplate='<b>-DI (Bán):</b> %{y:.1f}<extra></extra>',
+            showlegend=True,
+        ), row=current_row, col=1)
+
+        # Đường ngưỡng 25 — bắt đầu có xu hướng
+        fig.add_hline(
+            y=25,
+            line=dict(color='rgba(255,255,255,0.25)', width=1, dash='dash'),
+            row=current_row, col=1,
+            annotation_text='25 — Có xu hướng',
+            annotation_font=dict(color='rgba(255,255,255,0.45)', size=9),
+            annotation_position='left',
+        )
+        # Đường ngưỡng 50 — xu hướng cực mạnh / cảnh báo quá đà
+        fig.add_hline(
+            y=50,
+            line=dict(color='rgba(239,68,68,0.5)', width=1, dash='dot'),
+            row=current_row, col=1,
+            annotation_text='50 — Cảnh báo quá đà',
+            annotation_font=dict(color='rgba(239,68,68,0.7)', size=9),
+            annotation_position='left',
+        )
+
+        # Vùng tô màu: ADX < 25 = sideway
+        fig.add_hrect(
+            y0=0, y1=25,
+            fillcolor='rgba(239,68,68,0.04)', opacity=1, line_width=0,
+            row=current_row, col=1,
+        )
+        # Vùng tô màu: 25 ≤ ADX < 50 = golden zone
+        fig.add_hrect(
+            y0=25, y1=50,
+            fillcolor='rgba(16,185,129,0.04)', opacity=1, line_width=0,
+            row=current_row, col=1,
+        )
+
+        # Annotation trạng thái hiện tại (góc trên phải subplot)
+        _adx_row_idx = current_row
+        fig.add_annotation(
+            x=df_plot['date_str'].iloc[-1],
+            y=95,
+            text=f"<b>{_adx_state}</b>",
+            showarrow=False,
+            font=dict(color=_state_color, size=11, family='JetBrains Mono'),
+            xanchor='right', yanchor='top',
+            bgcolor='rgba(0,0,0,0)',
+            row=current_row, col=1,
+        )
+
+        # Chú thích màu đường (góc trên trái)
+        fig.add_annotation(
+            x=df_plot['date_str'].iloc[0],
+            y=95,
+            text=(
+                "<span style='color:#f59e0b'>■ ADX</span>  "
+                "<span style='color:#10b981'>■ +DI Mua</span>  "
+                "<span style='color:#ef4444'>■ -DI Bán</span>"
+            ),
+            showarrow=False,
+            font=dict(size=10, family='JetBrains Mono'),
+            xanchor='left', yanchor='top',
+            bgcolor='rgba(0,0,0,0)',
+            row=current_row, col=1,
+        )
+
+        # Fix y-axis range cho ADX
+        fig.update_yaxes(range=[0, 100], tickvals=[0, 25, 50, 75, 100], row=current_row, col=1)
+
+        # Bật legend chỉ cho ADX subplot
+        fig.update_layout(
+            showlegend=True,
+            legend=dict(
+                x=1.01, y=0.08,
+                xanchor='left', yanchor='bottom',
+                bgcolor='rgba(0,0,0,0.3)',
+                bordercolor='rgba(255,255,255,0.1)',
+                borderwidth=1,
+                font=dict(family='JetBrains Mono', size=10, color=colors['text_secondary']),
+            )
+        )
+
+        current_row += 1
 
     # ====================================================================
     # 🟢 CẤU HÌNH LAYOUT CHUẨN TRADINGVIEW
     # ====================================================================
+    is_light = (theme == 'light')
+    spike_color = 'rgba(34,197,94,0.45)' if is_light else 'rgba(0,212,255,0.4)'
+    axis_line_color = 'rgba(15,23,42,0.18)' if is_light else 'rgba(29, 77, 128, 0.5)'
+    tick_color = colors['text_secondary']
+
     fig.update_layout(
         title=None,
         template="plotly_dark" if theme == 'dark' else "plotly_white",
-        height=800 if rows > 2 else 580,
+        height=900 if rows > 3 else (780 if rows > 2 else 580),
         margin=dict(l=10, r=65, t=12, b=20),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor=colors['chart_bg'],
@@ -313,9 +500,9 @@ def create_fireant_candlestick(
         showlegend=False,
         xaxis_rangeslider_visible=False,
         hoverlabel=dict(
-            bgcolor='#091526',
-            bordercolor='#1d4d80',
-            font=dict(family='JetBrains Mono', size=12, color='#d6eaf8'),
+            bgcolor=colors['card_bg'],
+            bordercolor=colors['border'],
+            font=dict(family='JetBrains Mono', size=12, color=colors['text']),
         ),
     )
 
@@ -330,11 +517,11 @@ def create_fireant_candlestick(
             showspikes=True,
             spikethickness=1,
             spikedash="dot",
-            spikecolor='rgba(0,212,255,0.4)',
+            spikecolor=spike_color,
             spikemode="across",
             showline=True,
             linewidth=1,
-            linecolor='rgba(29, 77, 128, 0.5)',
+            linecolor=axis_line_color,
             type='category',
             tickmode='array',
             tickvals=[d.strftime('%Y-%m-%d') for d in tick_dates],
@@ -343,23 +530,23 @@ def create_fireant_candlestick(
             tickfont=dict(
                 family="JetBrains Mono",
                 size=10,
-                color='#3d6a8a'
+                color=tick_color
             ),
             row=i, col=1
         )
         # Trục Y
         fig.update_yaxes(
-            gridcolor='rgba(0, 212, 255, 0.055)',
+            gridcolor=colors['grid_color'],
             gridwidth=1,
             showspikes=True,
             spikethickness=1,
             spikedash="dot",
-            spikecolor='rgba(0,212,255,0.4)',
+            spikecolor=spike_color,
             showline=False,
             tickfont=dict(
                 family="JetBrains Mono",
                 size=10,
-                color='#3d6a8a'
+                color=tick_color
             ),
             row=i, col=1
         )

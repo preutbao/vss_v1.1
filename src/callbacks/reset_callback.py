@@ -57,6 +57,9 @@ FILTER_DEFAULTS = {
     "filter-rsi14":           [0, 100],
     "filter-macd-hist":       [-1000, 1000],
     "filter-bb-width":        [0, 50],
+    "filter-adx14":           [0, 100],
+    "filter-plus-di14":       [0, 100],
+    "filter-minus-di14":      [0, 100],
     "filter-consec-up":       [0, 20],
     "filter-consec-down":     [0, 20],
     # Kỹ thuật: Momentum/RS

@@ -25,14 +25,12 @@ def _no_data_div(ticker="", reason="Dữ liệu giá của mã này chưa có tr
         html.Div("📭", style={"fontSize": "52px", "marginBottom": "14px"}),
         html.P(
             f"Công ty chưa có dữ liệu giá cổ phiếu" + (f" ({ticker})" if ticker else ""),
-            style={"color": "#f8fafc", "fontSize": "17px", "fontWeight": "700", "margin": "0 0 8px 0"}
+            className="chart-no-data-title"
         ),
-        html.P(reason, style={"color": "#94a3b8", "fontSize": "13px", "margin": "0"})
-    ], style={
+        html.P(reason, className="chart-no-data-reason")
+    ], className="chart-no-data-card", style={
         "display": "flex", "flexDirection": "column", "alignItems": "center",
         "justifyContent": "center", "height": "400px", "textAlign": "center",
-        "backgroundColor": "#1e293b", "borderRadius": "15px",
-        "border": "1px solid rgba(239, 68, 68, 0.25)"
     })
 
 @app.callback(
@@ -42,6 +40,7 @@ def _no_data_div(ticker="", reason="Dữ liệu giá của mã này chưa có tr
      Input("show-volume-toggle", "on"),
      Input("show-rsi-toggle", "on"),
      Input("show-macd-toggle", "on"),
+     Input("show-adx-toggle", "on"),
      Input("show-index-toggle", "on"),
      Input("chart-type-selector", "value"),
      Input("period-1w", "n_clicks"),
@@ -52,14 +51,20 @@ def _no_data_div(ticker="", reason="Dữ liệu giá của mã này chưa có tr
      Input("period-ytd", "n_clicks"),
      Input("period-all", "n_clicks"),
      Input("chart-refresh-store", "data"),
-     Input("selected-stock-store", "data")], # <--- CHUYỂN NÓ XUỐNG CUỐI CÙNG Ở ĐÂY
+     Input("selected-stock-store", "data"),
+     # 🎨 Theme hiện tại — value=True nghĩa là đang Dark Mode (xem create_topbar()).
+     # Biểu đồ nến là 1 figure Plotly render phía server, KHÔNG đổi màu được
+     # bằng CSS như HTML thường, nên callback PHẢI nhận theme làm Input để biết
+     # vẽ lại bằng theme nào mỗi khi người dùng bấm công tắc sáng/tối.
+     Input("theme-switch-button", "value")], # <--- CHUYỂN NÓ XUỐNG CUỐI CÙNG Ở ĐÂY
     prevent_initial_call=True
 )
-def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, show_macd, show_index, chart_type,
-                             n_1w, n_1m, n_3m, n_6m, n_1y, n_ytd, n_all, _refresh, stock_store_data):
+def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, show_macd, show_adx, show_index, chart_type,
+                             n_1w, n_1m, n_3m, n_6m, n_1y, n_ytd, n_all, _refresh, stock_store_data, is_dark_mode):
     """
     Tạo biểu đồ nến khi người dùng chọn một dòng trong bảng
     """
+    chart_theme = 'dark' if is_dark_mode else 'light'
     # Xử lý logic Fallback cho HF lag
     if (not selected_rows or len(selected_rows) == 0) and stock_store_data:
         selected_rows = [stock_store_data]
@@ -69,14 +74,10 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
         return html.Div([
             html.I(className="fas fa-chart-line", style={
                 "fontSize": "48px",
-                "color": "#475569",
                 "marginBottom": "15px"
             }),
-            html.P("Chọn một mã cổ phiếu từ bảng để xem biểu đồ", style={
-                "color": "#8b949e",
-                "fontSize": "14px"
-            })
-        ], style={
+            html.P("Chọn một mã cổ phiếu từ bảng để xem biểu đồ", style={"fontSize": "14px"})
+        ], className="chart-empty-state", style={
             "display": "flex",
             "flexDirection": "column",
             "alignItems": "center",
@@ -94,7 +95,7 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
         df_price = load_market_data()
 
         if df_price.empty:
-            return html.Div("⚠️ Không có dữ liệu giá", style={"color": "#ef4444", "padding": "20px"})
+            return html.Div("⚠️ Không có dữ liệu giá", className="chart-warning-text", style={"padding": "20px"})
 
         # Lọc dữ liệu theo ticker
         df_ticker = df_price[df_price['Ticker'] == selected_ticker].copy()
@@ -152,17 +153,15 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
                 html.Div("📅", style={"fontSize": "48px", "marginBottom": "12px"}),
                 html.P(
                     f"Không có dữ liệu trong khoảng thời gian đã chọn ({time_range})",
-                    style={"color": "#f8fafc", "fontSize": "16px", "fontWeight": "600", "margin": "0 0 6px 0"}
+                    className="chart-no-data-title"
                 ),
                 html.P(
                     "Hãy thử chọn khoảng thời gian rộng hơn (6M, 1Y hoặc All).",
-                    style={"color": "#94a3b8", "fontSize": "13px", "margin": "0"}
+                    className="chart-no-data-reason"
                 )
-            ], style={
+            ], className="chart-no-data-card chart-no-data-card--warning", style={
                 "display": "flex", "flexDirection": "column", "alignItems": "center",
                 "justifyContent": "center", "padding": "60px 20px", "textAlign": "center",
-                "backgroundColor": "#1e293b", "borderRadius": "15px",
-                "border": "1px solid rgba(251, 191, 36, 0.3)"
             })
 
         # Lấy tên công ty nếu có
@@ -200,7 +199,7 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
         fig = create_fireant_candlestick(
             df=df_ticker,
             title=title,
-            theme='dark',
+            theme=chart_theme,
             chart_type=chart_type,
             show_volume=show_volume if show_volume is not None else True,
             show_ma=show_ma,
@@ -208,6 +207,8 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
             show_rsi=show_rsi if show_rsi is not None else False,
             rsi_period=14,
             show_macd=show_macd if show_macd is not None else False,
+            show_adx=show_adx if show_adx is not None else False,
+            adx_period=14,
             show_index=show_index if show_index is not None else False,
             df_index=df_idx,
         )
@@ -250,53 +251,39 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
         # 🟢 THIẾT KẾ UI - BLOOMBERG TERMINAL PREMIUM
         # ====================================================================
 
-        # Helper: metric chip cho info bar
-        def _metric_chip(label, value, accent="#00d4ff", icon=""):
+        # Helper: metric chip cho info bar — màu nền/viền theo theme qua CSS class,
+        # chỉ còn accent (màu số liệu + viền top) là truyền qua CSS variable inline
+        # vì mỗi chip 1 màu khác nhau (không thể gói hết vào class cố định).
+        def _metric_chip(label, value, accent_var="--chart-chip-sky", icon=""):
             return html.Div([
                 html.Div([
                     html.Span(icon + " " if icon else "", style={"marginRight": "4px"}),
-                    html.Span(label, style={
-                        "fontSize": "0.68rem", "fontWeight": "700", "letterSpacing": "0.1em",
-                        "textTransform": "uppercase", "color": "#3d6a8a",
-                        "fontFamily": "JetBrains Mono, monospace"
-                    })
+                    html.Span(label, className="chart-metric-label")
                 ], style={"marginBottom": "6px"}),
-                html.Div(value, style={
-                    "fontSize": "1.05rem", "fontWeight": "800", "color": accent,
-                    "fontFamily": "JetBrains Mono, monospace", "letterSpacing": "-0.02em",
-                    "textShadow": f"0 0 12px {accent}44"
-                })
-            ], style={
-                "padding": "12px 18px",
-                "background": "linear-gradient(135deg, rgba(9,21,38,0.9), rgba(12,30,51,0.7))",
-                "borderRadius": "10px",
-                "border": f"1px solid {accent}22",
-                "borderTop": f"2px solid {accent}66",
-                "minWidth": "130px",
-                "flex": "1",
-            })
+                html.Div(value, className="chart-metric-value",
+                         style={"color": f"var({accent_var})"})
+            ], className="chart-metric-chip",
+               style={"borderTopColor": f"var({accent_var})"})
 
         # Tính % thay đổi so với đầu kỳ
         price_change_pct = ((df_ticker['Price Close'].iloc[-1] - df_ticker['Price Close'].iloc[0])
                             / df_ticker['Price Close'].iloc[0] * 100) if df_ticker['Price Close'].iloc[0] > 0 else 0
-        price_change_color = "#00e676" if price_change_pct >= 0 else "#ff3d57"
+        price_change_pos = price_change_pct >= 0
+        price_change_var = "--positive" if price_change_pos else "--negative"
         price_change_str = f"{price_change_pct:+.2f}%"
 
         vol_ratio = current_vol / avg_volume if avg_volume > 0 else 0
-        vol_ratio_color = "#00e676" if vol_ratio >= 1.5 else "#ffb703" if vol_ratio >= 0.8 else "#ff3d57"
+        vol_ratio_var = "--positive" if vol_ratio >= 1.5 else "--warning" if vol_ratio >= 0.8 else "--negative"
 
         info_bar = html.Div([
-            _metric_chip("CAO NHẤT KỲ", f"{high_52w:,.0f}", "#00d4ff"),
-            _metric_chip("THẤP NHẤT KỲ", f"{low_52w:,.0f}", "#58a6ff"),
-            _metric_chip("BIÊN ĐỘ", f"{amplitude:.1f}%", "#b388ff"),
-            _metric_chip(f"TĂNG/GIẢM KỲ", price_change_str, price_change_color),
-            _metric_chip("VOL HÔM NAY", f"{format_volume_short(current_vol)}", vol_ratio_color),
-            _metric_chip("TB KHỐI LƯỢNG", f"{format_volume_short(avg_volume)}", "#7fa8cc"),
-            _metric_chip("BIẾN ĐỘNG", f"{volatility:.2f}%", "#ffb703"),
-        ], style={
-            "display": "flex", "gap": "10px", "padding": "14px 4px",
-            "overflowX": "auto", "flexWrap": "nowrap",
-        })
+            _metric_chip("CAO NHẤT KỲ", f"{high_52w:,.0f}", "--chart-chip-sky"),
+            _metric_chip("THẤP NHẤT KỲ", f"{low_52w:,.0f}", "--chart-chip-blue"),
+            _metric_chip("BIÊN ĐỘ", f"{amplitude:.1f}%", "--chart-chip-purple"),
+            _metric_chip(f"TĂNG/GIẢM KỲ", price_change_str, price_change_var),
+            _metric_chip("VOL HÔM NAY", f"{format_volume_short(current_vol)}", vol_ratio_var),
+            _metric_chip("TB KHỐI LƯỢNG", f"{format_volume_short(avg_volume)}", "--chart-chip-teal"),
+            _metric_chip("BIẾN ĐỘNG", f"{volatility:.2f}%", "--warning"),
+        ], className="chart-info-bar")
 
         # ====================================================================
         # RENDER TOÀN BỘ TAB
@@ -330,22 +317,9 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
 
         return html.Div([
             # Info bar trên cùng
-            html.Div([info_bar], style={
-                "background": "linear-gradient(135deg, rgba(6,15,30,0.95), rgba(9,21,38,0.9))",
-                "borderRadius": "12px",
-                "border": "1px solid rgba(0,212,255,0.1)",
-                "marginBottom": "12px",
-                "boxShadow": "0 4px 16px rgba(0,0,0,0.4)",
-            }),
+            html.Div([info_bar], className="chart-info-bar-wrapper"),
             # Biểu đồ
-            html.Div([chart_component], style={
-                "background": "rgba(2,8,16,0.98)",
-                "borderRadius": "12px",
-                "border": "1px solid rgba(0,212,255,0.12)",
-                "overflow": "hidden",
-                "boxShadow": "0 8px 32px rgba(0,0,0,0.5)",
-                "padding": "8px 4px 4px 4px",
-            }),
+            html.Div([chart_component], className="chart-graph-card"),
         ], style={"padding": "4px"})
 
     except ValueError as e:
@@ -368,13 +342,11 @@ def update_candlestick_chart(selected_rows, ma_periods, show_volume, show_rsi, s
             msg = "Đã xảy ra lỗi khi tải biểu đồ. Vui lòng thử lại."
         return html.Div([
             html.Div("⚠️", style={"fontSize": "48px", "marginBottom": "12px"}),
-            html.P(msg, style={"color": "#f8fafc", "fontSize": "15px", "fontWeight": "600", "margin": "0 0 6px 0"}),
-            html.P(f"Chi tiết: {str(e)}", style={"color": "#64748b", "fontSize": "11px", "margin": "0"})
-        ], style={
+            html.P(msg, className="chart-no-data-title"),
+            html.P(f"Chi tiết: {str(e)}", className="chart-no-data-detail")
+        ], className="chart-no-data-card", style={
             "display": "flex", "flexDirection": "column", "alignItems": "center",
             "justifyContent": "center", "padding": "60px 20px", "textAlign": "center",
-            "backgroundColor": "#1e293b", "borderRadius": "15px",
-            "border": "1px solid rgba(239, 68, 68, 0.3)"
         })
 
 

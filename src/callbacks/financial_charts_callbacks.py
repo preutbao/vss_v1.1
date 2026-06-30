@@ -20,32 +20,32 @@ import logging
 logger = logging.getLogger(__name__)
 
 C = {
-    "revenue": "#3b82f6", "gross": "#10b981", "ebit": "#f59e0b",
-    "net": "#a78bfa", "cfo": "#00d4ff", "fcf": "#34d399",
-    "capex": "#f87171", "cfi": "#fb923c", "roe": "#10b981",
-    "roa": "#3b82f6", "assets": "#3b82f6", "liabilities": "#ef4444",
-    "equity": "#10b981", "cash": "#34d399",
-    "grid": "rgba(255,255,255,0.05)", "bg": "#0c1220",
-    "paper": "#0c1220", "text": "#7fa8cc",
+    "revenue": "#22c55e", "gross": "#14b8a6", "ebit": "#f59e0b",
+    "net": "#8b5cf6", "cfo": "#0ea5e9", "fcf": "#10b981",
+    "capex": "#f43f5e", "cfi": "#fb923c", "roe": "#22c55e",
+    "roa": "#0ea5e9", "assets": "#0ea5e9", "liabilities": "#f43f5e",
+    "equity": "#22c55e", "cash": "#14b8a6",
+    "grid": "rgba(15, 23, 42, 0.07)", "bg": "#ffffff",
+    "paper": "#ffffff", "text": "#475569",
 }
 
 LAYOUT_BASE = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(color=C["text"], size=10, family="JetBrains Mono, monospace"),
+    font=dict(color=C["text"], size=10, family="Inter, sans-serif"),
     margin=dict(l=10, r=15, t=36, b=40),
     legend=dict(
-        bgcolor="rgba(9,21,38,0.85)",
-        bordercolor="#1d4d80",
+        bgcolor="rgba(255,255,255,0.92)",
+        bordercolor="#e2e8f0",
         borderwidth=1,
-        font=dict(size=10, color="#c9d1d9", family="JetBrains Mono, monospace"),
+        font=dict(size=10, color="#334155", family="Inter, sans-serif"),
         orientation="v",
         x=1.01, y=1,
         xanchor="left", yanchor="top",
     ),
     hoverlabel=dict(
-        bgcolor="#091526", bordercolor="#1d4d80",
-        font=dict(family="JetBrains Mono, monospace", size=11, color="#d6eaf8"),
+        bgcolor="#ffffff", bordercolor="#e2e8f0",
+        font=dict(family="Inter, sans-serif", size=11, color="#0f172a"),
     ),
     hovermode="x unified",
 )
@@ -101,8 +101,8 @@ def _empty(msg="Chưa có dữ liệu"):
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=10, r=10, t=30, b=10),
         annotations=[dict(text=msg, x=0.5, y=0.5, xref="paper", yref="paper",
-                          showarrow=False, font=dict(color="#484f58", size=12,
-                          family="JetBrains Mono, monospace"))]))
+                          showarrow=False, font=dict(color="#94a3b8", size=12,
+                          family="Inter, sans-serif"))]))
 
 def _y_range_padded(series_list, pad_pct=0.10):
     """Tính [y_min - 10%range, y_max + 5%range] để trục Y không bắt đầu từ 0."""
@@ -132,8 +132,8 @@ def _fig(title, traces, mode="bar", secondary=False, height=280, hline=None, y_p
         fig.add_hline(y=hline, line_color="rgba(255,255,255,0.2)",
                       line_width=1, line_dash="dot")
     layout_kwargs = dict(**LAYOUT_BASE,
-                         title=dict(text=title, font=dict(size=11, color="#c9d1d9",
-                                    family="JetBrains Mono, monospace"), x=0),
+                         title=dict(text=title, font=dict(size=11, color="#1e293b",
+                                    family="Inter, sans-serif"), x=0),
                          height=height)
     if mode in ("group", "stack", "overlay", "relative"):
         layout_kwargs["barmode"] = mode
@@ -160,7 +160,7 @@ def _apply_theme(fig, title=None, barmode=None, height=280, y_pad=True, secondar
     if title:
         layout_kwargs["title"] = dict(
             text=title,
-            font=dict(size=11, color="#c9d1d9", family="JetBrains Mono, monospace"),
+            font=dict(size=11, color="#1e293b", family="Inter, sans-serif"),
             x=0,
         )
     if barmode:
@@ -192,7 +192,7 @@ def c_tang_truong(df):
     return _fig("Tăng trưởng DT & LN (Tỷ VND)",[
         (go.Bar(x=x,y=rev.values,name="Doanh thu",marker_color=C["revenue"]),False),
         (go.Bar(x=x,y=net.values,name="LNST",marker_color=C["net"]),False),
-        (go.Scatter(x=x,y=rg.values,name="%YoY DT",mode="lines+markers",line=dict(color="#fff",width=1.5,dash="dot"),marker=dict(size=4)),True),
+        (go.Scatter(x=x,y=rg.values,name="%YoY DT",mode="lines+markers",line=dict(color="#1e293b",width=1.5,dash="dot"),marker=dict(size=4)),True),
         (go.Scatter(x=x,y=ng.values,name="%YoY LN",mode="lines+markers",line=dict(color=C["ebit"],width=1.5,dash="dot"),marker=dict(size=4)),True),
     ], mode="group", secondary=True)
 
@@ -245,7 +245,7 @@ def c_fcf(df):
     fig=go.Figure()
     fig.add_trace(go.Bar(x=x,y=cfo.values,name="CFO",marker_color=C["cfo"]))
     fig.add_trace(go.Bar(x=x,y=(-capex).values,name="CAPEX",marker_color=C["capex"]))
-    fig.add_trace(go.Scatter(x=x,y=fcf_p.values,name="FCF",mode="lines+markers",line=dict(color="#fff",width=2),marker=dict(size=6,color=colors_)))
+    fig.add_trace(go.Scatter(x=x,y=fcf_p.values,name="FCF",mode="lines+markers",line=dict(color="#1e293b",width=2),marker=dict(size=6,color=colors_)))
     fig.add_hline(y=0,line_color="rgba(255,255,255,0.12)",line_width=1)
     _apply_theme(fig, title="Dòng tiền tự do (FCF) (Tỷ VND)", barmode="group", height=280)
     fig.update_xaxes(showgrid=False, **AX); fig.update_yaxes(**AX,ticksuffix="B"); return fig
@@ -363,7 +363,7 @@ def c_ccc(df):
     fig.add_trace(go.Bar(x=x,y=dso.values,name="DSO",marker_color=C["revenue"]))
     fig.add_trace(go.Bar(x=x,y=dio.values,name="DIO",marker_color=C["ebit"]))
     fig.add_trace(go.Bar(x=x,y=(-dpo).values,name="-DPO",marker_color=C["gross"]))
-    fig.add_trace(go.Scatter(x=x,y=ccc.values,name="CCC",mode="lines+markers",line=dict(color="#fff",width=2),marker=dict(size=5)))
+    fig.add_trace(go.Scatter(x=x,y=ccc.values,name="CCC",mode="lines+markers",line=dict(color="#1e293b",width=2),marker=dict(size=5)))
     _apply_theme(fig, title="Chu kỳ Tiền mặt (ngày)", barmode="relative", height=280)
     fig.update_xaxes(showgrid=False, **AX); fig.update_yaxes(**AX,ticksuffix=" ngày"); return fig
 
@@ -388,7 +388,7 @@ def c_ebitda(df):
     return _fig("EBITDA & LNST (Tỷ VND)",[
         (go.Bar(x=x,y=ebitda.values,name="EBITDA",marker_color=C["ebit"]),False),
         (go.Bar(x=x,y=net.values,name="LNST",marker_color=C["net"]),False),
-        (go.Scatter(x=x,y=(net/ebitda.replace(0,np.nan)*100).fillna(0).values,name="LNST/EBITDA%",mode="lines+markers",line=dict(color="#fff",width=1.5,dash="dot"),marker=dict(size=4)),True),
+        (go.Scatter(x=x,y=(net/ebitda.replace(0,np.nan)*100).fillna(0).values,name="LNST/EBITDA%",mode="lines+markers",line=dict(color="#1e293b",width=1.5,dash="dot"),marker=dict(size=4)),True),
     ],mode="group",secondary=True)
 
 def c_dt_thuan(df):
@@ -443,7 +443,7 @@ def c_ict(df):
     return _fig("Khả năng TT lãi vay",[
         (go.Bar(x=x,y=ebit.values,name="EBIT",marker_color=C["ebit"]),False),
         (go.Bar(x=x,y=int_.values,name="Lãi vay",marker_color=C["capex"]),False),
-        (go.Scatter(x=x,y=icr.values,name="ICR",mode="lines+markers",line=dict(color="#fff",width=2),marker=dict(size=5)),True),
+        (go.Scatter(x=x,y=icr.values,name="ICR",mode="lines+markers",line=dict(color="#1e293b",width=2),marker=dict(size=5)),True),
     ],mode="group",secondary=True)
 
 def c_co_tuc(df):
@@ -489,7 +489,7 @@ def c_f_score(df):
     fig = go.Figure()
     fig.add_trace(go.Bar(x=x, y=f.values, name="F-Score", marker_color=colors_,
                          text=f.values.astype(int), textposition="outside",
-                         textfont=dict(color="#c9d1d9", size=10)))
+                         textfont=dict(color="#1e293b", size=10)))
     fig.add_hline(y=6, line_color=C["gross"], line_width=1.5, line_dash="dot",
                   annotation_text="≥6 tốt", annotation_font_color=C["gross"])
     fig.add_hline(y=3, line_color=C["capex"], line_width=1, line_dash="dot",
@@ -651,14 +651,14 @@ def build_template_picker(saved_selection=None):
 
     def group_col(g):
         return html.Div([
-            html.Div(g["group"], style={"fontSize":"11px","fontWeight":"700","color":"#7fa8cc",
-                "marginBottom":"8px","paddingBottom":"6px","borderBottom":"1px solid #21262d","letterSpacing":"0.5px"}),
+            html.Div(g["group"], style={"fontSize":"11px","fontWeight":"700","color":"#64748b",
+                "marginBottom":"8px","paddingBottom":"6px","borderBottom":"1px solid #e2e8f0","letterSpacing":"0.5px"}),
             *[html.Div(dcc.Checklist(
                 id={"type":"fin-chart-check","index":c["id"]},
                 options=[{"label":c["label"],"value":c["id"]}],
                 value=[c["id"]] if c["id"] in saved_selection else [],  # ← restore
-                inputStyle={"marginRight":"6px","accentColor":"#ef4444"},
-                labelStyle={"fontSize":"12px","color":"#c9d1d9","cursor":"pointer"},
+                inputStyle={"marginRight":"6px","accentColor":"#22c55e"},
+                labelStyle={"fontSize":"12px","color":"#334155","cursor":"pointer"},
             ), style={"marginBottom":"8px"}) for c in g["charts"]],
         ], style={"flex":"1","minWidth":"190px","padding":"0 14px 0 0"})
 
@@ -666,23 +666,24 @@ def build_template_picker(saved_selection=None):
     for i,g in enumerate(CHART_GROUPS): cols[i%3].append(group_col(g))
 
     return html.Div([
-        html.Div("TEMPLATE MẶC ĐỊNH", style={"padding":"14px 20px 10px","borderBottom":"1px solid #21262d",
-            "fontSize":"14px","fontWeight":"700","color":"#c9d1d9"}),
+        html.Div("TEMPLATE MẶC ĐỊNH", style={"padding":"14px 20px 10px","borderBottom":"1px solid #e2e8f0",
+            "fontSize":"14px","fontWeight":"700","color":"#1e293b"}),
         html.Div([
             html.Div([html.I(className="fas fa-search",style={"position":"absolute","left":"10px","top":"50%",
-                "transform":"translateY(-50%)","color":"#484f58","fontSize":"12px","pointerEvents":"none"}),
+                "transform":"translateY(-50%)","color":"#94a3b8","fontSize":"12px","pointerEvents":"none"}),
                 dcc.Input(id="fin-chart-search",placeholder="Nhập loại biểu đồ muốn thêm",debounce=True,
-                style={"width":"100%","padding":"7px 10px 7px 32px","backgroundColor":"#0d1117","color":"#c9d1d9",
-                    "border":"1px solid #30363d","borderRadius":"6px","fontSize":"12px","outline":"none"}),
+                style={"width":"100%","padding":"7px 10px 7px 32px","backgroundColor":"#f8fafc","color":"#1e293b",
+                    "border":"1px solid #e2e8f0","borderRadius":"6px","fontSize":"12px","outline":"none"}),
             ],style={"position":"relative","flex":"1"}),
             dbc.Button("Xóa lọc",id="fin-chart-clear-all",color="danger",outline=True,size="sm",style={"fontSize":"12px"}),
             dbc.Button([html.I(className="fas fa-check",style={"marginRight":"5px"}),"THÊM VÀO TEMPLATE"],
                 id="fin-chart-apply-btn",size="sm",
-                style={"fontSize":"12px","backgroundColor":"#ef4444","border":"none","borderRadius":"6px","color":"white"}),
-        ],style={"display":"flex","gap":"10px","alignItems":"center","padding":"10px 20px","borderBottom":"1px solid #21262d"}),
+                style={"fontSize":"12px","backgroundColor":"#22c55e","border":"none","borderRadius":"6px","color":"white"}),
+        ],style={"display":"flex","gap":"10px","alignItems":"center","padding":"10px 20px","borderBottom":"1px solid #e2e8f0"}),
         html.Div([html.Div(col,style={"display":"flex","flexDirection":"column"}) for col in cols],
             style={"display":"flex","flexDirection":"row","padding":"16px 20px","overflowY":"auto","maxHeight":"460px","gap":"0"}),
-    ],style={"backgroundColor":"#0c1220","border":"1px solid #21262d","borderRadius":"8px","overflow":"hidden"})
+    ],style={"backgroundColor":"#ffffff","border":"1px solid #e2e8f0","borderRadius":"12px","overflow":"hidden",
+              "boxShadow":"0 4px 24px rgba(15, 23, 42, 0.06)"})
 
 @app.callback(
     Output("tab-fin-charts-content", "children"),
@@ -706,7 +707,7 @@ def render_fin_charts_tab(active_tab, period, selected_rows, saved_selection, st
     # Validation an toàn
     if not selected_rows or len(selected_rows) == 0:
         return html.P("Chọn một cổ phiếu để xem biểu đồ.",
-                      style={"color": "#484f58", "padding": "20px", "textAlign": "center"})
+                      style={"color": "#94a3b8", "padding": "20px", "textAlign": "center"})
                       
     ticker = selected_rows[0].get("Ticker", "")
     period = period or "quarterly"
@@ -728,7 +729,7 @@ def render_fin_charts_tab(active_tab, period, selected_rows, saved_selection, st
 
     return html.Div([
         html.Div([
-            html.Span("Kỳ báo cáo:", style={"color": "#7fa8cc", "fontSize": "11px", "marginRight": "8px"}),
+            html.Span("Kỳ báo cáo:", style={"color": "#64748b", "fontSize": "11px", "marginRight": "8px"}),
             dbc.ButtonGroup([
                 dbc.Button("Quý", id="fin-chart-period-quarterly", size="sm",
                            color="primary" if period == "quarterly" else "secondary",
@@ -770,8 +771,8 @@ def update_selection(n_apply, n_clear, all_vals, all_ids):
 )
 def render_charts(selected, ticker, period):
     if not selected:
-        return html.Div([html.I(className="fas fa-chart-bar",style={"fontSize":"28px","color":"#30363d","marginBottom":"6px"}),
-            html.P("Tick chọn biểu đồ → bấm 'THÊM VÀO TEMPLATE'",style={"color":"#484f58","fontSize":"12px"})],
+        return html.Div([html.I(className="fas fa-chart-bar",style={"fontSize":"28px","color":"#cbd5e1","marginBottom":"6px"}),
+            html.P("Tick chọn biểu đồ → bấm 'THÊM VÀO TEMPLATE'",style={"color":"#94a3b8","fontSize":"12px"})],
             style={"textAlign":"center","padding":"30px"})
     try:
         from src.backend.data_loader import load_financial_data
@@ -802,7 +803,7 @@ def render_charts(selected, ticker, period):
                 html.I(className="fas fa-info-circle",
                        style={"color":"#f59e0b","marginRight":"6px","fontSize":"11px"}),
                 html.Span("Ẩn " + str(len(skipped)) + " biểu đồ không có dữ liệu: " + " · ".join(skipped),
-                          style={"color":"#7fa8cc","fontSize":"11px"}),
+                          style={"color":"#64748b","fontSize":"11px"}),
             ], style={"padding":"8px 12px","marginBottom":"10px",
                       "backgroundColor":"rgba(245,158,11,0.07)",
                       "border":"1px solid rgba(245,158,11,0.25)",
@@ -811,8 +812,8 @@ def render_charts(selected, ticker, period):
         if not valid_items:
             charts_html.append(html.Div([
                 html.I(className="fas fa-database",
-                       style={"fontSize":"28px","color":"#30363d","marginBottom":"6px"}),
-                html.P("Không có dữ liệu để vẽ.", style={"color":"#484f58","fontSize":"12px"}),
+                       style={"fontSize":"28px","color":"#cbd5e1","marginBottom":"6px"}),
+                html.P("Không có dữ liệu để vẽ.", style={"color":"#94a3b8","fontSize":"12px"}),
             ], style={"textAlign":"center","padding":"30px"}))
             return html.Div(charts_html)
 
@@ -822,8 +823,9 @@ def render_charts(selected, ticker, period):
             for label, fig in pair:
                 row.append(html.Div(dcc.Graph(figure=fig, config={"displayModeBar":False},
                     style={"height":str(fig.layout.height)+"px"}),
-                    style={"flex":"1","minWidth":"0","backgroundColor":"#0c1220","borderRadius":"8px",
-                           "border":"1px solid #21262d","overflow":"hidden"}))
+                    style={"flex":"1","minWidth":"0","backgroundColor":"#ffffff","borderRadius":"12px",
+                           "border":"1px solid #e2e8f0","overflow":"hidden",
+                           "boxShadow":"0 4px 24px rgba(15, 23, 42, 0.06)"}))
             charts_html.append(html.Div(row,style={"display":"flex","gap":"10px","marginBottom":"10px"}))
         return html.Div(charts_html)
     except Exception as e:

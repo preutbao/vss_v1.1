@@ -1,20 +1,21 @@
 /* ============================================================
    auth.css — Vietcap Smart Screener
    Login modal + Premium lock/unlock visual system
+   ☀️ Light Power-BI Dashboard mode — card đặc trắng, bóng mềm
    ============================================================ */
 
 /* ── LOGIN MODAL ─────────────────────────────────────────── */
 
 #login-modal .modal-content {
-    background-color: #0d1117;
-    border: 1px solid #21262d;
-    border-radius: 12px;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7),
-                0 0 0 1px rgba(0, 166, 81, 0.12);
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.14),
+                0 0 0 1px rgba(34, 197, 94, 0.06);
 }
 
 #login-modal .modal-header {
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid #e2e8f0;
     padding: 20px 24px 16px;
 }
 
@@ -23,7 +24,7 @@
 }
 
 #login-modal .modal-footer {
-    border-top: 1px solid #21262d;
+    border-top: 1px solid #e2e8f0;
     padding: 14px 24px;
 }
 
@@ -31,14 +32,14 @@
     font-family: 'Sora', sans-serif;
     font-size: 16px;
     font-weight: 700;
-    color: #f0f6ff;
+    color: #0f172a;
     letter-spacing: -0.3px;
 }
 
 .login-modal-subtitle {
     font-family: 'Inter', sans-serif;
     font-size: 12px;
-    color: #6e7681;
+    color: #64748b;
     margin-top: 4px;
     margin-bottom: 0;
 }
@@ -47,38 +48,39 @@
     font-family: 'Inter', sans-serif;
     font-size: 11.5px;
     font-weight: 600;
-    color: #8b949e;
+    color: #475569;
     letter-spacing: 0.3px;
     margin-bottom: 6px;
     text-transform: uppercase;
 }
 
 .login-input {
-    background-color: #161b22 !important;
-    border: 1px solid #30363d !important;
-    border-radius: 7px !important;
-    color: #f0f6ff !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    color: #0f172a !important;
     font-family: 'Inter', sans-serif !important;
     font-size: 13.5px !important;
     padding: 9px 13px !important;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    transition: border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .login-input:focus {
-    border-color: rgba(0, 166, 81, 0.55) !important;
-    box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.12) !important;
+    border-color: rgba(34, 197, 94, 0.55) !important;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12) !important;
     outline: none !important;
-    background-color: #161b22 !important;
+    background-color: #ffffff !important;
 }
 
 .login-input::placeholder {
-    color: #484f58 !important;
+    color: #94a3b8 !important;
 }
 
 .btn-login-submit {
-    background: linear-gradient(135deg, #00a651 0%, #00c85a 100%) !important;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     color: #ffffff !important;
     font-family: 'Inter', sans-serif !important;
     font-size: 13.5px !important;
@@ -86,27 +88,26 @@
     padding: 10px 0 !important;
     width: 100% !important;
     cursor: pointer !important;
-    box-shadow: 0 4px 16px rgba(0, 166, 81, 0.30),
-                inset 0 1px 0 rgba(255,255,255,0.15) !important;
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25) !important;
     transition: all 0.2s ease !important;
     letter-spacing: 0.2px !important;
 }
 
 .btn-login-submit:hover {
-    background: linear-gradient(135deg, #00b85a 0%, #00e070 100%) !important;
-    box-shadow: 0 6px 24px rgba(0, 166, 81, 0.45) !important;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+    box-shadow: 0 6px 22px rgba(34, 197, 94, 0.35) !important;
     transform: translateY(-1px) !important;
 }
 
 .login-error {
     font-family: 'Inter', sans-serif;
     font-size: 12px;
-    color: #f85149;
+    color: #e11d48;
     margin-top: 8px;
     padding: 8px 12px;
-    background: rgba(248, 81, 73, 0.08);
-    border: 1px solid rgba(248, 81, 73, 0.25);
-    border-radius: 6px;
+    background: rgba(244, 63, 94, 0.06);
+    border: 1px solid rgba(244, 63, 94, 0.20);
+    border-radius: 8px;
     display: none;
 }
 
@@ -115,7 +116,7 @@
     align-items: center;
     gap: 12px;
     margin: 18px 0;
-    color: #484f58;
+    color: #94a3b8;
     font-size: 11px;
 }
 .login-divider::before,
@@ -123,7 +124,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: #21262d;
+    background: #e2e8f0;
 }
 
 .login-open-account-link {
@@ -131,20 +132,20 @@
     text-align: center;
     font-family: 'Inter', sans-serif;
     font-size: 12.5px;
-    color: #00a651;
+    color: #16a34a;
     text-decoration: none;
     padding: 10px;
-    border: 1px solid rgba(0, 166, 81, 0.25);
-    border-radius: 8px;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    border-radius: 10px;
     transition: all 0.2s ease;
     font-weight: 600;
 }
 
 .login-open-account-link:hover {
-    background: rgba(0, 166, 81, 0.08);
-    color: #00c85a;
+    background: rgba(34, 197, 94, 0.06);
+    color: #15803d;
     text-decoration: none;
-    border-color: rgba(0, 166, 81, 0.45);
+    border-color: rgba(34, 197, 94, 0.45);
 }
 
 /* ── NAVBAR LOGIN / USER BUTTONS ─────────────────────────── */
@@ -153,59 +154,48 @@
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     font-size: 13px;
     font-weight: 600;
-    color: #00e676 !important;
+    color: #16a34a !important;
     text-decoration: none;
-    background: rgba(0, 166, 81, 0.10);
-    border: 1px solid rgba(0, 166, 81, 0.30) !important;
+    background: rgba(34, 197, 94, 0.08);
+    border: 1px solid rgba(34, 197, 94, 0.25) !important;
     padding: 6px 16px;
-    border-radius: 7px;
+    border-radius: 9px;
     cursor: pointer;
-    transition: all 0.22s ease;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .vietcap-nav-login-btn:hover {
-    background: rgba(0, 166, 81, 0.20);
-    border-color: rgba(0, 166, 81, 0.55) !important;
-    box-shadow: 0 0 12px rgba(0, 166, 81, 0.25);
-    color: #00ff80 !important;
+    background: rgba(34, 197, 94, 0.16);
+    border-color: rgba(34, 197, 94, 0.45) !important;
+    color: #15803d !important;
+    transform: translateY(-1px);
 }
 
 .vietcap-nav-user-btn {
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     font-size: 12.5px;
     font-weight: 600;
-    color: #f0f6ff !important;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #1e293b !important;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0 !important;
     padding: 6px 14px;
-    border-radius: 7px;
+    border-radius: 9px;
     cursor: pointer;
-    transition: all 0.22s ease;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .vietcap-nav-user-btn:hover {
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.20) !important;
-    color: #ffffff !important;
+    background: #e2e8f0;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    transform: translateY(-1px);
 }
 
 /* ── PREMIUM WRAPPER SYSTEM ──────────────────────────────── */
-
-/*
-   Usage:
-   html.Div([
-       html.Div(your_content, className="premium-content"),
-       html.Div([lock_icon, label], className="premium-overlay", id={...}),
-   ], id="pw-X", className="premium-wrapper premium-locked")
-
-   Callback toggles className between:
-     "premium-wrapper premium-locked"
-     "premium-wrapper premium-unlocked"
-*/
 
 .premium-wrapper {
     position: relative;
@@ -226,38 +216,38 @@
     display: flex;
     position: absolute;
     inset: -2px;
-    background: rgba(13, 17, 23, 0.78);
-    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.82);
+    border-radius: 10px;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     gap: 3px;
-    color: #8b949e;
+    color: #64748b;
     cursor: pointer;
     z-index: 20;
-    border: 1px dashed rgba(0, 166, 81, 0.28);
-    transition: all 0.2s ease;
+    border: 1px dashed rgba(34, 197, 94, 0.35);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 4px 10px;
     min-width: 80px;
 }
 
 .premium-wrapper.premium-locked .premium-overlay:hover {
-    background: rgba(13, 17, 23, 0.92);
-    border-color: rgba(0, 166, 81, 0.55);
-    color: #c9d1d9;
-    box-shadow: 0 0 12px rgba(0, 166, 81, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(34, 197, 94, 0.6);
+    color: #334155;
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.10);
 }
 
 .premium-overlay-icon {
     font-size: 11px;
-    color: #00a651;
+    color: #16a34a;
 }
 
 .premium-overlay-text {
     font-family: 'Inter', sans-serif;
     font-size: 9.5px;
     font-weight: 600;
-    color: #6e7681;
+    color: #94a3b8;
     letter-spacing: 0.3px;
     white-space: nowrap;
 }
@@ -275,9 +265,7 @@
     display: none !important;
 }
 
-/* ── STRATEGY SECTION PREMIUM LOCK ─────────────────────────
-   Wider wrapper for the full strategy dropdown row
-*/
+/* ── STRATEGY SECTION PREMIUM LOCK ── */
 #pw-strategies {
     flex: 1;
     max-width: 420px;
@@ -290,12 +278,10 @@
 #pw-strategies.premium-locked .premium-overlay {
     min-width: unset;
     width: 100%;
-    border-radius: 8px;
+    border-radius: 10px;
 }
 
-/* ── MOMENTUM GROUP PREMIUM LOCK ────────────────────────────
-   Lock overlay over the momentum wizard group item
-*/
+/* ── MOMENTUM GROUP PREMIUM LOCK ── */
 #pw-momentum {
     display: block;
     width: 100%;
@@ -315,7 +301,7 @@
     gap: 6px;
     padding: 9px 14px;
     justify-content: flex-start;
-    background: rgba(13, 17, 23, 0.85);
+    background: rgba(255, 255, 255, 0.88);
 }
 
 /* ── VIP BADGE in header ───────────────────────────────────*/
@@ -330,14 +316,15 @@
     letter-spacing: 0.5px;
     margin-left: 5px;
     vertical-align: middle;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.25);
 }
 
 /* ── LOGOUT DROPDOWN ───────────────────────────────────────*/
 #user-dropdown-menu {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 8px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.10);
     min-width: 180px;
     padding: 6px 0;
 }
@@ -345,25 +332,25 @@
 #user-dropdown-menu .dropdown-item {
     font-family: 'Inter', sans-serif;
     font-size: 13px;
-    color: #c9d1d9;
+    color: #334155;
     padding: 8px 16px;
-    transition: background 0.15s;
+    transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #user-dropdown-menu .dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
+    background: #f1f5f9;
+    color: #0f172a;
 }
 
 #user-dropdown-menu .dropdown-item.text-danger {
-    color: #f85149 !important;
+    color: #e11d48 !important;
 }
 
 #user-dropdown-menu .dropdown-item.text-danger:hover {
-    background: rgba(248, 81, 73, 0.08);
+    background: rgba(244, 63, 94, 0.06);
 }
 
 #user-dropdown-menu .dropdown-divider {
-    border-color: #21262d;
+    border-color: #e2e8f0;
     margin: 4px 0;
 }

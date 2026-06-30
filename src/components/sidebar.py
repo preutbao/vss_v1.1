@@ -100,6 +100,13 @@ _STRATEGY_GROUPS = [
             ("STRAT_PIOTROSKI", "Piotroski F-Score (Prof. Joseph Piotroski)"),
         ],
     },
+    {
+        "id": "grp-technical",
+        "label": "📈  Phân tích Kỹ thuật / Momentum",
+        "strategies": [
+            ("STRAT_ADX_MOMENTUM", "🔥  ADX Momentum — Xu hướng & Siêu Cổ Phiếu (Wilder)"),
+        ],
+    },
 ]
 
 _STRATEGY_LABEL_MAP = {
@@ -271,6 +278,9 @@ CHI_BAO_KT_ITEMS = [
     create_criteria_item("rsi-state",           "Trạng thái RSI(14)"),
     create_criteria_item("macd-hist",           "MACD Histogram"),
     create_criteria_item("bb-width",            "Mở Band Bollinger (%)"),
+    create_criteria_item("adx14",              "ADX(14) — Sức mạnh xu hướng"),
+    create_criteria_item("plus-di14",           "+DI(14) — Lực mua"),
+    create_criteria_item("minus-di14",          "-DI(14) — Lực bán"),
     create_criteria_item("consec-up",           "Phiên tăng liên tiếp"),
     create_criteria_item("consec-down",         "Phiên giảm liên tiếp"),
     # ── Elliott Wave Proxy ── THÊM 3 DÒNG NÀY
@@ -845,6 +855,13 @@ layout = html.Div(
                             section="strategies",
                             label="Chiến lược VIP",
                         ),
+
+                        # [ĐÃ GỠ] Block "CHIẾN LƯỢC ADX" (3 checkbox ẩn: Xu hướng Tăng
+                        # vững vàng / Siêu Cổ Phiếu / Bỏ qua Sideway) — đã thay bằng
+                        # preset chính thức "🔥 ADX Momentum — Xu hướng & Siêu Cổ
+                        # Phiếu (Wilder)" trong dropdown "Chiến lược VIP" phía trên,
+                        # tránh trùng lặp 2 cơ chế lọc ADX song song gây nhầm lẫn.
+
                         # ── T+2.5 TOGGLE — gộp cùng div với strategy để không có gap thừa ──
                         html.Div([
                             html.Div([
@@ -1190,6 +1207,9 @@ layout = html.Div(
         dcc.Store(id='filter-rsi14', data=_get_r(_DR, 'filter-rsi14', [0, 100])),
         dcc.Store(id='filter-macd-hist', data=_get_r(_DR, 'filter-macd-hist', [-1000, 1000])),
         dcc.Store(id='filter-bb-width', data=_get_r(_DR, 'filter-bb-width', [0, 50])),
+        dcc.Store(id='filter-adx14', data=_get_r(_DR, 'filter-adx14', [0, 100])),
+        dcc.Store(id='filter-plus-di14', data=_get_r(_DR, 'filter-plus-di14', [0, 100])),
+        dcc.Store(id='filter-minus-di14', data=_get_r(_DR, 'filter-minus-di14', [0, 100])),
         dcc.Store(id='filter-consec-up', data=_get_r(_DR, 'filter-consec-up', [0, 20])),
         dcc.Store(id='filter-consec-down', data=_get_r(_DR, 'filter-consec-down', [0, 20])),
 

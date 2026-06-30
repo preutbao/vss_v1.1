@@ -1175,6 +1175,248 @@ def calculate_all_scores(df_price, df_financial):
             logger.warning(f"Elliott proxy error: {_ew_err}")
         # ── KẾT THÚC ELLIOTT WAVE PROXY ──────────────────────────────────
 
+        # ── ADX(14) + Plus_DI/Minus_DI + RSI(14) — Lifecycle 5 mức độ ───────
+        # ADX chỉ đo ĐỘ MẠNH của xu hướng, không đo HƯỚNG.
+        # Plus_DI > Minus_DI => xu hướng đang nghiêng về phía TĂNG.
+        # Plus_DI < Minus_DI => xu hướng đang nghiêng về phía GIẢM.
+        #
+        # ADX_State — phân loại trạng thái xu hướng (giữ nguyên, dùng cho cột
+        # hiển thị/dropdown filter riêng — KHÔNG liên quan tới Lifecycle dưới đây):
+        #   🔄 Đảo chiều Tăng / Giảm (lookback 3 phiên) · 🔥 Siêu Xu Hướng ·
+        #   📈 Xu hướng Tăng · 📉 Xu hướng Giảm · ➖ Đi ngang
+        #
+        # Lifecycle_State — 5 MỨC ĐỘ THEO VÒNG ĐỜI XU HƯỚNG (ADX kết hợp RSI),
+        # dùng để loại trừ mã đang ở Mức 4/5 khỏi preset ADX Momentum:
+        #   Mức 1 — Setup Chân sóng    : ADX<20 & RSI vừa cắt LÊN 50 (5 phiên gần nhất)
+        #   Mức 2 — Breakout Khởi điểm : ADX vừa cắt LÊN 25 (5 phiên) & +DI>-DI & RSI in [60,70]
+        #   Mức 3 — Pullback Lành mạnh : ADX>=25 & RSI vừa rớt từ >70 về [45,50] & đang vòng lên
+        #   Mức 4 — Phân kỳ Âm        : ADX>=35 & đỉnh giá mới > đỉnh giá cũ (10 phiên)
+        #                                NHƯNG đỉnh RSI mới < đỉnh RSI cũ (phân kỳ âm)
+        #   Mức 5 — Sideway Trap       : ADX cắm đầu rơi từ >40 xuống <25 & RSI giật cục [40,60]
+        _ADX_REVERSAL_LOOKBACK   = 3   # lookback đảo chiều ADX_State (giữ nguyên)
+        _LIFECYCLE_CROSS_LB      = 5   # lookback crossover RSI/ADX cho Mức 1, 2
+        _LIFECYCLE_PEAK_LB       = 10  # lookback tìm đỉnh giá/RSI cho Mức 4
+        try:
+            from src.backend.data_loader import load_market_data as _load_px
+            _df_px_adx = _load_px()
+            if not _df_px_adx.empty:
+                _adx_records = []
+                for _ticker, _grp in _df_px_adx.groupby("Ticker", sort=False):
+                    _g = _grp.sort_values("Date").tail(300).copy()
+                    if len(_g) < 30:
+                        _adx_records.append({"Ticker": _ticker, "ADX_14": None,
+                                              "Plus_DI_14": None, "Minus_DI_14": None,
+                                              "ADX_State": None, "Lifecycle_State": None,
+                                              "Is_Steady_Uptrend": False,
+                                              "Is_Super_Stock_ADX": False,
+                                              "Is_Not_Sideway_ADX": False,
+                                              "Is_Lifecycle_Excluded": False})
+                        continue
+                    try:
+                        _high  = pd.to_numeric(_g["Price High"],  errors="coerce")
+                        _low   = pd.to_numeric(_g["Price Low"],   errors="coerce")
+                        _close = pd.to_numeric(_g["Price Close"], errors="coerce")
+                        _prev  = _close.shift(1)
+                        _tr = pd.concat([
+                            (_high - _low).abs(),
+                            (_high - _prev).abs(),
+                            (_low  - _prev).abs(),
+                        ], axis=1).max(axis=1)
+                        _up   = _high - _high.shift(1)
+                        _down = _low.shift(1) - _low
+                        _pdm  = np.where((_up > _down) & (_up > 0), _up,   0.0)
+                        _mdm  = np.where((_down > _up) & (_down > 0), _down, 0.0)
+                        _a = 1.0 / 14
+                        def _rma(s):
+                            return pd.Series(s, index=_g.index).ewm(alpha=_a, adjust=False).mean()
+                        _atr14 = _rma(_tr.values)
+                        _pdi   = 100 * _rma(_pdm) / _atr14.replace(0, np.nan)
+                        _mdi   = 100 * _rma(_mdm) / _atr14.replace(0, np.nan)
+                        _dx    = 100 * (_pdi - _mdi).abs() / (_pdi + _mdi).replace(0, np.nan)
+                        _adx   = _dx.ewm(alpha=_a, adjust=False).mean()
+                        _val      = round(float(_adx.iloc[-1]), 2) if not np.isnan(_adx.iloc[-1]) else None
+                        _pdi_val  = round(float(_pdi.iloc[-1]), 2) if not np.isnan(_pdi.iloc[-1]) else None
+                        _mdi_val  = round(float(_mdi.iloc[-1]), 2) if not np.isnan(_mdi.iloc[-1]) else None
+                        # _adx_prev1: dùng cho phân loại ADX_State (đảo chiều, lookback 3 phiên)
+                        _adx_prev1 = float(_adx.iloc[-2]) if len(_adx) >= 2 and not np.isnan(_adx.iloc[-2]) else None
+
+                        # RSI(14) — tính cùng lúc với ADX (cần full series cho Lifecycle)
+                        _delta = _close.diff()
+                        _gain  = _delta.clip(lower=0)
+                        _loss  = (-_delta).clip(lower=0)
+                        _avg_gain = _gain.ewm(com=13, min_periods=14).mean()
+                        _avg_loss = _loss.ewm(com=13, min_periods=14).mean()
+                        _rs   = _avg_gain / _avg_loss.replace(0, np.nan)
+                        _rsi  = 100 - (100 / (1 + _rs))
+                        _rsi_val = round(float(_rsi.iloc[-1]), 2) if not np.isnan(_rsi.iloc[-1]) else None
+
+                        # ── Phân loại ADX_State (lookback đảo chiều: 3 phiên) ──
+                        _state = None
+                        if _val is not None and _pdi_val is not None and _mdi_val is not None:
+                            _lb = min(_ADX_REVERSAL_LOOKBACK, len(_adx) - 1)
+                            _diff_recent = (_pdi - _mdi).tail(_lb + 1)
+                            _sign_recent = np.sign(_diff_recent.dropna())
+                            _crossed_up   = (len(_sign_recent) >= 2) and (_sign_recent.iloc[-1] > 0) and (_sign_recent.iloc[:-1] <= 0).any()
+                            _crossed_down = (len(_sign_recent) >= 2) and (_sign_recent.iloc[-1] < 0) and (_sign_recent.iloc[:-1] >= 0).any()
+                            _adx_rising  = (_adx_prev1 is not None) and (_val > _adx_prev1)
+
+                            if _crossed_up and _adx_rising:
+                                _state = "🔄 Đảo chiều Tăng"
+                            elif _crossed_down:
+                                _state = "🔄 Đảo chiều Giảm"
+                            elif _val >= 50:
+                                _state = "🔥 Siêu Xu Hướng"
+                            elif _val >= 25 and _pdi_val > _mdi_val:
+                                _state = "📈 Xu hướng Tăng"
+                            elif _val >= 25 and _mdi_val > _pdi_val:
+                                _state = "📉 Xu hướng Giảm"
+                            else:
+                                _state = "➖ Đi ngang"
+
+                        # ── Lifecycle_State — 5 mức độ ADX + RSI ──────────────────────
+                        _lifecycle = None
+                        if _val is not None and _rsi_val is not None and len(_adx) >= 15:
+                            _lb5  = min(_LIFECYCLE_CROSS_LB, len(_adx) - 1)
+                            _lb10 = min(_LIFECYCLE_PEAK_LB, len(_adx) - 1)
+
+                            _rsi_tail5  = _rsi.tail(_lb5 + 1)
+                            _adx_tail5  = _adx.tail(_lb5 + 1)
+
+                            # Mức 1: ADX<20 & RSI vừa cắt LÊN 50 trong 5 phiên gần nhất
+                            _rsi_crossed_50 = (
+                                len(_rsi_tail5.dropna()) >= 2
+                                and _rsi_tail5.iloc[-1] > 50
+                                and (_rsi_tail5.iloc[:-1] <= 50).any()
+                            )
+                            _is_m1 = bool(_val < 20 and _rsi_crossed_50)
+
+                            # Mức 2: ADX vừa cắt LÊN 25 trong 5 phiên & +DI>-DI & RSI in [60,70]
+                            _adx_crossed_25 = (
+                                len(_adx_tail5.dropna()) >= 2
+                                and _adx_tail5.iloc[-1] >= 25
+                                and (_adx_tail5.iloc[:-1] < 25).any()
+                            )
+                            _is_m2 = bool(
+                                _adx_crossed_25 and _pdi_val is not None and _mdi_val is not None
+                                and _pdi_val > _mdi_val and 60 <= _rsi_val <= 70
+                            )
+
+                            # Mức 3: ADX>=25 & RSI vừa rớt từ >70 về [45,50] và đang vòng lên
+                            # (xét trong 10 phiên gần nhất: từng có RSI>70, hiện tại RSI in [45,50]
+                            #  và RSI phiên cuối > RSI phiên trước đó — đã bắt đầu hồi lên)
+                            _rsi_tail10 = _rsi.tail(_lb10 + 1)
+                            _had_rsi_over_70 = bool((_rsi_tail10 > 70).any())
+                            _rsi_turning_up = bool(len(_rsi) >= 2 and _rsi.iloc[-1] > _rsi.iloc[-2])
+                            _is_m3 = bool(
+                                _val >= 25 and _had_rsi_over_70
+                                and 45 <= _rsi_val <= 50 and _rsi_turning_up
+                            )
+
+                            # Mức 4: ADX>=35 & đỉnh GIÁ mới (10 phiên) > đỉnh giá cũ trước đó,
+                            # NHƯNG đỉnh RSI tương ứng lại thấp hơn (phân kỳ âm — bearish divergence)
+                            _close_tail10 = _close.tail(_lb10 + 1)
+                            _close_prior  = _close.iloc[:-(_lb10 + 1)] if len(_close) > _lb10 + 1 else pd.Series(dtype=float)
+                            _is_m4 = False
+                            if _val is not None and _val >= 35 and len(_close_prior) >= 10:
+                                _peak_price_recent = _close_tail10.max()
+                                _peak_price_prior   = _close_prior.tail(30).max()  # đỉnh trước đó (30 phiên trước nữa)
+                                _idx_peak_recent = _close_tail10.idxmax()
+                                _idx_peak_prior   = _close_prior.tail(30).idxmax()
+                                if (_peak_price_recent > _peak_price_prior
+                                        and _idx_peak_recent in _rsi.index and _idx_peak_prior in _rsi.index):
+                                    _rsi_at_peak_recent = _rsi.loc[_idx_peak_recent]
+                                    _rsi_at_peak_prior  = _rsi.loc[_idx_peak_prior]
+                                    if (not np.isnan(_rsi_at_peak_recent) and not np.isnan(_rsi_at_peak_prior)
+                                            and _rsi_at_peak_recent < _rsi_at_peak_prior):
+                                        _is_m4 = True
+
+                            # Mức 5: ADX cắm đầu rơi từ >40 xuống <25 (trong 10 phiên) &
+                            # RSI giật cục trong biên hẹp [40,60] suốt giai đoạn đó
+                            _adx_tail10 = _adx.tail(_lb10 + 1)
+                            _is_m5 = bool(
+                                _val < 25 and len(_adx_tail10.dropna()) >= 2
+                                and _adx_tail10.max() > 40
+                                and _rsi_tail10.between(40, 60).all()
+                            )
+
+                            # Thứ tự ưu tiên gán nhãn: Mức 5 (rủi ro cao nhất) > Mức 4 > 2 > 3 > 1
+                            if _is_m5:
+                                _lifecycle = "5️⃣ Sideway Trap (Bẫy nhiễu)"
+                            elif _is_m4:
+                                _lifecycle = "4️⃣ Phân kỳ Âm (Cảnh báo đỉnh)"
+                            elif _is_m2:
+                                _lifecycle = "2️⃣ Breakout Khởi điểm"
+                            elif _is_m3:
+                                _lifecycle = "3️⃣ Pullback Lành mạnh"
+                            elif _is_m1:
+                                _lifecycle = "1️⃣ Setup Chân sóng"
+
+                        _is_lifecycle_excluded = bool(
+                            _lifecycle is not None
+                            and (_lifecycle.startswith("4️⃣") or _lifecycle.startswith("5️⃣"))
+                        )
+
+                        # ── Chiến lược ADX — 3 trụ cột checkbox (Sidebar, BẢN CẢI TIẾN v3) ──
+                        # ☐ Xu hướng Tăng vững vàng (Is_Steady_Uptrend):
+                        #     +DI > -DI  AND  ADX >= 25  — ĐÚNG CHUẨN WILDER GỐC.
+                        # ☐ Siêu Cổ Phiếu Tăng Giá (Is_Super_Stock_ADX):
+                        #     (+DI>-DI AND ADX>=50) đúng >=50% trong 20 phiên gần nhất.
+                        # ☐ Bỏ qua Sideway (Is_Not_Sideway_ADX): giữ nguyên — ADX >= 25.
+                        _is_steady_uptrend = bool(
+                            _pdi_val is not None and _mdi_val is not None and _val is not None
+                            and _pdi_val > _mdi_val and _val >= 25
+                        )
+                        _is_not_sideway = bool(_val is not None and _val >= 25)
+
+                        _is_super_stock = False
+                        if _val is not None:
+                            _lb20 = min(20, len(_adx))
+                            _pdi_20 = _pdi.tail(_lb20)
+                            _mdi_20 = _mdi.tail(_lb20)
+                            _adx_20 = _adx.tail(_lb20)
+                            _pillar_ok = (_pdi_20 > _mdi_20) & (_adx_20 >= 50)
+                            _n_total = len(_pillar_ok.dropna())
+                            if _n_total >= 15:  # cần đủ dữ liệu hợp lệ để đánh giá độ bền
+                                _n_ok = int(_pillar_ok.fillna(False).sum())
+                                _is_super_stock = bool((_n_ok / _n_total) >= 0.50)
+                    except Exception:
+                        _val, _pdi_val, _mdi_val, _state = None, None, None, None
+                        _lifecycle, _is_lifecycle_excluded = None, False
+                        _is_steady_uptrend, _is_super_stock, _is_not_sideway = False, False, False
+                    _adx_records.append({"Ticker": _ticker, "ADX_14": _val,
+                                          "Plus_DI_14": _pdi_val, "Minus_DI_14": _mdi_val,
+                                          "ADX_State": _state, "Lifecycle_State": _lifecycle,
+                                          "Is_Steady_Uptrend": _is_steady_uptrend,
+                                          "Is_Super_Stock_ADX": _is_super_stock,
+                                          "Is_Not_Sideway_ADX": _is_not_sideway,
+                                          "Is_Lifecycle_Excluded": _is_lifecycle_excluded})
+
+                _df_adx = pd.DataFrame(_adx_records)
+                df = pd.merge(df, _df_adx, on="Ticker", how="left")
+                logger.info(f"   ✅ ADX_14 tính xong — {_df_adx['ADX_14'].notna().sum()}/{len(_df_adx)} mã có giá trị")
+            else:
+                df["ADX_14"] = None
+                df["Plus_DI_14"] = None
+                df["Minus_DI_14"] = None
+                df["ADX_State"] = None
+                df["Lifecycle_State"] = None
+                df["Is_Steady_Uptrend"] = False
+                df["Is_Super_Stock_ADX"] = False
+                df["Is_Not_Sideway_ADX"] = False
+                df["Is_Lifecycle_Excluded"] = False
+        except Exception as _adx_err:
+            logger.warning(f"   ⚠️ Không tính được ADX_14: {_adx_err}")
+            df["ADX_14"] = None
+            df["Plus_DI_14"] = None
+            df["Minus_DI_14"] = None
+            df["ADX_State"] = None
+            df["Lifecycle_State"] = None
+            df["Is_Steady_Uptrend"] = False
+            df["Is_Super_Stock_ADX"] = False
+            df["Is_Not_Sideway_ADX"] = False
+            df["Is_Lifecycle_Excluded"] = False
+        # ── KẾT THÚC ADX ─────────────────────────────────────────────────
+
         # ===================================================================
         # 3. TÍNH TOÁN CÁC LOẠI ĐIỂM SỐ (Chạy tuần tự)
         # ===================================================================
@@ -1263,9 +1505,14 @@ def calculate_all_scores(df_price, df_financial):
             # ── Technical: Streak & Pattern ──
             'Consec_Up', 'Consec_Down', 'Candlestick_Pattern',
 
-            # ── Elliott Wave Proxy ──          ← THÊM ĐOẠN NÀY
+            # ── Elliott Wave Proxy ──
             'Fib_Position_%', 'Fib_Zone',
             'Wave_Momentum_Score', 'Elliott_Corrective',
+
+            # ── ADX ──
+            'ADX_14', 'Plus_DI_14', 'Minus_DI_14', 'ADX_State', 'Lifecycle_State',
+            'Is_Steady_Uptrend', 'Is_Super_Stock_ADX', 'Is_Not_Sideway_ADX',
+            'Is_Lifecycle_Excluded',
 
             # ── Scores ──
             'T_Plus_Score',
