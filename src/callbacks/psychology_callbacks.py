@@ -16,6 +16,7 @@ CẬP NHẬT MỚI:
 """
 import time
 from dash import Input, Output, State, html, no_update
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from datetime import datetime
 
@@ -37,28 +38,26 @@ MINDFUL_MESSAGES = [
     "🧘 Hãy hít một hơi thật sâu trước khi đọc kết quả...",
 ]
 
-
-@app.callback(
-    Output("psy-clinic-modal", "is_open"),
-    Input("btn-open-psy-clinic", "n_clicks"),
-    Input("psy-clinic-close-btn", "n_clicks"),
-    State("psy-clinic-modal", "is_open"),
-    prevent_initial_call=True,
-)
-def toggle_psy_clinic_modal(n_open, n_close, is_open):
-    return not is_open
-
-
 @app.callback(
     Output("psy-clinic-ticker-input", "options"),
-    Input("psy-clinic-modal", "is_open"),
+    Input("detail-tabs", "active_tab"),
     prevent_initial_call=True,
 )
-def load_psy_clinic_ticker_options(is_open):
-    if not is_open:
-        return no_update
+def load_psy_clinic_ticker_options(active_tab):
+    if active_tab != "tab-psychology":
+        raise PreventUpdate
     return get_ticker_list() or []
 
+@app.callback(
+    Output("psy-clinic-ticker-input", "value"),
+    Input("detail-tabs", "active_tab"),
+    Input("selected-ticker-store", "data"),
+    prevent_initial_call=True,
+)
+def sync_psy_ticker_with_detail_modal(active_tab, ticker):
+    if active_tab != "tab-psychology":
+        raise PreventUpdate
+    return ticker
 
 # ─────────────────────────────────────────────────────────────────────────
 # Render helpers cho 2 wow-factor mới

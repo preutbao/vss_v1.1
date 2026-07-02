@@ -32,6 +32,21 @@
   --psy-accent-soft:  var(--accent-dim);
 }
 
+.psy-clinic-panel {
+  --psy-bg:           var(--bg-card);
+  --psy-bg-elevated:  var(--bg-surface);
+  --psy-bg-elevated-2: var(--bg-elevated);
+  --psy-border:       var(--border-subtle);
+  --psy-border-dim:   var(--border-dim);
+  --psy-text:         var(--text-primary);
+  --psy-text-muted:   var(--text-muted);
+  --psy-accent:       var(--accent);
+  --psy-accent-soft:  var(--accent-dim);
+
+  background: var(--psy-bg);
+  color: var(--psy-text);
+}
+
 /* ── Khung modal ─────────────────────────────────────────────────────────
  * QUAN TRỌNG: mọi selector dưới đây đều có tiền tố ID "#psy-clinic-modal"
  * (không dùng class trần). Lý do: style.css có sẵn các rule TOÀN CỤC viết
@@ -45,48 +60,9 @@
  * vẫn tối bất kể đổi theme. Thêm "#psy-clinic-modal " phía trước nâng độ
  * ưu tiên lên (1 ID + 1 class) > (1 class trần) của style.css, nên LUÔN
  * thắng tuyệt đối, không phụ thuộc thứ tự file nữa. ────────────────────── */
-#psy-clinic-modal .modal-content {
-  background: var(--psy-bg) !important;
-  color: var(--psy-text) !important;
-  border: 1px solid var(--psy-border) !important;
-  border-radius: var(--radius-xl, 16px) !important;
-  box-shadow: var(--shadow-deep, 0 25px 60px -15px rgba(0, 0, 0, 0.55)) !important;
-  overflow: visible !important; /* QUAN TRỌNG: không cắt menu dropdown */
-}
-
-#psy-clinic-modal .modal-header {
-  /* Gradient accent nằm TRÊN một lớp nền đặc theo theme (var(--psy-bg)) */
-  background: linear-gradient(135deg, var(--psy-accent-soft), transparent), var(--psy-bg) !important;
-  border-bottom: 1px solid var(--psy-border) !important;
-  border-radius: var(--radius-xl, 16px) var(--radius-xl, 16px) 0 0 !important;
-  padding: 16px 24px !important;
-}
-
-#psy-clinic-modal .modal-title {
-  color: var(--psy-text) !important;
-  font-family: var(--font-display), sans-serif !important;
-  font-weight: 700 !important;
-  font-size: 18px !important;
-  letter-spacing: -0.01em !important;
-}
-
-[data-theme="light"] #psy-clinic-modal .btn-close {
-  filter: none !important; /* icon X mặc định màu đen, hợp nền sáng */
-}
-[data-theme="dark"] #psy-clinic-modal .btn-close {
-  filter: invert(1) grayscale(1) brightness(2) !important; /* icon X trắng trên nền tối */
-}
-
-#psy-clinic-modal .modal-body {
-  overflow: visible !important; /* QUAN TRỌNG: không cắt menu dropdown */
-  padding: 20px 24px !important;
-  background: var(--psy-bg) !important;
-}
-
-#psy-clinic-modal .modal-footer {
-  border-top: 1px solid var(--psy-border) !important;
-  background: var(--psy-bg) !important;
-  padding: 16px 24px !important;
+.psy-clinic-panel {
+  background: var(--psy-bg);
+  color: var(--psy-text);
 }
 
 .psy-clinic-intro {

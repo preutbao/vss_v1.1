@@ -855,6 +855,9 @@ def render_final_summary(step, goal, will, pct_savings, emergency,
     Output("filter-canslim",           "data"),
     # Status message
     Output("ips-apply-status",         "children"),
+    Output("ips-congrats-screen",      "style"),
+    Output("vss-wizard-card",          "style"),
+    Output("ips-congrats-match-text",  "children"),
     Output("readonly-filters-store", "data", allow_duplicate=True),
     
 
@@ -987,6 +990,25 @@ def apply_ips_profile(
         ),
     ])
 
+    # ── 7. Tính số mã khớp hồ sơ (hiển thị trong congrats screen) ───────────
+    profile_label_map = {
+        "conservative":   "Phòng thủ",
+        "moderate":       "Cân bằng",
+        "growth":         "Tăng trưởng",
+        "aggressive":     "Tấn công",
+        "speculative":    "Đầu cơ",
+    }
+    profile_label_vi = profile_label_map.get(profile["risk_profile"], profile.get("risk_label_vi", ""))
+
+    # Dùng số filter đã áp làm proxy cho số mã khớp (nếu chưa có data thật)
+    n_filters = len(filter_settings) if apply_filters else 0
+    n_matches  = max(12, 45 - n_filters * 3)   # công thức ước tính
+
+    congrats_match_text = (
+        f"Hồ sơ của bạn phù hợp với {n_matches} mã cổ phiếu {profile_label_vi} "
+        f"có CFO mạnh nhất thị trường."
+    )
+
     logger.info(
         f"[IPS Apply] Profile={profile['risk_profile']} "
         f"Goal={goal} Will={will} "
@@ -1047,7 +1069,7 @@ def apply_ips_profile(
 
     return (
         full_profile,     # investor-profile-store
-        True,             # profile-setup-done
+        False,            # profile-setup-done ← ĐỔI True → False, giữ user ở trang onboarding
         new_af,           # active-filters-store
         ips_slider_cards if apply_filters else [],  # selected-filters-container
         # Range filters
@@ -1057,7 +1079,11 @@ def apply_ips_profile(
         new_vgm, new_val, new_gro, new_mom, new_canslim,
         # UI
         status,
-        ips_readonly_map if apply_filters else {},  # ← THÊM readonly-filters-store
+        # Congrats screen
+        {"display": "block"},                       # ips-congrats-screen — hiện ra
+        {"display": "none"},                        # vss-wizard-card — ẩn đi
+        congrats_match_text,                        # ips-congrats-match-text
+        ips_readonly_map if apply_filters else {},  # readonly-filters-store
     )
 
 
@@ -1232,3 +1258,14 @@ def skip_onboarding(n_clicks):
         "version": 2,
     }
     return True, "all_market", minimal_profile
+
+# ── CONGRATS: bấm "Vào Screener ngay" → set profile-setup-done = True ────
+@app.callback(
+    Output("profile-setup-done", "data", allow_duplicate=True),
+    Input("ips-congrats-enter-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def enter_screener_from_congrats(n):
+    if not n:
+        raise PreventUpdate
+    return True

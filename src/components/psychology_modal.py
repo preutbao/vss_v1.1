@@ -76,112 +76,84 @@ def _fear_section(title: str, subtitle: str, checklist_id: str, options: list) -
         ),
     ])
 
-
-def create_psychology_modal() -> dbc.Modal:
-    """Trả về một instance dbc.Modal mới (không giữ state global)."""
-    return dbc.Modal(
-        id="psy-clinic-modal",
-        is_open=False,
-        size="lg",
-        # ⚠️ KHÔNG bật scrollable=True — xem ghi chú đầu file (bug dropdown bị cắt)
-        backdrop="static",
-        centered=True,
-        className="psy-clinic-modal",
-        contentClassName="psy-clinic-modal-content",
+def create_psychology_tab_content() -> html.Div:
+    """Trả về nội dung tab TÂM LÝ — nhúng vào detail_tabs trong screener.py.
+    Không còn là Modal riêng — giờ sống chung trong popup chi tiết mã."""
+    return html.Div(
+        id="psy-clinic-panel",
+        className="psy-clinic-panel",
         children=[
-            dbc.ModalHeader(
-                dbc.ModalTitle([
-                    html.I(className="fa-solid fa-kit-medical me-2"),
-                    "Trạm Cứu Viện Tâm Lý — Bẻ Gãy Tin Đồn",
-                ]),
-                close_button=True,
-                className="psy-clinic-header",
+            html.P(
+                "Chọn nỗi sợ khách hàng đang gặp phải với mã cổ phiếu này. "
+                "Hệ thống sẽ truy xuất dữ liệu cứng để phản bác tin đồn "
+                "ngay trong phiên giao dịch.",
+                className="psy-clinic-intro mb-3",
             ),
-            dbc.ModalBody(className="psy-clinic-body", children=[
-                html.P(
-                    "Nhập mã cổ phiếu và chọn nỗi sợ khách hàng đang gặp phải. "
-                    "Hệ thống sẽ truy xuất dữ liệu cứng để phản bác tin đồn "
-                    "ngay trong phiên giao dịch.",
-                    className="psy-clinic-intro mb-3",
-                ),
 
-                dbc.Label("Mã cổ phiếu", html_for="psy-clinic-ticker-input",
-                          className="fw-bold psy-clinic-label"),
-                dcc.Dropdown(
-                    id="psy-clinic-ticker-input",
-                    options=[],  # nạp động khi mở modal — xem psychology_callbacks.py
-                    placeholder="Gõ để tìm mã hoặc tên công ty...",
-                    searchable=True,
-                    clearable=True,
-                    className="mb-4 psy-clinic-ticker-dropdown",
-                ),
+            dbc.Label("Mã cổ phiếu", html_for="psy-clinic-ticker-input",
+                      className="fw-bold psy-clinic-label"),
+            dcc.Dropdown(
+                id="psy-clinic-ticker-input",
+                options=[],
+                placeholder="Gõ để tìm mã hoặc tên công ty...",
+                searchable=True,
+                clearable=True,
+                className="mb-4 psy-clinic-ticker-dropdown",
+            ),
 
-                _fear_section(
-                    "Nhóm A · Sức khỏe & Định giá",
-                    "Cơ cấu vốn, thanh khoản, định giá so với ngành",
-                    "psy-clinic-fear-checklist-a", FEAR_OPTIONS_A,
-                ),
-                _fear_section(
-                    "Nhóm B · Hiệu quả sinh lời & Tiền mặt",
-                    "ROE/ROA so với ngành, vị thế tiền mặt ròng",
-                    "psy-clinic-fear-checklist-b", FEAR_OPTIONS_B,
-                ),
-                _fear_section(
-                    "Nhóm C · Biến động giá ngắn hạn",
-                    "Mức điều chỉnh so với đỉnh/đáy 1 năm, xu hướng MA",
-                    "psy-clinic-fear-checklist-c", FEAR_OPTIONS_C,
-                ),
-                _fear_section(
-                    "Nhóm D · FOMO ngược — sợ mua đu đỉnh",
-                    "RSI, hiệu suất gần đây, định giá so với ngành",
-                    "psy-clinic-fear-checklist-d", FEAR_OPTIONS_D,
-                ),
-                _fear_section(
-                    "Nhóm E · Thanh khoản & Biến động",
-                    "Giá trị giao dịch bình quân, Beta so với thị trường",
-                    "psy-clinic-fear-checklist-e", FEAR_OPTIONS_E,
-                ),
-                _fear_section(
-                    "Nhóm F · Tăng trưởng & Cổ tức",
-                    "EPS CAGR 5 năm so với ngành, tỷ suất cổ tức",
-                    "psy-clinic-fear-checklist-f", FEAR_OPTIONS_F,
-                ),
+            _fear_section(
+                "Nhóm A · Sức khỏe & Định giá",
+                "Cơ cấu vốn, thanh khoản, định giá so với ngành",
+                "psy-clinic-fear-checklist-a", FEAR_OPTIONS_A,
+            ),
+            _fear_section(
+                "Nhóm B · Hiệu quả sinh lời & Tiền mặt",
+                "ROE/ROA so với ngành, vị thế tiền mặt ròng",
+                "psy-clinic-fear-checklist-b", FEAR_OPTIONS_B,
+            ),
+            _fear_section(
+                "Nhóm C · Biến động giá ngắn hạn",
+                "Mức điều chỉnh so với đỉnh/đáy 1 năm, xu hướng MA",
+                "psy-clinic-fear-checklist-c", FEAR_OPTIONS_C,
+            ),
+            _fear_section(
+                "Nhóm D · FOMO ngược — sợ mua đu đỉnh",
+                "RSI, hiệu suất gần đây, định giá so với ngành",
+                "psy-clinic-fear-checklist-d", FEAR_OPTIONS_D,
+            ),
+            _fear_section(
+                "Nhóm E · Thanh khoản & Biến động",
+                "Giá trị giao dịch bình quân, Beta so với thị trường",
+                "psy-clinic-fear-checklist-e", FEAR_OPTIONS_E,
+            ),
+            _fear_section(
+                "Nhóm F · Tăng trưởng & Cổ tức",
+                "EPS CAGR 5 năm so với ngành, tỷ suất cổ tức",
+                "psy-clinic-fear-checklist-f", FEAR_OPTIONS_F,
+            ),
 
-                dbc.Button(
-                    [html.I(className="fa-solid fa-magnifying-glass-chart me-2"), "Kiểm chứng ngay"],
-                    id="psy-clinic-submit-btn",
-                    color="primary",
-                    className="w-100 mb-3 psy-clinic-submit-btn",
-                    n_clicks=0,
-                ),
+            dbc.Button(
+                [html.I(className="fa-solid fa-magnifying-glass-chart me-2"), "Kiểm chứng ngay"],
+                id="psy-clinic-submit-btn",
+                color="primary",
+                className="w-100 mb-3 psy-clinic-submit-btn",
+                n_clicks=0,
+            ),
 
-                # "Chánh niệm tài chính" — hiện khi background callback đang chạy
-                # (xem psychology_callbacks.py: tham số progress=...). Mặc định
-                # ẩn, callback tự bật/tắt display qua running=[...].
-                html.Div(
-                    id="psy-clinic-progress-text",
-                    className="psy-clinic-mindful-text",
-                    style={"display": "none"},
-                ),
+            html.Div(
+                id="psy-clinic-progress-text",
+                className="psy-clinic-mindful-text",
+                style={"display": "none"},
+            ),
 
-                dcc.Loading(
-                    id="psy-clinic-loading",
-                    type="circle",
-                    children=html.Div(id="psy-clinic-result"),
-                ),
-            ]),
-            dbc.ModalFooter(
-                dbc.Button(
-                    "Đóng", id="psy-clinic-close-btn",
-                    color="secondary", outline=True, n_clicks=0,
-                ),
-                className="psy-clinic-footer",
+            dcc.Loading(
+                id="psy-clinic-loading",
+                type="circle",
+                children=html.Div(id="psy-clinic-result"),
             ),
         ],
     )
 
 
-# Instance dùng chung để import thẳng vào app.layout (giống compare_modal,
-# crisis_modal... — bản thân Modal component không giữ state, state nằm ở
-# dcc.Store / is_open nên dùng chung instance là an toàn cho multi-user).
-psychology_modal = create_psychology_modal()
+# Instance dùng chung — import thẳng vào screener.py làm children của dbc.Tab
+psychology_tab_content = create_psychology_tab_content()

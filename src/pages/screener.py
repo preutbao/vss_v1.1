@@ -4,6 +4,7 @@ from dash import dcc, html
 import dash_bootstrap_components as dbc
 import dash_bootstrap_components as dbc
 import dash_ag_grid as dag
+from src.components.psychology_modal import psychology_tab_content
 from src.components import sidebar as sidebar
 from src.utils.chart_controls import create_chart_container
 
@@ -295,6 +296,31 @@ columnDefs = [
             "'Roboto Mono', monospace", "11px", "#484f58", "#94a3b8",
             extra_css="'fontVariantNumeric': 'tabular-nums',"
         ),
+    },
+    {
+        "field": "Sparkline_30D",
+        "headerName": "XU HƯỚNG 30P",
+        "headerTooltip": "Biểu đồ giá đóng cửa 30 phiên gần nhất",
+        "width": 130,
+        "sortable": False,
+        "cellRenderer": "function(params) {\n"
+            "  var data = params.value;\n"
+            "  if (!data || !Array.isArray(data) || data.length < 2) return '<span style=\"color:#475569\">—</span>';\n"
+            "  var w = 120, h = 36, pad = 3;\n"
+            "  var min = Math.min.apply(null, data), max = Math.max.apply(null, data);\n"
+            "  var range = max - min || 1;\n"
+            "  var xs = data.map(function(_, i) { return pad + (i / (data.length - 1)) * (w - pad * 2); });\n"
+            "  var ys = data.map(function(v) { return pad + (1 - (v - min) / range) * (h - pad * 2); });\n"
+            "  var pts = xs.map(function(x, i) { return x + ',' + ys[i]; }).join(' ');\n"
+            "  var last = data[data.length - 1], first = data[0];\n"
+            "  var color = last >= first ? '#10b981' : '#ef4444';\n"
+            "  var svg = '<svg width=\"' + w + '\" height=\"' + h + '\" xmlns=\"http://www.w3.org/2000/svg\">';\n"
+            "  svg += '<polyline points=\"' + pts + '\" fill=\"none\" stroke=\"' + color + '\" stroke-width=\"1.5\" stroke-linejoin=\"round\" stroke-linecap=\"round\"/>';\n"
+            "  var lastX = xs[xs.length-1], lastY = ys[ys.length-1];\n"
+            "  svg += '<circle cx=\"' + lastX + '\" cy=\"' + lastY + '\" r=\"2.5\" fill=\"' + color + '\"/>';\n"
+            "  svg += '</svg>';\n"
+            "  return svg;\n"
+            "}",
     },
 ]
 
@@ -685,6 +711,14 @@ detail_tabs = dbc.Tabs([
                 html.Div(id="tab-technical-content", style={"padding": "20px"})
             ])
         ])
+    ),
+    dbc.Tab(                                          # ← THÊM TAB MỚI
+        label="TÂM LÝ",
+        tab_id="tab-psychology",
+        children=html.Div(
+            psychology_tab_content,
+            style={"padding": "20px"},
+        ),
     ),
 ], id="detail-tabs", active_tab="tab-overview", style={"marginTop": "10px", "borderBottom": "2px solid var(--border-subtle)"})
 
@@ -1449,6 +1483,9 @@ layout = html.Div([
                                 ]
                             }
                         },
+                        "rowClassRules": {
+                            "vss-locked-row": "params.data && params.data._locked === true",
+                        },
                         "getRowStyle": _ROW_STYLE,
                         "tooltipShowDelay": 300,
                         "tooltipHideDelay": 5000,
@@ -1456,6 +1493,36 @@ layout = html.Div([
                         "suppressNoRowsOverlay": False,
                         "columnSizeOptions": {"skipHeader": False},
                     }
+                ),
+                html.Div(
+                    id="vss-grid-lock-banner",
+                    style={"display": "none"},
+                    children=[
+                        html.Div([
+                            html.I(className="fas fa-lock",
+                                style={"fontSize": "18px", "color": "#10b981",
+                                        "marginBottom": "8px", "display": "block"}),
+                            html.Div(id="vss-grid-lock-text",
+                                    style={"fontWeight": "700", "color": "#e5e7eb",
+                                            "fontSize": "14px", "marginBottom": "4px"}),
+                            html.Div("Khách thường chỉ xem 3 mã đầu tiên.",
+                                    style={"fontSize": "12px", "color": "#4d7a9a",
+                                            "marginBottom": "12px"}),
+                            dbc.Button("Đăng nhập VIP ngay",
+                                    id="vss-banner-login-btn",
+                                    n_clicks=0,
+                                    style={"background": "linear-gradient(135deg,#0090ff,#00e5ff)",
+                                            "border": "none", "color": "#001a20",
+                                            "fontWeight": "700", "fontSize": "13px",
+                                            "padding": "8px 24px", "borderRadius": "8px"}),
+                        ], style={
+                            "textAlign": "center",
+                            "background": "linear-gradient(180deg, rgba(11,19,43,0) 0%, rgba(11,19,43,0.97) 40%)",
+                            "padding": "40px 20px 28px",
+                            "borderRadius": "0 0 12px 12px",
+                        }),
+                    ],
+                    className="vss-grid-lock-banner-wrap",
                 ),
                 html.Div(id="filter-null-alert", style={"padding": "0 16px 8px 16px"})
             ], className="info-card mb-3")

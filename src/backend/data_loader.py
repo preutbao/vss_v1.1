@@ -760,6 +760,19 @@ def _build_snapshot_df() -> pd.DataFrame:
     else:
         df_latest["EPS_Growth_QoQ"] = float("nan")
 
+    # ── Sparkline 30 phiên gần nhất (list giá đóng cửa, dùng cho cellRenderer) ──
+    try:
+        spark_map = (
+            df_price.sort_values("Date")
+                    .groupby("Ticker", sort=False)["Price Close"]
+                    .apply(lambda s: s.tail(30).round(0).tolist())
+                    .to_dict()
+        )
+        df_latest["Sparkline_30D"] = df_latest["Ticker"].map(spark_map)
+    except Exception as _e:
+        logger.warning(f"Sparkline build error: {_e}")
+        df_latest["Sparkline_30D"] = None
+    
     del df_price
     gc.collect()
 

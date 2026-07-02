@@ -190,7 +190,7 @@ FIXED_COLS = [
         "field": "Ticker",
         "headerName": "MÃ CK",
         "pinned": "left",
-        "width": 100,
+        "width": 96,
         "sortable": True,
         "filter": True,
         "cellStyle": _ssi_ticker_style(),
@@ -198,7 +198,7 @@ FIXED_COLS = [
     {
         "field": "Sector",
         "headerName": "NGÀNH",
-        "width": 160,
+        "width": 200,
         "sortable": True,
         "filter": True,
         "cellStyle": {
@@ -212,9 +212,29 @@ FIXED_COLS = [
         "headerName": "GIÁ",
         "type": "rightAligned",
         "sortable": True,
-        "width": 110,
+        "width": 80,
         "valueFormatter": {"function": "d3.format(',.0f')(params.value)"},
         "cellStyle": _ssi_price_style(),
+    },
+    
+    {
+        "field": "Sparkline_30D",
+        "headerName": "XU HƯỚNG",
+        "width": 100,
+        "sortable": False,
+        "filter": False,
+        "cellRenderer": "CustomSparkline",
+        "cellStyle": {"padding": "2px 6px", "display": "flex", "alignItems": "center"},
+    },
+    
+    {
+    "field": "Star_Rating",
+    "headerName": "XẾP HẠNG",
+    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
+    "width": 110, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
+    "sortable": True,
+    "cellRenderer": "CustomStarRating", # <--- Gọi tên Component đã đăng ký ở file JS
+    "cellStyle": {"textAlign": "center", "fontSize": "16px"},
     },
     {
         "field": "Price_Change_Pct",
@@ -266,7 +286,7 @@ FIXED_COLS = [
     },
     {
         "field": "Volume",
-        "headerName": "KL",
+        "headerName": "KHỐI LƯỢNG",
         "type": "rightAligned",
         "sortable": True,
         "width": 120,
@@ -278,6 +298,7 @@ FIXED_COLS = [
             "color": "#94a3b8",
         },
     },
+
     # tạm thời ẩn cái cột mức độ phù hợp với hồ sơ ndt đi tại lúc 1 tick lúc 2 ticks hơi khó hiểu với người dùng
     # {
     #     "field": "_profile_match",
@@ -298,15 +319,7 @@ FIXED_COLS = [
     #         """
     #     },
     # },
-    {
-    "field": "Star_Rating",
-    "headerName": "XẾP HẠNG",
-    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
-    "width": 120, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
-    "sortable": True,
-    "cellRenderer": "CustomStarRating", # <--- Gọi tên Component đã đăng ký ở file JS
-    "cellStyle": {"textAlign": "center", "fontSize": "16px"},
-}
+    
 ]
 # Các cột đặc trưng được tính bởi calculate_*_metrics cho từng trường phái
 _FSCORE_COL = {

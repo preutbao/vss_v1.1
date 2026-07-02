@@ -10,6 +10,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import pandas as pd
+from dash_iconify import DashIconify
 
 sys_font = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
 
@@ -279,19 +280,44 @@ def _create_coin_svg():
 # ── TOPBAR ────────────────────────────────────────────────────────────────────
 def create_topbar(id_suffix=""):
     wrapper_id = f"vietcap-topbar{id_suffix}" if id_suffix else "vietcap-topbar-only"
+    # Cụm Theme Switcher "Pro"
     theme_switch = html.Div(
         [
+            # Icon Mặt trời (Light Mode)
+            DashIconify(
+                icon="line-md:sun-twotone", 
+                width=22, 
+                color="#F5A623" # Màu vàng cam sang trọng
+            ), 
+            
+            # Toggle chính
             dbc.Switch(
                 id="theme-switch-button",
-                value=True,  # true = đang ở dark mode
-                style={"cursor": "pointer", "marginBottom": "0"}
-            )
+                value=True,  # True = Dark mode đang kích hoạt
+                className="mx-2", # Cấp margin trái/phải bằng Bootstrap
+                style={
+                    "cursor": "pointer", 
+                    "marginBottom": "0",
+                    "transform": "scale(1.2)" # Phóng to công tắc lên một chút cho dễ bấm
+                }
+            ),
+            
+            # Icon Mặt trăng (Dark Mode)
+            DashIconify(
+                icon="line-md:moon-twotone", 
+                width=22, 
+                color="#4A90E2" # Màu xanh Fintech
+            ), 
         ],
-        className="d-flex align-items-center",
+        className="d-flex align-items-center justify-content-center",
         style={
-            "backgroundColor": "transparent",
-            "padding": "4px 8px",
-            "marginRight": "8px"
+            # Hiệu ứng Glassmorphism (Kính mờ) tạo cảm giác cao cấp
+            "backgroundColor": "rgba(255, 255, 255, 0.05)", 
+            "padding": "6px 14px",
+            "borderRadius": "30px", # Bo tròn dạng viên thuốc (Pill)
+            "border": "1px solid rgba(255, 255, 255, 0.1)", # Viền mờ bắt sáng
+            "marginRight": "16px",
+            "boxShadow": "0 4px 6px rgba(0, 0, 0, 0.1)" # Đổ bóng nhẹ tạo chiều sâu
         }
     )
     scroll_script = html.Script("")
@@ -322,19 +348,6 @@ def create_topbar(id_suffix=""):
                 # Auth area
                 html.Div([
                     theme_switch,
-                    # Nút Trạm Tâm Lý (từ version 1)
-                    dbc.Button(
-                        [html.I(className="fa-solid fa-kit-medical", style={"marginRight": "6px"}), "Trạm Tâm Lý"],
-                        id="btn-open-psy-clinic", n_clicks=0,
-                        style={
-                            "backgroundColor": "transparent",
-                            "border": "1px solid rgba(255,255,255,0.2)",
-                            "color": "rgba(255,255,255,0.85)",
-                            "fontSize": "13px", "fontWeight": "500",
-                            "padding": "6px 16px", "borderRadius": "6px",
-                            "marginRight": "8px",
-                        }
-                    ),
                     dbc.Button(
                         [html.I(className="fas fa-sign-in-alt", style={"marginRight": "6px"}), "Đăng nhập"],
                         id="btn-login", n_clicks=0, className="vietcap-nav-login-btn",

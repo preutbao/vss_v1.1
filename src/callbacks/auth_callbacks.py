@@ -313,3 +313,4 @@ def redeem_invite_code(n_clicks, code, auth_data, phone):
         return msg, style_ok, new_auth, ""
     else:
         return msg, style_err, no_update, no_update
+

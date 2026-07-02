@@ -354,12 +354,10 @@ layout = html.Div(
                      style={"marginBottom": "32px"}),
 
             # Wizard card
-            html.Div(className="vss-wizard-card", children=[
-
+            html.Div(id="vss-wizard-card", className="vss-wizard-card", children=[
                 # Body — chứa 5 bước
                 html.Div(className="vss-wizard-body", children=[
                     _step1(), _step2(), _step3(), _step4(), _step5(),
-
                     # dcc.Store
                     dcc.Store(id="ips-current-step", data=1),
                     dcc.Store(id="ips-goal-store",   data=None),
@@ -368,7 +366,6 @@ layout = html.Div(
                     dcc.Store(id="ips-liq-store",    data=None),
                     dcc.Store(id="ips-scroll-store", data=None),
                 ]),
-
                 # Footer — nút điều hướng
                 html.Div(className="vss-wizard-footer", children=[
                     dbc.Button(
@@ -388,7 +385,63 @@ layout = html.Div(
                     ),
                 ]),
             ]),
-
+# ── CONGRATULATION SCREEN (hiện sau khi submit xong bước 5) ─────
+            html.Div(
+                id="ips-congrats-screen",
+                children=[
+                    html.Span("🏆", className="vss-congrats-icon"),
+                    html.Div("Hồ sơ đầu tư đã sẵn sàng!", className="vss-congrats-title"),
+                    html.P(
+                        "VSS đã phân tích xong khẩu vị rủi ro và mục tiêu của bạn. "
+                        "Bộ lọc Screener đã được cấu hình tự động theo hồ sơ cá nhân.",
+                        className="vss-congrats-subtitle",
+                    ),
+                    html.Div([
+                        html.Div("Danh mục phù hợp hồ sơ của bạn",
+                                 className="vss-congrats-match-label"),
+                        html.Div(id="ips-congrats-match-text",
+                                 className="vss-congrats-match-text",
+                                 children="Đang tính toán..."),
+                        html.Div("Dựa trên dòng tiền thực, lọc sạch rủi ro sổ sách.",
+                                 className="vss-congrats-match-sub"),
+                    ], className="vss-congrats-match-card"),
+                    html.Div(className="vss-congrats-divider"),
+                    html.Div([
+                        dbc.Button(
+                            [
+                                html.I(className="fas fa-unlock-alt",
+                                       style={"marginRight": "8px"}),
+                                "Đăng nhập VIP để nhận toàn bộ danh mục",
+                            ],
+                            id="ips-congrats-login-btn",
+                            className="vss-btn-primary",
+                            style={"fontSize": "14px", "padding": "13px 32px",
+                                   "border": "none"},
+                            n_clicks=0,
+                        ),
+                        html.Br(),
+                        html.Button(
+                            "Vào Screener ngay →",
+                            id="ips-congrats-enter-btn",
+                            n_clicks=0,
+                            style={
+                                "background": "transparent", "border": "none",
+                                "color": "#4d7a9a", "fontSize": "13px",
+                                "cursor": "pointer", "marginTop": "10px",
+                                "textDecoration": "underline",
+                                "textUnderlineOffset": "4px",
+                            },
+                        ),
+                    ], style={"marginBottom": "16px", "display": "flex",
+                              "flexDirection": "column", "alignItems": "center"}),
+                    html.P(
+                        "Khách thường chỉ xem được 3 mã đầu tiên. "
+                        "VIP nhận toàn bộ danh sách + cảnh báo rủi ro Red Flag.",
+                        className="vss-congrats-match-sub",
+                        style={"textAlign": "center"},
+                    ),
+                ],
+            ),
             # Skip + footer note
             html.Div([
                 html.Span(
@@ -401,13 +454,11 @@ layout = html.Div(
                     }
                 )
             ], style={"textAlign": "center", "marginTop": "28px"}),
-
             html.P(
                 "🔒 Dữ liệu hồ sơ được mã hóa và lưu trữ cục bộ trên thiết bị của bạn.",
                 className="vss-footer-note",
             ),
         ]),
-
         # ── FAQ ─────────────────────────────────────────────────────────────
         html.Div([
             html.Div([
@@ -421,7 +472,6 @@ layout = html.Div(
                        style={"color": _TEXT_SEC, "fontSize": "14px",
                               "maxWidth": "250px", "marginTop": "24px", "lineHeight": "1.55"}),
             ], style={"flex": "0 0 320px", "marginBottom": "40px"}),
-
             html.Div([
                 *[html.Div([
                     html.Button([
@@ -458,12 +508,10 @@ layout = html.Div(
                      "Khác biệt ở chức năng 'Phòng khám danh mục'. VSS không chỉ hiển thị Lãi/Lỗ mà còn dự báo kịch bản sập hầm, đo lường tỷ lệ Margin và chỉ định nên Bán/Giữ mã nào để cứu tài khoản."),
                     (6, "Có thể tự tạo bộ lọc cá nhân không?",
                      "Hoàn toàn được. Ở tab Chiến lược, bạn có thể chọn các mẫu có sẵn (CANSLIM, Tích sản...) hoặc tự kết hợp các chỉ số cơ bản/kỹ thuật để tạo nên 'chén thánh' của riêng mình."),
-                     # THÊM DÒNG MỚI VÀO ĐÂY:
                     (7, "VSS chọn lọc cổ phiếu dựa trên nguyên tắc nào?",
-                    "VSS vận hành trên 2 nguyên tắc cốt lõi: (1) Phòng thủ chặt — tự động quét và loại bỏ các công ty xào nấu sổ sách, lãi giả lỗ thật, giúp bạn an tâm giải ngân; (2) Tấn công chuẩn — xác định thời điểm mua/bán tối ưu bằng cách theo dõi sát dòng tiền lớn và sức mạnh giá của từng cổ phiếu so với thị trường chung."),
+                     "VSS vận hành trên 2 nguyên tắc cốt lõi: (1) Phòng thủ chặt — tự động quét và loại bỏ các công ty xào nấu sổ sách, lãi giả lỗ thật, giúp bạn an tâm giải ngân; (2) Tấn công chuẩn — xác định thời điểm mua/bán tối ưu bằng cách theo dõi sát dòng tiền lớn và sức mạnh giá của từng cổ phiếu so với thị trường chung."),
                 ]],
             ], style={"flex": "1", "borderTop": f"1px solid {_BORDER}"}),
-
         ], style={
             "display": "flex", "flexWrap": "wrap", "gap": "60px",
             "justifyContent": "space-between", "width": "100%",

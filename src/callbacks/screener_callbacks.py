@@ -384,6 +384,7 @@ def _add_profile_match_col(df: pd.DataFrame, profile: dict) -> pd.DataFrame:
 
         Input("filter-index", "value"),# >>> THÊM INPUT CỦA DROPDOWN CHỈ SỐ <<<
         Input("nav-input", "value"), # 🟢 BẠN THÊM DÒNG NÀY VÀO
+        Input("auth-store", "data"),   # ← THÊM DÒNG NÀY: login/logout → build lại rowData ngay
     ],
     [
         # ── STATE: đọc giá trị hiện tại của từng store khi callback chạy ──
@@ -476,6 +477,7 @@ def update_screener_table(
         btn_reset, search_text, current_strategy, selected_sectors, active_filters, selected_subs,
         selected_exchange, filter_year, include_null, trading_mode, investor_profile,
         filter_index, nav_value,
+        auth_data,          # ← DỜI LÊN ĐÂY, khớp vị trí Input("auth-store","data") trong decorator
         # Tổng quan (State)
         price_range, volume_range, market_cap_range, eps_range, perf_1w_range, perf_1m_range,
         # Định giá
@@ -501,7 +503,7 @@ def update_screener_table(
         vvsma5, vvsma10, vvsma20, vvsma50, avg5d, avg10d, avg50d,
         # GTGD
         gtgd_1w, gtgd_10d, gtgd_1m,
-        fib_pos, wave_mom, elliott_corr,   # ← thêm vào cuối danh sách tham số
+        fib_pos, wave_mom, elliott_corr,
 ):
     try:
         # ── DEBUG BLOCK — BẮT ĐẦU ──────────────────────────────────────
@@ -1091,9 +1093,29 @@ def update_screener_table(
         if investor_profile and not df_filtered.empty:
             df_filtered = _add_profile_match_col(df_filtered, investor_profile)
         col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
+
+        # ── VIP GATE: chỉ hiện 3 mã đầu với user chưa đăng nhập ─────────────
+        # auth_data được truyền vào qua State (thêm ở bước D bên dưới)
+        is_vip = bool(auth_data and auth_data.get("logged_in"))
+        total_rows = len(df_filtered)
+
+        if not is_vip and total_rows > 3:
+            visible   = df_filtered.head(3).to_dict("records")
+            locked_template = {col: None for col in df_filtered.columns}
+            locked_template.update({
+                "Ticker": "🔒 VIP",
+                "Sector": "Đăng nhập để xem",
+                "_locked": True,
+            })
+            n_locked = min(total_rows - 3, 17)   # hiện tối đa 17 dòng mờ
+            locked_rows = [dict(locked_template) for _ in range(n_locked)]
+            final_rows = visible + locked_rows
+        else:
+            final_rows = df_filtered.to_dict("records")
+
         # [CẬP NHẬT] Trả về thêm 2 tham số của Toast cảnh báo ở cuối
         return (
-            df_filtered.to_dict('records'),
+            final_rows,
             col_defs,
             f"Tìm thấy {filtered_count} / {total_stocks} mã phù hợp",
             f"Lọc: {filtered_count} mã | Tổng: {total_stocks} mã",
@@ -3853,7 +3875,7 @@ def update_cutoff_label(row_data):
             df_tmp = pd.read_parquet(parquet, columns=["Date"])
             max_date = pd.to_datetime(df_tmp["Date"]).max()
             if pd.notna(max_date):
-                return f"Cập nhật {max_date.strftime('%d/%m/%Y')}"
+                return f"(Cập nhật {max_date.strftime('%d/%m/%Y')})"
         return ""
     except Exception:
         return ""

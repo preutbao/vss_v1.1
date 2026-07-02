@@ -8,6 +8,7 @@
 
 import sys
 import os
+import dash
 import logging
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, no_update
@@ -143,7 +144,6 @@ from src.callbacks.chatbot_callbacks import create_chatbot_layout
 from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_help_modal
 from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_help_modal
 from src.callbacks.compare_callbacks import compare_modal, compare_help_modal
-from src.components.psychology_modal import psychology_modal
 
 app.layout = html.Div(
     style={"margin": "0", "padding": "0"},
@@ -181,6 +181,8 @@ app.layout = html.Div(
         # State("theme-store", "data") để build màu Plotly/HTML đúng theme,
         # vì server không tự đọc được document.documentElement của browser.
         dcc.Store(id="theme-store", storage_type="local", data="dark"),
+        dcc.Store(id="dummy-autosize-output", data=None),
+        dcc.Store(id="dummy-vip-banner-output", data=None),
 
         # ===================================================================
         # 🟢 CHÈN CÁC MODAL ẨN VÀO ĐÂY (NẰM GIỮA STORES VÀ PAGES)
@@ -188,7 +190,7 @@ app.layout = html.Div(
         compare_help_modal,   # Bảng Hướng dẫn So sánh (Popup i)
         crisis_help_modal,    # Bảng Chi tiết Khủng hoảng Ký quỹ (Popup i)
         portfolio_help_modal, # Bảng Hướng dẫn (Popup i)
-        psychology_modal,     # Trạm Cứu Viện Tâm Lý (Rumor Check)
+        # psychology_modal,     # Trạm Cứu Viện Tâm Lý (Rumor Check)
 
         # ── 2. ONBOARDING PAGE ────────────────────────────────────────────
         # Hiển thị khi profile-setup-done = False (lần đầu vào / chưa setup)
@@ -287,7 +289,7 @@ app.clientside_callback(
         return window.dash_clientside.no_update;
     }
     """,
-    Output("screener-table", "id"),   # output giả
+    Output("dummy-autosize-output", "data"),
     Input("screener-table", "rowData"),
     Input("screener-table", "columnDefs"),
     prevent_initial_call=False,
@@ -466,6 +468,57 @@ app.clientside_callback(
     """,
     Output("btn-start-tour", "children"), # Output giả để Dash chấp nhận
     Input("btn-start-tour", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+# ── CONGRATS: bấm nút VIP → mở modal login ───────────────────────────────
+app.clientside_callback(
+    """
+    function(n) {
+        if (!n) return window.dash_clientside.no_update;
+        return true;
+    }
+    """,
+    Output("login-modal", "is_open", allow_duplicate=True),
+    Input("ips-congrats-login-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+app.clientside_callback(
+    """
+    function(rowData, authData) {
+        var banner = document.getElementById('vss-grid-lock-banner');
+        var txt    = document.getElementById('vss-grid-lock-text');
+        if (!banner) return window.dash_clientside.no_update;
+
+        var isVip  = !!(authData && authData.logged_in);
+        var total  = rowData ? rowData.length : 0;
+        var locked = rowData ? rowData.filter(function(r){ return r._locked; }).length : 0;
+
+        if (!isVip && locked > 0) {
+            banner.style.display = 'block';
+            if (txt) txt.textContent = 'Đăng nhập VIP để xem toàn bộ ' + (3 + locked) + ' mã';
+        } else {
+            banner.style.display = 'none';
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("dummy-vip-banner-output", "data"),
+    Input("screener-table", "rowData"),
+    Input("auth-store", "data"),
+    prevent_initial_call=False,
+)
+
+app.clientside_callback(
+    """
+    function(n) {
+        if (!n) return window.dash_clientside.no_update;
+        return true;
+    }
+    """,
+    Output("login-modal", "is_open", allow_duplicate=True),
+    Input("vss-banner-login-btn", "n_clicks"),
     prevent_initial_call=True,
 )
 

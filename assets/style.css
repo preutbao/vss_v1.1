@@ -135,9 +135,9 @@ iframe[src*="tradingview" i],
 [data-theme="dark"] {
   /* Dark Mode — nền navy đậm kiểu Gentelella, card phẳng viền mảnh,
      accent teal cổ điển thay cho green Tailwind cũ. */
-  --bg-void:        #0f1623;
-  --bg-base:        #0f1623;
-  --bg-card:        #1a2332;
+  --bg-void:        #0B132B;
+  --bg-base:        #0B132B;
+  --bg-card:        #16213e;
   --bg-surface:     #1a2332;
   --bg-elevated:    #232e41;
   --bg-hover:       #232e41;
@@ -395,11 +395,11 @@ body {
   --ag-row-border-color:              #0a1e35;
   --ag-selected-row-background-color: rgba(0, 212, 255, 0.07);
   --ag-range-selection-border-color:  #00d4ff;
-  --ag-font-family:                   'JetBrains Mono', monospace;
+  --ag-font-family: 'Inter', -apple-system, sans-serif;  /* đổi từ JetBrains Mono */
   --ag-font-size:                     12px;
   --ag-cell-horizontal-padding:       10px;
-  --ag-row-height:                    38px;
-  --ag-header-height:                 40px;
+  --ag-row-height:                    36px;
+  --ag-header-height:                 38px;
 
   border: 1px solid #0e2540 !important;
   border-radius: 12px !important;
@@ -418,12 +418,12 @@ body {
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-weight: 700 !important;
-  font-size: 10px !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
   text-transform: uppercase !important;
-  letter-spacing: 1px !important;
-  color: #3d6a8a !important;
+  letter-spacing: 0.5px !important;
+  color: #5d7a96 !important;           /* đổi từ #3d6a8a — sáng hơn chút */
   border-right: 1px solid #0a1e35 !important;
   transition: color 0.2s, background 0.2s;
   padding: 0 10px !important;
@@ -466,22 +466,28 @@ body {
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected .ag-cell {
-  color: #d6eaf8 !important;
+  color: #b2c9e0 !important;   /* đổi từ #d6eaf8 — bớt chói, đúng TV tone */
 }
 
-/* ── Cells ── */
+/* ── Cells — canonical rule, không !important để inline cellStyle Python thắng ── */
 [data-theme="dark"] .ag-theme-alpine-dark .ag-cell {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-size: 12px !important;
-  border-right: 1px solid #0a1e35 !important;
-  line-height: 38px !important;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #b2c9e0;
   display: flex !important;
   align-items: center !important;
+  line-height: normal !important;
 }
-
-/* Right-aligned cells */
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[class*="rightAligned"],
-[data-theme="dark"] .ag-theme-alpine-dark [col-id] .ag-cell-value {
+/* Right-aligned numeric cells — Roboto Mono tabular (khớp với _num/_pct Python) */
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[class*="rightAligned"] {
+  font-family: 'Roboto Mono', 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+/* tabular-nums cho mọi cell-value */
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell-value {
   font-variant-numeric: tabular-nums;
 }
 
@@ -515,7 +521,7 @@ body {
   border: 1px solid #1d4d80 !important;
   color: #d6eaf8 !important;
   border-radius: 4px !important;
-  font-family: 'JetBrains Mono', monospace !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
   font-size: 11px !important;
 }
 
@@ -523,15 +529,15 @@ body {
 [data-theme="dark"] .ag-theme-alpine-dark .ag-paging-panel {
   background: linear-gradient(180deg, #091526 0%, #060f1e 100%) !important;
   border-top: 1px solid #1d4d80 !important;
-  color: #3d6a8a !important;
-  font-family: 'JetBrains Mono', monospace !important;
+  color: #5d7a96 !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
   font-size: 11px !important;
   height: 44px !important;
   padding: 0 16px !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button {
-  color: #3d6a8a !important;
+  color: #5d7a96 !important;
   transition: all 0.2s;
   border-radius: 4px !important;
 }
@@ -1613,59 +1619,7 @@ html, body {
    POLISH UI — NÂNG CẤP TOÀN BỘ (TCInvest Grade)
    ============================================================================ */
 
-/* ── 1. AG GRID TABLE — Font mono cho số, header tối hơn ── */
-[data-theme="dark"] .ag-theme-alpine-dark {
-    --ag-background-color: #07111f !important;
-    --ag-odd-row-background-color: #07111f !important;
-    --ag-header-background-color: #040d18 !important;
-    --ag-border-color: #0e2540 !important;
-    --ag-row-border-color: #0a1a2e !important;
-    --ag-header-foreground-color: #7fa8cc !important;
-    --ag-foreground-color: #d6eaf8 !important;
-    --ag-row-hover-color: rgba(0, 212, 255, 0.05) !important;
-    --ag-selected-row-background-color: rgba(0, 212, 255, 0.08) !important;
-    --ag-font-family: 'Inter', -apple-system, sans-serif !important;
-    --ag-font-size: 13px !important;
-    --ag-header-height: 40px !important;
-    --ag-row-height: 44px !important;
-    border-radius: 10px !important;
-    overflow: hidden !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
-}
-
-/* Header chữ mono, uppercase */
-[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell-label {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    letter-spacing: 1.2px !important;
-    text-transform: uppercase !important;
-    color: #5a8ab0 !important;
-}
-
-/* Số trong bảng dùng font mono */
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Price Close"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Volume"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Market Cap"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Perf_1W"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Perf_1M"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="P/E"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="P/B"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="ROE (%)"],
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="RSI_14"] {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 13px !important;
-}
-
-/* Ticker cell đặc biệt */
-[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.5px !important;
-}
-
-/* Row hover smooth */
+/* ── Row hover smooth (POLISH UI — giữ lại phần này) ── */
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row {
     transition: background-color 0.15s ease !important;
     border-bottom: 1px solid rgba(14, 37, 64, 0.8) !important;
@@ -2280,36 +2234,6 @@ span[style*="f59e0b"] {
    IPS ONBOARDING — Giao diện liền mạch (onboarding.html style)
    Thêm vào cuối style.css
 ═══════════════════════════════════════════════════════════ */
-
-/* ── Page wrapper ── */
-#ips-onboarding-wrapper {
-  background: #040810;
-  min-height: 100vh;
-  overflow-x: hidden;
-  color: #e8f4ff;
-  position: relative;
-}
-#ips-onboarding-wrapper::before {
-  content: '';
-  position: fixed; inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0,144,255,0.07) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(0,229,255,0.05) 0%, transparent 50%);
-  pointer-events: none; z-index: 0;
-  animation: ipsBgPulse 8s ease-in-out infinite alternate;
-}
-@keyframes ipsBgPulse { from { opacity:0.6; } to { opacity:1; } }
-
-/* Scanlines */
-#ips-onboarding-wrapper::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 3px,
-    rgba(0,229,255,0.005) 3px, rgba(0,229,255,0.005) 4px
-  );
-  pointer-events: none; z-index: 0;
-}
 
 /* ── .page wrapper ── */
 .page {
@@ -3783,7 +3707,6 @@ span[style*="f59e0b"] {
   backdrop-filter: var(--glass-blur-sm);
   -webkit-backdrop-filter: var(--glass-blur-sm);
 }
-#ips-onboarding-wrapper { background: #040810 !important; }
 
 /* ── 9. ACTION BUTTON LIFT — bổ sung micro-interaction cho nút còn thiếu ── */
 .btn-save-ssi, .btn-ghost, #toggle-filter-btn, .hero-btn {
@@ -3990,7 +3913,7 @@ input:focus-visible, .Select-control:focus-visible {
   --ag-input-border-color:             #2a3548 !important;
   --ag-secondary-foreground-color:     #8a99ad !important;
   --ag-range-selection-background-color: rgba(26, 187, 156, 0.14) !important;
-  --ag-font-family:                    'JetBrains Mono', monospace !important;
+  --ag-font-family:                    'Inter', -apple-system, sans-serif !important;
   border: 1px solid #2a3548 !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.30) !important;
   border-radius: 12px;
@@ -4586,4 +4509,149 @@ input:focus-visible, .Select-control:focus-visible {
     color: #00c85a !important;
     border-color: #00c85a !important;
     background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ============================================================================
+   🔒 PREMIUM LOCK — Blur nội dung + overlay khóa VIP
+   ============================================================================ */
+.premium-wrapper {
+  position: relative;
+}
+
+.premium-wrapper.premium-locked .premium-content {
+  filter: blur(6px) brightness(0.6);
+  user-select: none;
+  pointer-events: none;
+  transition: filter 0.25s ease;
+}
+
+.premium-wrapper.premium-unlocked .premium-content {
+  filter: none;
+}
+
+.premium-wrapper.premium-unlocked .premium-overlay {
+  display: none;
+}
+
+.premium-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(11,19,43,0.35) 0%, rgba(11,19,43,0.85) 100%);
+  border-radius: var(--radius-lg, 12px);
+  transition: background 0.2s ease;
+}
+
+.premium-overlay:hover {
+  background: linear-gradient(180deg, rgba(11,19,43,0.45) 0%, rgba(11,19,43,0.92) 100%);
+}
+
+.premium-overlay span {
+  color: #e5e7eb !important;
+}
+
+.premium-overlay:hover span {
+  color: #ffffff !important;
+}
+
+/* ── Dòng bị khoá VIP trong AG-Grid ── */
+.ag-theme-alpine-dark .ag-row.vss-locked-row {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.55;
+}
+
+.vss-grid-lock-banner-wrap {
+  position: relative;
+  margin-top: -120px;   /* đè lên phần cuối grid */
+  z-index: 10;
+  pointer-events: none;
+}
+.vss-grid-lock-banner-wrap > div {
+  pointer-events: auto;
+}
+/* ══════════════════════════════════════════════════════════════
+   CANONICAL LOCK — AG GRID FONT & ROW HEIGHT
+   Đặt cuối file để thắng tất cả các block trên.
+   Chỉ dùng !important ở đây, không dùng ở block 383.
+   ══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .ag-theme-alpine-dark {
+  --ag-row-height: 40px !important;
+  --ag-header-height: 40px !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell {
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: normal !important;
+}
+/* Màu chữ mặc định — KHÔNG !important để .metric-positive/.metric-negative
+   và inline cellStyle (Python, xanh/đỏ tăng giảm) vẫn thắng được */
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell {
+  color: #b2c9e0;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[class*="rightAligned"] {
+  font-family: 'Roboto Mono', 'JetBrains Mono', monospace !important;
+  font-size: 12.5px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell {
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  color: #5d7a96 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.3px !important;
+  color: #00c85a !important;   /* xanh lá thương hiệu Vietcap */
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Company Name"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Sector"],
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Industry"] {
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+}
+[data-theme="dark"] .ag-theme-alpine-dark .ag-cell-value:empty::after {
+  content: '—';
+  color: #1d4d80;
+  font-family: 'Inter', sans-serif !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-cell {
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: normal !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-cell[class*="rightAligned"] {
+  font-family: 'Roboto Mono', 'JetBrains Mono', monospace !important;
+  font-size: 12.5px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+[data-theme="light"] .ag-theme-alpine-dark .ag-cell[col-id="Ticker"] {
+  font-family: 'Sora', 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #00a651 !important;   /* xanh lá Vietcap tone light */
+}
+[data-theme="light"] .ag-theme-alpine-dark {
+  --ag-row-height: 40px !important;
+  --ag-header-height: 40px !important;
 }
