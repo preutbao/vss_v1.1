@@ -21,42 +21,41 @@ GHI CHÚ FIX BUG (so với bản trước):
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
-# ── Nhóm A — Sức khỏe & Định giá (Vi mô / Framework 4 Trụ gốc) ─────────────
+# ── Nhóm A — Sức khỏe & Định giá ─────────────
 FEAR_OPTIONS_A = [
-    {"label": "Sợ công ty vỡ nợ / mất khả năng thanh toán ngắn hạn", "value": "A1"},
-    {"label": "Sợ doanh nghiệp nợ vay đầm đìa, rủi ro cao",          "value": "A2"},
-    {"label": "Sợ kinh doanh cốt lõi đang đi lùi",                   "value": "A3"},
-    {"label": "Sợ giá này đang là bong bóng so với giá trị thực",    "value": "A4"},
+    {"label": "Sợ công ty cạn tiền, mất khả năng thanh toán các khoản nợ đến hạn", "value": "A1"},
+    {"label": "Sợ doanh nghiệp đang vay nợ đầm đìa, rủi ro tài chính cao",          "value": "A2"},
+    {"label": "Sợ hoạt động kinh doanh cốt lõi thực chất đang đi lùi",             "value": "A3"},
+    {"label": "Sợ mức giá hiện tại chỉ là 'bong bóng' bơm thổi, vượt xa giá trị",  "value": "A4"},
 ]
 
-# ── Nhóm B — Hiệu quả sinh lời & Tiền mặt (mở rộng mới) ────────────────────
+# ── Nhóm B — Hiệu quả sinh lời & Tiền mặt ────────────────────
 FEAR_OPTIONS_B = [
-    {"label": "Sợ doanh nghiệp làm ăn không hiệu quả (ROE/ROA thấp)", "value": "B1"},
-    {"label": "Sợ công ty hết tiền mặt, không đủ sức chống chọi khó khăn", "value": "B2"},
+    {"label": "Sợ công ty làm ăn kém hiệu quả, 'to xác' nhưng biên lợi nhuận thấp", "value": "B1"},
+    {"label": "Sợ két sắt công ty rỗng tuếch, không có 'bộ đệm' chống chọi khó khăn", "value": "B2"},
 ]
 
-# ── Nhóm C — Biến động giá ngắn hạn (mở rộng mới — trực diện tâm lý hoảng loạn) ──
+# ── Nhóm C — Biến động giá ngắn hạn ──
 FEAR_OPTIONS_C = [
-    {"label": "Sợ giá đã giảm quá sâu, không biết đáy ở đâu", "value": "C1"},
-    {"label": "Sợ xu hướng giá đã gãy, phải cắt lỗ ngay",      "value": "C2"},
+    {"label": "Giá đã giảm quá sâu, sợ mua vào là 'bắt dao rơi' không thấy đáy", "value": "C1"},
+    {"label": "Biểu đồ giá trông có vẻ đã 'gãy' xu hướng, phân vân có nên cắt lỗ",      "value": "C2"},
 ]
 
-# ── Nhóm D — FOMO ngược (đổi tên từ "Nhóm F" — chặn lệnh MUA sai cũng quan
-# trọng không kém chặn lệnh bán tháo) ──────────────────────────────────────
+# ── Nhóm D — FOMO ngược ──────────────────────────────────────
 FEAR_OPTIONS_D = [
-    {"label": "Thấy người ta lãi mã này nhiều quá, sợ mua bây giờ là đu đỉnh", "value": "D1"},
+    {"label": "Thấy cổ phiếu tăng nóng, sợ mua vào bây giờ là thành 'người đu đỉnh'", "value": "D1"},
 ]
 
-# ── Nhóm E — Thanh khoản & Biến động (mở rộng mới) ─────────────────────────
+# ── Nhóm E — Thanh khoản & Biến động ─────────────────────────
 FEAR_OPTIONS_E = [
-    {"label": "Sợ cổ phiếu thanh khoản thấp, lỡ mua thì khó bán ra", "value": "E1"},
-    {"label": "Sợ cổ phiếu này biến động mạnh hơn hẳn thị trường chung", "value": "E2"},
+    {"label": "Sợ thanh khoản lèo tèo, lúc thị trường sập muốn bán tháo cũng không ai mua", "value": "E1"},
+    {"label": "Sợ mã này giao dịch quá sốc, giật lên xuống mạnh hơn hẳn thị trường chung", "value": "E2"},
 ]
 
-# ── Nhóm F — Tăng trưởng & Cổ tức (mở rộng mới) ────────────────────────────
+# ── Nhóm F — Tăng trưởng & Cổ tức ────────────────────────────
 FEAR_OPTIONS_F = [
-    {"label": "Sợ doanh nghiệp tăng trưởng ì ạch, hết động lực dài hạn", "value": "F1"},
-    {"label": "Sợ nắm giữ mà không có cổ tức, chẳng được gì ngoài chênh lệch giá", "value": "F2"},
+    {"label": "Sợ doanh nghiệp đã qua thời hoàng kim, cạn kiệt động lực tăng trưởng", "value": "F1"},
+    {"label": "Sợ ôm cổ phiếu mòn mỏi nhưng lãnh đạo 'ki bo', không chịu chia cổ tức tiền mặt", "value": "F2"},
 ]
 
 
@@ -77,21 +76,21 @@ def _fear_section(title: str, subtitle: str, checklist_id: str, options: list) -
     ])
 
 def create_psychology_tab_content() -> html.Div:
-    """Trả về nội dung tab TÂM LÝ — nhúng vào detail_tabs trong screener.py.
-    Không còn là Modal riêng — giờ sống chung trong popup chi tiết mã."""
+    """Trả về nội dung tab TÂM LÝ — nhúng vào detail_tabs trong screener.py."""
     return html.Div(
         id="psy-clinic-panel",
         className="psy-clinic-panel",
         children=[
+            # Chỉnh sửa phần Intro để hướng tới Khách hàng thay vì Môi giới
             html.P(
-                "Chọn nỗi sợ khách hàng đang gặp phải với mã cổ phiếu này. "
-                "Hệ thống sẽ truy xuất dữ liệu cứng để phản bác tin đồn "
-                "ngay trong phiên giao dịch.",
-                className="psy-clinic-intro mb-3",
+                "Khép lại những tin đồn trên diễn đàn, hãy để Dữ liệu lên tiếng. "
+                "Chọn điều bạn đang lo ngại nhất về cổ phiếu này, hệ thống sẽ đối chiếu ngay lập tức "
+                "với sức khỏe tài chính thực tế để giúp bạn ra quyết định khách quan.",
+                className="psy-clinic-intro mb-4",
             ),
 
-            dbc.Label("Mã cổ phiếu", html_for="psy-clinic-ticker-input",
-                      className="fw-bold psy-clinic-label"),
+            dbc.Label("Mã cổ phiếu cần kiểm chứng", html_for="psy-clinic-ticker-input",
+                      className="fw-bold psy-clinic-label text-primary"),
             dcc.Dropdown(
                 id="psy-clinic-ticker-input",
                 options=[],
@@ -101,48 +100,51 @@ def create_psychology_tab_content() -> html.Div:
                 className="mb-4 psy-clinic-ticker-dropdown",
             ),
 
+            # Đổi Subtitle từ các thuật ngữ hàn lâm (ROE, Beta, CAGR) thành ý nghĩa thực tế
             _fear_section(
-                "Nhóm A · Sức khỏe & Định giá",
-                "Cơ cấu vốn, thanh khoản, định giá so với ngành",
+                "1. Nền tảng sinh tồn & Định giá",
+                "Hệ thống sẽ 'soi' cấu trúc nợ, dòng tiền tự do và định giá so với đối thủ",
                 "psy-clinic-fear-checklist-a", FEAR_OPTIONS_A,
             ),
             _fear_section(
-                "Nhóm B · Hiệu quả sinh lời & Tiền mặt",
-                "ROE/ROA so với ngành, vị thế tiền mặt ròng",
+                "2. Năng lực kiếm tiền & Bộ đệm phòng thủ",
+                "Đánh giá hiệu suất sinh lời thực tế và lượng tiền mặt tích lũy trong két",
                 "psy-clinic-fear-checklist-b", FEAR_OPTIONS_B,
             ),
             _fear_section(
-                "Nhóm C · Biến động giá ngắn hạn",
-                "Mức điều chỉnh so với đỉnh/đáy 1 năm, xu hướng MA",
+                "3. Áp lực tâm lý từ Bảng điện",
+                "Đo lường mức độ hoảng loạn của dòng tiền và định vị lại xu hướng giá",
                 "psy-clinic-fear-checklist-c", FEAR_OPTIONS_C,
             ),
             _fear_section(
-                "Nhóm D · FOMO ngược — sợ mua đu đỉnh",
-                "RSI, hiệu suất gần đây, định giá so với ngành",
+                "4. Bẫy tâm lý FOMO (Sợ lỡ cơ hội)",
+                "Đối chiếu sức nóng hiện tại với lịch sử định giá để tránh mua đuổi",
                 "psy-clinic-fear-checklist-d", FEAR_OPTIONS_D,
             ),
             _fear_section(
-                "Nhóm E · Thanh khoản & Biến động",
-                "Giá trị giao dịch bình quân, Beta so với thị trường",
+                "5. Rủi ro kẹt hàng & Đội lái",
+                "Phân tích dòng tiền giao dịch thực tế và biên độ trồi sụt của cổ phiếu",
                 "psy-clinic-fear-checklist-e", FEAR_OPTIONS_E,
             ),
             _fear_section(
-                "Nhóm F · Tăng trưởng & Cổ tức",
-                "EPS CAGR 5 năm so với ngành, tỷ suất cổ tức",
+                "6. Động lực tương lai & Quyền lợi cổ đông",
+                "Kiểm tra tính bền vững của tốc độ tăng trưởng và lịch sử chia tiền mặt",
                 "psy-clinic-fear-checklist-f", FEAR_OPTIONS_F,
             ),
 
+            # Sửa Text của Nút bấm cho "kêu" hơn, mang tính hành động cao
             dbc.Button(
-                [html.I(className="fa-solid fa-magnifying-glass-chart me-2"), "Kiểm chứng ngay"],
+                [html.I(className="fa-solid fa-stethoscope me-2"), "Kiểm chứng bằng Dữ liệu"],
                 id="psy-clinic-submit-btn",
                 color="primary",
-                className="w-100 mb-3 psy-clinic-submit-btn",
+                className="w-100 mb-3 psy-clinic-submit-btn mt-2",
+                style={"fontWeight": "bold", "padding": "12px", "fontSize": "16px"},
                 n_clicks=0,
             ),
 
             html.Div(
                 id="psy-clinic-progress-text",
-                className="psy-clinic-mindful-text",
+                className="psy-clinic-mindful-text text-center text-muted fst-italic",
                 style={"display": "none"},
             ),
 

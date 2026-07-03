@@ -24,6 +24,47 @@ from src.app_instance import app, background_callback_manager
 from src.backend.psychology_engine import analyze_fear
 from src.backend.data_loader import get_ticker_list
 
+import os
+
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL   = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
+
+def _short_ai_verdict(ticker: str, results: list) -> str:
+    """Gọi Gemini 1 lượt, cực ngắn, chỉ dựa trên kết luận đã có sẵn (không gửi
+    lại dữ liệu thô) để tối thiểu token đầu vào lẫn đầu ra."""
+    if not GEMINI_API_KEY:
+        return ""
+    try:
+        from google import genai
+        from google.genai import types
+
+        # Chỉ lấy tiêu đề + verdict, KHÔNG gửi nguyên câu conclusion dài
+        summary_lines = "\n".join(
+            f"- {r['title']}: {r['verdict']}" for r in results
+        )
+        prompt = (
+            f"Cổ phiếu {ticker}. Các nỗi sợ đã kiểm chứng:\n{summary_lines}\n"
+            "Viết 1 câu nhận định tổng hợp (tối đa 40 từ), giọng điềm tĩnh, "
+            "tiếng Việt, không lặp lại số liệu."
+        )
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[types.Content(role="user", parts=[types.Part(text=prompt)])],
+            config=types.GenerateContentConfig(max_output_tokens=80, temperature=0.4),
+        )
+        return response.text.strip()
+    except Exception as e:
+        logger.warning(f"AI verdict lỗi: {e}")
+        return ""
+
 verdict_style = {
     "safe":    {"color": "success",   "icon": "fa-solid fa-shield-heart",          "label": "an toàn"},
     "watch":   {"color": "warning",   "icon": "fa-solid fa-eye",                   "label": "cần theo dõi"},
@@ -40,24 +81,15 @@ MINDFUL_MESSAGES = [
 
 @app.callback(
     Output("psy-clinic-ticker-input", "options"),
-    Input("detail-tabs", "active_tab"),
-    prevent_initial_call=True,
-)
-def load_psy_clinic_ticker_options(active_tab):
-    if active_tab != "tab-psychology":
-        raise PreventUpdate
-    return get_ticker_list() or []
-
-@app.callback(
     Output("psy-clinic-ticker-input", "value"),
     Input("detail-tabs", "active_tab"),
     Input("selected-ticker-store", "data"),
     prevent_initial_call=True,
 )
-def sync_psy_ticker_with_detail_modal(active_tab, ticker):
+def load_and_sync_psy_ticker(active_tab, ticker):
     if active_tab != "tab-psychology":
         raise PreventUpdate
-    return ticker
+    return get_ticker_list() or [], ticker
 
 # ─────────────────────────────────────────────────────────────────────────
 # Render helpers cho 2 wow-factor mới
@@ -255,5 +287,14 @@ def run_psy_clinic_check(set_progress, n_clicks, ticker, fears_a, fears_b, fears
     stress_card = _render_stress_test(result.get("stress_test"))
     if stress_card:
         cards.append(stress_card)
+
+    ai_text = _short_ai_verdict(result["ticker"], result["results"])
+    if ai_text:
+        cards.append(
+            dbc.Alert(
+                [html.I(className="fa-solid fa-robot me-2"), ai_text],
+                color="dark", className="mb-0 mt-2 fst-italic psy-ai-verdict",
+            )
+        )
 
     return html.Div(cards), history_data

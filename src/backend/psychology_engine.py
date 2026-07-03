@@ -10,7 +10,7 @@ import math
 import copy
 import pandas as pd
 
-from src.backend.data_loader import get_snapshot_df, load_financial_data_nocache
+from src.backend.data_loader import get_snapshot_df, load_financial_data_nocache, get_company_name_vi
 
 logger = logging.getLogger(__name__)
 
@@ -744,7 +744,7 @@ def analyze_fear(ticker: str, selected_fears: list, profile_data=None) -> dict:
     # Sinh ngưỡng động từ thông tin khẩu vị rủi ro
     custom_thresholds = _get_dynamic_thresholds(profile_data) 
     
-    company = row.get("Company Common Name") or ticker
+    company = get_company_name_vi(ticker) or row.get("Company Common Name") or ticker
     results = []
 
     for fear_code in selected_fears:

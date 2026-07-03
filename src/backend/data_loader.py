@@ -100,6 +100,26 @@ def get_data_cutoff_date() -> str:
     """Trả về ngày dữ liệu cuối cùng, dạng dd/mm/yyyy."""
     return _data_cutoff_date
 
+
+def _sync_cutoff_date(df: pd.DataFrame) -> None:
+    """
+    [FIX] Đồng bộ _data_cutoff_date từ BẤT KỲ snapshot df nào được trả về
+    (RAM cache / disk cache / rebuild) — không chỉ lúc rebuild.
+    Trước đây chỉ set trong _build_snapshot_df(), nên khi app load từ
+    RAM/disk cache (đường đi phổ biến nhất mỗi lần restart) biến này
+    bị bỏ trống → header luôn rơi xuống nhánh fallback đọc parquet.
+    """
+    global _data_cutoff_date
+    if _data_cutoff_date:  # đã có giá trị rồi thì khỏi tính lại
+        return
+    try:
+        if df is not None and not df.empty and "Date" in df.columns:
+            max_date = pd.to_datetime(df["Date"], errors="coerce").max()
+            if pd.notna(max_date):
+                _data_cutoff_date = max_date.strftime("%d/%m/%Y")
+    except Exception as e:
+        logger.debug(f"[cutoff] Không sync được từ snapshot df: {e}")
+
 # ──────────────────────────────────────────────
 # HELPERS
 # ──────────────────────────────────────────────
@@ -831,6 +851,7 @@ def get_snapshot_df() -> pd.DataFrame:
                 _snapshot_df = None
             else:
                 logger.info(f"Snapshot from memory (DataFrame): {len(_snapshot_df)} ma")
+                _sync_cutoff_date(_snapshot_df)
                 return _snapshot_df
 
     # ── DISK CACHE (không cần build lock vì chỉ đọc) ────────────────────
@@ -868,6 +889,7 @@ def get_snapshot_df() -> pd.DataFrame:
                 _snapshot_df = df
             exch_dist = df['Exchange'].value_counts().to_dict()
             logger.info(f"Snapshot from Parquet: {len(df)} ma | Exchange={exch_dist} | {time.perf_counter()-t0:.2f}s")
+            _sync_cutoff_date(df)
             return df
         except Exception as e:
             logger.warning(f"Khong doc duoc snapshot Parquet: {e}")
@@ -880,6 +902,7 @@ def get_snapshot_df() -> pd.DataFrame:
         with _snapshot_lock:
             if _snapshot_df is not None:
                 logger.info(f"[C1 FIX] Snapshot đã được thread khác build xong: {len(_snapshot_df)} ma")
+                _sync_cutoff_date(_snapshot_df)
                 return _snapshot_df
 
         # Kiểm tra lại disk cache (thread khác có thể đã lưu parquet)
@@ -890,6 +913,7 @@ def get_snapshot_df() -> pd.DataFrame:
                     with _snapshot_lock:
                         _snapshot_df = df
                     logger.info(f"[C1 FIX] Snapshot load từ Parquet sau khi chờ: {len(df)} ma")
+                    _sync_cutoff_date(df)
                     return df
             except Exception:
                 pass
@@ -928,6 +952,7 @@ def get_snapshot_df() -> pd.DataFrame:
             logger.info(f"[DEBUG] Total columns: {len(df_final.columns)}")
 
         logger.info(f"Snapshot xong: {len(df_final)} ma | {time.perf_counter()-t0:.1f}s")
+        _sync_cutoff_date(df_final)  # phòng khi df_price["Date"].max() trong _build_snapshot_df() bị lỗi
         return df_final
 
 # ── market_internals cache ────────────────────────────────────────────────────
@@ -1364,10 +1389,70 @@ def get_filter_ranges() -> dict:
 
     return ranges
 
+_VN_NAME_CACHE = None
+
+def _load_vn_name_map() -> dict:
+    """Đọc 1 LẦN bản đồ Ticker -> Tên tiếng Việt từ COMP INFO.csv, cache lại
+    trong RAM. Trước đây get_ticker_list() đọc lại nguyên file CSV mỗi lần
+    được gọi (rất tốn IO, và là nguyên nhân chính gây race condition ở Bug 1)."""
+    global _VN_NAME_CACHE
+    if _VN_NAME_CACHE is not None:
+        return _VN_NAME_CACHE
+
+    vn_names = {}
+    try:
+        import os, pandas as pd
+        csv_path = os.path.join(BASE_DIR, "data", "raw", "COMP INFO.csv")
+        if os.path.exists(csv_path):
+            df_info = pd.read_csv(csv_path)
+            for _, r in df_info.iterrows():
+                symbol = str(r.get('symbol', r.get('Ticker', ''))).replace('.HM', '').replace('.HN', '').strip()
+                name_vi = str(r.get('company_name_vi', r.get('organ_name', ''))).strip()
+                if symbol and name_vi:
+                    vn_names[symbol] = name_vi
+    except Exception as e:
+        logger.warning(f"Không thể load tên tiếng Việt: {e}")
+
+    _VN_NAME_CACHE = vn_names
+    return vn_names
+
+
+def get_company_name_vi(ticker: str) -> str:
+    """Trả về tên tiếng Việt công ty theo mã, rỗng nếu không có trong CSV."""
+    ticker = str(ticker).replace('.HM', '').replace('.HN', '').strip().upper()
+    return _load_vn_name_map().get(ticker, "")
+
+
 def get_ticker_list() -> list:
     records = get_latest_snapshot()
     if not records:
         return []
+
+    vn_names = _load_vn_name_map()   # ← dùng cache thay vì đọc lại CSV
+
+    seen = set()
+    options = []
+    for row in records:
+        ticker = str(row.get('Ticker', '')).strip()
+        if not ticker or ticker in seen:
+            continue
+        seen.add(ticker)
+
+        name_en = str(row.get('Company Common Name', '')).strip()
+        if name_en.lower() in ('nan', 'none', '', '0'): name_en = ""
+
+        name_vi = vn_names.get(ticker, "")
+
+        label_parts = [ticker]
+        if name_vi: label_parts.append(name_vi)
+        if name_en and name_en != name_vi: label_parts.append(name_en)
+
+        full_label = " - ".join(label_parts)
+
+        options.append({'label': full_label, 'value': ticker, 'title': full_label})
+
+    options.sort(key=lambda x: x['value'])
+    return options
 
     # 1. Load bản đồ tên tiếng Việt từ file CSV
     vn_names = {}

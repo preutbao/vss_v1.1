@@ -713,7 +713,7 @@ detail_tabs = dbc.Tabs([
         ])
     ),
     dbc.Tab(                                          # ← THÊM TAB MỚI
-        label="TÂM LÝ",
+        label="KIỂM CHỨNG RỦI RO",
         tab_id="tab-psychology",
         children=html.Div(
             psychology_tab_content,
