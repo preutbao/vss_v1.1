@@ -860,6 +860,9 @@ def get_snapshot_df() -> pd.DataFrame:
             t0 = time.perf_counter()
             df = pd.read_parquet(snap_path)
 
+            # Pyarrow restores lists as ndarray, convert back to python list for json serialization
+            if "Sparkline_30D" in df.columns:
+                df["Sparkline_30D"] = df["Sparkline_30D"].apply(lambda x: x.tolist() if hasattr(x, "tolist") else x)
             if 'Exchange' not in df.columns or df['Exchange'].astype(str).str.strip().eq('').all():
                 logger.warning("[Exchange] Snapshot thiếu/rỗng cột Exchange → xóa cache để rebuild!")
                 try:
@@ -909,6 +912,8 @@ def get_snapshot_df() -> pd.DataFrame:
         if not _snapshot_stale():
             try:
                 df = pd.read_parquet(snap_path)
+                if "Sparkline_30D" in df.columns:
+                    df["Sparkline_30D"] = df["Sparkline_30D"].apply(lambda x: x.tolist() if hasattr(x, "tolist") else x)
                 if 'Exchange' in df.columns and not df['Exchange'].astype(str).str.strip().eq('').all():
                     with _snapshot_lock:
                         _snapshot_df = df
@@ -931,7 +936,8 @@ def get_snapshot_df() -> pd.DataFrame:
             os.makedirs(PROCESSED_DIR, exist_ok=True)
             df_save = df_final.copy()
             for col in df_save.select_dtypes(include=['object']).columns:
-                df_save[col] = df_save[col].astype(str)
+                if col != "Sparkline_30D":
+                    df_save[col] = df_save[col].astype(str)
             df_save.to_parquet(snap_path, index=False)
             del df_save
             logger.info(f"Saved snapshot ({len(df_final)} ma)")
