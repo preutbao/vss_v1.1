@@ -48,7 +48,6 @@ def populate_dropdown_with_history(recent_tickers):
             'disabled': True
         })
         
-    # --- PHẦN TẤT CẢ MÃ ---
     for item in full_list:
         # Ẩn bớt những mã đã xuất hiện ở phần lịch sử cho đỡ trùng lặp
         if item['value'] not in recent_tickers:

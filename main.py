@@ -128,6 +128,7 @@ import src.callbacks.portfolio_callbacks
 import src.callbacks.alert_callbacks
 import src.callbacks.score_breakdown_callbacks
 import src.callbacks.investor_profile_callbacks
+import src.callbacks.ips_pdf_callback
 import src.callbacks.tab_dot_callbacks
 import src.callbacks.tplus_callbacks
 import src.callbacks.margin_crisis_callbacks

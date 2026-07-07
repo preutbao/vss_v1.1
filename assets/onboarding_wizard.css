@@ -504,7 +504,9 @@
 #ips-congrats-screen {
   display: none;
   text-align: center;
-  padding: 56px 48px 48px;
+  padding: 24px 48px 48px;
+  max-height: 90vh;
+  overflow-y: auto;
   animation: vss-fadeInUp 0.5s cubic-bezier(0.4,0,0.2,1) both;
 }
 
@@ -569,7 +571,7 @@
 .vss-congrats-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border), transparent);
-  margin: 0 auto 28px;
+  margin: 0 auto 20px;   /* ← giảm từ 28px xuống 20px */
   max-width: 280px;
 }
 

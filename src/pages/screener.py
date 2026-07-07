@@ -1060,26 +1060,31 @@ layout = html.Div([
 
             # === BẮT ĐẦU THAY THẾ KHU VỰC ACTION BUTTONS ===
             html.Div([
+
+                # HÀNG 1 (ngang hàng tiêu đề) — nút Hướng dẫn, sát mép phải
+                html.Div([
+                    dbc.Button(
+                        [html.I(className="fas fa-play-circle", style={"marginRight": "5px"}),
+                         html.Span("Hướng dẫn dùng hệ thống", id="label-start-tour-btn")],
+                        id="btn-start-tour",
+                        color="info", outline=True, size="sm",
+                        style={
+                            "borderRadius": "6px",
+                            "fontSize": "10px",
+                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                            "padding": "4px 10px",
+                            "whiteSpace": "nowrap",
+                        },
+                    ),
+                ], style={"display": "flex", "justifyContent": "flex-end", "marginBottom": "4px"}),
+
+                # HÀNG 2 (ngang hàng dòng "Tìm thấy X mã") — giữ nguyên toàn bộ nội dung cũ, chỉ bọc thêm 1 khung ngoài
+                html.Div([
                 # 1. Container chứa các nút (Mặc định được ẩn đi bằng display: none)
                 html.Div(
                     id="action-buttons-container",
                     style={"display": "none", "gap": "8px", "alignItems": "center"},
                     children=[
-                        # 🛠 THÊM NÚT HƯỚNG DẪN TẠI ĐÂY (Cạnh nút CSV)
-                        # Nút Hướng dẫn (Chạy Tour Guide)
-                        dbc.Button(
-                            [html.I(className="fas fa-play-circle", style={"marginRight": "5px"}),
-                             html.Span("Hướng dẫn", id="label-start-tour-btn")],
-                            id="btn-start-tour",
-                            color="info", outline=True, size="sm",
-                            style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        },
-                        ),
                         # Export Excel
                         dbc.Button(
                             [html.I(className="fas fa-file-excel", style={"marginRight": "5px"}),
@@ -1393,11 +1398,14 @@ layout = html.Div([
                     )
                 ])
 
-            ], style={"display": "flex", "alignItems": "center", "justifyContent": "flex-end"}),
+                ], style={"display": "flex", "alignItems": "center", "justifyContent": "flex-end"}),
+                # ↑ đóng HÀNG 2 (dùng đúng style cũ)
+
+            ], style={"display": "flex", "flexDirection": "column"}),
             # === KẾT THÚC THAY THẾ ===
 
         ], style={
-            "display": "flex", "alignItems": "center", "justifyContent": "space-between",
+            "display": "flex", "alignItems": "flex-start", "justifyContent": "space-between",
             "padding": "12px 0 10px 2px",
             "borderBottom": "1px solid #0e2540", "marginBottom": "12px",
         }),
@@ -1801,7 +1809,6 @@ html.Div(children=[
         "position": "absolute", "top": "0px", "left": "0px",
         "width": "14px", "height": "14px",
         "borderRadius": "50%", "backgroundColor": "#ef4444",
-        "border": "2px solid #00a651",
         "animation": "pulse-red 1.5s infinite",
         "zIndex": "10001",
     }),
@@ -1816,7 +1823,6 @@ html.Div(children=[
             "borderRadius": "50%",
             "cursor": "pointer",
             "boxShadow": "0 4px 20px rgba(0,100,255,0.4)",
-            "border": "2px solid #00a651",
             "display": "block",
         }
     ),

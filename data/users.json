@@ -3,5 +3,12 @@
     "password": "123@",
     "tier": "vip",
     "display_name": "Guest Demo"
+  },
+  "muoigio37": {
+    "password": "29062005",
+    "tier": "vip",
+    "display_name": "Nguyễn Văn Mười",
+    "bio": "",
+    "avatar": "avt_3"
   }
 }

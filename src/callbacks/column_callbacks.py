@@ -198,7 +198,8 @@ FIXED_COLS = [
     {
         "field": "Sector",
         "headerName": "NGÀNH",
-        "width": 200,
+        "headerTooltip": "Phân loại ngành theo chuẩn GICS.",
+        "width": 220,
         "sortable": True,
         "filter": True,
         "cellStyle": {
@@ -210,7 +211,6 @@ FIXED_COLS = [
     {
         "field": "Price Close",
         "headerName": "GIÁ",
-        "type": "rightAligned",
         "sortable": True,
         "width": 80,
         "valueFormatter": {"function": "d3.format(',.0f')(params.value)"},
@@ -220,6 +220,7 @@ FIXED_COLS = [
     {
         "field": "Sparkline_30D",
         "headerName": "XU HƯỚNG",
+        "type": "centerAligned",
         "width": 100,
         "sortable": False,
         "filter": False,
@@ -230,6 +231,7 @@ FIXED_COLS = [
     {
     "field": "Star_Rating",
     "headerName": "XẾP HẠNG",
+    "type": "rightAligned",
     "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
     "width": 110, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
     "sortable": True,
@@ -256,7 +258,7 @@ FIXED_COLS = [
     
     {
         "field": "Perf_1W",
-        "headerName": "%1T",
+        "headerName": "%1W",
         "type": "rightAligned",
         "sortable": True,
         "width": 88,
@@ -271,7 +273,7 @@ FIXED_COLS = [
     },
     {
         "field": "Perf_1M",
-        "headerName": "%1TH",
+        "headerName": "%1M",
         "type": "rightAligned",
         "sortable": True,
         "width": 94,

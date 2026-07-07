@@ -15,6 +15,12 @@ from dash_iconify import DashIconify
 sys_font = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
 
 
+def _get_avatar_color(name: str) -> str:
+    """Màu nền avatar Google-style dựa theo chữ cái đầu tên."""
+    _palette = ["#00a651","#0090ff","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#ec4899"]
+    idx = ord(name.split()[-1][0].upper()) % len(_palette) if name else 0
+    return _palette[idx]
+
 # ── Helper: Input field ────────────────────────────────────────────────────────
 def _login_field(label, input_id, input_type="text", placeholder="", icon_cls=""):
     return html.Div([
@@ -68,6 +74,209 @@ def _pricing_row(icon_cls, color, text, is_pro=False):
             "textDecoration": "line-through" if color == "#484f58" else "none",
         }),
     ], style={"display": "flex", "alignItems": "flex-start", "gap": "10px", "marginBottom": "10px"})
+
+
+def _create_profile_modal():
+    """Popup chỉnh profile người dùng — avatar, bio, hồ sơ nhà đầu tư."""
+    _avatar_templates = [f"avt_{i}" for i in range(1, 4)]
+
+    return dbc.Modal(
+        id="profile-modal",
+        is_open=False,
+        centered=True,
+        size="md",
+        contentClassName="vss-profile-modal-content",
+        style={"border": "none"},
+        children=[
+            # ── Nút đóng ─────────────────────────────────────────────────
+            html.Button(
+                html.I(className="fas fa-times"),
+                id="btn-close-profile",
+                n_clicks=0,
+                style={
+                    "position": "absolute", "top": "14px", "right": "14px",
+                    "background": "rgba(255,255,255,0.06)", "border": "none",
+                    "color": "#9ca3af", "width": "30px", "height": "30px",
+                    "borderRadius": "50%", "zIndex": "10", "cursor": "pointer",
+                    "display": "flex", "alignItems": "center", "justifyContent": "center",
+                },
+            ),
+            dbc.ModalBody([
+                # ── Title ────────────────────────────────────────────────
+                html.Div([
+                    html.Div("Cập nhật hồ sơ nhà đầu tư",
+                             style={"fontSize": "16px", "fontWeight": "700",
+                                    "color": "#e5e7eb", "marginBottom": "4px"}),
+                    html.Div("Cá nhân hóa trải nghiệm đầu tư của bạn",
+                             style={"fontSize": "12px", "color": "#6b7280"}),
+                ], style={"marginBottom": "24px", "paddingBottom": "16px",
+                          "borderBottom": "1px solid rgba(255,255,255,0.06)"}),
+                # ── Avatar lớn + picker ───────────────────────────────────
+                html.Div([
+                    # Preview avatar hiện tại
+                    html.Div(id="profile-avatar-preview",
+                             className="vss-profile-avatar-lg",
+                             children="?"),
+                    # Template picker
+                    html.Div([
+                        # Option: initials (Google-style)
+                        html.Div(
+                            id={"type": "avatar-opt", "src": "initials"},
+                            className="vss-avatar-opt vss-avatar-opt--initials",
+                            n_clicks=0,
+                            children=html.Span(id="profile-avatar-initials-opt",
+                                               style={"fontSize": "12px",
+                                                      "fontWeight": "700",
+                                                      "color": "#fff"}),
+                        ),
+                        html.Div(
+                            id={"type": "avatar-opt", "src": "initials_purple"},
+                            className="vss-avatar-opt vss-avatar-opt--initials",
+                            n_clicks=0,
+                            children=html.Span(id="profile-avatar-initials-purple",
+                                               style={"fontSize": "12px",
+                                                      "fontWeight": "700",
+                                                      "color": "#fff"}),
+                            style={"backgroundColor": "#8b5cf6"},
+                        ),
+                        html.Div(
+                            id={"type": "avatar-opt", "src": "initials_red"},
+                            className="vss-avatar-opt vss-avatar-opt--initials",
+                            n_clicks=0,
+                            children=html.Span(id="profile-avatar-initials-red",
+                                               style={"fontSize": "12px",
+                                                      "fontWeight": "700",
+                                                      "color": "#fff"}),
+                            style={"backgroundColor": "#ef4444"},
+                        ),
+                        *[
+                            html.Img(
+                                id={"type": "avatar-opt", "src": key},
+                                src=f"/assets/avatar_templates/{key}.png",
+                                className="vss-avatar-opt vss-avatar-opt--img",
+                                n_clicks=0,
+                            )
+                            for key in _avatar_templates
+                        ],
+                    ], className="vss-avatar-picker"),
+                    # Mock upload
+                    html.Label([
+                        html.I(className="fas fa-upload",
+                               style={"marginRight": "6px"}),
+                        "Tải ảnh lên",
+                    ], className="vss-avatar-upload-btn"),
+                ], className="vss-profile-avatar-section"),
+
+                # ── Tên hiển thị (read-only) ──────────────────────────────
+                html.Div([
+                    html.Label("Tên hiển thị",
+                               style={"fontSize": "11px", "color": "#6b7280",
+                                      "fontWeight": "600", "letterSpacing": "0.05em",
+                                      "textTransform": "uppercase", "marginBottom": "6px",
+                                      "display": "block"}),
+                    html.Div(id="profile-display-name",
+                             className="vss-profile-readonly-field"),
+                ], style={"marginBottom": "16px"}),
+
+                # ── Bio ───────────────────────────────────────────────────
+                html.Div([
+                    html.Label("Giới thiệu",
+                               style={"fontSize": "11px", "color": "#6b7280",
+                                      "fontWeight": "600", "letterSpacing": "0.05em",
+                                      "textTransform": "uppercase", "marginBottom": "6px",
+                                      "display": "block"}),
+                    dbc.Textarea(
+                        id="profile-bio-input",
+                        placeholder="Chia sẻ phong cách đầu tư của bạn...",
+                        rows=3,
+                        style={
+                            "backgroundColor": "rgba(255,255,255,0.04)",
+                            "border": "1px solid rgba(255,255,255,0.08)",
+                            "borderRadius": "8px", "color": "#e5e7eb",
+                            "fontSize": "13px", "resize": "none",
+                        },
+                    ),
+                ], style={"marginBottom": "16px"}),
+
+                # ── Hồ sơ nhà đầu tư (read-only từ onboarding) ───────────
+                html.Div([
+                    html.Label("Hồ sơ nhà đầu tư",
+                               style={"fontSize": "11px", "color": "#6b7280",
+                                      "fontWeight": "600", "letterSpacing": "0.05em",
+                                      "textTransform": "uppercase", "marginBottom": "8px",
+                                      "display": "block"}),
+                    html.Div(id="profile-investor-tags",
+                             className="vss-profile-investor-tags",
+                             children=html.Span("Chưa thiết lập hồ sơ",
+                                                style={"color": "#6b7280",
+                                                       "fontSize": "12px"})),
+                    dbc.Button(
+                        [html.I(className="fas fa-file-pdf",
+                                style={"marginRight": "6px", "color": "#ef4444"}),
+                         "Tải báo cáo chi tiết hồ sơ PDF"],
+                        id="btn-profile-download-pdf",
+                        n_clicks=0,
+                        className="",
+                        style={
+                            "marginTop": "12px",
+                            "background": "rgba(239,68,68,0.08)",
+                            "border": "1px solid rgba(239,68,68,0.25)",
+                            "color": "#fca5a5",
+                            "fontSize": "12px", "fontWeight": "600",
+                            "fontFamily": "'Inter', sans-serif",
+                            "borderRadius": "8px", "padding": "7px 16px",
+                            "cursor": "pointer", "width": "100%",
+                        },
+                    ),
+                    dcc.Download(id="ips-pdf-download-profile"),
+                ], style={"marginBottom": "8px"}),
+
+                # Store lưu avatar đang chọn tạm trong modal
+                dcc.Store(id="selected-avatar-store", data="initials"),
+            ], style={"padding": "32px 28px 16px"}),
+
+            # ── Footer ───────────────────────────────────────────────────
+            dbc.ModalFooter([
+                dbc.Button(
+                    [html.I(className="fas fa-sign-out-alt",
+                            style={"marginRight": "6px"}), "Đăng xuất"],
+                    id="btn-logout",
+                    n_clicks=0,
+                    className="",
+                    style={
+                        "background": "rgba(248,81,73,0.15)",
+                        "border": "1px solid rgba(248,81,73,0.35)",
+                        "color": "#f87171",
+                        "fontSize": "11px", "fontWeight": "600",
+                        "fontFamily": "'Inter', sans-serif",
+                        "borderRadius": "8px", "padding": "8px 22px",
+                        "cursor": "pointer",
+                    },
+                ),
+                dbc.Button(
+                    [html.I(className="fas fa-check",
+                            style={"marginRight": "6px"}), "Cập nhật"],
+                    id="btn-save-profile",
+                    n_clicks=0,
+                    className="",
+                    style={
+                        "background": "linear-gradient(135deg, #0090ff, #00c8ff)",
+                        "border": "none",
+                        "color": "#fff",
+                        "fontSize": "13px", "fontWeight": "600",
+                        "fontFamily": "'Inter', sans-serif",
+                        "borderRadius": "8px", "padding": "8px 22px",
+                        "cursor": "pointer",
+                    },
+                ),
+                html.Div(id="profile-save-msg", style={"display": "none"}),
+            ], style={
+                "borderTop": "1px solid rgba(255,255,255,0.06)",
+                "padding": "14px 28px",
+                "display": "flex", "gap": "10px", "justifyContent": "flex-end",
+            }),
+        ],
+    )
 
 
 # ── Login Modal ────────────────────────────────────────────────────────────────
@@ -130,10 +339,18 @@ def _create_login_modal():
                         }
                     ),
                     html.Div([
-                        html.Span("Chưa có tài khoản? ", style={"color": "#6b7280"}),
-                        html.A("Mở tài khoản ngay", href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi", target="_blank",
-                               style={"color": "#00a651", "textDecoration": "none", "fontWeight": "600"})
-                    ], style={"fontSize": "13px", "textAlign": "center", "marginTop": "24px"})
+                        html.Div([
+                            html.Span("Chưa có tài khoản? ", style={"color": "#6b7280"}),
+                            html.A("Mở tài khoản ngay", href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi", target="_blank",
+                                style={"color": "#00a651", "textDecoration": "none", "fontWeight": "600"}),
+                        ]),
+                        html.Br(),
+                        html.Div([
+                            html.Span("Group Zalo cộng đồng đầu tư định lượng: ", style={"color": "#6b7280"}),
+                            html.A("Tham gia ngay", href="https://zalo.me/g/yqowtg325", target="_blank",
+                                style={"color": "#003da6", "textDecoration": "none", "fontWeight": "600"})
+                        ], style={"marginTop": "10px"}) # Bạn có thể chỉnh khoảng cách ở đây
+                    ], style={"fontSize": "13px", "textAlign": "center", "marginTop": "24px"}),
                 ]),
                 # Right: Upsell
                 html.Div(style={
@@ -348,24 +565,44 @@ def create_topbar(id_suffix=""):
                 # Auth area
                 html.Div([
                     theme_switch,
+                    # Nút đăng nhập (chưa login)
                     dbc.Button(
-                        [html.I(className="fas fa-sign-in-alt", style={"marginRight": "6px"}), "Đăng nhập"],
-                        id="btn-login", n_clicks=0, className="vietcap-nav-login-btn",
+                        [html.I(className="fas fa-sign-in-alt",
+                                style={"marginRight": "6px"}), "Đăng nhập"],
+                        id="btn-login", n_clicks=0,
+                        className="vietcap-nav-login-btn",
                         style={
                             "backgroundColor": "transparent",
                             "border": "1px solid rgba(255,255,255,0.2)",
                             "color": "rgba(255,255,255,0.85)",
                             "fontSize": "13px", "fontWeight": "500",
-                            "padding": "6px 16px", "borderRadius": "6px"
-                        }
+                            "padding": "6px 16px", "borderRadius": "6px",
+                        },
                     ),
-                    html.Div(
-                        id="btn-logout-wrap", style={"display": "none"},
+                    # Avatar button (hiện sau khi login, ẩn khi chưa login)
+                    html.Button(
+                        id="btn-user-avatar",
+                        n_clicks=0,
+                        className="vss-nav-avatar-btn",
+                        style={"display": "none"},
                         children=[
-                            html.Div(id="navbar-user-name", style={"display": "flex", "alignItems": "center", "gap": "8px", "fontSize": "13px", "color": "#d1d5db"}),
-                            dbc.Button("Đăng xuất", id="btn-logout", n_clicks=0, outline=True, color="secondary", size="sm")
-                        ]
+                            html.Div(id="navbar-avatar-circle",
+                                     className="vss-nav-avatar-circle",
+                                     children="?"),
+                            html.Div(id="navbar-user-name",
+                                     style={"fontSize": "13px",
+                                            "color": "#d1d5db",
+                                            "fontWeight": "500"}),
+                            html.Span(id="navbar-vip-badge",
+                                      children="VIP",
+                                      className="vip-badge",
+                                      style={"display": "none"}),
+                        ],
                     ),
+                    # btn-logout-wrap giữ lại (hidden) để không vỡ callback cũ
+                    html.Div(id="btn-logout-wrap", style={"display": "none"}),
+                    # Profile modal
+                    _create_profile_modal(),
                 ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
             ])
         # TÌM ĐOẠN NÀY TRONG HÀM create_topbar():
@@ -400,6 +637,14 @@ def _get_top_movers():
         if perf_col is None:
             raise ValueError("no perf col")
         price_col = "Price Close" if "Price Close" in df.columns else None
+        # ── Lọc chỉ lấy mã trong rổ VN100 ──
+        try:
+            from src.backend.data_loader import fetch_index_constituents
+            vn100_tickers, _err = fetch_index_constituents("VN100")
+            if vn100_tickers:
+                df = df[df["Ticker"].isin(vn100_tickers)]
+        except Exception:
+            pass  # nếu API lỗi thì dùng toàn bộ snapshot, không crash
         # ── Lọc bỏ sàn UPCoM ──
         exchange_col = next((c for c in ["Exchange", "exchange", "San", "Market"] if c in df.columns), None)
         if exchange_col:
@@ -427,16 +672,16 @@ def _get_top_movers():
     except Exception:
         # Fallback cứng nếu data chưa ready
         return [
-            {"ticker": "VCB", "pct": 5.2, "price": "92,000", "up": True},
-            {"ticker": "FPT", "pct": 3.8, "price": "140,000", "up": True},
-            {"ticker": "HPG", "pct": 4.1, "price": "28,500", "up": True},
-            {"ticker": "MBB", "pct": 2.7, "price": "25,250", "up": True},
-            {"ticker": "TCB", "pct": 3.3, "price": "24,000", "up": True},
-            {"ticker": "VNM", "pct": 1.9, "price": "60,500", "up": True},
-            {"ticker": "SSI", "pct": -2.4, "price": "32,000", "up": False},
-            {"ticker": "DXG", "pct": -3.1, "price": "12,800", "up": False},
-            {"ticker": "NVL", "pct": -4.5, "price": "7,500", "up": False},
-            {"ticker": "PDR", "pct": -2.8, "price": "9,200", "up": False},
+            {"ticker": "VCB",  "pct": 4.9,  "price": "92,100",  "up": True},
+            {"ticker": "FPT",  "pct": 3.8,  "price": "140,200", "up": True},
+            {"ticker": "HPG",  "pct": 4.1,  "price": "28,500",  "up": True},
+            {"ticker": "MBB",  "pct": 2.7,  "price": "25,300",  "up": True},
+            {"ticker": "TCB",  "pct": 3.3,  "price": "24,100",  "up": True},
+            {"ticker": "VNM",  "pct": 6.9,  "price": "61,000",  "up": True},
+            {"ticker": "SSI",  "pct": -2.4, "price": "32,000",  "up": False},
+            {"ticker": "DXG",  "pct": -3.1, "price": "12,800",  "up": False},
+            {"ticker": "NVL",  "pct": -4.5, "price": "7,500",   "up": False},
+            {"ticker": "PDR",  "pct": -2.8, "price": "9,200",   "up": False},
         ]
 
 
@@ -457,7 +702,7 @@ def _build_top_movers_card(movers):
     return html.Div(className="vss-movers-card", children=[
         # Header cố định — KHÔNG nằm trong track-wrap nên không bị cuộn
         html.Div(className="vss-movers-header", children=[
-            html.Span("TOP MÃ BIẾN ĐỘNG", className="vss-movers-title"),
+            html.Span("TOP MÃ BIẾN ĐỘNG - VN100", className="vss-movers-title"),
         ]),
         html.Div(className="vss-movers-col-header", children=[
             html.Span("Mã CK", className="vss-mover-col-ticker"),

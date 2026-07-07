@@ -47,7 +47,7 @@ def _call_gemini(messages: list, stock_context: dict = None, screener_context: s
         from google import genai
         from google.genai import types
     except ImportError:
-        return "❌ Chưa cài google-genai. Chạy: pip install google-genai"
+        return "Chưa cài google-genai. Chạy: pip install google-genai"
 
     # ── Xây dựng system prompt ──
     system_text = VINANCE_SYSTEM_PROMPT

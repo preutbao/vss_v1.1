@@ -409,19 +409,20 @@ layout = html.Div(
                     html.Div([
                         dbc.Button(
                             [
-                                html.I(className="fas fa-unlock-alt",
+                                html.I(className="fas fa-file-pdf",
                                        style={"marginRight": "8px"}),
-                                "Đăng nhập VIP để nhận toàn bộ danh mục",
+                                "Tải báo cáo hồ sơ PDF",
                             ],
-                            id="ips-congrats-login-btn",
+                            id="ips-btn-download-pdf",
                             className="vss-btn-primary",
                             style={"fontSize": "14px", "padding": "13px 32px",
                                    "border": "none"},
                             n_clicks=0,
                         ),
+                        dcc.Download(id="ips-pdf-download"),
                         html.Br(),
                         html.Button(
-                            "Vào Screener ngay →",
+                            "Bỏ qua, vào Screener ngay →",
                             id="ips-congrats-enter-btn",
                             n_clicks=0,
                             style={
