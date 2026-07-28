@@ -167,9 +167,9 @@ def _header(c, ticker, company, exchange, title: str, stock: dict):
     # 2. Logo Text & Info (Top Row)
     c.setFont("VnFont-Bold", 12)
     c.setFillColor(C_ACCENT)
-    c.drawString(MARGIN, y_top, "VSS")
+    c.drawString(MARGIN, y_top, "FSS")
 
-    ticker_logo_w = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 12)
+    ticker_logo_w = pdfmetrics.stringWidth("FSS", "VnFont-Bold", 12)
     c.setFont("VnFont", 12)
     c.setFillColor(C_HEADER)
     c.drawString(MARGIN + ticker_logo_w + 3, y_top, " Smart Screener")
@@ -258,7 +258,7 @@ def _footer(c, page_num):
     c.rect(0, 0, PW, 3, fill=1, stroke=0)
     c.setFont("VnFont", 7)
     c.setFillColor(C_GREY)
-    c.drawString(MARGIN, 8, "Vietcap Smart Screener – Dữ liệu mang tính tham khảo, không phải khuyến nghị đầu tư.")
+    c.drawString(MARGIN, 8, "FinSmartScreener – Dữ liệu mang tính tham khảo, không phải khuyến nghị đầu tư.")
     c.drawRightString(PW - MARGIN, 8, f"Trang {page_num} | idx-screener.com")
 
 
@@ -354,7 +354,7 @@ def _embed(c, fig, x, y, w, h):
 # ─────────────────────────────────────────────────────────────
 
 def _format_ax(ax, title=""):
-    """Định dạng trục biểu đồ VSS style"""
+    """Định dạng trục biểu đồ FSS style"""
     ax.set_facecolor("#f8fbff")  # Nền xanh cực nhạt
     for spine in ['top', 'right']: ax.spines[spine].set_visible(False)
     for spine in ['left', 'bottom']: ax.spines[spine].set_color('#b8d4f0')
@@ -1295,10 +1295,10 @@ def _p7(c, stock):
     y0 -= (max(len(VAL), len(FUND)) * 16 + 18) + 20
 
     # ── Gauge VGM + thông tin tóm tắt ─────────────────────────
-    _sec(c, "Điểm tổng hợp VSS Score", MARGIN, y0)
+    _sec(c, "Điểm tổng hợp FSS Score", MARGIN, y0)
     y0 -= 15
     vgm_n = GRADE_MAP.get(str(stock.get("VGM Score", "C")), 3.0)
-    _embed(c, _ch_gauge(vgm_n, 5, "VSS Score"), MARGIN, y0 - 100, 140, 100)
+    _embed(c, _ch_gauge(vgm_n, 5, "FSS Score"), MARGIN, y0 - 100, 140, 100)
 
     c.setFont("VnFont", 9)
     c.setFillColor(C_TEXT)
@@ -1479,8 +1479,8 @@ def generate_pdf(stock: dict) -> bytes:
 
     buf = io.BytesIO()
     c = rl_canvas.Canvas(buf, pagesize=A4)
-    c.setTitle(f"Vietcap Smart Screener – Báo cáo phân tích {ticker}")
-    c.setAuthor("Vietcap Smart Screener")
+    c.setTitle(f"FinSmartScreener – Báo cáo phân tích {ticker}")
+    c.setAuthor("FinSmartScreener")
     c.setSubject(f"Phân tích cổ phiếu {ticker} – Vietnamese Stock Exchange")
 
     PAGE_FNS = [

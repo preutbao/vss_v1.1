@@ -1,6 +1,6 @@
 # src/callbacks/quant_pdf_page.py
 # ============================================================
-# VSS PREDICTIVE 2.0 – Stage 4: PDF Quant Page
+# FSS PREDICTIVE 2.0 – Stage 4: PDF Quant Page
 # Đã Tối Ưu Premium Light Theme (Đồng bộ với Trang 1-3)
 # ============================================================
 
@@ -130,8 +130,8 @@ def _page_header_quant(c, subtitle: str = ""):
     c.line(0, PH - hh, PW, PH - hh)
 
     c.setFont("VnFont-Bold", 11); c.setFillColor(colors.HexColor("#0057B8"))
-    c.drawString(MARGIN, PH - 20, "VSS")
-    lw = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 11)
+    c.drawString(MARGIN, PH - 20, "FSS")
+    lw = pdfmetrics.stringWidth("FSS", "VnFont-Bold", 11)
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
     c.line(MARGIN + lw + 5, PH - 24, MARGIN + lw + 5, PH - 10)
     c.setFont("VnFont", 9); c.setFillColor(colors.HexColor("#1A3A5C"))
@@ -447,7 +447,7 @@ def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4, ai_t
         # Tiêu đề kết luận
         c.setFont("VnFont-Bold", 8)
         c.setFillColor(C_BLUE)
-        c.drawString(MARGIN + 12, y0 - 12, "KẾT LUẬN CHIẾN LƯỢC TỪ HỆ THỐNG VSS:")
+        c.drawString(MARGIN + 12, y0 - 12, "KẾT LUẬN CHIẾN LƯỢC TỪ HỆ THỐNG FSS:")
 
         # Nội dung phiên dịch số liệu sang ngôn ngữ Sale
         c.setFont("VnFont", 7.5)
@@ -461,7 +461,7 @@ def _render_quant_page(c, qr: "QuantResult", nav: float, page_num: int = 4, ai_t
 
     y0 -= summary_h + 16
 
-    # 2. Ngay bên dưới khối code vẽ Summary (KẾT LUẬN CHIẾN LƯỢC TỪ HỆ THỐNG VSS), em chèn thêm đoạn này:
+    # 2. Ngay bên dưới khối code vẽ Summary (KẾT LUẬN CHIẾN LƯỢC TỪ HỆ THỐNG FSS), em chèn thêm đoạn này:
     if ai_texts and "action" in ai_texts:
         # Import hàm vẽ box từ file kia sang để đồng bộ UI tuyệt đối (Tránh lỗi vòng lặp)
         from src.callbacks.screener_pdf_callback import _ai_box

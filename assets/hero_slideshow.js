@@ -1,4 +1,4 @@
-// assets/hero_slideshow.js — VSS Smart Screener
+// assets/hero_slideshow.js — FSS Smart Screener
 // Cập nhật: sự kiện tài chính Việt Nam + typography nâng cấp
 
 (function initHero() {
@@ -226,7 +226,7 @@
     {
       year:'1997', era:'khung-hoang', badge:'panic', badgeDate:'02/07',
       tagline:'Khủng hoảng châu Á - Bài học <span class="hl">Phòng thủ</span>.',
-      desc:'Cú sốc tỷ giá chứng minh tầm quan trọng của chiến lược "Phòng thủ". Bộ lọc VSS sẽ đánh rớt đài (1 Sao) ngay lập tức những mã có nợ vay ngoại tệ cao.',
+      desc:'Cú sốc tỷ giá chứng minh tầm quan trọng của chiến lược "Phòng thủ". Bộ lọc FSS sẽ đánh rớt đài (1 Sao) ngay lập tức những mã có nợ vay ngoại tệ cao.',
       move:'Rủi ro nợ', moveCls:'stat-neg', coverage:'Dữ liệu Cờ Đỏ (Red Flag)',
       bgColor:'#100a00', credit:'', dot:'#ffb703', eraIdx:1,
       bgImage:'assets/slideshow_bg/slide_bg3.png',
@@ -242,7 +242,7 @@
     {
       year:'2007', era:'ttck', badge:'mania', badgeDate:'12/03',
       tagline:'Đỉnh 1.170 - Ảo tưởng <span class="hl-purple">Lợi nhuận giấy</span>.',
-      desc:'Bong bóng định giá toàn dân. Nếu VSS tồn tại lúc này, ma trận Điểm Giá Trị (Value) sẽ liên tục cảnh báo đỏ vì P/E thị trường vượt xa mức an toàn.',
+      desc:'Bong bóng định giá toàn dân. Nếu FSS tồn tại lúc này, ma trận Điểm Giá Trị (Value) sẽ liên tục cảnh báo đỏ vì P/E thị trường vượt xa mức an toàn.',
       move:'P/E > 30', moveCls:'stat-pos', coverage:'Phễu định giá · Cảnh báo',
       bgColor:'#0d0a14', credit:'', dot:'#b388ff', eraIdx:2,
       bgImage:'assets/slideshow_bg/slide_bg5.png',
@@ -266,7 +266,7 @@
     {
       year:'2020', era:'covid', badge:'crash', badgeDate:'24/03',
       tagline:'Cú sốc COVID-19 - Cơ hội <span class="hl-green">Bắt đáy siêu cổ</span>.',
-      desc:'Thị trường hoảng loạn rớt 33%. Thuật toán VSS lúc này sẽ giúp bạn quét ra các "viên kim cương" bị bán tháo (Điểm VGM 5-Sao) chỉ trong 30 giây.',
+      desc:'Thị trường hoảng loạn rớt 33%. Thuật toán FSS lúc này sẽ giúp bạn quét ra các "viên kim cương" bị bán tháo (Điểm VGM 5-Sao) chỉ trong 30 giây.',
       move:'−33%', moveCls:'stat-neg', coverage:'Screener săn sale · Tối ưu',
       bgColor:'#080a10', credit:'', dot:'#ff3d57', eraIdx:4,
       bgImage:'assets/slideshow_bg/slide_bg8.png',
@@ -274,7 +274,7 @@
     {
       year:'2021', era:'covid', badge:'boom', badgeDate:'25/11',
       tagline:'Đỉnh 1.500 - Trò chơi của <span class="hl-green">Động lượng (M)</span>.',
-      desc:'Thanh khoản tỷ USD. Bộ lọc Lướt sóng & Động lượng (Momentum) của VSS phát huy sức mạnh bám theo dòng tiền lớn, tối đa hóa hiệu suất ngắn hạn.',
+      desc:'Thanh khoản tỷ USD. Bộ lọc Lướt sóng & Động lượng (Momentum) của FSS phát huy sức mạnh bám theo dòng tiền lớn, tối đa hóa hiệu suất ngắn hạn.',
       move:'+68%', moveCls:'stat-pos', coverage:'Chỉ số Động lượng · Đỉnh điểm',
       bgColor:'#081208', credit:'', dot:'#00e676', eraIdx:4,
       bgImage:'assets/slideshow_bg/slide_bg9.png',
@@ -282,7 +282,7 @@
     {
       year:'2026', era:'covid', badge:'policy', badgeDate:'HÔM NAY',
       tagline:'Kỷ nguyên <span class="hl-blue">AI & Đầu tư định lượng</span>.',
-      desc:'Không còn dò dẫm thủ công bằng cảm xúc. Hệ thống Vietcap Smart Screener đang quét 165+ chỉ số. Xác định DNA đầu tư của bạn và để AI bốc thuốc ngay.',
+      desc:'Không còn dò dẫm thủ công bằng cảm xúc. Hệ thống FinSmartScreener đang quét 165+ chỉ số. Xác định DNA đầu tư của bạn và để AI bốc thuốc ngay.',
       move:'LỌC NGAY', moveCls:'stat-pos', coverage:'Daily · Sẵn sàng',
       bgColor:'#040d18', credit:'', dot:'#00e5ff', eraIdx:4,
       bgImage:'assets/slideshow_bg/slide_bg10.png',
@@ -320,7 +320,7 @@
         
         <div class="cyber-cta-container">
           <div class="cyber-btn" onclick="window.location.href='#learn-more'">
-            TẠI SAO DÙNG VIETCAP SMART SCREENER?
+            TẠI SAO DÙNG FINSMARTSCREENER?
           </div>
         </div>
 

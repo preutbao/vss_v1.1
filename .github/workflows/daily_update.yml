@@ -1,4 +1,4 @@
-name: VSS Daily Update & Sync to HF
+name: FSS Daily Update & Sync to HF
 
 on:
   # 1. Chạy tự động lúc 5h chiều (10:00 UTC) từ T2 đến T6

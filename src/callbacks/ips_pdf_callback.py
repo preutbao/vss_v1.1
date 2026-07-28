@@ -1,6 +1,6 @@
 # src/callbacks/ips_pdf_callback.py
 # ══════════════════════════════════════════════════════════════
-# IPS PROFILE PDF  —  Vietcap Smart Screener
+# IPS PROFILE PDF  —  FinSmartScreener
 # Xuất báo cáo hồ sơ nhà đầu tư 1 trang A4 sau onboarding.
 #
 # Reuse toàn bộ primitives từ screener_pdf_callback.py:
@@ -151,7 +151,7 @@ if not _SHARED_OK:
         c.setFillColor(C_ACCENT2)
         c.rect(PW * 0.6, 0, PW * 0.4, 4, fill=1, stroke=0)
         c.setFont("VnFont", 6.5); c.setFillColor(colors.HexColor("#9CA3AF"))
-        c.drawString(MARGIN, 8, "Vietcap Smart Screener – Báo cáo Hồ sơ Nhà đầu tư")
+        c.drawString(MARGIN, 8, "FinSmartScreener – Báo cáo Hồ sơ Nhà đầu tư")
         c.drawRightString(PW - MARGIN, 8,
             f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
@@ -467,8 +467,8 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     top3 = _get_top3(profile)
 
     # ── Metadata PDF (đồng bộ Screener) ──
-    c.setTitle("Vietcap Smart Screener - Báo Cáo Hồ Sơ Nhà Đầu Tư")
-    c.setAuthor("Vietcap Smart Screener")
+    c.setTitle("FinSmartScreener - Báo Cáo Hồ Sơ Nhà Đầu Tư")
+    c.setAuthor("FinSmartScreener")
     c.setSubject(f"Hồ sơ {risk_lbl} - {datetime.now().strftime('%d/%m/%Y')}")
 
     # ── Nền trắng ───────────────────────────────────────────────────────────
@@ -494,22 +494,22 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
     c.line(0, PH - HDR_BAND_H, PW, PH - HDR_BAND_H)
 
-    # ── DÒNG 1: Logo VSS | Smart Screener | tagline  ···  "BÁO CÁO..." ──
+    # ── DÒNG 1: Logo FSS | Smart Screener | tagline  ···  "BÁO CÁO..." ──
     y1 = PH - 19
 
     c.setFont("VnFont-Bold", 13); c.setFillColor(colors.HexColor("#0057B8"))
-    c.drawString(MARGIN, y1, "VSS")
-    lw_vss = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 13)
+    c.drawString(MARGIN, y1, "FSS")
+    lw_fss = pdfmetrics.stringWidth("FSS", "VnFont-Bold", 13)
 
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.2)
-    c.line(MARGIN + lw_vss + 6, y1 - 2, MARGIN + lw_vss + 6, y1 + 11)
+    c.line(MARGIN + lw_fss + 6, y1 - 2, MARGIN + lw_fss + 6, y1 + 11)
 
     c.setFont("VnFont", 10); c.setFillColor(colors.HexColor("#1A3A5C"))
-    c.drawString(MARGIN + lw_vss + 12, y1, "Smart Screener")
+    c.drawString(MARGIN + lw_fss + 12, y1, "Smart Screener")
     sw_ss = pdfmetrics.stringWidth("Smart Screener", "VnFont", 10)
 
     c.setFont("VnFont", 7); c.setFillColor(colors.HexColor("#5A80A0"))
-    c.drawString(MARGIN + lw_vss + sw_ss + 18, y1 + 1,
+    c.drawString(MARGIN + lw_fss + sw_ss + 18, y1 + 1,
                  "Vietcap Securities · IPS Report")
 
     c.setFont("VnFont-Bold", 8); c.setFillColor(colors.HexColor("#0057B8"))
@@ -812,7 +812,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
                         box_color=C_PURPLE_SOFT,
                         border_color=C_PURPLE_BORDER,
                         accent_color=C_PURPLE,
-                        badge_label="VSS Advisory",
+                        badge_label="FSS Advisory",
                         badge_color=C_PURPLE)
         except Exception as _ae:
             logger.warning(f"[IPS PDF] AI box error: {_ae}")

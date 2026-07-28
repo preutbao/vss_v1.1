@@ -1,6 +1,6 @@
 // assets/tour_guide.js
 // ─────────────────────────────────────────────────────────────
-// VSS Tour Guide — Spotlight style
+// FSS Tour Guide — Spotlight style
 // Hiện overlay tối, khoét spotlight quanh element, tooltip cạnh đó
 // ─────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ window.VssTour = (function () {
       id: "welcome",
       target: null,          // null = không spotlight element nào, chỉ hiện ở giữa màn hình
       position: "center",
-      title: "Chào mừng đến với Vietcap Smart Screener! 👋",
+      title: "Chào mừng đến với FinSmartScreener! 👋",
       body: "Tôi là trợ lý VinanceAI. Chỉ mất 30 giây để tôi hướng dẫn bạn cách tìm ra cổ phiếu \"vàng\" và né bẫy rủi ro trên thị trường. Bắt đầu chứ?",
       skipBtn: "Bỏ qua",
       nextBtn: "Khám phá ngay",

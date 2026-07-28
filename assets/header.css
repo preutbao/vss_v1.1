@@ -7,9 +7,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 /* ============================================================
-   VSS STICKY NAVBAR  —  transparent overlay (Finovate style)
+   FSS STICKY NAVBAR  —  transparent overlay (Finovate style)
    ============================================================ */
-#vss-sticky-nav {
+#fss-sticky-nav {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 64px;
@@ -20,7 +20,7 @@
 }
 
 /* When hero is scrolled past → frosted glass */
-#vss-sticky-nav.is-scrolled {
+#fss-sticky-nav.is-scrolled {
     background: rgba(var(--nav-bg-rgb, 4, 8, 6), 0.88);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -29,14 +29,14 @@
 }
 
 /* Light theme scrolled state */
-[data-theme="light"] #vss-sticky-nav.is-scrolled {
+[data-theme="light"] #fss-sticky-nav.is-scrolled {
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
     border-bottom: 1px solid rgba(0, 166, 81, 0.12);
 }
 
 /* Subtle bottom highlight line when transparent */
-#vss-sticky-nav::after {
+#fss-sticky-nav::after {
     content: '';
     position: absolute;
     bottom: 0; left: 0; right: 0;
@@ -51,9 +51,9 @@
     transition: opacity 0.35s ease;
 }
 
-#vss-sticky-nav.is-scrolled::after { opacity: 1; }
+#fss-sticky-nav.is-scrolled::after { opacity: 1; }
 
-.vss-nav-inner {
+.fss-nav-inner {
     width: 100%;
     max-width: 1440px;
     margin: 0 auto;
@@ -65,7 +65,7 @@
 }
 
 /* ── Logo ── */
-.vss-logo-text {
+.fss-logo-text {
     font-family: 'Inter', sans-serif;
     font-size: 20px;
     font-weight: 700;
@@ -75,9 +75,9 @@
     transition: color 0.3s;
 }
 
-[data-theme="light"] .vss-logo-text { color: #0f172a; }
+[data-theme="light"] .fss-logo-text { color: #0f172a; }
 
-.vss-logo-accent {
+.fss-logo-accent {
     color: #00c85a;
 }
 
@@ -197,9 +197,9 @@
 }
 
 /* ============================================================
-   VSS HERO BANNER  —  split layout (text left / visual right)
+   FSS HERO BANNER  —  split layout (text left / visual right)
    ============================================================ */
-#vss-hero {
+#fss-hero {
     position: relative;
     overflow: hidden;
     display: flex;
@@ -211,12 +211,12 @@
 }
 
 /* ── Light theme hero background ── */
-[data-theme="light"] #vss-hero {
+[data-theme="light"] #fss-hero {
     background: #f0f7f2;
 }
 
 /* ── Background decoration ── */
-#vss-hero-bg {
+#fss-hero-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
@@ -230,7 +230,7 @@
 }
 
 /* Dark overlay on top of photo */
-#vss-hero-bg::after {
+#fss-hero-bg::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -239,14 +239,14 @@
         radial-gradient(ellipse 55% 70% at 0% 50%, rgba(0,166,81,0.12) 0%, transparent 65%);
 }
 
-[data-theme="light"] #vss-hero-bg {
+[data-theme="light"] #fss-hero-bg {
     background:
         radial-gradient(ellipse 55% 70% at 0% 50%, rgba(0,166,81,0.10) 0%, transparent 65%),
         radial-gradient(ellipse 50% 50% at 100% 20%, rgba(0,100,200,0.06) 0%, transparent 60%),
         linear-gradient(160deg, #e8f5ee 0%, #f0f7f2 50%, #eaf3fb 100%);
 }
 
-#vss-hero-grid {
+#fss-hero-grid {
     position: absolute;
     inset: 0;
     z-index: 1;
@@ -258,14 +258,14 @@
     -webkit-mask-image: radial-gradient(ellipse 80% 80% at 40% 50%, black 10%, transparent 100%);
 }
 
-[data-theme="light"] #vss-hero-grid {
+[data-theme="light"] #fss-hero-grid {
     background-image:
         linear-gradient(rgba(0,120,60,0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,120,60,0.05) 1px, transparent 1px);
 }
 
 /* ── Floating orbs ── */
-#vss-orb-1 {
+#fss-orb-1 {
     position: absolute;
     width: 380px; height: 380px;
     border-radius: 50%;
@@ -274,7 +274,7 @@
     z-index: 1;
     animation: orbfloat 9s ease-in-out infinite;
 }
-#vss-orb-2 {
+#fss-orb-2 {
     position: absolute;
     width: 260px; height: 260px;
     border-radius: 50%;
@@ -285,7 +285,7 @@
 }
 
 /* ── Hero inner: 2-column grid ── */
-#vss-hero-content {
+#fss-hero-content {
     position: relative;
     z-index: 10;
     display: grid;
@@ -299,7 +299,7 @@
 }
 
 /* LEFT column — text */
-.vss-hero-left {
+.fss-hero-left {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -307,7 +307,7 @@
 }
 
 /* Badge / eyebrow */
-.vss-eyebrow {
+.fss-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -321,11 +321,11 @@
     animation: fadeslideup 0.6s 0.1s cubic-bezier(.22,1,.36,1) both;
 }
 
-[data-theme="light"] .vss-eyebrow {
+[data-theme="light"] .fss-eyebrow {
     color: rgba(0, 140, 70, 0.85);
 }
 
-.vss-eyebrow-dot {
+.fss-eyebrow-dot {
     width: 5px; height: 5px;
     border-radius: 50%;
     background: #00c864;
@@ -334,7 +334,7 @@
 }
 
 /* Main headline — stacked (Vietcap / Smart Screener) */
-.vss-headline {
+.fss-headline {
     margin: 0 0 24px;
     display: flex;
     flex-direction: column;
@@ -343,7 +343,7 @@
     animation: fadeslideup 0.65s 0.2s cubic-bezier(.22,1,.36,1) both;
 }
 
-.vss-headline-brand {
+.fss-headline-brand {
     font-family: 'Inter', sans-serif;
     font-size: clamp(2.8rem, 5.5vw, 4.2rem);
     font-weight: 800;
@@ -353,12 +353,12 @@
     text-shadow: 0 0 50px rgba(0,200,90,0.25);
 }
 
-[data-theme="light"] .vss-headline-brand {
+[data-theme="light"] .fss-headline-brand {
     color: #00a044;
     text-shadow: 0 2px 20px rgba(0,160,68,0.15);
 }
 
-.vss-headline-sub {
+.fss-headline-sub {
     font-family: 'Playfair Display', Georgia, serif;
     font-size: clamp(2rem, 4vw, 3.4rem);
     font-weight: 700;
@@ -368,12 +368,12 @@
     line-height: 1.05;
 }
 
-[data-theme="light"] .vss-headline-sub {
+[data-theme="light"] .fss-headline-sub {
     color: #0f172a;
 }
 
 /* CTA Button */
-.vss-cta {
+.fss-cta {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -392,23 +392,23 @@
     margin-bottom: 36px;
 }
 
-.vss-cta:hover {
+.fss-cta:hover {
     background: #00bf5d;
     box-shadow: 0 10px 30px rgba(0, 166, 81, 0.5);
     transform: translateY(-2px);
 }
 
-.vss-cta-arrow {
+.fss-cta-arrow {
     font-size: 15px;
     transition: transform 0.25s ease;
 }
 
-.vss-cta:hover .vss-cta-arrow {
+.fss-cta:hover .fss-cta-arrow {
     transform: translateX(4px);
 }
 
 /* Stats row — card style */
-.vss-stats {
+.fss-stats {
     display: flex;
     align-items: stretch;
     gap: 12px;
@@ -416,7 +416,7 @@
     flex-wrap: wrap;
 }
 
-.vss-stat-card {
+.fss-stat-card {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -429,23 +429,23 @@
     transition: border-color 0.2s, background 0.2s;
 }
 
-.vss-stat-card:hover {
+.fss-stat-card:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(0, 200, 100, 0.25);
 }
 
-[data-theme="light"] .vss-stat-card {
+[data-theme="light"] .fss-stat-card {
     background: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(0, 150, 70, 0.12);
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
-[data-theme="light"] .vss-stat-card:hover {
+[data-theme="light"] .fss-stat-card:hover {
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 166, 81, 0.28);
 }
 
-.vss-stat-icon {
+.fss-stat-icon {
     font-size: 16px;
     color: #00c85a;
     width: 32px; height: 32px;
@@ -455,14 +455,14 @@
     flex-shrink: 0;
 }
 
-[data-theme="light"] .vss-stat-icon {
+[data-theme="light"] .fss-stat-icon {
     background: rgba(0, 166, 81, 0.10);
     color: #00a044;
 }
 
-.vss-stat-body {}
+.fss-stat-body {}
 
-.vss-stat-value {
+.fss-stat-value {
     font-family: 'Inter', sans-serif;
     font-size: 15px;
     font-weight: 700;
@@ -470,11 +470,11 @@
     line-height: 1.2;
 }
 
-[data-theme="light"] .vss-stat-value {
+[data-theme="light"] .fss-stat-value {
     color: #0f172a;
 }
 
-.vss-stat-label {
+.fss-stat-label {
     font-family: 'Inter', sans-serif;
     font-size: 11px;
     font-weight: 400;
@@ -482,12 +482,12 @@
     line-height: 1;
 }
 
-[data-theme="light"] .vss-stat-label {
+[data-theme="light"] .fss-stat-label {
     color: rgba(15, 23, 42, 0.5);
 }
 
 /* The pill style (for HOSE · HNX · UPCoM) */
-.vss-stat-pill {
+.fss-stat-pill {
     font-family: 'Inter', sans-serif;
     font-size: 12px;
     font-weight: 500;
@@ -498,14 +498,14 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
-[data-theme="light"] .vss-stat-pill {
+[data-theme="light"] .fss-stat-pill {
     color: rgba(15, 23, 42, 0.65);
     border-color: rgba(0, 0, 0, 0.1);
     background: rgba(255, 255, 255, 0.5);
 }
 
 /* RIGHT column — illustration */
-.vss-hero-right {
+.fss-hero-right {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -513,7 +513,7 @@
 }
 
 /* The 3D coin SVG wrapper */
-.vss-coin-wrap {
+.fss-coin-wrap {
     position: relative;
     width: 360px;
     height: 360px;
@@ -524,7 +524,7 @@
 }
 
 /* Glow behind coin */
-.vss-coin-wrap::before {
+.fss-coin-wrap::before {
     content: '';
     position: absolute;
     width: 260px; height: 260px;
@@ -534,11 +534,11 @@
     z-index: 0;
 }
 
-[data-theme="light"] .vss-coin-wrap::before {
+[data-theme="light"] .fss-coin-wrap::before {
     background: radial-gradient(circle, rgba(0,166,81,0.18) 0%, transparent 70%);
 }
 
-.vss-coin-svg {
+.fss-coin-svg {
     position: relative;
     z-index: 1;
     width: 100%;
@@ -583,21 +583,21 @@
    RESPONSIVE
    ============================================================ */
 @media (max-width: 1024px) {
-    #vss-hero-content { padding: 48px 32px 56px; gap: 24px; }
-    .vss-coin-wrap { width: 280px; height: 280px; }
+    #fss-hero-content { padding: 48px 32px 56px; gap: 24px; }
+    .fss-coin-wrap { width: 280px; height: 280px; }
 }
 
 @media (max-width: 860px) {
-    #vss-hero-content {
+    #fss-hero-content {
         grid-template-columns: 1fr;
         padding: 48px 24px 48px;
         text-align: center;
     }
-    .vss-hero-left { align-items: center; }
-    .vss-headline { align-items: center; }
-    .vss-rule { margin: 16px auto 20px; }
-    .vss-stats { justify-content: center; }
-    .vss-hero-right { display: none; } /* hide illustration on mobile */
+    .fss-hero-left { align-items: center; }
+    .fss-headline { align-items: center; }
+    .fss-rule { margin: 16px auto 20px; }
+    .fss-stats { justify-content: center; }
+    .fss-hero-right { display: none; } /* hide illustration on mobile */
     .d-flex.align-items-center.gap-4 { display: none !important; }
 }
 
@@ -617,7 +617,7 @@
     text-overflow: ellipsis;
 }
 /* cấu hình nền cho giao diện tối (mặc định) */
-#vss-hero-bg {
+#fss-hero-bg {
     position: absolute !important;
     inset: 0 !important;
     z-index: 0 !important;
@@ -627,21 +627,21 @@
 }
 
 /* cấu hình nền cho giao diện sáng */
-[data-theme="light"] #vss-hero-bg {
+[data-theme="light"] #fss-hero-bg {
     background: 
         linear-gradient(to bottom, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.9) 100%),
         url('anh.jpg') center center / cover no-repeat !important;
 }
 
 /* ẩn đi các họa tiết lưới và đốm sáng cũ */
-#vss-hero-grid, #vss-orb-1, #vss-orb-2 {
+#fss-hero-grid, #fss-orb-1, #fss-orb-2 {
     display: none !important;
 }
 /* ép thanh navbar luôn trong suốt ở mọi trạng thái (sáng/tối/khi cuộn trang) */
-#vss-sticky-nav,
-#vss-sticky-nav.is-scrolled,
-[data-theme="light"] #vss-sticky-nav,
-[data-theme="light"] #vss-sticky-nav.is-scrolled {
+#fss-sticky-nav,
+#fss-sticky-nav.is-scrolled,
+[data-theme="light"] #fss-sticky-nav,
+[data-theme="light"] #fss-sticky-nav.is-scrolled {
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -650,12 +650,12 @@
 }
 
 /* ẩn đường kẻ highlight viền dưới của navbar */
-#vss-sticky-nav::after {
+#fss-sticky-nav::after {
     display: none !important;
 }
 
 /* bỏ in nghiêng chữ vietcap */
-.vss-logo-text {
+.fss-logo-text {
     font-style: normal !important;
     font-weight: 700 !important; 
 }
@@ -665,10 +665,10 @@
     font-style: normal !important;
 }
 /* ép trong suốt hoàn toàn cho thanh navbar ở mọi chế độ */
-#vss-sticky-nav,
-[data-theme="light"] #vss-sticky-nav,
-#vss-sticky-nav.is-scrolled,
-[data-theme="light"] #vss-sticky-nav.is-scrolled {
+#fss-sticky-nav,
+[data-theme="light"] #fss-sticky-nav,
+#fss-sticky-nav.is-scrolled,
+[data-theme="light"] #fss-sticky-nav.is-scrolled {
     background: transparent !important;
     background-color: transparent !important;
     backdrop-filter: none !important;

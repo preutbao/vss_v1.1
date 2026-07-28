@@ -1,5 +1,5 @@
 ---
-title: Vietcap Smart Screener
+title: FinSmartScreener
 emoji: 📈
 colorFrom: blue
 colorTo: green
@@ -9,7 +9,7 @@ app_port: 7860
 
 <div align="center">
 
-# 📈 Vietcap Smart Screener
+# 📈 FinSmartScreener
 
 **Nền tảng sàng lọc cổ phiếu định lượng chuyên sâu cho thị trường chứng khoán Việt Nam**
 
@@ -27,11 +27,11 @@ app_port: 7860
 
 ---
 
-## 🎯 Tại sao VSS?
+## 🎯 Tại sao FSS?
 
 > *"Trong 1.500+ mã cổ phiếu niêm yết tại Việt Nam, việc tìm ra cổ phiếu đúng theo đúng chiến lược đầu tư của bạn không nên tốn hơn 30 giây."*
 
-VSS là công cụ sàng lọc định lượng **duy nhất tại Việt Nam** tích hợp đồng thời:
+FSS là công cụ sàng lọc định lượng **duy nhất tại Việt Nam** tích hợp đồng thời:
 - **165+ chỉ số** tài chính & kỹ thuật được tính toán tự động theo thời gian thực
 - **10 trường phái đầu tư** kinh điển thế giới, được tham số hoá cho đặc thù thị trường Việt Nam
 - **AI Chatbot (VinanceAI)** hỗ trợ phân tích và tư vấn cổ phiếu inline
@@ -266,13 +266,13 @@ GEMINI_MODEL=gemini-2.0-flash
 
 ```bash
 # Build image
-docker build -t vss-screener .
+docker build -t fss-screener .
 
 # Chạy container
 docker run -p 7860:7860 \
   -v $(pwd)/data:/app/data \
   -e GEMINI_API_KEY=your_key \
-  vss-screener
+  fss-screener
 ```
 
 ---
@@ -427,7 +427,7 @@ Dự án được phát hành dưới giấy phép [MIT License](LICENSE).
 
 <div align="center">
 
-**Built with ❤️ by Vietcap Smart Screener Team**
+**Built with ❤️ by FinSmartScreener Team**
 
 *"Dữ liệu không biết nói dối. Nhưng bạn cần công cụ đúng để nghe thấy nó."*
 

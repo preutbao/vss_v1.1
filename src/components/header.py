@@ -85,7 +85,7 @@ def _create_profile_modal():
         is_open=False,
         centered=True,
         size="md",
-        contentClassName="vss-profile-modal-content",
+        contentClassName="fss-profile-modal-content",
         style={"border": "none"},
         children=[
             # ── Nút đóng ─────────────────────────────────────────────────
@@ -115,14 +115,14 @@ def _create_profile_modal():
                 html.Div([
                     # Preview avatar hiện tại
                     html.Div(id="profile-avatar-preview",
-                             className="vss-profile-avatar-lg",
+                             className="fss-profile-avatar-lg",
                              children="?"),
                     # Template picker
                     html.Div([
                         # Option: initials (Google-style)
                         html.Div(
                             id={"type": "avatar-opt", "src": "initials"},
-                            className="vss-avatar-opt vss-avatar-opt--initials",
+                            className="fss-avatar-opt fss-avatar-opt--initials",
                             n_clicks=0,
                             children=html.Span(id="profile-avatar-initials-opt",
                                                style={"fontSize": "12px",
@@ -131,7 +131,7 @@ def _create_profile_modal():
                         ),
                         html.Div(
                             id={"type": "avatar-opt", "src": "initials_purple"},
-                            className="vss-avatar-opt vss-avatar-opt--initials",
+                            className="fss-avatar-opt fss-avatar-opt--initials",
                             n_clicks=0,
                             children=html.Span(id="profile-avatar-initials-purple",
                                                style={"fontSize": "12px",
@@ -141,7 +141,7 @@ def _create_profile_modal():
                         ),
                         html.Div(
                             id={"type": "avatar-opt", "src": "initials_red"},
-                            className="vss-avatar-opt vss-avatar-opt--initials",
+                            className="fss-avatar-opt fss-avatar-opt--initials",
                             n_clicks=0,
                             children=html.Span(id="profile-avatar-initials-red",
                                                style={"fontSize": "12px",
@@ -153,19 +153,19 @@ def _create_profile_modal():
                             html.Img(
                                 id={"type": "avatar-opt", "src": key},
                                 src=f"/assets/avatar_templates/{key}.png",
-                                className="vss-avatar-opt vss-avatar-opt--img",
+                                className="fss-avatar-opt fss-avatar-opt--img",
                                 n_clicks=0,
                             )
                             for key in _avatar_templates
                         ],
-                    ], className="vss-avatar-picker"),
+                    ], className="fss-avatar-picker"),
                     # Mock upload
                     html.Label([
                         html.I(className="fas fa-upload",
                                style={"marginRight": "6px"}),
                         "Tải ảnh lên",
-                    ], className="vss-avatar-upload-btn"),
-                ], className="vss-profile-avatar-section"),
+                    ], className="fss-avatar-upload-btn"),
+                ], className="fss-profile-avatar-section"),
 
                 # ── Tên hiển thị (read-only) ──────────────────────────────
                 html.Div([
@@ -175,7 +175,7 @@ def _create_profile_modal():
                                       "textTransform": "uppercase", "marginBottom": "6px",
                                       "display": "block"}),
                     html.Div(id="profile-display-name",
-                             className="vss-profile-readonly-field"),
+                             className="fss-profile-readonly-field"),
                 ], style={"marginBottom": "16px"}),
 
                 # ── Bio ───────────────────────────────────────────────────
@@ -206,7 +206,7 @@ def _create_profile_modal():
                                       "textTransform": "uppercase", "marginBottom": "8px",
                                       "display": "block"}),
                     html.Div(id="profile-investor-tags",
-                             className="vss-profile-investor-tags",
+                             className="fss-profile-investor-tags",
                              children=html.Span("Chưa thiết lập hồ sơ",
                                                 style={"color": "#6b7280",
                                                        "fontSize": "12px"})),
@@ -323,7 +323,7 @@ def _create_login_modal():
                             "marginBottom": "20px",
                         }),
                         html.H2("Đăng nhập", style={"fontSize": "24px", "fontWeight": "700", "color": "#f9fafb", "marginBottom": "6px", "letterSpacing": "-0.02em"}),
-                        html.P("Truy cập hệ thống dữ liệu định lượng VSS", style={"fontSize": "14px", "color": "#9ca3af", "marginBottom": "32px"}),
+                        html.P("Truy cập hệ thống dữ liệu định lượng FSS", style={"fontSize": "14px", "color": "#9ca3af", "marginBottom": "32px"}),
                     ]),
                     _login_field("TÊN ĐĂNG NHẬP", "login-username", placeholder="user@vietcap.com", icon_cls="fas fa-envelope"),
                     _login_field("MẬT KHẨU", "login-password", input_type="password", placeholder="••••••••", icon_cls="fas fa-lock"),
@@ -429,7 +429,7 @@ def _create_login_modal():
                                 html.Div([
                                     dbc.Input(
                                         id="invite-code-input",
-                                        placeholder="VSS-...",
+                                        placeholder="FSS-...",
                                         style={
                                             "flex": "1",
                                             "backgroundColor": "rgba(255,255,255,0.05)",
@@ -489,8 +489,8 @@ def _create_coin_svg():
     3D coin / disc SVG illustration loaded via external file.
     (Hiện không dùng trong hero — giữ lại để tái sử dụng nếu cần.)
     """
-    return html.Div(className="vss-coin-wrap", children=[
-        html.Img(src="/assets/coin.svg", className="vss-coin-svg", style={"width": "100%", "height": "100%"})
+    return html.Div(className="fss-coin-wrap", children=[
+        html.Img(src="/assets/coin.svg", className="fss-coin-svg", style={"width": "100%", "height": "100%"})
     ])
 
 
@@ -543,12 +543,12 @@ def create_topbar(id_suffix=""):
         dcc.Store(id='user-phone-store', storage_type='session', data=None),
         _create_login_modal(),
         scroll_script,
-        html.Div(id="vss-sticky-nav", children=[
-            html.Div(className="vss-nav-inner", children=[
+        html.Div(id="fss-sticky-nav", children=[
+            html.Div(className="fss-nav-inner", children=[
                 # Logo
                 html.A([
-                    html.Span("Vietcap", className="vss-logo-text"),
-                    html.Span("▲", className="vss-logo-accent", style={
+                    html.Span("Vietcap", className="fss-logo-text"),
+                    html.Span("▲", className="fss-logo-accent", style={
                         "fontSize": "10px", "marginLeft": "2px",
                         "verticalAlign": "super", "fontStyle": "normal",
                     }),
@@ -583,11 +583,11 @@ def create_topbar(id_suffix=""):
                     html.Button(
                         id="btn-user-avatar",
                         n_clicks=0,
-                        className="vss-nav-avatar-btn",
+                        className="fss-nav-avatar-btn",
                         style={"display": "none"},
                         children=[
                             html.Div(id="navbar-avatar-circle",
-                                     className="vss-nav-avatar-circle",
+                                     className="fss-nav-avatar-circle",
                                      children="?"),
                             html.Div(id="navbar-user-name",
                                      style={"fontSize": "13px",
@@ -693,73 +693,73 @@ def _build_top_movers_card(movers):
     def _row(m):
         color = "#00e676" if m["up"] else "#ff4d4f"
         sign = "+" if m["up"] else ""
-        return html.Div(className="vss-mover-row", children=[
-            html.Span(m["ticker"], className="vss-mover-ticker"),
-            html.Span(m["price"], className="vss-mover-price"),
-            html.Span(f"{sign}{m['pct']:.2f}", className="vss-mover-pct", style={"color": color}),
+        return html.Div(className="fss-mover-row", children=[
+            html.Span(m["ticker"], className="fss-mover-ticker"),
+            html.Span(m["price"], className="fss-mover-price"),
+            html.Span(f"{sign}{m['pct']:.2f}", className="fss-mover-pct", style={"color": color}),
         ])
     rows = [_row(m) for m in movers]
-    return html.Div(className="vss-movers-card", children=[
+    return html.Div(className="fss-movers-card", children=[
         # Header cố định — KHÔNG nằm trong track-wrap nên không bị cuộn
-        html.Div(className="vss-movers-header", children=[
-            html.Span("TOP MÃ BIẾN ĐỘNG - VN100", className="vss-movers-title"),
+        html.Div(className="fss-movers-header", children=[
+            html.Span("TOP MÃ BIẾN ĐỘNG - VN100", className="fss-movers-title"),
         ]),
-        html.Div(className="vss-movers-col-header", children=[
-            html.Span("Mã CK", className="vss-mover-col-ticker"),
-            html.Span("Giá", className="vss-mover-col-price"),
-            html.Span("%", className="vss-mover-col-pct"),
+        html.Div(className="fss-movers-col-header", children=[
+            html.Span("Mã CK", className="fss-mover-col-ticker"),
+            html.Span("Giá", className="fss-mover-col-price"),
+            html.Span("%", className="fss-mover-col-pct"),
         ]),
         # Track-wrap chứa list nhân đôi → cuộn liền mạch (translateY -50%)
-        html.Div(className="vss-movers-track-wrap", children=[
-            html.Div(className="vss-movers-list", children=rows + rows),
+        html.Div(className="fss-movers-track-wrap", children=[
+            html.Div(className="fss-movers-list", children=rows + rows),
         ]),
     ])
 
 
 def create_banner():
     movers = _get_top_movers()
-    return html.Div(id="vss-hero", children=[
+    return html.Div(id="fss-hero", children=[
         # Background layers — ảnh Trái Đất thật từ không gian (đặt file tại assets/earth-bg.jpg)
-        html.Div(id="vss-hero-bg"),
-        html.Div(id="vss-hero-earth-bg"),
-        html.Div(id="vss-hero-grid"),
-        html.Div(id="vss-orb-1"),
-        html.Div(id="vss-orb-2"),
+        html.Div(id="fss-hero-bg"),
+        html.Div(id="fss-hero-earth-bg"),
+        html.Div(id="fss-hero-grid"),
+        html.Div(id="fss-orb-1"),
+        html.Div(id="fss-orb-2"),
         # 2-column content
-        html.Div(id="vss-hero-content", children=[
+        html.Div(id="fss-hero-content", children=[
             # ── LEFT: Text ──
-            html.Div(className="vss-hero-left", children=[
-                html.H1(className="vss-headline", children=[
-                    html.Span("Vietcap", className="vss-headline-brand"),
-                    html.Span("Smart Screener", className="vss-headline-sub"),
+            html.Div(className="fss-hero-left", children=[
+                html.H1(className="fss-headline", children=[
+                    html.Span("TheFinWings", className="fss-headline-brand"),
+                    html.Span("Fin Smart Screener", className="fss-headline-sub"),
                 ]),
-                html.Div(className="vss-stats", children=[
-                    html.Div(className="vss-stat-card", children=[
-                        html.Div(html.I(className="fas fa-file-alt"), className="vss-stat-icon"),
+                html.Div(className="fss-stats", children=[
+                    html.Div(className="fss-stat-card", children=[
+                        html.Div(html.I(className="fas fa-file-alt"), className="fss-stat-icon"),
                         html.Div(children=[
-                            html.Div("1,500+", className="vss-stat-value"),
-                            html.Div("mã niêm yết", className="vss-stat-label"),
-                        ], className="vss-stat-body"),
+                            html.Div("1,500+", className="fss-stat-value"),
+                            html.Div("mã niêm yết", className="fss-stat-label"),
+                        ], className="fss-stat-body"),
                     ]),
-                    html.Div(className="vss-stat-card", children=[
-                        html.Div(html.I(className="fas fa-chart-bar"), className="vss-stat-icon"),
+                    html.Div(className="fss-stat-card", children=[
+                        html.Div(html.I(className="fas fa-chart-bar"), className="fss-stat-icon"),
                         html.Div(children=[
-                            html.Div("165+", className="vss-stat-value"),
-                            html.Div("chỉ báo định lượng", className="vss-stat-label"),
-                        ], className="vss-stat-body"),
+                            html.Div("165+", className="fss-stat-value"),
+                            html.Div("chỉ báo định lượng", className="fss-stat-label"),
+                        ], className="fss-stat-body"),
                     ]),
-                    html.Div(className="vss-stat-card", children=[
-                        html.Div(html.I(className="fas fa-shield-alt"), className="vss-stat-icon"),
+                    html.Div(className="fss-stat-card", children=[
+                        html.Div(html.I(className="fas fa-shield-alt"), className="fss-stat-icon"),
                         html.Div(children=[
-                            html.Div("HOSE · HNX · UPCoM", className="vss-stat-value",
+                            html.Div("HOSE · HNX · UPCoM", className="fss-stat-value",
                                      style={"fontSize": "13px"}),
-                            html.Div("sàn giao dịch", className="vss-stat-label"),
-                        ], className="vss-stat-body"),
+                            html.Div("sàn giao dịch", className="fss-stat-label"),
+                        ], className="fss-stat-body"),
                     ]),
                 ]),
             ]),
             # ── RIGHT: Card "TOP ĐỘNG" (dữ liệu thật từ data_loader) ──
-            html.Div(className="vss-hero-right", children=[
+            html.Div(className="fss-hero-right", children=[
                 _build_top_movers_card(movers),
             ]),
         ]),

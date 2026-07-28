@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   VSS ONBOARDING WIZARD — CSS
+   FSS ONBOARDING WIZARD — CSS
    Copy file này vào: assets/onboarding_wizard.css
    Dash tự động load tất cả file trong thư mục assets/
 ═══════════════════════════════════════════════════════════════ */
@@ -61,10 +61,10 @@
     radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0,144,255,0.07) 0%, transparent 55%),
     radial-gradient(ellipse 60% 40% at 90% 80%, rgba(0,229,255,0.05) 0%, transparent 50%);
   pointer-events: none; z-index: 0;
-  animation: vss-bgPulse 8s ease-in-out infinite alternate;
+  animation: fss-bgPulse 8s ease-in-out infinite alternate;
 }
 
-@keyframes vss-bgPulse {
+@keyframes fss-bgPulse {
   from { opacity: 0.6; }
   to   { opacity: 1;   }
 }
@@ -76,9 +76,9 @@
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
 /* ═══════════════════════════════════════════════════
-   WIZARD WRAPPER .vss-page
+   WIZARD WRAPPER .fss-page
 ═══════════════════════════════════════════════════ */
-.vss-page {
+.fss-page {
   position: relative; z-index: 1;
   max-width: 700px;
   margin: 0 auto;
@@ -88,7 +88,7 @@
 /* ═══════════════════════════════════════════════════
    LOGO BAR
 ═══════════════════════════════════════════════════ */
-.vss-logo-bar {
+.fss-logo-bar {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,7 +96,7 @@
   margin-bottom: 14px;
 }
 
-.vss-logo-icon {
+.fss-logo-icon {
   width: 40px; height: 40px;
   background: linear-gradient(135deg, var(--accent2), var(--accent));
   border-radius: 10px;
@@ -105,7 +105,7 @@
   box-shadow: 0 0 24px rgba(0,229,255,0.3);
 }
 
-.vss-logo-name {
+.fss-logo-name {
   font-family: var(--ff-display);
   font-size: 22px; font-weight: 800;
   letter-spacing: -0.3px;
@@ -114,7 +114,7 @@
   background-clip: text;
 }
 
-.vss-logo-tagline {
+.fss-logo-tagline {
   text-align: center;
   font-size: 14px; color: var(--t3); line-height: 1.8;
   max-width: 420px; margin: 0 auto 48px;
@@ -123,18 +123,18 @@
 /* ═══════════════════════════════════════════════════
    PROGRESS RAIL
 ═══════════════════════════════════════════════════ */
-.vss-progress-rail {
+.fss-progress-rail {
   display: flex;
   align-items: center;
   margin-bottom: 48px;
 }
 
-.vss-rail-step {
+.fss-rail-step {
   display: flex; flex-direction: column; align-items: center;
   gap: 6px; flex: 1; cursor: default;
 }
 
-.vss-rail-dot {
+.fss-rail-dot {
   width: 32px; height: 32px;
   border-radius: 50%;
   background: var(--surface);
@@ -146,37 +146,37 @@
   position: relative; z-index: 1;
 }
 
-.vss-rail-dot.done {
+.fss-rail-dot.done {
   background: var(--green);
   border-color: var(--green);
   color: #001a08;
   box-shadow: 0 0 16px rgba(0,230,118,0.4);
 }
 
-.vss-rail-dot.active {
+.fss-rail-dot.active {
   background: linear-gradient(135deg, var(--accent2), var(--accent));
   border-color: var(--accent);
   color: #001a20;
   box-shadow: 0 0 20px rgba(0,229,255,0.5);
-  animation: vss-dotPulse 2s ease-in-out infinite;
+  animation: fss-dotPulse 2s ease-in-out infinite;
 }
 
-@keyframes vss-dotPulse {
+@keyframes fss-dotPulse {
   0%,100% { box-shadow: 0 0 20px rgba(0,229,255,0.5); }
   50%      { box-shadow: 0 0 30px rgba(0,229,255,0.8); }
 }
 
-.vss-rail-label {
+.fss-rail-label {
   font-size: 9px; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.8px;
   color: var(--t4);
   transition: color 0.3s;
 }
 
-.vss-rail-label.active { color: var(--accent); }
-.vss-rail-label.done   { color: var(--green);  }
+.fss-rail-label.active { color: var(--accent); }
+.fss-rail-label.done   { color: var(--green);  }
 
-.vss-rail-line {
+.fss-rail-line {
   height: 2px; flex: 1;
   background: var(--border);
   transition: background 0.5s;
@@ -184,12 +184,12 @@
   position: relative; bottom: 10px;
 }
 
-.vss-rail-line.done { background: var(--green); }
+.fss-rail-line.done { background: var(--green); }
 
 /* ═══════════════════════════════════════════════════
    WIZARD CARD
 ═══════════════════════════════════════════════════ */
-.vss-wizard-card {
+.fss-wizard-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
@@ -197,12 +197,12 @@
   overflow: hidden;
 }
 
-.vss-wizard-body {
+.fss-wizard-body {
   padding: 40px 48px;
   position: relative;
 }
 
-.vss-wizard-footer {
+.fss-wizard-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -215,12 +215,12 @@
 /* ═══════════════════════════════════════════════════
    STEP HEADER
 ═══════════════════════════════════════════════════ */
-.vss-step-eyebrow {
+.fss-step-eyebrow {
   display: flex; align-items: center; gap: 12px;
   margin-bottom: 10px;
 }
 
-.vss-step-num {
+.fss-step-num {
   font-family: var(--ff-mono);
   font-size: 11px; font-weight: 500;
   color: var(--accent);
@@ -231,12 +231,12 @@
   white-space: nowrap;
 }
 
-.vss-step-line {
+.fss-step-line {
   height: 1px; flex: 1;
   background: linear-gradient(90deg, var(--border-hi) 0%, transparent 100%);
 }
 
-.vss-step-title {
+.fss-step-title {
   font-family: var(--ff-display) !important;
   font-size: 26px !important; font-weight: 800 !important;
   line-height: 1.2 !important;
@@ -246,7 +246,7 @@
   margin-top: 0 !important;
 }
 
-.vss-step-desc {
+.fss-step-desc {
   font-size: 14px; color: var(--t3); line-height: 1.75;
   margin-bottom: 28px;
   letter-spacing: 0.01em;
@@ -255,18 +255,18 @@
 /* ═══════════════════════════════════════════════════
    CHOICE GRID + CARDS
 ═══════════════════════════════════════════════════ */
-.vss-choice-grid {
+.fss-choice-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   margin-bottom: 10px;
 }
 
-.vss-choice-grid.cols-3 {
+.fss-choice-grid.cols-3 {
   grid-template-columns: 1fr 1fr 1fr;
 }
 
-.vss-choice-card {
+.fss-choice-card {
   position: relative;
   background: var(--surface);
   border: 1.5px solid var(--border);
@@ -279,34 +279,34 @@
   user-select: none;
 }
 
-.vss-choice-card::before {
+.fss-choice-card::before {
   content: '';
   position: absolute; inset: 0;
   background: radial-gradient(circle at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 70%);
   opacity: 0; transition: opacity 0.3s;
 }
 
-.vss-choice-card:hover {
+.fss-choice-card:hover {
   border-color: var(--border-hi);
   background: var(--card);
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
-.vss-choice-card:hover::before { opacity: 1; }
+.fss-choice-card:hover::before { opacity: 1; }
 
-.vss-choice-card.selected {
+.fss-choice-card.selected {
   border-color: var(--accent) !important;
   background: rgba(0,229,255,0.06) !important;
   box-shadow: 0 0 0 1px var(--accent), var(--glow) !important;
 }
 
-.vss-choice-card.selected::before { opacity: 1; }
+.fss-choice-card.selected::before { opacity: 1; }
 
-.vss-choice-card.selected .vss-choice-icon { color: var(--accent); }
+.fss-choice-card.selected .fss-choice-icon { color: var(--accent); }
 
 /* Check tick */
-.vss-choice-check {
+.fss-choice-check {
   position: absolute;
   top: 10px; right: 10px;
   width: 18px; height: 18px;
@@ -318,11 +318,11 @@
   transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-.vss-choice-card.selected .vss-choice-check {
+.fss-choice-card.selected .fss-choice-check {
   opacity: 1; transform: scale(1);
 }
 
-.vss-choice-icon {
+.fss-choice-icon {
   font-size: 26px;
   margin-bottom: 12px;
   display: block;
@@ -330,17 +330,17 @@
   transition: color 0.25s, transform 0.25s;
 }
 
-.vss-choice-card:hover .vss-choice-icon {
+.fss-choice-card:hover .fss-choice-icon {
   transform: scale(1.1);
 }
 
-.vss-choice-label {
+.fss-choice-label {
   font-family: var(--ff-display);
   font-size: 13px; font-weight: 700;
   color: var(--t1); line-height: 1.4;
 }
 
-.vss-choice-sub {
+.fss-choice-sub {
   font-size: 12px; color: var(--t3);
   margin-top: 5px; line-height: 1.6;
 }
@@ -348,7 +348,7 @@
 /* ═══════════════════════════════════════════════════
    SECTION LABELS (inside step 3)
 ═══════════════════════════════════════════════════ */
-.vss-section-label {
+.fss-section-label {
   font-size: 12px; font-weight: 600;
   color: var(--t3);
   text-transform: uppercase; letter-spacing: 0.8px;
@@ -358,7 +358,7 @@
 /* ═══════════════════════════════════════════════════
    SLIDER ROW
 ═══════════════════════════════════════════════════ */
-.vss-slider-row {
+.fss-slider-row {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
@@ -367,21 +367,21 @@
   transition: border-color 0.2s;
 }
 
-.vss-slider-row:hover { border-color: var(--border-hi); }
+.fss-slider-row:hover { border-color: var(--border-hi); }
 
 /* Override dcc.Slider in Dash */
-.vss-slider-row .rc-slider-track { background-color: var(--accent) !important; }
-.vss-slider-row .rc-slider-handle {
+.fss-slider-row .rc-slider-track { background-color: var(--accent) !important; }
+.fss-slider-row .rc-slider-handle {
   background: var(--accent) !important;
   border-color: var(--accent) !important;
   box-shadow: 0 0 10px rgba(0,229,255,0.5) !important;
 }
-.vss-slider-row .rc-slider-rail { background-color: var(--border) !important; }
+.fss-slider-row .rc-slider-rail { background-color: var(--border) !important; }
 
 /* ═══════════════════════════════════════════════════
    CHECKLIST (Unique flags)
 ═══════════════════════════════════════════════════ */
-.vss-check-list-wrap {
+.fss-check-list-wrap {
   padding: 16px 20px;
   background: var(--surface);
   border-radius: var(--r-md);
@@ -389,14 +389,14 @@
 }
 
 /* Override dbc.Checklist */
-.vss-check-list-wrap .form-check { margin-bottom: 12px; }
-.vss-check-list-wrap .form-check-label {
+.fss-check-list-wrap .form-check { margin-bottom: 12px; }
+.fss-check-list-wrap .form-check-label {
   color: var(--t2) !important;
   font-size: 13px;
   font-family: var(--ff-body);
   cursor: pointer;
 }
-.vss-check-list-wrap .form-check-input:checked {
+.fss-check-list-wrap .form-check-input:checked {
   background-color: var(--accent) !important;
   border-color: var(--accent) !important;
 }
@@ -404,7 +404,7 @@
 /* ═══════════════════════════════════════════════════
    DIVIDER giữa các bước
 ═══════════════════════════════════════════════════ */
-.vss-divider {
+.fss-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border), transparent);
   margin: 40px 0;
@@ -413,7 +413,7 @@
 /* ═══════════════════════════════════════════════════
    NAV BUTTONS
 ═══════════════════════════════════════════════════ */
-.vss-btn-ghost {
+.fss-btn-ghost {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 11px 24px;
   border-radius: var(--r-md);
@@ -426,13 +426,13 @@
   transition: all 0.25s !important;
 }
 
-.vss-btn-ghost:hover {
+.fss-btn-ghost:hover {
   border-color: var(--border-hi) !important;
   color: var(--t2) !important;
   background: var(--surface) !important;
 }
 
-.vss-btn-primary {
+.fss-btn-primary {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 11px 28px;
   border-radius: var(--r-md);
@@ -446,12 +446,12 @@
   transition: all 0.25s !important;
 }
 
-.vss-btn-primary:hover {
+.fss-btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,229,255,0.5) !important;
 }
 
-.vss-btn-success {
+.fss-btn-success {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 11px 28px;
   border-radius: var(--r-md);
@@ -465,12 +465,12 @@
   transition: all 0.25s !important;
 }
 
-.vss-btn-success:hover {
+.fss-btn-success:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,230,118,0.5) !important;
 }
 
-.vss-step-counter {
+.fss-step-counter {
   font-family: var(--ff-mono);
   font-size: 11px; color: var(--t4);
   background: var(--surface);
@@ -481,7 +481,7 @@
 /* ═══════════════════════════════════════════════════
    ERROR MESSAGE
 ═══════════════════════════════════════════════════ */
-.vss-error {
+.fss-error {
   color: var(--red);
   font-size: 12px;
   min-height: 20px;
@@ -491,7 +491,7 @@
 /* ═══════════════════════════════════════════════════
    FOOTER NOTE
 ═══════════════════════════════════════════════════ */
-.vss-footer-note {
+.fss-footer-note {
   text-align: center;
   font-size: 11px; color: var(--t4);
   margin-top: 32px; padding-top: 24px;
@@ -507,28 +507,28 @@
   padding: 24px 48px 48px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: vss-fadeInUp 0.5s cubic-bezier(0.4,0,0.2,1) both;
+  animation: fss-fadeInUp 0.5s cubic-bezier(0.4,0,0.2,1) both;
 }
 
-@keyframes vss-fadeInUp {
+@keyframes fss-fadeInUp {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
 
-.vss-congrats-icon {
+.fss-congrats-icon {
   font-size: 56px;
   margin-bottom: 20px;
   display: block;
   filter: drop-shadow(0 0 24px rgba(0,230,118,0.5));
-  animation: vss-iconBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
+  animation: fss-iconBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
 }
 
-@keyframes vss-iconBounce {
+@keyframes fss-iconBounce {
   from { transform: scale(0); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
 }
 
-.vss-congrats-title {
+.fss-congrats-title {
   font-family: var(--ff-display);
   font-size: 28px; font-weight: 800;
   color: var(--t1);
@@ -536,12 +536,12 @@
   margin-bottom: 12px;
 }
 
-.vss-congrats-subtitle {
+.fss-congrats-subtitle {
   font-size: 14px; color: var(--t3); line-height: 1.8;
   max-width: 420px; margin: 0 auto 32px;
 }
 
-.vss-congrats-match-card {
+.fss-congrats-match-card {
   background: linear-gradient(135deg, rgba(0,230,118,0.08), rgba(0,229,255,0.05));
   border: 1px solid rgba(0,230,118,0.25);
   border-left: 3px solid var(--green);
@@ -552,23 +552,23 @@
   text-align: left;
 }
 
-.vss-congrats-match-label {
+.fss-congrats-match-label {
   font-size: 11px; font-weight: 600;
   text-transform: uppercase; letter-spacing: 0.8px;
   color: var(--green); margin-bottom: 6px;
 }
 
-.vss-congrats-match-text {
+.fss-congrats-match-text {
   font-size: 15px; font-weight: 700;
   color: var(--t1); line-height: 1.5;
 }
 
-.vss-congrats-match-sub {
+.fss-congrats-match-sub {
   font-size: 12px; color: var(--t3);
   margin-top: 4px;
 }
 
-.vss-congrats-divider {
+.fss-congrats-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--border), transparent);
   margin: 0 auto 20px;   /* ← giảm từ 28px xuống 20px */
@@ -579,10 +579,10 @@
    RESPONSIVE
 ═══════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  .vss-page { padding: 40px 16px 80px; }
-  .vss-step-title { font-size: 20px !important; }
-  .vss-choice-grid { grid-template-columns: 1fr 1fr; }
-  .vss-choice-grid.cols-3 { grid-template-columns: 1fr; }
-  .vss-wizard-body { padding: 28px 20px; }
-  .vss-wizard-footer { padding: 16px 20px; }
+  .fss-page { padding: 40px 16px 80px; }
+  .fss-step-title { font-size: 20px !important; }
+  .fss-choice-grid { grid-template-columns: 1fr 1fr; }
+  .fss-choice-grid.cols-3 { grid-template-columns: 1fr; }
+  .fss-wizard-body { padding: 28px 20px; }
+  .fss-wizard-footer { padding: 16px 20px; }
 }

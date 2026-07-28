@@ -1,4 +1,4 @@
-<svg class="vss-coin-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+<svg class="fss-coin-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
   <style>
     .spin-slow { animation: spinSlow 22s linear infinite; transform-origin: 180px 180px; }
     .spin-reverse { animation: spinReverse 18s linear infinite; transform-origin: 180px 180px; }

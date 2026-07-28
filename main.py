@@ -1,4 +1,4 @@
-# main.py — VSS Smart Screener v1.1 (updated: IPS onboarding page)
+# main.py — FSS Smart Screener v1.1 (updated: IPS onboarding page)
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point cho cả hai môi trường:
 #   Local dev  :  python main.py
@@ -379,7 +379,7 @@ from src.backend.data_loader import (
 
 def preload_data():
     logger.info("=" * 60)
-    logger.info("🚀 VSS SMART SCREENER — Pre-loading data...")
+    logger.info("🚀 FSS SMART SCREENER — Pre-loading data...")
     logger.info("=" * 60)
 
     try:
@@ -488,8 +488,8 @@ app.clientside_callback(
 app.clientside_callback(
     """
     function(rowData, authData) {
-        var banner = document.getElementById('vss-grid-lock-banner');
-        var txt    = document.getElementById('vss-grid-lock-text');
+        var banner = document.getElementById('fss-grid-lock-banner');
+        var txt    = document.getElementById('fss-grid-lock-text');
         if (!banner) return window.dash_clientside.no_update;
 
         var isVip  = !!(authData && authData.logged_in);
@@ -519,7 +519,7 @@ app.clientside_callback(
     }
     """,
     Output("login-modal", "is_open", allow_duplicate=True),
-    Input("vss-banner-login-btn", "n_clicks"),
+    Input("fss-banner-login-btn", "n_clicks"),
     prevent_initial_call=True,
 )
 

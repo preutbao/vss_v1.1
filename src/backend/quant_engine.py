@@ -1426,7 +1426,7 @@ def calculate_all_scores(df_price, df_financial):
         df = calculate_vgm_score(df)
         df = calculate_canslim_score(df)
         df = calculate_star_rating(df)      # ← THÊM
-        df = calculate_vss_smart_rank(df)   # ← THÊM
+        df = calculate_fss_smart_rank(df)   # ← THÊM
         df = calculate_tplus_score(df)
 
         logger.info(f"✅ Hoàn tất chấm điểm cho {len(df)} mã.")
@@ -1539,7 +1539,7 @@ def calculate_all_scores(df_price, df_financial):
     calculate_all_strategies = calculate_all_scores
     
 # ==============================================================================
-# 5. STAR RATING & VSS SMART RANK
+# 5. STAR RATING & FSS SMART RANK
 # ==============================================================================
 
 def calculate_star_rating(df):
@@ -1581,9 +1581,9 @@ def calculate_star_rating(df):
     return df
 
 
-def calculate_vss_smart_rank(df):
+def calculate_fss_smart_rank(df):
     """
-    VSS Smart Rank = điểm tổng hợp để làm Tie-breaker trong cùng nhóm Star.
+    FSS Smart Rank = điểm tổng hợp để làm Tie-breaker trong cùng nhóm Star.
     Trọng số: Size 30% + Liq 20% + Valuation 20% + Quality (Star) 30%
     Giá trị từ 0.0 → 1.0 (càng cao càng tốt).
     """
@@ -1599,7 +1599,7 @@ def calculate_vss_smart_rank(df):
     # Quality: dùng Star_Rating đã tính
     df['_Rank_Quality'] = (pd.to_numeric(df.get('Star_Rating', 1), errors='coerce').fillna(1) / 5)
 
-    df['VSS_Smart_Rank'] = (
+    df['FSS_Smart_Rank'] = (
         df['_Rank_Size']    * 0.30 +
         df['_Rank_Liq']     * 0.20 +
         df['_Rank_Val']     * 0.20 +
@@ -1610,7 +1610,7 @@ def calculate_vss_smart_rank(df):
     df.drop(columns=['_Rank_Size', '_Rank_Liq', '_Rank_Val', '_Rank_Quality'],
             inplace=True, errors='ignore')
 
-    logger.info(f"   ✅ VSS Smart Rank xong — min={df['VSS_Smart_Rank'].min():.3f} max={df['VSS_Smart_Rank'].max():.3f}")
+    logger.info(f"   ✅ FSS Smart Rank xong — min={df['FSS_Smart_Rank'].min():.3f} max={df['FSS_Smart_Rank'].max():.3f}")
     return df
 
 def calculate_robo_allocation(filtered_df, nav, df_price=None):
@@ -1622,8 +1622,8 @@ def calculate_robo_allocation(filtered_df, nav, df_price=None):
         return None, nav
 
     # 1. Ưu tiên các mã điểm cao nhất (Lọc Top 5 để chạy thuật toán)
-    if 'VSS_Smart_Rank' in filtered_df.columns:
-        df_top = filtered_df.sort_values(by='VSS_Smart_Rank', ascending=False).head(5)
+    if 'FSS_Smart_Rank' in filtered_df.columns:
+        df_top = filtered_df.sort_values(by='FSS_Smart_Rank', ascending=False).head(5)
     else:
         df_top = filtered_df.sort_values(by='Star_Rating', ascending=False).head(5)
 

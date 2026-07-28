@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# requirements.txt — VSS Smart Screener
+# requirements.txt — FSS Smart Screener
 # Pinned versions để đảm bảo reproducibility khi deploy
 # ─────────────────────────────────────────────────────────────────────────────
 

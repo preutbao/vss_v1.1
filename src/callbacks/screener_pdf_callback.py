@@ -1,6 +1,6 @@
 # src/callbacks/screener_pdf_callback.py
 # ============================================================
-# PDF XUẤT DANH MỤC LỌC – Vietcap Smart Screener  v8.0
+# PDF XUẤT DANH MỤC LỌC – FinSmartScreener  v8.0
 #
 # THAY ĐỔI v8.0 (Premium Visual Redesign):
 #   - Header trang 1: gradient nền đậm, logo nổi bật, badge strategy,
@@ -44,7 +44,7 @@ from src.app_instance import app
 from src.callbacks.quant_pdf_page import _render_quant_page
 import json # Nhớ đảm bảo có import json ở đầu file
 
-# VSS Predictive 2.0 – import quant engine
+# FSS Predictive 2.0 – import quant engine
 try:
     from src.backend.portfolio_optimizer import run_full_pipeline, QuantResult
     _QUANT_AVAILABLE = True
@@ -334,7 +334,7 @@ def _footer(c, page_num, total=4):
     # =====================================================================
     url_link = "https://huggingface.co/spaces/preut/VietcapSmartScreener"
     cta_label = "Tự tạo danh mục đầu tư theo gu của bạn tại: "
-    cta_link_text = "VSS Live Web App" # Rút gọn text hiển thị cho sang trọng
+    cta_link_text = "FSS Live Web App" # Rút gọn text hiển thị cho sang trọng
 
     # Tính toán kích thước Nút bấm
     c.setFont("VnFont", 7.5)
@@ -380,7 +380,7 @@ def _footer(c, page_num, total=4):
     # =====================================================================
     c.setFont("VnFont", 6.5)
     c.setFillColor(colors.HexColor("#9CA3AF")) # Chuyển màu xám mờ để tập trung mắt vào CTA
-    c.drawString(MARGIN, 8, "Vietcap Smart Screener – Báo cáo VIP NAV Edition.")
+    c.drawString(MARGIN, 8, "FinSmartScreener – Báo cáo VIP NAV Edition.")
     
     c.drawRightString(PW - MARGIN, 8, f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
@@ -446,8 +446,8 @@ def _page2_mini_header(c, title, subtitle, page_color=None):
 
     # Logo trái
     c.setFont("VnFont-Bold", 11); c.setFillColor(colors.HexColor("#0057B8"))
-    c.drawString(MARGIN, PH - 20, "VSS")
-    lw = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 11)
+    c.drawString(MARGIN, PH - 20, "FSS")
+    lw = pdfmetrics.stringWidth("FSS", "VnFont-Bold", 11)
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
     c.line(MARGIN + lw + 5, PH - 24, MARGIN + lw + 5, PH - 10)
     c.setFont("VnFont", 9); c.setFillColor(colors.HexColor("#1A3A5C"))
@@ -467,7 +467,7 @@ def _page2_mini_header(c, title, subtitle, page_color=None):
 
     # Breadcrumb trái
     c.setFont("VnFont", 6.5); c.setFillColor(colors.HexColor("#7A9FBF"))
-    c.drawString(MARGIN, PH - 38, "Vietcap Smart Screener  ·  Báo cáo danh mục lọc")
+    c.drawString(MARGIN, PH - 38, "FinSmartScreener  ·  Báo cáo danh mục lọc")
 
 def _ai_box(c, text, x, y, w,
             box_color, border_color, accent_color,
@@ -1324,26 +1324,26 @@ def _render_page1(c, stats, ai_texts, filter_params, strategy_title, df_top, red
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
     c.line(0, PH - HDR_BAND_H, PW, PH - HDR_BAND_H)
 
-    # ── DÒNG 1 (y=PH-22): Logo VSS | tagline | "BÁO CÁO" | datetime ──
+    # ── DÒNG 1 (y=PH-22): Logo FSS | tagline | "BÁO CÁO" | datetime ──
     y1 = PH - 21
 
-    # "VSS" xanh đậm bold
+    # "FSS" xanh đậm bold
     c.setFont("VnFont-Bold", 14); c.setFillColor(colors.HexColor("#0057B8"))
-    c.drawString(MARGIN, y1, "VSS")
-    lw_vss = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 14)
+    c.drawString(MARGIN, y1, "FSS")
+    lw_fss = pdfmetrics.stringWidth("FSS", "VnFont-Bold", 14)
 
     # Divider dọc
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.2)
-    c.line(MARGIN + lw_vss + 6, y1 - 2, MARGIN + lw_vss + 6, y1 + 12)
+    c.line(MARGIN + lw_fss + 6, y1 - 2, MARGIN + lw_fss + 6, y1 + 12)
 
     # "Smart Screener" xám đậm
     c.setFont("VnFont", 11); c.setFillColor(colors.HexColor("#1A3A5C"))
-    c.drawString(MARGIN + lw_vss + 12, y1, "Smart Screener")
+    c.drawString(MARGIN + lw_fss + 12, y1, "Smart Screener")
     sw_ss = pdfmetrics.stringWidth("Smart Screener", "VnFont", 11)
 
     # Tagline nhỏ xám nhạt
     c.setFont("VnFont", 7.5); c.setFillColor(colors.HexColor("#5A80A0"))
-    c.drawString(MARGIN + lw_vss + sw_ss + 20, y1 + 1,
+    c.drawString(MARGIN + lw_fss + sw_ss + 20, y1 + 1,
                  "Phân tích cổ phiếu chuyên sâu · Thị trường VN")
 
     # Góc phải: "BÁO CÁO DANH MỤC LỌC" xanh đậm bold
@@ -2082,8 +2082,8 @@ def generate_screener_pdf(
     # 7. VẼ BÁO CÁO PDF BẰNG REPORTLAB
     buf = io.BytesIO()
     c   = rl_canvas.Canvas(buf, pagesize=A4)
-    c.setTitle("Vietcap Smart Screener - Báo Cáo Danh Mục Lọc")
-    c.setAuthor("Vietcap Smart Screener")
+    c.setTitle("FinSmartScreener - Báo Cáo Danh Mục Lọc")
+    c.setAuthor("FinSmartScreener")
     c.setSubject(f"Chiến lược {strategy_label} - {datetime.now().strftime('%d/%m/%Y')}")
 
     try:
@@ -2094,7 +2094,7 @@ def generate_screener_pdf(
         c.showPage()
         _render_page3(c, df_top, ncn_rows, flag_rows, ai_texts)
         c.showPage()
-        # Trang 4: VSS Predictive – chỉ render khi include_quant=True
+        # Trang 4: FSS Predictive – chỉ render khi include_quant=True
         if include_quant and _QUANT_AVAILABLE:
             try:
                 _qr_for_pdf = run_full_pipeline(

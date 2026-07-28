@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Dockerfile — VSS Smart Screener
+# Dockerfile — FSS Smart Screener
 # Target: Hugging Face Spaces (Docker SDK)
 #
 # Lưu ý Hugging Face Spaces:
@@ -34,7 +34,7 @@ RUN pip install --upgrade pip --quiet \
 FROM python:3.11-slim
 
 # Metadata
-LABEL maintainer="Vietcap Smart Screener"
+LABEL maintainer="FinSmartScreener"
 LABEL description="Vietnamese Stock Screener — Dash + Gunicorn"
 
 # Biến môi trường

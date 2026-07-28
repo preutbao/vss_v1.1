@@ -198,7 +198,7 @@ def _build_tour_step(step: int):
                     ]),
                 ]),
                 # Badge
-                html.Div("VIETCAP SMART SCREENER", style={
+                html.Div("FINSMARTSCREENER", style={
                     "fontFamily": "'JetBrains Mono', monospace",
                     "fontSize": "9px", "fontWeight": "700",
                     "color": "#00d4ff", "letterSpacing": "3px",
@@ -457,7 +457,7 @@ def _build_tour_step(step: int):
                             "color": "#e6edf3", "fontWeight": "800", "margin": "0", 
                             "fontFamily": "'Sora', sans-serif", "letterSpacing": "-0.5px"
                         }),
-                        html.P("Hệ thống Vietcap Smart Screener sẽ tự động tối ưu giao diện phù hợp nhất với bạn:", style={
+                        html.P("Hệ thống FinSmartScreener sẽ tự động tối ưu giao diện phù hợp nhất với bạn:", style={
                             "fontSize": "13px", "color": "#8b949e", "margin": "4px 0 0"
                         }),
                     ], style={"flex": "1"})

@@ -1,6 +1,6 @@
 # src/backend/portfolio_optimizer.py
 # ============================================================
-# VSS PREDICTIVE FRAMEWORK 2.0 – Portfolio Optimizer
+# FSS PREDICTIVE FRAMEWORK 2.0 – Portfolio Optimizer
 # ============================================================
 # Stage 2: get_price_history_for_quant()   – data pipeline
 # Stage 3: Seasonality → Markowitz → Monte Carlo Bootstrap
@@ -611,7 +611,7 @@ def run_full_pipeline(
     max_picks: int     = 5,
 ) -> QuantResult:
     """
-    Chạy toàn bộ pipeline VSS Predictive 2.0 từ NCN rows → QuantResult.
+    Chạy toàn bộ pipeline FSS Predictive 2.0 từ NCN rows → QuantResult.
 
     Args:
         ncn_rows:     List[dict] từ _prepare_ncn_rows() trong screener_pdf_callback

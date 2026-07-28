@@ -972,7 +972,7 @@ layout = html.Div([
                     html.Div([
                         html.I(
                             className="fas fa-info-circle",
-                            id="btn-about-vss",
+                            id="btn-about-fss",
                             n_clicks=0,
                             style={
                                 "color": "#00a651", "fontSize": "16px",
@@ -983,13 +983,13 @@ layout = html.Div([
                             },
                         ),
                         dbc.Tooltip(
-                            "Về VSS & Cách hoạt động",
-                            target="btn-about-vss",
+                            "Về FSS & Cách hoạt động",
+                            target="btn-about-fss",
                             placement="right",
-                            className="custom-vss-tooltip", # <--- Thêm class name này
+                            className="custom-fss-tooltip", # <--- Thêm class name này
                             style={"zIndex": "10001"}       # <--- Ép z-index cao hơn header (9000)
                         ),
-                        html.B("VIETCAP SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
+                        html.B("FIN SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
                         
                         dbc.Button(
                             id="mode-toggle-btn",
@@ -1487,12 +1487,12 @@ layout = html.Div([
                             "sort": {
                                 "sortModel": [
                                     {"colId": "Star_Rating",    "sort": "desc"},
-                                    {"colId": "VSS_Smart_Rank", "sort": "desc"},
+                                    {"colId": "FSS_Smart_Rank", "sort": "desc"},
                                 ]
                             }
                         },
                         "rowClassRules": {
-                            "vss-locked-row": "params.data && params.data._locked === true",
+                            "fss-locked-row": "params.data && params.data._locked === true",
                         },
                         "getRowStyle": _ROW_STYLE,
                         "tooltipShowDelay": 300,
@@ -1503,21 +1503,21 @@ layout = html.Div([
                     }
                 ),
                 html.Div(
-                    id="vss-grid-lock-banner",
+                    id="fss-grid-lock-banner",
                     style={"display": "none"},
                     children=[
                         html.Div([
                             html.I(className="fas fa-lock",
                                 style={"fontSize": "18px", "color": "#10b981",
                                         "marginBottom": "8px", "display": "block"}),
-                            html.Div(id="vss-grid-lock-text",
+                            html.Div(id="fss-grid-lock-text",
                                     style={"fontWeight": "700", "color": "#e5e7eb",
                                             "fontSize": "14px", "marginBottom": "4px"}),
                             html.Div("Khách thường chỉ xem 3 mã đầu tiên.",
                                     style={"fontSize": "12px", "color": "#4d7a9a",
                                             "marginBottom": "12px"}),
                             dbc.Button("Đăng nhập VIP ngay",
-                                    id="vss-banner-login-btn",
+                                    id="fss-banner-login-btn",
                                     n_clicks=0,
                                     style={"background": "linear-gradient(135deg,#0090ff,#00e5ff)",
                                             "border": "none", "color": "#001a20",
@@ -1530,7 +1530,7 @@ layout = html.Div([
                             "borderRadius": "0 0 12px 12px",
                         }),
                     ],
-                    className="vss-grid-lock-banner-wrap",
+                    className="fss-grid-lock-banner-wrap",
                 ),
                 html.Div(id="filter-null-alert", style={"padding": "0 16px 8px 16px"})
             ], className="info-card mb-3")
@@ -1662,13 +1662,13 @@ layout = html.Div([
         contentClassName="bg-transparent border-0 p-0",
     ),
 
-# ── ABOUT VSS MODAL (Điểm neo thông tin) ────────────────────────────────
+# ── ABOUT FSS MODAL (Điểm neo thông tin) ────────────────────────────────
 dbc.Modal([
     dbc.ModalHeader(
         dbc.ModalTitle([
             html.I(className="fas fa-chart-network",
                    style={"color": "#00a651", "marginRight": "10px"}),
-            "Về Vietcap Smart Screener",
+            "Về FinSmartScreener",
         ]),
         close_button=True,
     ),
@@ -1682,14 +1682,14 @@ dbc.Modal([
                        "fontFamily": "'Be Vietnam Pro', sans-serif"},
             ),
             html.P(
-                "VSS ban đầu chỉ là một đồ án nhóm môn Phân tích chứng khoán của tụi mình – "
+                "FSS ban đầu chỉ là một đồ án nhóm môn Phân tích chứng khoán của tụi mình – "
                 "những sinh viên chuyên ngành Fintech tại Đại học Kinh tế - Luật (UEL). "
                 "Khi ngụp lặn trong hàng núi báo cáo tài chính và sự biến động của thị trường, "
                 "tụi mình nhận ra: Rất khó để nhà đầu tư cá nhân chiến thắng nếu chỉ dựa vào cảm xúc hoặc 'phím hàng'.",
                 style={"fontSize": "13px", "color": "#7aafcc", "lineHeight": "1.6", "marginBottom": "6px"},
             ),
             html.P(
-                "Đó là lý do VSS ra đời. Tụi mình muốn tạo ra một công cụ minh bạch, 100% dựa trên dữ liệu thực, "
+                "Đó là lý do FSS ra đời. Tụi mình muốn tạo ra một công cụ minh bạch, 100% dựa trên dữ liệu thực, "
                 "giúp bạn loại bỏ tâm lý FOMO và ra quyết định chỉ trong 30 giây.",
                 style={"fontSize": "13px", "color": "#7aafcc", "lineHeight": "1.6", "margin": "0"},
             )
@@ -1705,7 +1705,7 @@ dbc.Modal([
         html.Div([
             html.Div([
                 html.I(className="fas fa-info-circle", style={"color": "#0090ff", "marginRight": "8px"}),
-                html.Span("Cách VSS bảo vệ bạn",
+                html.Span("Cách FSS bảo vệ bạn",
                           style={"fontSize": "13px", "fontWeight": "700", "color": "#0090ff", "letterSpacing": "0.05em"}),
             ], style={"marginBottom": "12px"}),
             
@@ -1741,7 +1741,7 @@ dbc.Modal([
         html.Div([
             html.Div([
                 html.I(className="fas fa-users", style={"color": "#ffb300", "marginRight": "8px"}),
-                html.Span("Những người xây dựng VSS",
+                html.Span("Những người xây dựng FSS",
                           style={"fontSize": "13px", "fontWeight": "700", "color": "#ffb300", "letterSpacing": "0.05em"}),
             ], style={"marginBottom": "12px"}),
             
@@ -1784,7 +1784,7 @@ dbc.Modal([
         }),
 
     ], style={"backgroundColor": "#091526"}),
-], id="about-vss-modal", size="lg", is_open=False, centered=True, style={"fontFamily": "'DM Sans', sans-serif"}),
+], id="about-fss-modal", size="lg", is_open=False, centered=True, style={"fontFamily": "'DM Sans', sans-serif"}),
 
     # Store tạm chứa ticker được chọn — để render modal nhanh trước, load data sau
     dcc.Store(id="selected-ticker-store", data=None),
@@ -1868,10 +1868,10 @@ html.Div([
                      style={"width": "28px", "height": "28px", "borderRadius": "50%",
                             "marginRight": "8px", "flexShrink": "0", "alignSelf": "flex-end"}),
             html.Div([
-                html.Div("Vietcap Smart Screener", style={
+                html.Div("FinSmartScreener", style={
                     "fontSize": "10px", "color": "#8b949e", "marginBottom": "4px"}),
                 html.Div(
-                    "Xin chào! 👋 Tôi là trợ lý liên lạc tự động của Vietcap Smart Screener. "
+                    "Xin chào! 👋 Tôi là trợ lý liên lạc tự động của FinSmartScreener. "
                     "Hãy để lại tin nhắn, tôi sẽ forward tin nhắn trực tiếp vào tin nhắn chờ Zalo của team tư vấn đầu tư. Đội ngũ tư vấn đầu tư của chúng tôi sẽ liên hệ lại qua Zalo sớm nhất!\nTeam tư vấn gồm:\n1. Ngô Cao Nguyên\n2. Phan Đặng Anh Kiệt\n3. Cao Huỳnh Tuyết Trân",
                     style={
                         "backgroundColor": "#1e2d3d",

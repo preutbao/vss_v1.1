@@ -419,7 +419,7 @@ def load_profile_modal(is_open, auth_data, investor_profile):
         ] if x]
 
         tags = html.Div([
-            html.Span(p, className="vss-profile-tag") for p in parts
+            html.Span(p, className="fss-profile-tag") for p in parts
         ], style={"display": "flex", "flexWrap": "wrap", "gap": "6px"})
     else:
         tags = html.Span("Chưa thiết lập hồ sơ",

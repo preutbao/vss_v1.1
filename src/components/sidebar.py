@@ -62,7 +62,7 @@ def _toolbar_tab(tab_id, icon_cls, label, is_active=False):
 _STRATEGY_GROUPS = [
     {
         "id": "grp-vietcap",
-        "label": "🏆  Vietcap Khuyến nghị",
+        "label": "🏆  Chiến lược Khuyến nghị",
         "strategies": [
             ("STRAT_NCN", "🛡️  Khẩu Vị Phòng Thủ — Team TVĐT"),
         ],

@@ -41,29 +41,29 @@ def _step_header(step_num, title, subtitle):
     """Header chuẩn dùng class CSS từ onboarding_wizard.css."""
     return html.Div([
         html.Div([
-            html.Span(f"Bước {step_num:02d} / 05", className="vss-step-num"),
-            html.Div(className="vss-step-line"),
-        ], className="vss-step-eyebrow"),
-        html.H4(title, className="vss-step-title"),
-        html.P(subtitle, className="vss-step-desc"),
+            html.Span(f"Bước {step_num:02d} / 05", className="fss-step-num"),
+            html.Div(className="fss-step-line"),
+        ], className="fss-step-eyebrow"),
+        html.H4(title, className="fss-step-title"),
+        html.P(subtitle, className="fss-step-desc"),
     ])
 
 
 def _choice_card(group, value, icon, label, sub):
-    """Card lựa chọn — dùng class vss-choice-card, toggle class 'selected' qua callback."""
+    """Card lựa chọn — dùng class fss-choice-card, toggle class 'selected' qua callback."""
     return html.Div(
         [
             # Check tick (hiện khi selected)
-            html.Div("✓", className="vss-choice-check"),
+            html.Div("✓", className="fss-choice-check"),
             # Icon
-            html.I(className=f"{icon} vss-choice-icon"),
+            html.I(className=f"{icon} fss-choice-icon"),
             # Label + sub
-            html.Div(label, className="vss-choice-label"),
-            html.Div(sub,   className="vss-choice-sub"),
+            html.Div(label, className="fss-choice-label"),
+            html.Div(sub,   className="fss-choice-sub"),
         ],
         id={"type": "ips-choice", "id": f"{group}-{value}"},
         n_clicks=0,
-        className="vss-choice-card",
+        className="fss-choice-card",
     )
 
 
@@ -118,8 +118,8 @@ def _step1():
                 "Lướt sóng & Nắm bắt cơ hội",
                 "Canh bảng điện thường xuyên. Tìm điểm bùng phát "
                 "Volume, Breakout kỹ thuật. Chấp nhận rủi ro ngắn hạn cao."),
-        ], className="vss-choice-grid"),
-        html.Div(id="ips-step1-error", className="vss-error"),
+        ], className="fss-choice-grid"),
+        html.Div(id="ips-step1-error", className="fss-error"),
     ])
 
 
@@ -150,8 +150,8 @@ def _step2():
                 "Bắt đáy, mua thêm",
                 "Thị trường giảm = hàng tốt đang sale. Giải ngân "
                 "thêm vào những mã đã nghiên cứu kỹ, trung bình giá xuống."),
-        ], className="vss-choice-grid"),
-        html.Div(id="ips-step2-error", className="vss-error"),
+        ], className="fss-choice-grid"),
+        html.Div(id="ips-step2-error", className="fss-error"),
     ])
 
 
@@ -159,24 +159,24 @@ def _step3():
     return html.Div(id="ips-step-3", children=[
         _step_header(3,
             "Hoàn cảnh & Ràng buộc Cá nhân",
-            "Thêm thông tin để VSS cá nhân hóa bộ lọc phù hợp "
+            "Thêm thông tin để FSS cá nhân hóa bộ lọc phù hợp "
             "với thực tế tài chính của bạn."),
 
-        html.P("1. Đường cong đầu tư (Time Horizon)", className="vss-section-label"),
+        html.P("1. Đường cong đầu tư (Time Horizon)", className="fss-section-label"),
         html.Div([
             _choice_card("time", "short", "fas fa-hourglass-start", "Dưới 1 Năm",  "Ngắn hạn, chu kỳ quay vòng nhanh."),
             _choice_card("time", "mid",   "fas fa-hourglass-half",  "1 – 3 Năm",   "Trung hạn, đủ cho 1 chu kỳ kinh doanh."),
             _choice_card("time", "long",  "fas fa-hourglass-end",   "Trên 3 Năm",  "Dài hạn, tận dụng sức mạnh lãi kép."),
-        ], className="vss-choice-grid cols-3", style={"marginBottom": "24px"}),
+        ], className="fss-choice-grid cols-3", style={"marginBottom": "24px"}),
 
-        html.P("2. Nhu cầu Thanh khoản (Liquidity)", className="vss-section-label"),
+        html.P("2. Nhu cầu Thanh khoản (Liquidity)", className="fss-section-label"),
         html.Div([
             _choice_card("liq", "high", "fas fa-water",    "Biến động cao",      "Dễ phát sinh rút vốn (Cash outflow) đột xuất."),
             _choice_card("liq", "mid",  "fas fa-sliders-h","Dự phóng được",      "Có kế hoạch rút vốn một phần định kỳ."),
             _choice_card("liq", "low",  "fas fa-lock",     "Khóa vốn dài hạn",  "Vốn nhàn rỗi hoàn toàn, không áp lực."),
-        ], className="vss-choice-grid cols-3", style={"marginBottom": "28px"}),
+        ], className="fss-choice-grid cols-3", style={"marginBottom": "28px"}),
 
-        html.P("3. Chỉ số Tài chính Cá nhân", className="vss-section-label"),
+        html.P("3. Chỉ số Tài chính Cá nhân", className="fss-section-label"),
 
         html.Div([
             html.Div("Bạn tiết kiệm được bao nhiêu % thu nhập mỗi tháng?",
@@ -185,7 +185,7 @@ def _step3():
                      style={"fontSize": "11px", "color": _TEXT_MUT, "marginBottom": "12px"}),
             dcc.Slider(0, 100, 10, value=30, id="ips-pct-savings-slider",
                        tooltip={"placement": "bottom", "always_visible": True}),
-        ], className="vss-slider-row"),
+        ], className="fss-slider-row"),
 
         html.Div([
             html.Div("Quỹ dự phòng khẩn cấp của bạn đủ mấy tháng chi tiêu?",
@@ -194,10 +194,10 @@ def _step3():
                      style={"fontSize": "11px", "color": _TEXT_MUT, "marginBottom": "12px"}),
             dcc.Slider(0, 12, 1, value=4, id="ips-emergency-slider",
                        tooltip={"placement": "bottom", "always_visible": True}),
-        ], className="vss-slider-row"),
+        ], className="fss-slider-row"),
 
         html.P("4. Tùy chỉnh thêm (không bắt buộc)",
-            className="vss-section-label", style={"marginTop": "20px"}),
+            className="fss-section-label", style={"marginTop": "20px"}),
 
         html.Div([
             dbc.Checklist(
@@ -223,9 +223,9 @@ def _step3():
                 id="ips-unique-checklist",
                 inline=False,
             )
-        ], className="vss-check-list-wrap"),
+        ], className="fss-check-list-wrap"),
 
-        html.Div(id="ips-step3-error", className="vss-error"),
+        html.Div(id="ips-step3-error", className="fss-error"),
     ])
 
 
@@ -233,7 +233,7 @@ def _step4():
     return html.Div(id="ips-step-4", children=[
         _step_header(4,
             "Hồ sơ Nhà đầu tư của bạn",
-            "VSS đã tổng hợp chiến lược phù hợp dựa trên câu trả lời của bạn. "
+            "FSS đã tổng hợp chiến lược phù hợp dựa trên câu trả lời của bạn. "
             "Xem lại ngay trước khi áp dụng vào Screener."),
         html.Div(id="ips-profile-preview"),
     ])
@@ -283,22 +283,22 @@ layout = html.Div(
         _hero_section(),
 
         # ── Wizard ──────────────────────────────────────────────────────────
-        html.Div(className="vss-page", children=[
+        html.Div(className="fss-page", children=[
 
             # Logo bar
             html.Div([
-                html.Div("📈", className="vss-logo-icon"),
-                html.Div("VSS Smart Screener", className="vss-logo-name"),
-            ], className="vss-logo-bar"),
+                html.Div("📈", className="fss-logo-icon"),
+                html.Div("FSS Smart Screener", className="fss-logo-name"),
+            ], className="fss-logo-bar"),
 
             html.P(
                 "Hệ thống lọc & chấm điểm cổ phiếu tự động — Ra quyết định trong 30 giây dựa trên 100% dữ liệu thực.",
-                className="vss-logo-tagline",
+                className="fss-logo-tagline",
                 style={"fontWeight": "600"},
             ),
             html.P(
-                "Trước khi bắt đầu, hãy để VSS hiểu rõ hơn về bạn — chỉ mất 2 phút để thiết lập hồ sơ đầu tư cá nhân.",
-                className="vss-logo-tagline",
+                "Trước khi bắt đầu, hãy để FSS hiểu rõ hơn về bạn — chỉ mất 2 phút để thiết lập hồ sơ đầu tư cá nhân.",
+                className="fss-logo-tagline",
             ),
 
             # ── MISSION CARD (Trust Builder) ─────────────────────────────────────
@@ -308,14 +308,14 @@ layout = html.Div(
                         html.I(className="fas fa-shield-alt",
                             style={"color": _GREEN, "fontSize": "18px",
                                     "marginRight": "10px", "flexShrink": "0"}),
-                        html.Span("Sứ mệnh của VSS",
+                        html.Span("Sứ mệnh của FSS",
                                 style={"fontWeight": "800", "color": _TEXT_PRI,
                                         "fontSize": "15px", "fontFamily": _FONT_DISPLAY}),
                     ], style={"display": "flex", "alignItems": "center",
                             "marginBottom": "10px"}),
                     html.P(
                         "Bảo vệ tài sản nhà đầu tư trước các rủi ro tiềm ẩn của thị trường. "
-                        "VSS mang đến công cụ minh bạch giúp bạn loại bỏ tâm lý FOMO, "
+                        "FSS mang đến công cụ minh bạch giúp bạn loại bỏ tâm lý FOMO, "
                         "rà soát rủi ro và đầu tư bền vững hơn.",
                         style={"fontSize": "13px", "color": _TEXT_SEC,
                             "lineHeight": "1.7", "margin": "0 0 12px 0"},
@@ -350,13 +350,13 @@ layout = html.Div(
             ], style={"marginBottom": "28px"}),
 
             # Progress rail (được render bởi callback render_step_visibility)
-            html.Div(id="ips-progress-bar", className="vss-progress-rail",
+            html.Div(id="ips-progress-bar", className="fss-progress-rail",
                      style={"marginBottom": "32px"}),
 
             # Wizard card
-            html.Div(id="vss-wizard-card", className="vss-wizard-card", children=[
+            html.Div(id="fss-wizard-card", className="fss-wizard-card", children=[
                 # Body — chứa 5 bước
-                html.Div(className="vss-wizard-body", children=[
+                html.Div(className="fss-wizard-body", children=[
                     _step1(), _step2(), _step3(), _step4(), _step5(),
                     # dcc.Store
                     dcc.Store(id="ips-current-step", data=1),
@@ -367,21 +367,21 @@ layout = html.Div(
                     dcc.Store(id="ips-scroll-store", data=None),
                 ]),
                 # Footer — nút điều hướng
-                html.Div(className="vss-wizard-footer", children=[
+                html.Div(className="fss-wizard-footer", children=[
                     dbc.Button(
                         [html.I(className="fas fa-arrow-left",
                                 style={"marginRight": "8px"}), "Quay lại"],
                         id="ips-btn-prev",
-                        className="vss-btn-ghost",
+                        className="fss-btn-ghost",
                     ),
                     html.Span("Bước 1–3 / 5", id="ips-step-counter",
-                              className="vss-step-counter"),
+                              className="fss-step-counter"),
                     dbc.Button(
                         ["Tiếp tục ",
                          html.I(className="fas fa-arrow-right",
                                 style={"marginLeft": "8px"})],
                         id="ips-btn-next",
-                        className="vss-btn-primary",
+                        className="fss-btn-primary",
                     ),
                 ]),
             ]),
@@ -389,23 +389,23 @@ layout = html.Div(
             html.Div(
                 id="ips-congrats-screen",
                 children=[
-                    html.Span("🏆", className="vss-congrats-icon"),
-                    html.Div("Hồ sơ đầu tư đã sẵn sàng!", className="vss-congrats-title"),
+                    html.Span("🏆", className="fss-congrats-icon"),
+                    html.Div("Hồ sơ đầu tư đã sẵn sàng!", className="fss-congrats-title"),
                     html.P(
-                        "VSS đã phân tích xong khẩu vị rủi ro và mục tiêu của bạn. "
+                        "FSS đã phân tích xong khẩu vị rủi ro và mục tiêu của bạn. "
                         "Bộ lọc Screener đã được cấu hình tự động theo hồ sơ cá nhân.",
-                        className="vss-congrats-subtitle",
+                        className="fss-congrats-subtitle",
                     ),
                     html.Div([
                         html.Div("Danh mục phù hợp hồ sơ của bạn",
-                                 className="vss-congrats-match-label"),
+                                 className="fss-congrats-match-label"),
                         html.Div(id="ips-congrats-match-text",
-                                 className="vss-congrats-match-text",
+                                 className="fss-congrats-match-text",
                                  children="Đang tính toán..."),
                         html.Div("Dựa trên dòng tiền thực, lọc sạch rủi ro sổ sách.",
-                                 className="vss-congrats-match-sub"),
-                    ], className="vss-congrats-match-card"),
-                    html.Div(className="vss-congrats-divider"),
+                                 className="fss-congrats-match-sub"),
+                    ], className="fss-congrats-match-card"),
+                    html.Div(className="fss-congrats-divider"),
                     html.Div([
                         dbc.Button(
                             [
@@ -414,7 +414,7 @@ layout = html.Div(
                                 "Tải báo cáo hồ sơ PDF",
                             ],
                             id="ips-btn-download-pdf",
-                            className="vss-btn-primary",
+                            className="fss-btn-primary",
                             style={"fontSize": "14px", "padding": "13px 32px",
                                    "border": "none"},
                             n_clicks=0,
@@ -438,7 +438,7 @@ layout = html.Div(
                     html.P(
                         "Khách thường chỉ xem được 3 mã đầu tiên. "
                         "VIP nhận toàn bộ danh sách + cảnh báo rủi ro Red Flag.",
-                        className="vss-congrats-match-sub",
+                        className="fss-congrats-match-sub",
                         style={"textAlign": "center"},
                     ),
                 ],
@@ -457,7 +457,7 @@ layout = html.Div(
             ], style={"textAlign": "center", "marginTop": "28px"}),
             html.P(
                 "🔒 Dữ liệu hồ sơ được mã hóa và lưu trữ cục bộ trên thiết bị của bạn.",
-                className="vss-footer-note",
+                className="fss-footer-note",
             ),
         ]),
         # ── FAQ ─────────────────────────────────────────────────────────────
@@ -497,8 +497,8 @@ layout = html.Div(
                                     "display": "block" if i == 1 else "none"}),
                 ], style={"borderBottom": f"1px solid {_BORDER}", "padding": "32px 0"})
                 for i, q, a in [
-                    (1, "Vietcap Smart Screener (VSS) là gì?",
-                     "VSS là nền tảng Robo-Advisor kết hợp lọc cổ phiếu định lượng. Không chỉ giúp bạn tìm ra cổ phiếu tốt theo dữ liệu thực tế, VSS còn đóng vai trò như một Cố vấn Tài chính: Gợi ý cách đi tiền, quản trị rủi ro và 'cấp cứu' danh mục khi thị trường biến động..."),
+                    (1, "FinSmartScreener (FSS) là gì?",
+                     "FSS là nền tảng Robo-Advisor kết hợp lọc cổ phiếu định lượng. Không chỉ giúp bạn tìm ra cổ phiếu tốt theo dữ liệu thực tế, FSS còn đóng vai trò như một Cố vấn Tài chính: Gợi ý cách đi tiền, quản trị rủi ro và 'cấp cứu' danh mục khi thị trường biến động..."),
                     (2, "Điểm xếp hạng VGM có ý nghĩa gì?",
                      "Đây là hệ thống đánh giá độc quyền qua 3 trụ cột: Value (Định giá), Growth (Tăng trưởng) và Momentum (Động lượng). Điểm VGM tổng hợp giúp bạn nhanh chóng nhận diện cổ phiếu nào đang được thị trường đánh giá cao về cả tiềm năng tăng trưởng lẫn định giá hợp lý, từ đó tối ưu hóa danh mục đầu tư của mình."),
                     (3, "Tôi có vốn ít (10-50 triệu) có dùng được không?",
@@ -506,11 +506,11 @@ layout = html.Div(
                     (4, "Trợ lý VinanceAI có thể làm gì?",
                      "Hãy mở VinanceAI (Icon góc phải) khi đang xem một cổ phiếu. Bot sẽ lập tức đọc dữ liệu thị trường và phân tích cơ hội/rủi ro cho riêng mã đó như một Broker thực thụ."),
                     (5, "Tính năng 'Danh mục' khác gì bảng điện?",
-                     "Khác biệt ở chức năng 'Phòng khám danh mục'. VSS không chỉ hiển thị Lãi/Lỗ mà còn dự báo kịch bản sập hầm, đo lường tỷ lệ Margin và chỉ định nên Bán/Giữ mã nào để cứu tài khoản."),
+                     "Khác biệt ở chức năng 'Phòng khám danh mục'. FSS không chỉ hiển thị Lãi/Lỗ mà còn dự báo kịch bản sập hầm, đo lường tỷ lệ Margin và chỉ định nên Bán/Giữ mã nào để cứu tài khoản."),
                     (6, "Có thể tự tạo bộ lọc cá nhân không?",
                      "Hoàn toàn được. Ở tab Chiến lược, bạn có thể chọn các mẫu có sẵn (CANSLIM, Tích sản...) hoặc tự kết hợp các chỉ số cơ bản/kỹ thuật để tạo nên 'chén thánh' của riêng mình."),
-                    (7, "VSS chọn lọc cổ phiếu dựa trên nguyên tắc nào?",
-                     "VSS vận hành trên 2 nguyên tắc cốt lõi: (1) Phòng thủ chặt — tự động quét và loại bỏ các công ty xào nấu sổ sách, lãi giả lỗ thật, giúp bạn an tâm giải ngân; (2) Tấn công chuẩn — xác định thời điểm mua/bán tối ưu bằng cách theo dõi sát dòng tiền lớn và sức mạnh giá của từng cổ phiếu so với thị trường chung."),
+                    (7, "FSS chọn lọc cổ phiếu dựa trên nguyên tắc nào?",
+                     "FSS vận hành trên 2 nguyên tắc cốt lõi: (1) Phòng thủ chặt — tự động quét và loại bỏ các công ty xào nấu sổ sách, lãi giả lỗ thật, giúp bạn an tâm giải ngân; (2) Tấn công chuẩn — xác định thời điểm mua/bán tối ưu bằng cách theo dõi sát dòng tiền lớn và sức mạnh giá của từng cổ phiếu so với thị trường chung."),
                 ]],
             ], style={"flex": "1", "borderTop": f"1px solid {_BORDER}"}),
         ], style={

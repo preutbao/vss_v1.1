@@ -1,6 +1,6 @@
 # src/backend/database.py
 """
-SQLite database layer cho VSS authentication.
+SQLite database layer cho FSS authentication.
 Tables:
   - users(id, phone, display_name, role, created_at)
   - access_codes(id, code_string, status, assigned_to, used_at)
@@ -13,7 +13,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 DB_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'vss.db'
+    os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'fss.db'
 )
 
 
@@ -150,10 +150,10 @@ def seed_demo_codes():
     Gọi sau init_db() khi development.
     """
     demo_codes = [
-        "VSS-DEMO-2026",
-        "VSS-VIP-ALPHA",
-        "VSS-VIP-BETA1",
-        "VSS-VIETCAP-01",
+        "FSS-DEMO-2026",
+        "FSS-VIP-ALPHA",
+        "FSS-VIP-BETA1",
+        "FSS-VIETCAP-01",
     ]
     conn = get_conn()
     cur  = conn.cursor()

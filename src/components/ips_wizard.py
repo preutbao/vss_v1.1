@@ -9,7 +9,7 @@
 #   1. Mục tiêu lợi nhuận   (CFA L3: Return Objective)
 #   2. Khẩu vị rủi ro        (CFA L3: Willingness + Ability to Take Risk)
 #   3. Ràng buộc đầu tư      (CFA L3: TTLLU — Time · Tax · Liquidity · Legal · Unique)
-#   4. Hồ sơ & Chiến lược    (Strategy Mapping từ 10 trường phái VSS)
+#   4. Hồ sơ & Chiến lược    (Strategy Mapping từ 10 trường phái FSS)
 #   5. Xác nhận & Áp dụng   (Auto-apply filters vào screener)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -17,7 +17,7 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 
-# ── Màu sắc và typography nhất quán với dark theme của VSS ──────────────────
+# ── Màu sắc và typography nhất quán với dark theme của FSS ──────────────────
 _BG_MODAL   = "#0a192f"  # Thêm màu nền cho modal body
 _BG_CARD    = "#0d1d36"
 _BG_CARD2   = "#112340"

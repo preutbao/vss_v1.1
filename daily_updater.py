@@ -1,5 +1,5 @@
 """
-daily_updater.py — VSS Smart Screener (SSI + VNDirect Fallback Version)
+daily_updater.py — FSS Smart Screener (SSI + VNDirect Fallback Version)
 ═══════════════════════════════════════════════════════════════════════════════
 Script ETL độc lập — KHÔNG liên quan đến Dash Web App.
 Chạy như Cronjob lúc 15:15 sau ATC, ghi đè Parquet.
@@ -238,7 +238,7 @@ def download_index(symbol: str = INDEX_SYMBOL, days: int = HISTORY_DAYS) -> pd.D
         logger.warning(f"Không có dữ liệu index {symbol}")
         return pd.DataFrame()
 
-    # Chuẩn hóa format Index cho VSS
+    # Chuẩn hóa format Index cho FSS
     df_idx = df_idx.rename(columns={"Price Close": INDEX_COL, "Volume": "VNINDEX_Volume"})
     df_idx = df_idx[["Date", INDEX_COL, "VNINDEX_Volume"]]
     
@@ -338,7 +338,7 @@ def check_if_up_to_date() -> bool:
 def run_update(rebuild_snapshot: bool = False) -> bool:
     t0 = time.time()
     logger.info("=" * 70)
-    logger.info("VSS DAILY UPDATER (SSI/VND API) — BẮT ĐẦU")
+    logger.info("FSS DAILY UPDATER (SSI/VND API) — BẮT ĐẦU")
     logger.info("=" * 70)
 
     # CHÈN LỚP PHÒNG NGỰ VÀO ĐÂY

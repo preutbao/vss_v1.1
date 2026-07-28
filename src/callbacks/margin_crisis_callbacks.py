@@ -1,6 +1,6 @@
 # src/callbacks/margin_crisis_callbacks.py
 """
-Margin Crisis Backtester — Vietcap Smart Screener
+Margin Crisis Backtester — FinSmartScreener
 ==================================================
 Chức năng: Giúp quản lý xử lý khủng hoảng margin, tránh Force Sell.
 

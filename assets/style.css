@@ -2793,7 +2793,7 @@ span[style*="f59e0b"] {
 }
 
 #ips-onboarding-wrapper::before,
-#vss-hero-bg {
+#fss-hero-bg {
     background: radial-gradient(ellipse 80% 60% at 10% 50%, rgba(0,166,81,0.13) 0%, transparent 60%) !important;
 }
 /* ============================================================
@@ -2801,14 +2801,14 @@ span[style*="f59e0b"] {
    ============================================================ */
 
 /* Đổi nền thanh điều hướng (Navbar) sang trắng -> đã sửa thành trong suốt */
-[data-theme="light"] #vss-sticky-nav {
+[data-theme="light"] #fss-sticky-nav {
     background: transparent !important;
     border-bottom: none !important;
     box-shadow: none !important;
 }
 
 /* Chữ Logo Vietcap chuyển sang màu Đen */
-[data-theme="light"] .vss-logo-text {
+[data-theme="light"] .fss-logo-text {
     color: #0f172a !important; 
 }
 
@@ -2831,26 +2831,26 @@ span[style*="f59e0b"] {
 }
 
 /* Đổi nền khu vực Hero Banner sang xám nhạt */
-[data-theme="light"] #vss-hero {
+[data-theme="light"] #fss-hero {
     background: #f4f6f8 !important;
 }
 
 /* CHỮ "Smart Screener" chuyển sang màu đen */
-[data-theme="light"] .vss-headline-sub {
+[data-theme="light"] .fss-headline-sub {
     color: #0f172a !important; 
 }
 
 /* Các text nhỏ (Eyebrow, Stats) đổi sang màu xám đậm/xanh lá để dễ đọc trên nền sáng */
-[data-theme="light"] .vss-eyebrow {
+[data-theme="light"] .fss-eyebrow {
     color: #00a651 !important;
 }
-[data-theme="light"] .vss-stat-pill {
+[data-theme="light"] .fss-stat-pill {
     color: #334155 !important;
     border-color: rgba(0, 0, 0, 0.1) !important;
     background: rgba(0, 0, 0, 0.03) !important;
 }
 /* Nâng cấp chữ "Smart Screener" - Hiện đại, thanh lịch hơn */
-.vss-headline-sub {
+.fss-headline-sub {
     font-family: 'Montserrat', sans-serif !important;
     font-size: clamp(2rem, 4vw, 3.5rem);
     font-weight: 500 !important; /* Độ dày vừa phải, sang trọng */
@@ -2859,19 +2859,19 @@ span[style*="f59e0b"] {
 }
 
 /* Nâng cấp dòng chữ nhỏ phía trên (Eyebrow) */
-.vss-eyebrow {
+.fss-eyebrow {
     font-family: 'Montserrat', sans-serif !important;
     font-weight: 600 !important;
     letter-spacing: 2px !important; /* Kéo dãn nhẹ để tạo cảm giác không gian */
 }
 
 /* Nâng cấp các con số định lượng (1500+, 165+) mang phong cách Terminal */
-.vss-stat-pill {
+.fss-stat-pill {
     font-family: 'Inter', sans-serif;
     font-size: 12px;
 }
 
-.vss-stat-pill strong {
+.fss-stat-pill strong {
     font-family: 'JetBrains Mono', monospace !important; /* Font số lập trình */
     font-weight: 700 !important;
     font-size: 13.5px !important;
@@ -3405,7 +3405,7 @@ span[style*="f59e0b"] {
     fill: #64748b !important; /* Chữ tháng, năm */
 }
 /* ép chữ màu trắng cho thanh navbar ở chế độ sáng */
-[data-theme="light"] .vss-logo-text,
+[data-theme="light"] .fss-logo-text,
 [data-theme="light"] .vietcap-nav-link,
 [data-theme="light"] .vietcap-nav-login-btn,
 [data-theme="light"] #navbar-user-name {
@@ -3451,7 +3451,7 @@ span[style*="f59e0b"] {
     color: #ffffff !important;
 }
 /* tăng cỡ chữ logo vietcap */
-.vss-logo-text {
+.fss-logo-text {
     font-size: 24px !important; 
 }
 
@@ -3496,14 +3496,14 @@ span[style*="f59e0b"] {
 }
 
 /* Ép thanh header luôn có nền đen */
-#vss-sticky-nav {
+#fss-sticky-nav {
     background-color: #000000 !important;
     border-bottom: 1px solid #1f2937 !important;
 }
 
-/* --- TÙY CHỈNH TOOLTIP VSS --- */
+/* --- TÙY CHỈNH TOOLTIP FSS --- */
 /* Ép màu nền đen và chữ trắng cho khối text */
-.custom-vss-tooltip .tooltip-inner {
+.custom-fss-tooltip .tooltip-inner {
     background-color: #000000 !important;
     color: #ffffff !important;
     font-weight: 500;
@@ -3512,9 +3512,9 @@ span[style*="f59e0b"] {
 }
 
 /* Ép màu phần mũi tên chĩa ra của Tooltip thành màu đen */
-.custom-vss-tooltip .tooltip-arrow::before,
-.custom-vss-tooltip.bs-tooltip-end .tooltip-arrow::before,
-.custom-vss-tooltip.bs-tooltip-auto[data-popper-placement^="right"] .tooltip-arrow::before {
+.custom-fss-tooltip .tooltip-arrow::before,
+.custom-fss-tooltip.bs-tooltip-end .tooltip-arrow::before,
+.custom-fss-tooltip.bs-tooltip-auto[data-popper-placement^="right"] .tooltip-arrow::before {
     border-right-color: #000000 !important;
 }
 
@@ -3690,7 +3690,7 @@ span[style*="f59e0b"] {
 .cyber-tooltip .tooltip-inner,
 .cyber-theme-tooltip .tooltip-inner,
 .cyber-theme-tooltip-warning .tooltip-inner,
-.custom-vss-tooltip .tooltip-inner,
+.custom-fss-tooltip .tooltip-inner,
 .toast,
 .toast-notification {
   backdrop-filter: var(--glass-blur);
@@ -4294,18 +4294,18 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* ============================================================================
-   🌍 EARTH BACKGROUND + TOP MOVERS CARD — vss-hero
+   🌍 EARTH BACKGROUND + TOP MOVERS CARD — fss-hero
    ============================================================================ */
 
 /* ── Ảnh nền Trái Đất từ không gian — phủ toàn bộ hero banner ───────────────
    Đặt file ảnh tại: assets/earth-bg.jpg (Dash tự serve mọi file trong assets/
    qua đường dẫn /assets/<tên file>). Nếu chưa có ảnh, lớp gradient của
-   #vss-hero-bg (định nghĩa ở phần khác của file) vẫn hiển thị làm fallback. */
-#vss-hero {
+   #fss-hero-bg (định nghĩa ở phần khác của file) vẫn hiển thị làm fallback. */
+#fss-hero {
   position: relative;
   overflow: hidden;
 }
-#vss-hero-earth-bg {
+#fss-hero-earth-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -4317,20 +4317,20 @@ input:focus-visible, .Select-control:focus-visible {
   background-repeat: no-repeat;
   pointer-events: none;
 }
-[data-theme="light"] #vss-hero-earth-bg {
+[data-theme="light"] #fss-hero-earth-bg {
   background-image:
     linear-gradient(180deg, rgba(244,246,248,0.55) 0%, rgba(244,246,248,0.30) 35%, rgba(244,246,248,0.70) 100%),
     url('/assets/earth-bg.jpg');
 }
 
 /* Đảm bảo nội dung hero nổi trên lớp ảnh nền */
-#vss-hero-content {
+#fss-hero-content {
   position: relative;
   z-index: 1;
 }
 
 /* ── Hero right column ──────────────────────────────────────────────────────── */
-.vss-hero-right {
+.fss-hero-right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -4341,7 +4341,7 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* ── Card "TOP ĐỘNG" — bảng nhỏ góc phải hero, dữ liệu thật ───────────────── */
-.vss-movers-card {
+.fss-movers-card {
   width: 240px;
   background: rgba(8, 14, 26, 0.62);
   border: 1px solid rgba(120, 160, 210, 0.22);
@@ -4353,11 +4353,11 @@ input:focus-visible, .Select-control:focus-visible {
   flex-shrink: 0;
 }
 
-.vss-movers-header {
+.fss-movers-header {
   padding: 12px 16px 10px;
   border-bottom: 1px solid rgba(120, 160, 210, 0.18);
 }
-.vss-movers-title {
+.fss-movers-title {
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -4365,26 +4365,26 @@ input:focus-visible, .Select-control:focus-visible {
   text-transform: uppercase;
 }
 
-.vss-movers-col-header {
+.fss-movers-col-header {
   display: flex;
   align-items: center;
   padding: 8px 16px 6px;
   gap: 8px;
 }
-.vss-mover-col-ticker,
-.vss-mover-col-price,
-.vss-mover-col-pct {
+.fss-mover-col-ticker,
+.fss-mover-col-price,
+.fss-mover-col-pct {
   font-size: 10.5px;
   font-weight: 600;
   color: rgba(200, 215, 235, 0.55);
   text-transform: none;
 }
-.vss-mover-col-ticker { flex: 0 0 52px; }
-.vss-mover-col-price   { flex: 1 1 auto; text-align: right; padding-right: 2px; }
-.vss-mover-col-pct     { flex: 0 0 60px; text-align: right; padding-right: 2px; }
+.fss-mover-col-ticker { flex: 0 0 52px; }
+.fss-mover-col-price   { flex: 1 1 auto; text-align: right; padding-right: 2px; }
+.fss-mover-col-pct     { flex: 0 0 60px; text-align: right; padding-right: 2px; }
 
 /* ── Khung cuộn cố định chiều cao, ẩn phần tràn ra ngoài ───────────────────── */
-.vss-movers-track-wrap {
+.fss-movers-track-wrap {
   position: relative;
   height: 280px;
   overflow: hidden;
@@ -4398,21 +4398,21 @@ input:focus-visible, .Select-control:focus-visible {
 /* Danh sách được nhân đôi (xem _build_top_movers_card) → cuộn đúng 50%
    rồi lặp lại sẽ liền mạch, không giật. Thời gian dựa theo số dòng để
    tốc độ cuộn luôn đều bất kể có bao nhiêu mã. */
-.vss-movers-list {
+.fss-movers-list {
   display: flex;
   flex-direction: column;
-  animation: vssMoversScroll 22s linear infinite;
+  animation: fssMoversScroll 22s linear infinite;
 }
-.vss-movers-track-wrap:hover .vss-movers-list {
+.fss-movers-track-wrap:hover .fss-movers-list {
   animation-play-state: paused;
 }
 
-@keyframes vssMoversScroll {
+@keyframes fssMoversScroll {
   0%   { transform: translateY(0); }
   100% { transform: translateY(-50%); } /* danh sách nhân đôi → lùi đúng 1 nửa */
 }
 
-.vss-mover-row {
+.fss-mover-row {
   display: flex;
   align-items: center;
   padding: 6px 16px;
@@ -4421,11 +4421,11 @@ input:focus-visible, .Select-control:focus-visible {
   transition: background 0.15s;
   flex-shrink: 0;
 }
-.vss-mover-row:hover {
+.fss-mover-row:hover {
   background: rgba(120, 160, 210, 0.06);
 }
 
-.vss-mover-ticker {
+.fss-mover-ticker {
   flex: 0 0 52px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12.5px;
@@ -4433,7 +4433,7 @@ input:focus-visible, .Select-control:focus-visible {
   color: #eef4fb;
   letter-spacing: 0.02em;
 }
-.vss-mover-price {
+.fss-mover-price {
   flex: 1 1 auto;
   text-align: right;
   font-family: 'JetBrains Mono', monospace;
@@ -4441,7 +4441,7 @@ input:focus-visible, .Select-control:focus-visible {
   color: rgba(220, 230, 245, 0.85);
   padding-right: 2px;   /* ← THÊM DÒNG NÀY */
 }
-.vss-mover-pct {
+.fss-mover-pct {
   flex: 0 0 60px;
   text-align: right;
   font-family: 'JetBrains Mono', monospace;
@@ -4450,8 +4450,8 @@ input:focus-visible, .Select-control:focus-visible {
   padding-right: 2px;   /* ← THÊM DÒNG NÀY */
 }
 
-/* ── #vss-hero-content override để 2 cột đúng layout ───────────────────────── */
-#vss-hero-content {
+/* ── #fss-hero-content override để 2 cột đúng layout ───────────────────────── */
+#fss-hero-content {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -4462,28 +4462,28 @@ input:focus-visible, .Select-control:focus-visible {
   height: 100% !important;
   gap: 20px !important;
 }
-.vss-hero-left {
+.fss-hero-left {
   flex: 1 1 auto;
   min-width: 0;
   z-index: 1;
 }
 
 /* ── Light mode overrides cho card TOP ĐỘNG ─────────────────────────────────── */
-[data-theme="light"] .vss-movers-card {
+[data-theme="light"] .fss-movers-card {
   background: rgba(255, 255, 255, 0.72);
   border-color: rgba(10, 40, 100, 0.15);
 }
-[data-theme="light"] .vss-movers-title  { color: #0a4a30; }
-[data-theme="light"] .vss-mover-ticker  { color: #0a2040; }
-[data-theme="light"] .vss-mover-price   { color: #4a6080; }
-[data-theme="light"] .vss-mover-col-ticker,
-[data-theme="light"] .vss-mover-col-price,
-[data-theme="light"] .vss-mover-col-pct { color: rgba(10, 40, 80, 0.55); }
+[data-theme="light"] .fss-movers-title  { color: #0a4a30; }
+[data-theme="light"] .fss-mover-ticker  { color: #0a2040; }
+[data-theme="light"] .fss-mover-price   { color: #4a6080; }
+[data-theme="light"] .fss-mover-col-ticker,
+[data-theme="light"] .fss-mover-col-price,
+[data-theme="light"] .fss-mover-col-pct { color: rgba(10, 40, 80, 0.55); }
 
 /* ── Responsive: ẩn card trên mobile nhỏ ─────────────────────────────────────── */
 @media (max-width: 768px) {
-  .vss-hero-right { display: none; }
-  #vss-hero-content { justify-content: center !important; }
+  .fss-hero-right { display: none; }
+  #fss-hero-content { justify-content: center !important; }
 }
 /* ============================================================================
    NÚT "TRẠM TÂM LÝ" TRÊN NAVBAR (merge bổ sung từ version trước)
@@ -4563,20 +4563,20 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* ── Dòng bị khoá VIP trong AG-Grid ── */
-.ag-theme-alpine-dark .ag-row.vss-locked-row {
+.ag-theme-alpine-dark .ag-row.fss-locked-row {
   filter: blur(4px);
   pointer-events: none;
   user-select: none;
   opacity: 0.55;
 }
 
-.vss-grid-lock-banner-wrap {
+.fss-grid-lock-banner-wrap {
   position: relative;
   margin-top: -120px;   /* đè lên phần cuối grid */
   z-index: 10;
   pointer-events: none;
 }
-.vss-grid-lock-banner-wrap > div {
+.fss-grid-lock-banner-wrap > div {
   pointer-events: auto;
 }
 /* ══════════════════════════════════════════════════════════════
@@ -4659,14 +4659,14 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* ── Stat cards trong hero banner (1500+ mã, 165+ chỉ báo, 3 sàn) ─── */
-.vss-stats {
+.fss-stats {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 24px;
 }
 
-.vss-stat-card {
+.fss-stat-card {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -4678,14 +4678,14 @@ input:focus-visible, .Select-control:focus-visible {
   -webkit-backdrop-filter: blur(8px);
 }
 
-.vss-stat-icon {
+.fss-stat-icon {
   font-size: 15px;
   color: #00e5ff;
   opacity: 0.85;
   flex-shrink: 0;
 }
 
-.vss-stat-value {
+.fss-stat-value {
   font-family: 'Roboto Mono', monospace;
   font-size: 16px;
   font-weight: 700;
@@ -4693,13 +4693,13 @@ input:focus-visible, .Select-control:focus-visible {
   line-height: 1.2;
 }
 
-.vss-stat-label {
+.fss-stat-label {
   font-size: 11px;
   color: rgba(200, 220, 240, 0.6);
   margin-top: 2px;
 }
 
-.vss-stat-body {
+.fss-stat-body {
   display: flex;
   flex-direction: column;
 }
@@ -4709,7 +4709,7 @@ input:focus-visible, .Select-control:focus-visible {
 ══════════════════════════════════════════════════════ */
 
 /* Nút avatar trên navbar */
-.vss-nav-avatar-btn {
+.fss-nav-avatar-btn {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -4720,13 +4720,13 @@ input:focus-visible, .Select-control:focus-visible {
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.vss-nav-avatar-btn:hover {
+.fss-nav-avatar-btn:hover {
   background: rgba(255,255,255,0.09);
   border-color: rgba(255,255,255,0.18);
 }
 
 /* Circle avatar nhỏ trên navbar */
-.vss-nav-avatar-circle {
+.fss-nav-avatar-circle {
   width: 28px; height: 28px;
   border-radius: 50%;
   font-size: 12px; font-weight: 700;
@@ -4746,7 +4746,7 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* Profile modal content */
-.vss-profile-modal-content {
+.fss-profile-modal-content {
   background: #0f1829 !important;
   border: 1px solid rgba(255,255,255,0.08) !important;
   border-radius: 16px !important;
@@ -4755,7 +4755,7 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* Avatar lớn trong modal */
-.vss-profile-avatar-lg {
+.fss-profile-avatar-lg {
   width: 80px; height: 80px;
   border-radius: 50%;
   margin: 0 auto 16px;
@@ -4765,14 +4765,14 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* Avatar picker row */
-.vss-avatar-picker {
+.fss-avatar-picker {
   display: flex;
   justify-content: center;
   gap: 10px;
   margin-bottom: 12px;
 }
 
-.vss-avatar-opt {
+.fss-avatar-opt {
   width: 42px; height: 42px;
   border-radius: 50%;
   cursor: pointer;
@@ -4782,17 +4782,17 @@ input:focus-visible, .Select-control:focus-visible {
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
-.vss-avatar-opt:hover {
+.fss-avatar-opt:hover {
   border-color: #0090ff;
   transform: scale(1.08);
 }
-.vss-avatar-opt--img {
+.fss-avatar-opt--img {
   object-fit: cover;
   width: 42px; height: 42px;
 }
 
 /* Upload mock button */
-.vss-avatar-upload-btn {
+.fss-avatar-upload-btn {
   display: block;
   text-align: center;
   font-size: 11px;
@@ -4804,13 +4804,13 @@ input:focus-visible, .Select-control:focus-visible {
   border-radius: 8px;
   transition: color 0.15s, border-color 0.15s;
 }
-.vss-avatar-upload-btn:hover {
+.fss-avatar-upload-btn:hover {
   color: #9ca3af;
   border-color: rgba(255,255,255,0.20);
 }
 
 /* Read-only field */
-.vss-profile-readonly-field {
+.fss-profile-readonly-field {
   padding: 9px 14px;
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.06);
@@ -4821,7 +4821,7 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* Investor profile tags */
-.vss-profile-tag {
+.fss-profile-tag {
   display: inline-block;
   padding: 4px 10px;
   background: rgba(0,144,255,0.10);
@@ -4833,7 +4833,7 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* Avatar section centering */
-.vss-profile-avatar-section {
+.fss-profile-avatar-section {
   text-align: center;
   margin-bottom: 20px;
 }

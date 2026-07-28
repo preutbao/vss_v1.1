@@ -492,7 +492,7 @@ app.clientside_callback(
             if (!step) { return null; }
             if (step >= 4) {
                 var wrapper = document.getElementById('ips-onboarding-wrapper');
-                var logo = wrapper ? wrapper.querySelector('.vss-logo-bar') : null;
+                var logo = wrapper ? wrapper.querySelector('.fss-logo-bar') : null;
                 var target = logo || wrapper;
                 if (target && typeof target.scrollIntoView === 'function') {
                     target.scrollIntoView({behavior: 'smooth', block: 'start'});
@@ -856,7 +856,7 @@ def render_final_summary(step, goal, will, pct_savings, emergency,
     # Status message
     Output("ips-apply-status",         "children"),
     Output("ips-congrats-screen",      "style"),
-    Output("vss-wizard-card",          "style"),
+    Output("fss-wizard-card",          "style"),
     Output("ips-congrats-match-text",  "children"),
     Output("readonly-filters-store", "data", allow_duplicate=True),
     
@@ -1081,7 +1081,7 @@ def apply_ips_profile(
         status,
         # Congrats screen
         {"display": "block"},                       # ips-congrats-screen — hiện ra
-        {"display": "none"},                        # vss-wizard-card — ẩn đi
+        {"display": "none"},                        # fss-wizard-card — ẩn đi
         congrats_match_text,                        # ips-congrats-match-text
         ips_readonly_map if apply_filters else {},  # readonly-filters-store
     )
@@ -1091,8 +1091,8 @@ def apply_ips_profile(
 # CALLBACK 6: Xử lý click chọn thẻ (Python Callbacks)
 # ════════════════════════════════════════════════════════════════════════════
 
-_BASE_CLASS   = "vss-choice-card"
-_ACTIVE_CLASS = "vss-choice-card selected"
+_BASE_CLASS   = "fss-choice-card"
+_ACTIVE_CLASS = "fss-choice-card selected"
 
 
 # 1. Goal cards (Bước 1 - Mục tiêu)

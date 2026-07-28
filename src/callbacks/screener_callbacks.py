@@ -551,8 +551,8 @@ def update_screener_table(
             total_stocks = len(df)
         # ─────────────────────────────────────────────────────────────────────
 
-        if 'VSS_Smart_Rank' in df.columns:
-            df = df.sort_values('VSS_Smart_Rank', ascending=False)
+        if 'FSS_Smart_Rank' in df.columns:
+            df = df.sort_values('FSS_Smart_Rank', ascending=False)
         elif 'Star_Rating' in df.columns:
             df = df.sort_values('Star_Rating', ascending=False)
         elif 'VGM Score' in df.columns:
@@ -3420,7 +3420,7 @@ def export_csv(n_clicks, row_data):
         'RS_1M', 'RS_3M', 'RS_1Y'
     ] if c in df.columns]
     from datetime import datetime
-    filename = f"VSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
+    filename = f"FSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     return dcc.send_data_frame(df[export_cols].to_csv, filename, index=False, encoding='utf-8-sig')
 
 
@@ -3457,11 +3457,11 @@ def export_excel(n_clicks, row_data):
         # Viết Excel vào buffer
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine='openpyxl') as writer:
-            df_export.to_excel(writer, index=False, sheet_name='VSS Screener')
+            df_export.to_excel(writer, index=False, sheet_name='FSS Screener')
 
             # Style cơ bản
             wb = writer.book
-            ws = writer.sheets['VSS Screener']
+            ws = writer.sheets['FSS Screener']
 
             from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
             from openpyxl.utils import get_column_letter
@@ -3507,7 +3507,7 @@ def export_excel(n_clicks, row_data):
             ws.sheet_properties.tabColor = "00D4FF"
 
         buf.seek(0)
-        filename = f"VSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        filename = f"FSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
         return dcc.send_bytes(buf.read(), filename)
 
     except Exception as e:
@@ -3918,11 +3918,11 @@ clientside_callback(
 )
 
 @app.callback(
-    Output("about-vss-modal", "is_open"),
-    Input("btn-about-vss", "n_clicks"),
+    Output("about-fss-modal", "is_open"),
+    Input("btn-about-fss", "n_clicks"),
     prevent_initial_call=True,
 )
-def open_about_vss_modal(n):
+def open_about_fss_modal(n):
     return True if n else no_update
 
 from dash import Input, Output, callback, no_update
