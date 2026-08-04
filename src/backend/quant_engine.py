@@ -490,6 +490,9 @@ def calculate_value_score(df):
     logger.info("📊 Đang tính Value Score (EV/EBITDA + P/E + P/B + P/S)...")
     try:
         df = df.copy()
+        # DEBUG: kiểm tra cột có tồn tại không
+        _check = [c for c in ['EV/EBITDA','P/E','P/B','P/S'] if c in df.columns]
+        logger.info(f"[Value Score] Cột có sẵn: {_check} / 4")
         grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
         component_grades = []
         weights = []
@@ -509,10 +512,10 @@ def calculate_value_score(df):
             weights.append(w)
 
         # Ưu tiên EV/EBITDA cho cấu trúc vốn
-        _grade_valuation('EV_EBITDA', 0.35) 
-        _grade_valuation('PE',        0.25)
-        _grade_valuation('PB',        0.25)
-        _grade_valuation('PS',        0.15)
+        _grade_valuation('EV/EBITDA', 0.35)
+        _grade_valuation('P/E',       0.25)
+        _grade_valuation('P/B',       0.25)
+        _grade_valuation('P/S',       0.15)
 
         df['Value_PE_Grade'] = component_grades[1] if len(component_grades) > 1 else 'F'
         df['Value_PB_Grade'] = component_grades[2] if len(component_grades) > 2 else 'F'
@@ -551,13 +554,15 @@ def calculate_growth_score(df):
     logger.info("📊 Đang tính Growth Score (EPS ưu tiên)...")
     try:
         df = df.copy()
+        _check = [c for c in ['EPS Growth YoY (%)','Revenue Growth YoY (%)','ROE (%)','ROA (%)'] if c in df.columns]
+        logger.info(f"[Growth Score] Cột có sẵn: {_check} / 4")
         grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
         component_grades = []
         weights = []
 
         # EPS Growth YoY (40%) - Driver chính
-        if 'EPS_Growth_YoY_%' in df.columns:
-            eps_g = pd.to_numeric(df['EPS_Growth_YoY_%'], errors='coerce')
+        if 'EPS Growth YoY (%)' in df.columns:
+            eps_g = pd.to_numeric(df['EPS Growth YoY (%)'], errors='coerce')
             valid = eps_g.dropna()
             if len(valid) >= 10:
                 pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
@@ -565,8 +570,8 @@ def calculate_growth_score(df):
                 weights.append(0.40)
 
         # Rev Growth YoY (30%)
-        if 'Rev_Growth_YoY_%' in df.columns:
-            rev_g = pd.to_numeric(df['Rev_Growth_YoY_%'], errors='coerce')
+        if 'Revenue Growth YoY (%)' in df.columns:
+            rev_g = pd.to_numeric(df['Revenue Growth YoY (%)'], errors='coerce')
             valid = rev_g.dropna()
             if len(valid) >= 10:
                 pct = valid.quantile([0.2, 0.4, 0.6, 0.8]).to_dict()
@@ -574,8 +579,8 @@ def calculate_growth_score(df):
                 weights.append(0.30)
 
         # ROE (20%)
-        if 'ROE_%' in df.columns:
-            roe = pd.to_numeric(df['ROE_%'], errors='coerce')
+        if 'ROE (%)' in df.columns:
+            roe = pd.to_numeric(df['ROE (%)'], errors='coerce')
             roe_valid = roe.where(roe > 0)
             valid = roe_valid.dropna()
             if len(valid) >= 10:
@@ -586,8 +591,8 @@ def calculate_growth_score(df):
                 weights.append(0.20)
 
         # ROA (10%)
-        if 'ROA_%' in df.columns:
-            roa = pd.to_numeric(df['ROA_%'], errors='coerce')
+        if 'ROA (%)' in df.columns:
+            roa = pd.to_numeric(df['ROA (%)'], errors='coerce')
             roa_valid = roa.where(roa > 0)
             valid = roa_valid.dropna()
             if len(valid) >= 10:
@@ -609,10 +614,10 @@ def calculate_growth_score(df):
             score_num += grade_series.map(grade_map).fillna(1) * w
 
         # Sector-relative adjustment
-        if 'Sector' in df.columns and 'ROE_%' in df.columns:
+        if 'Sector' in df.columns and 'ROE (%)' in df.columns:
             try:
-                roe = pd.to_numeric(df['ROE_%'], errors='coerce')
-                sector_rank = df.groupby('Sector')['ROE_%'].transform(lambda x: pd.to_numeric(x, errors='coerce').rank(pct=True)).fillna(0.5)
+                roe = pd.to_numeric(df['ROE (%)'], errors='coerce')
+                sector_rank = df.groupby('Sector')['ROE (%)'].transform(lambda x: pd.to_numeric(x, errors='coerce').rank(pct=True)).fillna(0.5)
                 market_rank = roe.rank(pct=True).fillna(0.5)
                 blended = (sector_rank * 0.5 + market_rank * 0.5) * 4 + 1
                 adjustment = (blended - score_num).clip(-0.3, 0.3)

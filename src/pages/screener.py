@@ -260,7 +260,7 @@ columnDefs = [
         ),
     },
     {
-        "field": "CANSLIM Score",
+        "field": "CANSLIM Proxy Score",
         "headerName": "CANSLIM",
         "headerTooltip": _TOOLTIPS["CANSLIM"],
         "type": "rightAligned",
@@ -1753,8 +1753,8 @@ dbc.Modal([
                         html.Div("Ngô Cao Nguyên", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("Quant & Data Dev", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
                         html.A(html.I(className="fas fa-envelope"), href="nguyennc23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
-                    width=4, style={"padding": "0 4px"}
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
                 ),
                 # Member 2: Kiệt
                 dbc.Col(
@@ -1763,8 +1763,8 @@ dbc.Modal([
                         html.Div("Phan Đặng Anh Kiệt", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("Backend Engineer", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
                         html.A(html.I(className="fas fa-envelope"), href="kietpda23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
-                    width=4, style={"padding": "0 4px"}
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
                 ),
                 # Member 3: Trân
                 dbc.Col(
@@ -1773,10 +1773,32 @@ dbc.Modal([
                         html.Div("Cao Huỳnh Tuyết Trân", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("UI/UX & BA", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
                         html.A(html.I(className="fas fa-envelope"), href="trancht23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
-                    width=4, style={"padding": "0 4px"}
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
+                ),
+                # Member 4: Nhân
+                dbc.Col(
+                    html.Div([
+                        html.Div("N", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
+                        html.Div("Trần Thị Hoài Nhân", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
+                        html.Div("UI/UX, Chuyên gia Chiến lược", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
+                        html.A(html.I(className="fas fa-envelope"), href="nhantth23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
+                ),
+                # Member 5: Nhi
+                dbc.Col(
+                    html.Div([
+                        html.Div("N", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
+                        html.Div("Huỳnh Bảo Nhi", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
+                        html.Div("Phân tích Kinh doanh", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
+                        html.A(html.I(className="fas fa-envelope"), href="nhihb23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
                 )
-            ], className="g-0"), # g-0 để xóa margin thừa giữa các cột
+            ], className="g-0 justify-content-center"), # Thêm justify-content-center để 2 người cuối tự động căn giữa
+
+        
             
         ], style={
             "padding": "14px 16px",

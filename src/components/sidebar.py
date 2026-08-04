@@ -687,7 +687,7 @@ _filter_wizard = html.Div(
     style={
         "display": "flex",
         "flexDirection": "row",
-        "height": "266px",
+        "height": "260px",
         "border": "1px solid #21262d",
         "borderRadius": "8px",
         "overflow": "hidden",

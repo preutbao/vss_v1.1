@@ -1096,7 +1096,11 @@ def update_screener_table(
 
         # ── VIP GATE: chỉ hiện 3 mã đầu với user chưa đăng nhập ─────────────
         # auth_data được truyền vào qua State (thêm ở bước D bên dưới)
-        is_vip = bool(auth_data and auth_data.get("logged_in"))
+        is_vip = bool(
+            auth_data
+            and auth_data.get("logged_in")
+            and auth_data.get("tier") == "vip"
+        )
         total_rows = len(df_filtered)
 
         if not is_vip and total_rows > 3:
@@ -1408,10 +1412,29 @@ def load_detail_content(stock, theme="dark"):
     # --- 3. VẼ BIỂU ĐỒ SỨC KHỎE LỊCH SỬ --- (Premium Redesign)
     fig_health = go.Figure()
     if not df_history.empty:
-        periods = df_history['Date'].dt.year.astype(str) + "-Q" + df_history['Date'].dt.quarter.astype(str)
-        np.random.seed(len(ticker))
-        historical_scores = np.clip(np.random.normal(total_health_score, 10, len(periods)), 20, 95).astype(int)
-        historical_scores[-1] = total_health_score
+        periods_raw = df_history['Date'].dt.year.astype(str) + \
+                      "-Q" + df_history['Date'].dt.quarter.astype(str)
+
+        # Tính health score thật theo từng kỳ từ BCTC lịch sử
+        real_scores = []
+        for _, hist_row in df_history.iterrows():
+            gm   = pd.to_numeric(hist_row.get('Gross Margin (%)',   np.nan), errors='coerce')
+            de   = pd.to_numeric(hist_row.get('D/E',                np.nan), errors='coerce')
+            ocf  = pd.to_numeric(hist_row.get('OCF/Net Income',     np.nan), errors='coerce')
+            inv  = pd.to_numeric(hist_row.get('Inventory Days',     np.nan), errors='coerce')
+
+            s_gm  = calc_score(gm,  [10, 20, 30])[0]          if pd.notna(gm)  else total_health_score
+            s_de  = calc_score(de,  [0.5, 1.0, 1.5], inverse=True)[0] if pd.notna(de)  else total_health_score
+            s_ocf = calc_score(ocf, [0.5, 1.0, 1.5])[0]       if pd.notna(ocf) else total_health_score
+            s_inv = calc_score(inv, [30, 60, 90], inverse=True)[0]    if pd.notna(inv) else total_health_score
+
+            real_scores.append(int((s_gm + s_de + s_ocf + s_inv) / 4))
+
+        periods           = periods_raw
+        historical_scores = np.array(real_scores)
+        # Đảm bảo điểm cuối cùng khớp với điểm hiện tại đã tính
+        if len(historical_scores) > 0:
+            historical_scores[-1] = total_health_score
         y_min_dynamic = max(0, int(np.min(historical_scores)) - 15)
 
         # Màu gradient theo điểm — theo theme (xanh tốt / vàng trung bình / đỏ yếu)
@@ -2291,7 +2314,7 @@ def load_financial_tab(active_tab, period_toggle, stock, theme="dark"):
             equity = _raw('Common Equity - Total')
             kpi_specs = [
                 ("DOANH THU KỲ GẦN NHẤT", revenue, "sky", "fas fa-coins"),
-                ("LỢI NHUẬN SAU THUẾ", net_income, "green" if (net_income or 0) >= 0 else "rose", "fas fa-sack-dollar"),
+                ("LỢI NHUẬN SAU THUẾ", net_income, "green" if (net_income or 0) >= 0 else "rose", "fas fa-dollar"),
                 ("TỔNG TÀI SẢN", total_assets, "purple", "fas fa-building-columns"),
                 ("VỐN CHỦ SỞ HỮU", equity, "amber", "fas fa-scale-balanced"),
             ]

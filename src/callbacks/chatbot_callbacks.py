@@ -181,8 +181,15 @@ def _build_screener_context() -> str:
 
         if score_col and tick_col:
             df_sorted = df.copy()
-            df_sorted[score_col] = pd.to_numeric(df_sorted[score_col], errors='coerce')
-            top_df = df_sorted.nlargest(15, score_col)
+            # VGM Score là chữ A–F → map sang số trước khi sort
+            _vgm_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
+            if df_sorted[score_col].dtype == object:
+                df_sorted['_vgm_num'] = df_sorted[score_col].map(_vgm_map).fillna(0)
+                sort_col = '_vgm_num'
+            else:
+                df_sorted['_vgm_num'] = pd.to_numeric(df_sorted[score_col], errors='coerce').fillna(0)
+                sort_col = '_vgm_num'
+            top_df = df_sorted.nlargest(15, sort_col)
             rows = []
             for _, row in top_df.iterrows():
                 parts = [str(row.get(tick_col, ""))]
@@ -959,8 +966,13 @@ def trigger_vinance_popup(grid_data, nav_str, current_style):
         
     import pandas as pd
     from src.backend.quant_engine import calculate_robo_allocation
+    from src.backend.data_loader import load_market_data
+    try:
+        df_price_robo = load_market_data()
+    except Exception:
+        df_price_robo = None
     df = pd.DataFrame(grid_data)
-    allocations, remaining = calculate_robo_allocation(df, nav)
+    allocations, remaining = calculate_robo_allocation(df, nav, df_price=df_price_robo)
     
     if not allocations:
         return no_update, no_update

@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 _BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 USERS_FILE = os.path.join(_BASE_DIR, '..', '..', 'data', 'users.json')
 
+# Thêm vào đầu file auth_callbacks.py:
+import hashlib
+
+def _hash_pw(pw: str) -> str:
+    return hashlib.sha256(pw.encode()).hexdigest()
 
 def _load_users() -> dict:
     """Đọc danh sách users từ file JSON."""
@@ -123,7 +128,7 @@ def handle_login(n_clicks, username, password):
 
     users = _load_users()
 
-    if username in users and users[username]['password'] == password:
+    if username in users and users[username]['password'] == _hash_pw(password):
         auth_data = {
             "logged_in": True,
             "username": username,

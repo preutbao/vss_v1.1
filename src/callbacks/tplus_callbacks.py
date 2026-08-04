@@ -10,8 +10,8 @@ from src.app_instance import app
 TPLUS_COLS = [
     {
         "field": "T_Plus_Score",
-        "headerName": "T+2.5 ⚡",
-        "headerTooltip": "Điểm xác suất tăng T+2.5 (0–100). ≥80 = tín hiệu mạnh.",
+        "headerName": "Điểm T+2.5",
+        "headerTooltip": "Điểm tăng T+2.5 (0–100). ≥80 = tín hiệu/xác suất tăng giá mạnh.",
         "type": "rightAligned",
         "sortable": True,
         "width": 110,
