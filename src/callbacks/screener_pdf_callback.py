@@ -332,7 +332,7 @@ def _footer(c, page_num, total=4):
     # =====================================================================
     # 2. CHÈN CALL-TO-ACTION (LEAD GEN) - GIAO DIỆN NÚT BẤM (BUTTON PILL)
     # =====================================================================
-    url_link = "https://huggingface.co/spaces/preut/VietcapSmartScreener"
+    url_link = "https://huggingface.co/spaces/preut/FinSmartScreener"
     cta_label = "Tự tạo danh mục đầu tư theo gu của bạn tại: "
     cta_link_text = "FSS Live Web App" # Rút gọn text hiển thị cho sang trọng
 
