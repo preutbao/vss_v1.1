@@ -163,7 +163,14 @@ def _build_screener_context() -> str:
         if df is None or df.empty:
             return ""
 
-        score_col = next((c for c in ["VGM Score", "VGM_Score", "vgm_score"] if c in df.columns), None)
+        # LƯU Ý: "VGM Score" lưu dạng CHỮ (A/B/C/D/F), không phải số.
+        # pd.to_numeric("A", errors="coerce") → NaN cho MỌI dòng, khiến
+        # nlargest() ở dưới trả về top 15 vô nghĩa (thứ tự ngẫu nhiên/rỗng).
+        # May mắn là quant_engine.py đã tính sẵn cột số "VGM_Score_Num" TRƯỚC
+        # KHI chuyển thành chữ (xem calculate_vgm_score()) — dùng đúng cột đó
+        # để sắp xếp, chỉ dùng "VGM Score" (chữ) để hiển thị cho người dùng.
+        score_col      = next((c for c in ["VGM Score", "VGM_Score", "vgm_score"] if c in df.columns), None)
+        score_rank_col = next((c for c in ["VGM_Score_Num", "VGM Score Num"] if c in df.columns), None)
         price_col = next((c for c in ["Price Close", "Price", "price_close"] if c in df.columns), None)
         pe_col    = next((c for c in ["P/E", "PE", "pe"] if c in df.columns), None)
         pb_col    = next((c for c in ["P/B", "PB", "pb"] if c in df.columns), None)
@@ -179,17 +186,22 @@ def _build_screener_context() -> str:
             exch = df["Exchange"].value_counts().to_dict()
             lines.append(f"Sàn: {exch}")
 
-        if score_col and tick_col:
-            df_sorted = df.copy()
-            # VGM Score là chữ A–F → map sang số trước khi sort
-            _vgm_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
-            if df_sorted[score_col].dtype == object:
-                df_sorted['_vgm_num'] = df_sorted[score_col].map(_vgm_map).fillna(0)
-                sort_col = '_vgm_num'
+        # Cột dùng để SẮP XẾP phải là cột SỐ. Nếu không có VGM_Score_Num
+        # (trường hợp hiếm/dữ liệu cũ), fallback về ép kiểu số trên score_col
+        # nhưng cảnh báo rõ trong log vì kết quả có thể toàn NaN.
+        rank_col = score_rank_col
+        if not rank_col and score_col:
+            df = df.copy()
+            df[score_col] = pd.to_numeric(df[score_col], errors='coerce')
+            if df[score_col].notna().any():
+                rank_col = score_col
             else:
-                df_sorted['_vgm_num'] = pd.to_numeric(df_sorted[score_col], errors='coerce').fillna(0)
-                sort_col = '_vgm_num'
-            top_df = df_sorted.nlargest(15, sort_col)
+                logger.warning("⚠️ Không tìm thấy VGM_Score_Num và score_col không ép kiểu số được — bỏ qua top15.")
+
+        if rank_col and tick_col:
+            df_sorted = df.copy()
+            df_sorted[rank_col] = pd.to_numeric(df_sorted[rank_col], errors='coerce')
+            top_df = df_sorted.nlargest(15, rank_col)
             rows = []
             for _, row in top_df.iterrows():
                 parts = [str(row.get(tick_col, ""))]
@@ -205,11 +217,11 @@ def _build_screener_context() -> str:
             lines.append("Top15VGM: " + "; ".join(rows))
 
 
-        if sect_col and score_col:
+        if sect_col and rank_col:
             df_sector = df.copy()
-            df_sector[score_col] = pd.to_numeric(df_sector[score_col], errors='coerce')
-            sector_stats = df_sector.groupby(sect_col)[score_col].mean().sort_values(ascending=False).head(8)
-            stats = [f"{s}:{v:.0f}({(df[sect_col]==s).sum()})" for s, v in sector_stats.items()]
+            df_sector[rank_col] = pd.to_numeric(df_sector[rank_col], errors='coerce')
+            sector_stats = df_sector.groupby(sect_col)[rank_col].mean().sort_values(ascending=False).head(8)
+            stats = [f"{s}:{v:.1f}({(df[sect_col]==s).sum()})" for s, v in sector_stats.items()]
             lines.append("Ngành(avgVGM): " + ", ".join(stats))
 
         lines.append("Dùng dữ liệu trên khi trả lời câu hỏi về thị trường.")
@@ -833,6 +845,7 @@ def update_stock_context_bar(selected_rows):
     State("chat-history-store",     "data"),
     State("screener-table",         "selectedRows"),
     State("chat-quick-prompts-store", "data"),
+    State("auth-store",             "data"),
     
     # --- CẤU HÌNH BACKGROUND CALLBACK ---
     background=True,
@@ -869,7 +882,7 @@ def update_stock_context_bar(selected_rows):
     prevent_initial_call=True,
 )
 def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
-                history, selected_rows, quick_prompts_list):
+                history, selected_rows, quick_prompts_list, auth_data):
     
     # --- (GIỮ NGUYÊN TOÀN BỘ LOGIC BÊN TRONG CỦA BẠN) ---
     ctx = callback_context
@@ -887,6 +900,22 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
         ])
         return [welcome], [], ""
 
+    # ── BẢO VỆ SERVER-SIDE: chặn gọi Gemini API nếu không phải VIP ──────────
+    # AUDIT FIX (mục 4 - Major Issue): dùng chung require_entitlement()
+    # (src/callbacks/auth_callbacks.py) thay vì tự viết lại logic re-check
+    # server-side ở đây — tránh 2 bản sao có thể lệch nhau.
+    from src.callbacks.auth_callbacks import require_entitlement
+    is_vip_serverside = require_entitlement(auth_data, tier="vip")
+
+    if not is_vip_serverside:
+        history.append({
+            "role": "model",
+            "parts": [{"text": "🔒 Tính năng VinanceAI Chat chỉ dành cho tài khoản VIP. Vui lòng đăng nhập và kích hoạt VIP để sử dụng."}],
+            "time": datetime.now().strftime("%H:%M"),
+        })
+        bubbles = _render_messages(history)
+        return bubbles, history, ""
+
     message = ""
 
     # ── Xử lý khi nhấn nút gửi hoặc Enter ──
@@ -898,7 +927,7 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
     elif "chat-quick-btn" in trigger:
         # Kiểm tra xem có click thật sự không, tránh auto-trigger lúc mount
         if not any(c for c in (quick_clicks or []) if c):
-            return no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update
             
         try:
             # Lấy index của nút vừa nhấn
@@ -907,11 +936,11 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
                 message = quick_prompts_list[idx]
         except Exception as e:
             logger.error(f"Lỗi đọc Quick Prompt: {e}")
-            return no_update, no_update, no_update, no_update
+            return no_update, no_update, no_update
 
     # Nếu không có tin nhắn hợp lệ thì không làm gì cả
     if not message:
-        return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update
 
     # ── Thêm user message vào history ──
     time_now = datetime.now().strftime("%H:%M")
@@ -966,13 +995,22 @@ def trigger_vinance_popup(grid_data, nav_str, current_style):
         
     import pandas as pd
     from src.backend.quant_engine import calculate_robo_allocation
-    from src.backend.data_loader import load_market_data
-    try:
-        df_price_robo = load_market_data()
-    except Exception:
-        df_price_robo = None
     df = pd.DataFrame(grid_data)
-    allocations, remaining = calculate_robo_allocation(df, nav, df_price=df_price_robo)
+
+    # LƯU Ý: Trước đây gọi calculate_robo_allocation(df, nav) KHÔNG truyền
+    # df_price (giá lịch sử) → hàm luôn rơi vào nhánh fallback "chia đều"
+    # (xem comment trong quant_engine.py: "Không có dữ liệu lịch sử giá, chia
+    # tỷ trọng đều"), dù tên gọi UI là "AI đề xuất danh mục" khiến người dùng
+    # tưởng đã chạy tối ưu hóa Markowitz thật. Giờ load giá lịch sử để hàm có
+    # thể chạy đúng thuật toán Markowitz + Monte Carlo stress test.
+    df_price_hist = None
+    try:
+        from src.backend.data_loader import load_market_data
+        df_price_hist = load_market_data()
+    except Exception as e:
+        logger.warning(f"⚠️ Không load được lịch sử giá cho Robo Allocation, dùng fallback chia đều: {e}")
+
+    allocations, remaining = calculate_robo_allocation(df, nav, df_price=df_price_hist)
     
     if not allocations:
         return no_update, no_update

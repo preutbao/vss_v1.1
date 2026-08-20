@@ -81,7 +81,7 @@ _C = {
     "amber":     "#f59e0b",
     "green":     "#10b981",
     "blue":      "#3b82f6",
-    "cyan":      "#00d4ff",
+    "cyan":      "#1E88E5",
     "text_pri":  "#e2e8f0",
     "text_sec":  "#94a3b8",
     "text_mut":  "#64748b",

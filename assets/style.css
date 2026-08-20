@@ -5,6 +5,8 @@
 
 /* === GOOGLE FONTS IMPORT === */
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+/* Serif thương hiệu — dùng riêng cho tiêu đề Home Hero (Bước 1) */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
 
 /* ============================================================================
    🛡️ HIDE TRADINGVIEW WATERMARK - HARDCORE MODE
@@ -73,15 +75,30 @@ iframe[src*="tradingview" i],
   --border-subtle:  #e2e8f0;
   --border-dim:     #cbd5e1;
   --border-default: #94a3b8;
-  --border-bright:  #10b981;
+  --border-bright:  #0057D9;
 
-  /* Primary accent — Xanh lá cây */
-  --accent:         #10b981; 
-  --accent-dim:     rgba(16, 185, 129, 0.12);
-  --accent-glow:    rgba(16, 185, 129, 0.25);
-  --accent-deep:    #059669;
+  /* ═══════════════════════════════════════════════════════════
+     BRAND PALETTE — UEL (Trường Đại học Kinh tế – Luật)
+     LƯU Ý: đây là màu THƯƠNG HIỆU (nút, viền nhấn, hover, sidebar
+     active...). KHÔNG dùng cho màu tăng/giảm giá hay xếp hạng A-F
+     — những màu đó vẫn giữ xanh lá/đỏ theo quy ước TTCK Việt Nam,
+     xem --positive/--negative bên dưới, không đổi.
+     ═══════════════════════════════════════════════════════════ */
+  --brand-navy:     #003B8E;  /* Xanh đậm */
+  --brand-blue:     #0057D9;  /* Xanh UEL — accent chính */
+  --brand-blue-light:#1E88E5; /* Xanh sáng — hover/nhấn nhẹ */
+  --brand-blue-pale:#CFE8FF;  /* Xanh nhạt — nền tint/badge */
+  --brand-orange:   #F9A11B;  /* Cam — CTA phụ/nhấn mạnh */
+  --brand-orange-deep:#F57C00;/* Cam đậm — hover của CTA cam */
 
-  /* Semantic */
+  /* Primary accent — Xanh UEL (trước đây xanh lá cây #10b981) */
+  --accent:         var(--brand-blue);
+  --accent-dim:     rgba(0, 87, 217, 0.12);
+  --accent-glow:    rgba(0, 87, 217, 0.25);
+  --accent-deep:    var(--brand-navy);
+
+  /* Semantic — GIỮ NGUYÊN, không phải màu thương hiệu.
+     Tăng/giảm giá và xếp hạng A-F vẫn theo quy ước xanh lá/đỏ TTCK VN. */
   --positive:       #10b981;
   --positive-dim:   rgba(16, 185, 129, 0.12);
   --negative:       #ef4444;
@@ -95,7 +112,7 @@ iframe[src*="tradingview" i],
   --text-primary:   #0f172a;
   --text-secondary: #334155;
   --text-muted:     #64748b;
-  --text-ticker:    #10b981;
+  --text-ticker:    var(--brand-blue);
 
   /* Typography & Radius (Giữ nguyên của bạn) */
   --font-display:   'Montserrat', 'Space Grotesk', 'Sora', sans-serif;
@@ -103,7 +120,7 @@ iframe[src*="tradingview" i],
   --font-ui:        'Inter', -apple-system, sans-serif;
   --font-brand:     'Space Grotesk', 'Montserrat', sans-serif;
 
-  --glow-accent:    0 0 20px rgba(16, 185, 129, 0.3);
+  --glow-accent:    0 0 20px rgba(0, 87, 217, 0.3);
   --glow-positive:  0 0 16px rgba(16, 185, 129, 0.25);
   --glow-negative:  0 0 16px rgba(239, 68, 68, 0.25);
   --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.08);
@@ -116,25 +133,31 @@ iframe[src*="tradingview" i],
 
   /* ── ⚡ GLASSMORPHISM TOKENS (Light) ──
      Frosted panels read as soft, milky glass over a pale terminal floor. */
-  --neon-cyan:        #0090c8;
-  --neon-cyan-dim:    rgba(0, 144, 200, 0.10);
+  --neon-cyan:        #0057D9;
+  --neon-cyan-dim:    rgba(0, 87, 217, 0.10);
   --glass-bg:         rgba(255, 255, 255, 0.55);
   --glass-bg-strong:  rgba(255, 255, 255, 0.72);
   --glass-bg-deep:    rgba(255, 255, 255, 0.85);
   --glass-border:     rgba(15, 23, 42, 0.08);
-  --glass-border-accent: rgba(16, 185, 129, 0.35);
+  --glass-border-accent: rgba(0, 87, 217, 0.35);
   --glass-highlight:  rgba(255, 255, 255, 0.6);
   --glass-blur:       blur(20px) saturate(180%);
   --glass-blur-sm:    blur(12px) saturate(160%);
   --glass-shadow:     0 8px 32px rgba(15, 23, 42, 0.10);
   --glass-shadow-lg:  0 16px 48px rgba(15, 23, 42, 0.14);
   --ease-glass:       cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── [BƯỚC 1] Home Hero — xanh lá thương hiệu riêng, KHÔNG dùng
+     chung với --accent (xanh dương UEL) hay --positive (tăng/giảm giá) ── */
+  --brand-green:      var(--brand-blue);
+  --brand-green-hover:var(--brand-navy);
+  --font-serif-brand: 'Playfair Display', 'Georgia', serif;
 }
 
 /* 2. THEME TỐI — "Gentelella" navy/teal reference palette */
 [data-theme="dark"] {
   /* Dark Mode — nền navy đậm kiểu Gentelella, card phẳng viền mảnh,
-     accent teal cổ điển thay cho green Tailwind cũ. */
+     accent xanh UEL (#1E88E5) — brand chính thức. */
   --bg-void:        #0B132B;
   --bg-base:        #0B132B;
   --bg-card:        #16213e;
@@ -146,17 +169,17 @@ iframe[src*="tradingview" i],
   --border-subtle:  #232e41;
   --border-dim:     #2a3548;
   --border-default: #3a4760;
-  --border-bright:  #1abb9c;
+  --border-bright:  var(--brand-blue-light);
 
-  --accent:         #1abb9c;
-  --accent-dim:     rgba(26, 187, 156, 0.14);
-  --accent-glow:    rgba(26, 187, 156, 0.22);
-  --accent-deep:    #149e85;
+  --accent:         var(--brand-blue-light);
+  --accent-dim:     rgba(30, 136, 229, 0.14);
+  --accent-glow:    rgba(30, 136, 229, 0.22);
+  --accent-deep:    var(--brand-blue);
 
   --text-primary:   #f1f5f9;
   --text-secondary: #cbd5e1;
   --text-muted:     #8a99ad;
-  --text-ticker:    #2dd4bf;
+  --text-ticker:    var(--brand-blue-light);
 
   /* ── Pastel "icon-dim" tones — ô icon mờ trên card tối, lấy mẫu
      trực tiếp từ ảnh tham khảo Gentelella (KPI card icon boxes) ── */
@@ -175,19 +198,23 @@ iframe[src*="tradingview" i],
   --shadow-deep:    0 8px 32px rgba(0, 0, 0, 0.45);
 
   /* ── Glass tokens (Dark) — kính tối nhẹ, KHÔNG neon ── */
-  --neon-cyan:        #38bdf8;
-  --neon-cyan-dim:    rgba(56, 189, 248, 0.10);
+  --neon-cyan:        #1E88E5;
+  --neon-cyan-dim:    rgba(30, 136, 229, 0.10);
   --glass-bg:         rgba(26, 35, 50, 0.70);
   --glass-bg-strong:  rgba(20, 28, 41, 0.88);
   --glass-bg-deep:    rgba(15, 22, 35, 0.96);
   --glass-border:     rgba(255, 255, 255, 0.06);
-  --glass-border-accent: rgba(26, 187, 156, 0.30);
+  --glass-border-accent: rgba(30, 136, 229, 0.30);
   --glass-highlight:  rgba(255, 255, 255, 0.04);
   --glass-blur:       blur(14px) saturate(140%);
   --glass-blur-sm:    blur(8px) saturate(130%);
   --glass-shadow:     0 8px 32px rgba(0, 0, 0, 0.40);
   --glass-shadow-lg:  0 16px 48px rgba(0, 0, 0, 0.50);
   --ease-glass:       cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── [BƯỚC 1] Home Hero — xanh lá sáng hơn cho nền tối ── */
+  --brand-green:      var(--brand-blue-light);
+  --brand-green-hover:#60a5fa;
 }
 
 body {
@@ -204,8 +231,8 @@ body {
       0deg,
       transparent,
       transparent 2px,
-      rgba(0, 212, 255, 0.012) 2px,
-      rgba(0, 212, 255, 0.012) 4px
+      rgba(30, 136, 229, 0.012) 2px,
+      rgba(30, 136, 229, 0.012) 4px
     );
 }
 
@@ -230,6 +257,506 @@ body {
   min-height: 100vh;
   background-color: transparent;
   width: 100%;
+}
+
+/* ============================================================================
+   [BƯỚC 1] HOME HERO — Tiêu đề + Mô tả + Thanh tìm kiếm
+   ============================================================================ */
+.home-hero {
+  text-align: center;
+  padding: 88px 24px 36px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.home-hero-title {
+  font-family: var(--font-serif-brand);
+  font-style: italic;
+  font-weight: 700;
+  font-size: 42px;
+  line-height: 1.15;
+  color: var(--brand-green);
+  margin: 0 0 14px;
+  letter-spacing: -0.01em;
+}
+
+.home-hero-desc {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 620px;
+  margin: 0 auto 28px;
+}
+
+.home-hero-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 6px 6px 6px 22px;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.2s var(--ease-glass), box-shadow 0.2s var(--ease-glass);
+}
+
+.home-hero-search:focus-within {
+  border-color: var(--brand-green);
+  box-shadow: var(--shadow-deep);
+}
+
+.home-hero-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.home-hero-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.home-hero-kbd {
+  flex-shrink: 0;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.home-hero-search-btn {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: var(--brand-green);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.home-hero-search-btn:hover {
+  filter: brightness(1.08);
+  transform: scale(1.05);
+}
+
+.home-hero-search-btn:active {
+  transform: scale(0.97);
+}
+
+@media (max-width: 640px) {
+  .home-hero { padding: 40px 16px 28px; }
+  .home-hero-title { font-size: 30px; }
+  .home-hero-desc { font-size: 13.5px; }
+  .home-hero-kbd { display: none; }
+}
+
+/* ============================================================================
+   [BƯỚC 2] MARKET OVERVIEW — 4 thẻ chỉ số ngang (VN-INDEX / HNX-INDEX /
+   VN30-INDEX / TOTAL VOLUME)
+   ============================================================================ */
+.home-market-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 1120px;
+  margin: 0 auto 32px;
+  padding: 0 24px;
+  
+  /* THÊM 1 TRONG 2 DÒNG NÀY: */
+  grid-auto-rows: 150px; /* Ép chiều cao cố định cho các thẻ là 280px */
+}
+
+.home-market-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: border-color 0.2s var(--ease-glass), transform 0.2s var(--ease-glass);
+}
+
+.home-market-card:hover {
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+
+.home-market-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.home-market-card-label {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Badge dùng chung cho cả % thay đổi (3 thẻ index) và nhãn xu hướng
+   (thẻ Volume). Callback set className phụ "is-positive" / "is-negative"
+   để đổi màu — mặc định trung tính theo --text-muted. */
+.home-market-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.home-market-badge.is-positive { color: var(--positive); }
+.home-market-badge.is-negative { color: var(--negative); }
+
+.home-market-card-value {
+  font-family: var(--font-ui);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.home-market-card-pts {
+  font-family: var(--font-data);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.home-market-card-pts.is-positive { color: var(--positive); }
+.home-market-card-pts.is-negative { color: var(--negative); }
+
+.home-market-card-spark {
+  height: 44px;
+  margin-top: auto;
+}
+
+.home-market-card-spark .js-plotly-plot,
+.home-market-card-spark .plot-container {
+  height: 100% !important;
+}
+
+/* ── Responsive ── */
+@media (max-width: 992px) {
+  .home-market-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .home-market-grid {
+    grid-template-columns: 1fr;
+    padding: 0 16px;
+  }
+  .home-market-card-value { font-size: 21px; }
+}
+
+/* ============================================================================
+   [BƯỚC 3] TOP FIN PICKS (65%) + MARKET PULSE (35%)
+   ============================================================================ */
+.home-picks-pulse-grid {
+  display: grid;
+  grid-template-columns: 13fr 7fr; /* tỉ lệ 65% / 35% */
+  gap: 20px;
+  max-width: 1120px;
+  margin: 0 auto 32px;
+  padding: 0 24px;
+  align-items: start;
+}
+
+/* ── Cột trái — Top Fin Picks ── */
+.home-picks-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.home-picks-title {
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+}
+
+.home-picks-subtitle {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.home-picks-viewall {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.home-picks-viewall:hover { text-decoration: underline; }
+
+.home-picks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.home-pick-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  transition: border-color 0.2s var(--ease-glass), transform 0.2s var(--ease-glass);
+}
+
+.home-pick-card:hover {
+  border-color: var(--border-default);
+  transform: translateY(-1px);
+}
+
+.home-pick-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Tag — dùng lại design token có sẵn theo từng nhóm phân loại */
+.home-pick-tag {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.home-pick-tag-growth   { color: var(--positive); background: var(--positive-dim); }
+.home-pick-tag-value    { color: var(--accent);   background: rgba(0, 87, 217, 0.12); }
+.home-pick-tag-momentum { color: var(--warning);  background: var(--warning-dim); }
+
+.home-pick-card-stars {
+  display: flex;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--warning); /* sao vàng cam, tái dùng --warning cho nhất quán token màu */
+  flex-shrink: 0;
+}
+
+.home-pick-card-ticker {
+  font-family: var(--font-ui);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* [BƯỚC 3.1] Nhận xét/insight ngữ nghĩa tự động sinh theo điểm số của mã */
+.home-pick-card-insight {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.home-picks-empty {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 20px;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.home-pick-card-bottom {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.home-pick-card-price {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home-pick-card-change {
+  font-family: var(--font-data);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.home-pick-card-change.is-positive { color: var(--positive); }
+.home-pick-card-change.is-negative { color: var(--negative); }
+
+/* ── Cột phải — Market Pulse ── */
+.home-pulse-col {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+  min-width: 0;
+}
+
+.home-pulse-title {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 14px;
+}
+
+.home-pulse-breadth {
+  margin-bottom: 18px;
+}
+
+.home-pulse-breadth-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.home-pulse-breadth-label-static {
+  font-family: var(--font-data);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.home-pulse-breadth-label {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--positive);
+}
+
+.home-pulse-breadth-track {
+  display: flex;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.home-pulse-breadth-fill-bull {
+  background: var(--positive);
+  height: 100%;
+  transition: width 0.3s var(--ease-glass);
+}
+
+.home-pulse-breadth-fill-bear {
+  background: var(--negative);
+  height: 100%;
+  transition: width 0.3s var(--ease-glass);
+}
+
+.home-pulse-alerts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-pulse-alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home-pulse-alert-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  margin-top: 2px;
+  width: 20px;
+  text-align: center;
+}
+
+.home-pulse-alert-icon-positive { color: var(--positive); }
+.home-pulse-alert-icon-negative { color: var(--negative); }
+.home-pulse-alert-icon-neutral  { color: var(--accent); }
+
+.home-pulse-alert-title {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.home-pulse-alert-desc {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Responsive ── */
+@media (max-width: 992px) {
+  .home-picks-pulse-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-picks-grid {
+    grid-template-columns: 1fr;
+  }
+  .home-picks-pulse-grid {
+    padding: 0 16px;
+  }
 }
 
 /* ============================================================================
@@ -302,7 +829,7 @@ body {
 
 .info-card:hover {
   border-color: var(--border-bright);
-  box-shadow: var(--shadow-card), inset 0 0 40px rgba(0, 212, 255, 0.03);
+  box-shadow: var(--shadow-card), inset 0 0 40px rgba(30, 136, 229, 0.03);
 }
 
 .info-card:hover::before { opacity: 1; }
@@ -393,8 +920,8 @@ body {
   --ag-header-foreground-color:       #3d6a8a;
   --ag-secondary-foreground-color:    #2a5070;
   --ag-row-border-color:              #0a1e35;
-  --ag-selected-row-background-color: rgba(0, 212, 255, 0.07);
-  --ag-range-selection-border-color:  #00d4ff;
+  --ag-selected-row-background-color: rgba(30, 136, 229, 0.07);
+  --ag-range-selection-border-color:  #1E88E5;
   --ag-font-family: 'Inter', -apple-system, sans-serif;  /* đổi từ JetBrains Mono */
   --ag-font-size:                     12px;
   --ag-cell-horizontal-padding:       10px;
@@ -404,7 +931,7 @@ body {
   border: 1px solid #0e2540 !important;
   border-radius: 12px !important;
   overflow: hidden;
-  box-shadow: 0 4px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(0,212,255,0.06);
+  box-shadow: 0 4px 30px rgba(0,0,0,0.7), inset 0 1px 0 rgba(30, 136, 229,0.06);
 }
 
 /* ── Header ── */
@@ -430,13 +957,13 @@ body {
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell:hover {
-  color: #00d4ff !important;
-  background: rgba(0, 212, 255, 0.05) !important;
+  color: #1E88E5 !important;
+  background: rgba(30, 136, 229, 0.05) !important;
 }
 
 /* Sort icons */
 [data-theme="dark"] .ag-theme-alpine-dark .ag-sort-indicator-icon {
-  color: #00d4ff !important;
+  color: #1E88E5 !important;
 }
 
 /* ── Rows ── */
@@ -456,13 +983,13 @@ body {
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row:hover {
   background-color: #112236 !important;
   /* Subtle left glow on hover */
-  box-shadow: inset 3px 0 0 rgba(0, 212, 255, 0.4);
+  box-shadow: inset 3px 0 0 rgba(30, 136, 229, 0.4);
 }
 
 /* Selected row */
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected {
-  background-color: rgba(0, 212, 255, 0.07) !important;
-  box-shadow: inset 3px 0 0 #00d4ff !important;
+  background-color: rgba(30, 136, 229, 0.07) !important;
+  box-shadow: inset 3px 0 0 #1E88E5 !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected .ag-cell {
@@ -543,8 +1070,8 @@ body {
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button:hover:not([disabled]) {
-  background: rgba(0, 212, 255, 0.1) !important;
-  color: #00d4ff !important;
+  background: rgba(30, 136, 229, 0.1) !important;
+  color: #1E88E5 !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button[disabled] {
@@ -575,7 +1102,7 @@ body {
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-body-horizontal-scroll-viewport::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"] .ag-theme-alpine-dark .ag-body-viewport::-webkit-scrollbar-thumb:hover {
-  background: #00d4ff;
+  background: #1E88E5;
 }
 
 /* ── No rows overlay ── */
@@ -644,10 +1171,10 @@ body {
 .grade-chip-b {
   background: var(--accent-dim);
   color: var(--accent);
-  border-color: rgba(0, 212, 255, 0.25);
+  border-color: rgba(30, 136, 229, 0.25);
 }
 .grade-chip-b:hover {
-  background: rgba(0, 212, 255, 0.2);
+  background: rgba(30, 136, 229, 0.2);
   border-color: var(--accent);
   box-shadow: var(--glow-accent);
   transform: translateY(-1px);
@@ -656,7 +1183,7 @@ body {
   background: var(--accent);
   color: #001a20;
   border-color: var(--accent);
-  box-shadow: 0 0 16px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 16px rgba(30, 136, 229, 0.5);
 }
 
 /* C */
@@ -748,7 +1275,7 @@ body {
   background: linear-gradient(90deg, var(--accent-deep), var(--accent));
   height: 3px;
   border-radius: 2px;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 8px rgba(30, 136, 229, 0.3);
 }
 
 .custom-range-slider .rc-slider-handle {
@@ -758,7 +1285,7 @@ body {
   background-color: var(--accent);
   border: 2px solid var(--bg-void);
   border-radius: 50%;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 8px rgba(30, 136, 229, 0.5);
   transition: box-shadow 0.2s, transform 0.15s;
   /* rc-slider dùng translateX(-50%) để căn giữa handle theo left:X%
      Phải giữ translateX(-50%) khi override transform, nếu không handle bị lệch */
@@ -767,7 +1294,7 @@ body {
 
 .custom-range-slider .rc-slider-handle:hover,
 .custom-range-slider .rc-slider-handle:active {
-  box-shadow: 0 0 16px rgba(0, 212, 255, 0.7);
+  box-shadow: 0 0 16px rgba(30, 136, 229, 0.7);
   /* translateX(-50%) giữ handle căn giữa, scale(1.1) phóng to nhẹ */
   transform: translateX(-50%) scale(1.1);
 }
@@ -821,7 +1348,7 @@ body {
 
 /* Apply button */
 .btn-apply-ssi {
-  background: linear-gradient(135deg, #0090ff 0%, #00d4ff 100%) !important;
+  background: linear-gradient(135deg, #0057D9 0%, #1E88E5 100%) !important;
   border: none !important;
   color: #001a20 !important;
   padding: 9px 22px !important;
@@ -835,7 +1362,7 @@ body {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
   position: relative !important;
   overflow: hidden !important;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(30, 136, 229, 0.3) !important;
 }
 
 .btn-apply-ssi::before {
@@ -853,13 +1380,13 @@ body {
 
 .btn-apply-ssi:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 8px 28px rgba(0, 212, 255, 0.5) !important;
+  box-shadow: 0 8px 28px rgba(30, 136, 229, 0.5) !important;
   filter: brightness(1.1) !important;
 }
 
 .btn-apply-ssi:active {
   transform: translateY(0) !important;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(30, 136, 229, 0.3) !important;
 }
 
 /* Save / secondary button */
@@ -883,7 +1410,7 @@ body {
   color: var(--accent) !important;
   background-color: var(--accent-dim) !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(30, 136, 229, 0.15) !important;
 }
 
 /* Reset button */
@@ -921,7 +1448,7 @@ body {
 #toggle-filter-btn:hover {
   border-color: var(--accent) !important;
   background: var(--accent-dim) !important;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.2) !important;
+  box-shadow: 0 4px 16px rgba(30, 136, 229, 0.2) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -994,8 +1521,8 @@ body {
 }
 
 .custom-dropdown .Select-value {
-  background-color: rgba(0, 212, 255, 0.1) !important;
-  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  background-color: rgba(30, 136, 229, 0.1) !important;
+  border: 1px solid rgba(30, 136, 229, 0.3) !important;
   border-radius: 4px !important;
   color: var(--accent) !important;
 }
@@ -1033,8 +1560,8 @@ body {
 }
 
 .ssi-dropdown-custom .Select-value {
-  background-color: rgba(0, 212, 255, 0.1) !important;
-  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  background-color: rgba(30, 136, 229, 0.1) !important;
+  border: 1px solid rgba(30, 136, 229, 0.3) !important;
 }
 
 .ssi-dropdown-custom .Select-value-label { color: var(--accent) !important; }
@@ -1073,7 +1600,7 @@ body {
   border-color: var(--accent) !important;
   color: #001a20 !important;
   font-weight: 800 !important;
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.35) !important;
+  box-shadow: 0 0 12px rgba(30, 136, 229, 0.35) !important;
 }
 
 /* ============================================================================
@@ -1140,7 +1667,7 @@ body {
 }
 
 .modebar-btn.active {
-  background-color: rgba(0, 212, 255, 0.25) !important;
+  background-color: rgba(30, 136, 229, 0.25) !important;
 }
 
 /* Chart empty state */
@@ -1172,7 +1699,7 @@ body {
 .loading-spinner {
   display: inline-block;
   width: 18px; height: 18px;
-  border: 2px solid rgba(0, 212, 255, 0.15);
+  border: 2px solid rgba(30, 136, 229, 0.15);
   border-radius: 50%;
   border-top-color: var(--accent);
   animation: spin 0.8s ease-in-out infinite;
@@ -1189,12 +1716,12 @@ body {
 }
 
 .chart-loading-spinner {
-  border: 3px solid rgba(0, 212, 255, 0.1);
+  border: 3px solid rgba(30, 136, 229, 0.1);
   border-top: 3px solid var(--accent);
   border-radius: 50%;
   width: 44px; height: 44px;
   animation: spin 0.8s linear infinite;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 0 20px rgba(30, 136, 229, 0.2);
 }
 
 /* ============================================================================
@@ -1426,8 +1953,8 @@ tr:hover td {
 }
 
 @keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 8px rgba(0, 212, 255, 0.2); }
-  50%       { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
+  0%, 100% { box-shadow: 0 0 8px rgba(30, 136, 229, 0.2); }
+  50%       { box-shadow: 0 0 20px rgba(30, 136, 229, 0.5); }
 }
 
 .fireant-candlestick-chart > div { animation: chartFadeIn 0.4s ease-out; }
@@ -1512,7 +2039,7 @@ tr:hover td {
 .ssi-dropdown-custom .VirtualizedSelectOption:hover,
 .Select-option:hover,
 .VirtualizedSelectOption:hover {
-    background-color: rgba(0, 212, 255, 0.08) !important;
+    background-color: rgba(30, 136, 229, 0.08) !important;
     padding-left: 20px !important; /* Chữ thụt lùi vào một chút cho xịn */
     transition: all 0.2s ease !important;
 }
@@ -1567,7 +2094,7 @@ tr:hover td {
 .Select-menu-outer .VirtualizedSelectOption:hover,
 .Select-menu-outer .Select-option.is-focused,
 .Select-menu-outer .VirtualizedSelectOption.is-focused {
-    background-color: rgba(0, 212, 255, 0.1) !important;
+    background-color: rgba(30, 136, 229, 0.1) !important;
     color: var(--accent) !important;
     padding-left: 24px !important; /* Thụt chữ lùi vào trong một chút */
 }
@@ -1627,8 +2154,8 @@ html, body {
 
 /* Selected row glow */
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected {
-    background-color: rgba(0, 212, 255, 0.08) !important;
-    border-left: 3px solid #00d4ff !important;
+    background-color: rgba(30, 136, 229, 0.08) !important;
+    border-left: 3px solid #1E88E5 !important;
 }
 
 /* Pagination */
@@ -1646,7 +2173,7 @@ html, body {
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-paging-button:hover {
-    color: #00d4ff !important;
+    color: #1E88E5 !important;
 }
 
 /* ── 2. FILTER CARD — Padding thoáng hơn, border radius lớn hơn ── */
@@ -1657,8 +2184,8 @@ html, body {
 }
 
 [id*="selected-filter"]:hover {
-    border-color: rgba(0, 212, 255, 0.3) !important;
-    box-shadow: 0 2px 12px rgba(0, 212, 255, 0.08) !important;
+    border-color: rgba(30, 136, 229, 0.3) !important;
+    box-shadow: 0 2px 12px rgba(30, 136, 229, 0.08) !important;
 }
 
 /* Filter card input số */
@@ -1673,7 +2200,7 @@ html, body {
 /* ── 4. RESULT COUNT BADGE — Nổi bật hơn ── */
 #result-count-number {
     font-family: 'JetBrains Mono', monospace !important;
-    text-shadow: 0 0 20px rgba(0, 212, 255, 0.5) !important;
+    text-shadow: 0 0 20px rgba(30, 136, 229, 0.5) !important;
     transition: all 0.3s ease !important;
 }
 
@@ -1692,8 +2219,8 @@ html, body {
 }
 
 #strategy-preset-dropdown .Select-control:hover {
-    border-color: #00d4ff !important;
-    box-shadow: 0 0 12px rgba(0, 212, 255, 0.15) !important;
+    border-color: #1E88E5 !important;
+    box-shadow: 0 0 12px rgba(30, 136, 229, 0.15) !important;
 }
 
 /* ── 7. BADGE ĐẾM MÃ TRÊN FILTER CARD ── */
@@ -1721,7 +2248,7 @@ html, body {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 16px !important;
     font-weight: 700 !important;
-    color: #00d4ff !important;
+    color: #1E88E5 !important;
     letter-spacing: 1px !important;
 }
 
@@ -1746,14 +2273,14 @@ html, body {
 }
 
 .nav-tabs .nav-link:hover {
-    color: #00d4ff !important;
-    background: rgba(0, 212, 255, 0.05) !important;
+    color: #1E88E5 !important;
+    background: rgba(30, 136, 229, 0.05) !important;
 }
 
 .nav-tabs .nav-link.active {
-    color: #00d4ff !important;
+    color: #1E88E5 !important;
     background: transparent !important;
-    border-bottom: 2px solid #00d4ff !important;
+    border-bottom: 2px solid #1E88E5 !important;
     margin-bottom: -2px !important;
 }
 
@@ -1798,8 +2325,8 @@ html, body {
 }
 
 #search-ticker-input .Select-control:hover {
-    border-color: #00d4ff !important;
-    box-shadow: 0 0 12px rgba(0, 212, 255, 0.15) !important;
+    border-color: #1E88E5 !important;
+    box-shadow: 0 0 12px rgba(30, 136, 229, 0.15) !important;
 }
 
 /* ── 15. RESULT COUNT TEXT ── */
@@ -1826,7 +2353,7 @@ html, body {
 }
 
 .criteria-item-hover:hover {
-    background: rgba(0, 212, 255, 0.06) !important;
+    background: rgba(30, 136, 229, 0.06) !important;
     padding-left: 18px !important;
 }
 
@@ -1879,7 +2406,7 @@ span[style*="f59e0b"] {
     left: 50%;
     transform: translateX(-50%);
     background: #1c2333;
-    color: #00d4ff;
+    color: #1E88E5;
     border: 1px solid #30363d;
     border-radius: 4px;
     padding: 2px 6px;
@@ -2058,91 +2585,161 @@ span[style*="f59e0b"] {
 /* ═══════════════════════════════════════
    HERO — FINANCIAL EVENTS SLIDESHOW
 ═══════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════
+   HERO — Slideshow lịch sử TTCK Việt Nam
+   LƯU Ý: Trước đây các quy tắc dưới đây bị ghi đè bởi một khối
+   <style> inject qua JS (hero_slideshow.js) dùng toàn !important
+   để chỉnh chiều cao, typography, z-index... Đã hợp nhất về MỘT
+   nguồn CSS duy nhất tại đây (giá trị cuối cùng đang hiển thị),
+   xoá khối inject trùng lặp trong JS. Giữ nguyên toàn bộ hiệu ứng
+   thị giác hiện có — đây là dọn dẹp mã nguồn, không đổi thiết kế.
+   ═══════════════════════════════════════════════════════════ */
 .hero {
   position: relative;
-  width: 100%; height: 100vh;
+  width: 100%;
+  height: min(100vh, 720px);
   min-height: 560px;
   overflow: hidden;
   background: #070a12;
 }
 .hero-slide {
   position: absolute; inset: 0;
+  height: min(100vh, 720px);
   opacity: 0;
   transition: opacity 0.9s cubic-bezier(0.4,0,0.2,1);
   pointer-events: none;
 }
 .hero-slide.active { opacity: 1; pointer-events: auto; }
 .hero-bg {
-  position: absolute; inset: 0;
-  background-size: cover; background-position: center;
-  filter: grayscale(80%) brightness(0.38);
-  transform: scale(1.04);
-  transition: transform 8s ease;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 100px;
+  pointer-events: none;
+  z-index: 0;
+  background-size: cover;
+  background-position: center right;
+  filter: grayscale(80%) brightness(0.38) blur(1px);
+  /* Ảnh tĩnh, không hiệu ứng Ken Burns (đã tắt chủ động để tránh
+     phân tán sự chú ý khỏi nội dung/số liệu) */
+  transform: scale(1.05);
 }
-.hero-slide.active .hero-bg { transform: scale(1); }
 .hero-overlay {
-  position: absolute; inset: 0;
-  background:
-    linear-gradient(to right, rgba(5,8,18,0.92) 0%, rgba(5,8,18,0.55) 55%, rgba(5,8,18,0.25) 100%),
-    linear-gradient(to top, rgba(5,8,18,0.95) 0%, transparent 45%);
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 75px;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0) 100%);
 }
 .hero-content {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 140px;
+  position: relative;
+  z-index: 10;
   display: flex; flex-direction: column;
   justify-content: flex-end;
-  padding: 0 56px 48px;
+  height: 100%;
+  padding: 0 56px 188px;
   max-width: 720px;
+  pointer-events: none; /* để không chặn click nút điều hướng phía dưới */
 }
+.hero-content button, .cyber-btn { pointer-events: auto; }
+
+.cyber-cta-container {
+  margin-top: 20px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.6s 0.5s ease, transform 0.6s 0.5s ease;
+}
+.hero-slide.active .cyber-cta-container { opacity: 1; transform: translateY(0); }
+.cyber-btn {
+  display: inline-block;
+  padding: 12px 30px;
+  background: rgba(30, 136, 229, 0.05);
+  border: none;
+  color: #1E88E5;
+  font-family: var(--font-data);
+  font-size: 13px; font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  position: relative;
+  cursor: pointer;
+  clip-path: polygon(0% 0%, 90% 0%, 100% 30%, 100% 100%, 10% 100%, 0% 70%);
+  transition: all 0.3s ease;
+}
+.cyber-btn:hover {
+  background: #1E88E5; color: #ffffff;
+  box-shadow: 0 0 20px rgba(30, 136, 229, 0.6);
+  transform: scale(1.05);
+}
+.cyber-btn::before { content: ">>"; margin-right: 8px; font-size: 10px; }
+
 .hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px; font-weight: 500; letter-spacing: 1.5px;
+  font-family: var(--font-data);
+  font-size: 10.5px; font-weight: 500; letter-spacing: 2px;
   text-transform: uppercase;
-  border-radius: 4px; padding: 5px 12px;
-  margin-bottom: 16px; width: fit-content; border: 1px solid;
+  border-radius: 3px; padding: 4px 11px;
+  margin-bottom: 18px; width: fit-content; border: 1px solid;
 }
 .badge-crash    { color:#ff3d57; border-color:rgba(255,61,87,0.5);  background:rgba(255,61,87,0.12);  }
 .badge-collapse { color:#ff8c42; border-color:rgba(255,140,66,0.5); background:rgba(255,140,66,0.12); }
 .badge-panic    { color:#ffb703; border-color:rgba(255,183,3,0.5);  background:rgba(255,183,3,0.12);  }
 .badge-mania    { color:#b388ff; border-color:rgba(179,136,255,0.5);background:rgba(179,136,255,0.12);}
 .badge-boom     { color:#00e676; border-color:rgba(0,230,118,0.5);  background:rgba(0,230,118,0.12);  }
-.badge-policy   { color:#00e5ff; border-color:rgba(0,229,255,0.5);  background:rgba(0,229,255,0.12);  }
+.badge-policy   { color:#1E88E5; border-color:rgba(30, 136, 229,0.5);  background:rgba(30, 136, 229,0.12);  }
 .hero-year {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(96px,14vw,180px);
-  font-weight: 800; line-height: 0.88;
-  letter-spacing: -4px; color: #ffffff;
-  margin-bottom: 16px;
+  font-family: var(--font-display);
+  font-size: clamp(88px, 13vw, 168px);
+  font-weight: 800; line-height: 0.85;
+  letter-spacing: -2px; color: #ffffff;
+  margin-bottom: 20px;
+  text-shadow: 0 0 120px rgba(255,255,255,0.06);
+  opacity: 0; transform: translateY(24px);
+  transition: opacity 0.7s 0.08s cubic-bezier(0.22,1,0.36,1),
+              transform 0.7s 0.08s cubic-bezier(0.22,1,0.36,1);
 }
+.hero-slide.active .hero-year { opacity: 1; transform: translateY(0); }
 .hero-tagline {
-  font-family: 'Syne', sans-serif;
-  font-size: clamp(22px,3.2vw,36px);
-  font-weight: 700; color: #e8f4ff; line-height: 1.2;
-  margin-bottom: 14px; max-width: 600px;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.8vw, 34px);
+  font-weight: 700; color: #e8f4ff; line-height: 1.18;
+  letter-spacing: -0.2px;
+  margin-bottom: 16px; max-width: 580px;
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.65s 0.22s cubic-bezier(0.22,1,0.36,1),
+              transform 0.65s 0.22s cubic-bezier(0.22,1,0.36,1);
 }
+.hero-slide.active .hero-tagline { opacity: 1; transform: translateY(0); }
 .hero-tagline .hl        { color: #ff3d57; }
 .hero-tagline .hl-green  { color: #00e676; }
-.hero-tagline .hl-blue   { color: #00e5ff; }
+.hero-tagline .hl-blue   { color: #1E88E5; }
 .hero-tagline .hl-amber  { color: #ffb703; }
 .hero-tagline .hl-purple { color: #b388ff; }
 .hero-desc {
-  font-size: 14px; color: rgba(232,244,255,0.6);
-  line-height: 1.7; max-width: 520px; margin-bottom: 28px;
+  font-family: var(--font-ui);
+  font-size: 14.5px; font-weight: 400;
+  color: rgba(200,220,240,0.62);
+  line-height: 1.75; max-width: 500px; margin-bottom: 30px;
+  letter-spacing: 0.1px;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 0.6s 0.36s ease, transform 0.6s 0.36s ease;
 }
-.hero-stats { display: flex; gap: 32px; align-items: flex-end; }
+.hero-slide.active .hero-desc { opacity: 1; transform: translateY(0); }
+.hero-stats {
+  display: flex; gap: 32px; align-items: flex-end;
+  opacity: 0; transition: opacity 0.5s 0.5s ease;
+}
+.hero-slide.active .hero-stats { opacity: 1; }
 .hero-stat-group { display: flex; flex-direction: column; gap: 3px; }
 .stat-label {
-  font-family: 'DM Mono', monospace;
-  font-size: 9px; color: rgba(232,244,255,0.35);
-  text-transform: uppercase; letter-spacing: 1.2px;
+  font-family: var(--font-data);
+  font-size: 9px; color: rgba(200,220,240,0.32);
+  text-transform: uppercase; letter-spacing: 1.8px;
 }
-.stat-value { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 600; }
+.stat-value { font-family: var(--font-data); font-size: 17px; font-weight: 500; letter-spacing: -0.5px; }
 .stat-neg   { color: #ff3d57; }
 .stat-pos   { color: #00e676; }
-.stat-neut  { color: #00e5ff; }
+.stat-neut  { color: #1E88E5; }
 .stat-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.1); align-self: flex-end; }
 .hero-controls {
+  position: relative; z-index: 100;
   position: absolute; bottom: 88px; left: 56px;
   display: flex; align-items: center; gap: 14px;
 }
@@ -2155,28 +2752,30 @@ span[style*="f59e0b"] {
   transition: all 0.2s;
 }
 .hero-btn:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.25); }
-.hero-counter { font-family: 'DM Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.35); }
-.hero-keys    { font-family: 'DM Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.2); }
+.hero-counter { font-family: var(--font-data); font-size: 11px; color: rgba(200,220,240,0.28); letter-spacing: 1px; }
+.hero-keys    { font-family: var(--font-data); font-size: 10px; color: rgba(200,220,240,0.18); }
 .hero-legend {
+  position: relative; z-index: 100;
   position: absolute; bottom: 88px; right: 56px;
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: flex-end;
 }
 .legend-dot-item {
   display: flex; align-items: center; gap: 5px;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px; color: rgba(255,255,255,0.3);
-  letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer;
+  font-family: var(--font-data);
+  font-size: 9.5px; color: rgba(255,255,255,0.3);
+  letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
 }
 .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .hero-eras {
-  position: absolute; bottom: 40px; left: 0; right: 0;
+  position: absolute; bottom: 40px; left: 0; right: 0; z-index: 100;
   display: flex; border-top: 1px solid rgba(255,255,255,0.06);
 }
 .era-tab {
+  position: relative; z-index: 100;
   flex: 1; text-align: center;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 1.2px; text-transform: uppercase;
+  font-family: var(--font-data);
+  font-size: 9.5px; font-weight: 700;
+  letter-spacing: 1.4px; text-transform: uppercase;
   color: rgba(255,255,255,0.35);
   padding: 10px 4px; cursor: pointer;
   border-right: 1px solid rgba(255,255,255,0.06);
@@ -2185,20 +2784,21 @@ span[style*="f59e0b"] {
 .era-tab:last-child { border-right: none; }
 .era-tab:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.03); }
 .era-tab.active { font-weight: 800; border-bottom: 2px solid currentColor; }
-.era-depression { color: #b33a3a; } .era-bretton { color: #3a6eb3; }
-.era-stagflation{ color: #b37a3a; } .era-greenspan{ color: #8b3ab3; }
-.era-dotcom     { color: #3ab3b3; } .era-zirp     { color: #3a7ab3; }
-.era-pandemic   { color: #3ab36e; }
+.era-doi-moi     { color: #3a6eb3; }
+.era-khung-hoang { color: #b33a3a; }
+.era-ttck        { color: #8b3ab3; }
+.era-tai-co-cau  { color: #b37a3a; }
+.era-covid       { color: #3ab36e; }
 .hero-timeline {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
+  position: absolute; bottom: 0; left: 0; right: 0; height: 40px; z-index: 100;
   background: rgba(5,8,18,0.85); backdrop-filter: blur(8px);
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 .tl-inner { position: relative; width: 100%; height: 100%; }
 .tl-tick-label {
   position: absolute;
-  font-family: 'DM Mono', monospace;
-  font-size: 9px; color: rgba(255,255,255,0.2);
+  font-family: var(--font-data);
+  font-size: 8.5px; color: rgba(200,220,240,0.18);
   transform: translateX(-50%); top: 4px;
 }
 .tl-event-dot {
@@ -2207,29 +2807,31 @@ span[style*="f59e0b"] {
   top: 50%; transform: translate(-50%,-50%);
   cursor: pointer; transition: transform 0.2s; z-index: 2;
 }
-.tl-event-dot:hover       { transform: translate(-50%,-50%) scale(1.5); }
-.tl-event-dot.active      { transform: translate(-50%,-50%) scale(1.6); box-shadow: 0 0 0 3px rgba(255,255,255,0.2); }
+.tl-event-dot:hover  { transform: translate(-50%,-50%) scale(1.5); }
+.tl-event-dot.active { transform: translate(-50%,-50%) scale(1.6); box-shadow: 0 0 0 3px rgba(255,255,255,0.2); }
 .hero-progress-bar {
-  position: absolute; top: 0; left: 0; height: 2px;
-  background: linear-gradient(90deg, #0090ff, #00e5ff);
+  position: absolute; top: 0; left: 0; height: 2px; z-index: 100;
+  background: linear-gradient(90deg, #0057D9, #1E88E5);
   transition: width 0.1s linear;
-  box-shadow: 0 0 8px rgba(0,229,255,0.5);
+  box-shadow: 0 0 8px rgba(30, 136, 229,0.5);
 }
 .hero-credit {
+  position: relative; z-index: 100;
   position: absolute; bottom: 148px; right: 20px;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px; color: rgba(255,255,255,0.2);
+  font-family: var(--font-data);
+  font-size: 9px; color: rgba(200,220,240,0.16);
 }
 .hero-enter {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 13px 28px;
-  background: linear-gradient(135deg, #0090ff, #00e5ff);
-  color: #001a20; font-size: 13px; font-weight: 800;
+  background: linear-gradient(135deg, #0057D9, #1E88E5);
+  color: #ffffff; font-family: var(--font-display);
+  font-size: 12px; font-weight: 800; letter-spacing: 0.8px;
   border: none; border-radius: 10px; cursor: pointer;
-  box-shadow: 0 4px 24px rgba(0,229,255,0.35);
+  box-shadow: 0 4px 24px rgba(30, 136, 229,0.35);
   transition: all 0.25s; text-decoration: none;
 }
-.hero-enter:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,229,255,0.55); }
+.hero-enter:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(30, 136, 229,0.55); }
 /* ═══════════════════════════════════════════════════════════
    IPS ONBOARDING — Giao diện liền mạch (onboarding.html style)
    Thêm vào cuối style.css
@@ -2251,16 +2853,16 @@ span[style*="f59e0b"] {
 }
 .logo-icon {
   width: 40px; height: 40px;
-  background: linear-gradient(135deg, #0090ff, #00e5ff);
+  background: linear-gradient(135deg, #0057D9, #1E88E5);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px;
-  box-shadow: 0 0 24px rgba(0,229,255,0.3);
+  box-shadow: 0 0 24px rgba(30, 136, 229,0.3);
 }
 .logo-name {
   font-family: 'Syne', 'Montserrat', sans-serif;
   font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
-  background: linear-gradient(90deg, #e8f4ff 0%, #00e5ff 100%);
+  background: linear-gradient(90deg, #e8f4ff 0%, #1E88E5 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -2287,13 +2889,13 @@ span[style*="f59e0b"] {
   transition: all 0.3s;
 }
 .rail-dot.active {
-  background: linear-gradient(135deg, #0090ff, #00e5ff);
+  background: linear-gradient(135deg, #0057D9, #1E88E5);
   border-color: transparent; color: #001a20;
-  box-shadow: 0 0 16px rgba(0,229,255,0.4);
+  box-shadow: 0 0 16px rgba(30, 136, 229,0.4);
 }
 .rail-dot.done {
-  background: rgba(0,229,255,0.12);
-  border-color: #00e5ff; color: #00e5ff;
+  background: rgba(30, 136, 229,0.12);
+  border-color: #1E88E5; color: #1E88E5;
 }
 .rail-label {
   font-family: 'DM Mono', monospace;
@@ -2301,14 +2903,14 @@ span[style*="f59e0b"] {
   letter-spacing: 0.8px; text-transform: uppercase;
   white-space: nowrap; transition: color 0.3s;
 }
-.rail-label.active { color: #00e5ff; }
+.rail-label.active { color: #1E88E5; }
 .rail-label.done   { color: #3d6a8a; }
 .rail-line {
   flex: 1; height: 1px; background: #1a3a60;
   margin-bottom: 18px; transition: background 0.3s;
   min-width: 24px;
 }
-.rail-line.done { background: #00e5ff; }
+.rail-line.done { background: #1E88E5; }
 
 /* ── Section (step container) ── */
 .section {
@@ -2329,7 +2931,7 @@ span[style*="f59e0b"] {
 }
 .step-num {
   font-family: 'DM Mono', monospace;
-  font-size: 10px; color: #00e5ff;
+  font-size: 10px; color: #1E88E5;
   letter-spacing: 2px; text-transform: uppercase;
   white-space: nowrap;
 }
@@ -2347,7 +2949,7 @@ span[style*="f59e0b"] {
 }
 .step-title em {
   font-style: normal;
-  background: linear-gradient(90deg, #00e5ff, #0090ff);
+  background: linear-gradient(90deg, #1E88E5, #0057D9);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
@@ -2389,19 +2991,19 @@ span[style*="f59e0b"] {
   text-align: center; gap: 8px;
 }
 .choice-card:hover {
-  border-color: rgba(0,229,255,0.4);
+  border-color: rgba(30, 136, 229,0.4);
   background: #0d1d36;
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0,144,255,0.15);
 }
 .choice-card.selected {
-  border-color: #00e5ff;
-  background: rgba(0,229,255,0.06);
-  box-shadow: 0 0 0 1px #00e5ff, 0 8px 32px rgba(0,229,255,0.2);
+  border-color: #1E88E5;
+  background: rgba(30, 136, 229,0.06);
+  box-shadow: 0 0 0 1px #1E88E5, 0 8px 32px rgba(30, 136, 229,0.2);
 }
 .choice-card .check {
   position: absolute; top: 10px; right: 12px;
-  font-size: 12px; color: #00e5ff;
+  font-size: 12px; color: #1E88E5;
   opacity: 0; transition: opacity 0.2s;
   font-family: 'DM Mono', monospace;
 }
@@ -2423,7 +3025,7 @@ span[style*="f59e0b"] {
 /* Ripple */
 .choice-card .ripple {
   position: absolute; border-radius: 50%;
-  background: rgba(0,229,255,0.15);
+  background: rgba(30, 136, 229,0.15);
   transform: scale(0); animation: rippleAnim 0.5s ease-out forwards;
   pointer-events: none;
 }
@@ -2448,15 +3050,15 @@ span[style*="f59e0b"] {
 }
 .slider-val {
   font-family: 'DM Mono', monospace;
-  font-size: 13px; color: #00e5ff; font-weight: 600;
+  font-size: 13px; color: #1E88E5; font-weight: 600;
 }
 
 /* Dash slider override for onboarding */
-.ips-slider .rc-slider-track { background: #00e5ff !important; }
+.ips-slider .rc-slider-track { background: #1E88E5 !important; }
 .ips-slider .rc-slider-handle {
-  border-color: #00e5ff !important;
-  background: #00e5ff !important;
-  box-shadow: 0 0 0 2px rgba(0,229,255,0.3) !important;
+  border-color: #1E88E5 !important;
+  background: #1E88E5 !important;
+  box-shadow: 0 0 0 2px rgba(30, 136, 229,0.3) !important;
 }
 .ips-slider .rc-slider-rail { background: #1a3a60 !important; }
 
@@ -2472,16 +3074,16 @@ span[style*="f59e0b"] {
   border-radius: 10px; cursor: pointer;
   transition: all 0.2s;
 }
-.check-item:hover { border-color: rgba(0,229,255,0.3); background: #0d1d36; }
-.check-item.checked { border-color: rgba(0,229,255,0.35); background: rgba(0,229,255,0.04); }
+.check-item:hover { border-color: rgba(30, 136, 229,0.3); background: #0d1d36; }
+.check-item.checked { border-color: rgba(30, 136, 229,0.35); background: rgba(30, 136, 229,0.04); }
 .check-box {
   width: 22px; height: 22px; border-radius: 6px;
   border: 1.5px solid #1a3a60;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; color: #00e5ff;
+  font-size: 13px; color: #1E88E5;
   flex-shrink: 0; transition: all 0.2s;
 }
-.check-box.checked { background: rgba(0,229,255,0.12); border-color: #00e5ff; }
+.check-box.checked { background: rgba(30, 136, 229,0.12); border-color: #1E88E5; }
 .check-item-label {
   font-family: 'DM Sans', sans-serif;
   font-size: 13.5px; color: #7aafcc; line-height: 1.4;
@@ -2512,7 +3114,7 @@ span[style*="f59e0b"] {
   padding: 4px 10px; border-radius: 4px;
 }
 .risk-conservative { color: #00e676; background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.3); }
-.risk-moderate     { color: #00e5ff; background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.3); }
+.risk-moderate     { color: #1E88E5; background: rgba(30, 136, 229,0.1); border: 1px solid rgba(30, 136, 229,0.3); }
 .risk-aggressive   { color: #ff3d57; background: rgba(255,61,87,0.1);  border: 1px solid rgba(255,61,87,0.3);  }
 
 .summary-grid {
@@ -2542,9 +3144,9 @@ span[style*="f59e0b"] {
 .filter-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-tag {
   font-family: 'DM Mono', monospace;
-  font-size: 11px; color: #00e5ff;
-  background: rgba(0,229,255,0.08);
-  border: 1px solid rgba(0,229,255,0.25);
+  font-size: 11px; color: #1E88E5;
+  background: rgba(30, 136, 229,0.08);
+  border: 1px solid rgba(30, 136, 229,0.25);
   border-radius: 5px; padding: 4px 10px;
   animation: tagFadeIn 0.3s ease both;
 }
@@ -2600,11 +3202,11 @@ span[style*="f59e0b"] {
 }
 .btn-ghost:hover { border-color: #2a5a90; color: #7aafcc; }
 .btn-primary {
-  background: linear-gradient(135deg, #0090ff, #00e5ff);
+  background: linear-gradient(135deg, #0057D9, #1E88E5);
   color: #001a20;
-  box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+  box-shadow: 0 4px 20px rgba(30, 136, 229,0.3);
 }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,229,255,0.45); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(30, 136, 229,0.45); }
 .btn-success {
   background: linear-gradient(135deg, #00b84c, #00e676);
   color: #001a10;
@@ -2681,11 +3283,11 @@ span[style*="f59e0b"] {
 }
 
 .trending-chip:hover {
-    color: #00d4ff;
-    border-color: #00d4ff;
-    background-color: rgba(0, 212, 255, 0.1);
+    color: #1E88E5;
+    border-color: #1E88E5;
+    background-color: rgba(30, 136, 229, 0.1);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(30, 136, 229, 0.2);
 }
 
 /* ============================================================================
@@ -2702,100 +3304,106 @@ span[style*="f59e0b"] {
     cursor: default !important;
 }
 /* ============================================================================
-   OVERRIDE: ÉP TOÀN HỆ THỐNG VỀ TONE XANH LÁ (VIETCAP THEME)
+   OVERRIDE: ÉP TOÀN HỆ THỐNG VỀ TONE XANH DƯƠNG UEL (FSS THEME)
+   Đây là block có quyền quyết định CUỐI CÙNG cho --accent toàn app (dùng
+   !important + áp cho cả light/dark). Trước đây --accent-deep vẫn còn sót
+   lại 1 mã xanh lá (#007a3d) không nằm trong danh sách hex đã quét thay
+   thế hàng loạt — sửa nốt để nhất quán hoàn toàn với bảng màu UEL.
    ============================================================================ */
 
 :root, [data-theme="light"], [data-theme="dark"] {
-    --accent: #00a651 !important;
-    --accent-deep: #007a3d !important;
-    --accent-dim: rgba(0, 166, 81, 0.12) !important;
-    --accent-glow: rgba(0, 166, 81, 0.25) !important;
-    --border-bright: #00c85a !important;
-    --glow-accent: 0 0 20px rgba(0, 166, 81, 0.3) !important;
+    --accent: #0057D9 !important;
+    --accent-deep: #003B8E !important;
+    --accent-dim: rgba(0, 87, 217, 0.12) !important;
+    --accent-glow: rgba(0, 87, 217, 0.25) !important;
+    --border-bright: #1E88E5 !important;
+    --glow-accent: 0 0 20px rgba(0, 87, 217, 0.3) !important;
 }
 
 /* Đổi màu xanh dương trong các gradient và hiệu ứng phát sáng */
 .btn-apply-ssi {
-    background: linear-gradient(135deg, #00c85a 0%, #00a651 100%) !important;
-    box-shadow: 0 4px 16px rgba(0, 166, 81, 0.3) !important;
+    background: linear-gradient(135deg, #1E88E5 0%, #0057D9 100%) !important;
+    box-shadow: 0 4px 16px rgba(0, 87, 217, 0.3) !important;
     color: #ffffff !important;
 }
 
 .btn-apply-ssi:hover {
-    box-shadow: 0 8px 28px rgba(0, 166, 81, 0.5) !important;
+    box-shadow: 0 8px 28px rgba(0, 87, 217, 0.5) !important;
 }
 
 .custom-range-slider .rc-slider-handle,
 .custom-range-slider .rc-slider-track {
-    background: #00a651 !important;
-    border-color: #00a651 !important;
-    box-shadow: 0 0 8px rgba(0, 166, 81, 0.5) !important;
+    background: #0057D9 !important;
+    border-color: #0057D9 !important;
+    box-shadow: 0 0 8px rgba(0, 87, 217, 0.5) !important;
 }
 
 /* Ép màu AG Grid */
 [data-theme="dark"] .ag-theme-alpine-dark {
-    --ag-selected-row-background-color: rgba(0, 166, 81, 0.08) !important;
-    --ag-range-selection-border-color: #00a651 !important;
-    --ag-row-hover-color: rgba(0, 166, 81, 0.05) !important;
+    --ag-selected-row-background-color: rgba(0, 87, 217, 0.08) !important;
+    --ag-range-selection-border-color: #0057D9 !important;
+    --ag-row-hover-color: rgba(0, 87, 217, 0.05) !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row:hover {
-    box-shadow: inset 3px 0 0 rgba(0, 166, 81, 0.4) !important;
+    box-shadow: inset 3px 0 0 rgba(0, 87, 217, 0.4) !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected {
-    box-shadow: inset 3px 0 0 #00a651 !important;
-    border-left: 3px solid #00a651 !important;
+    box-shadow: inset 3px 0 0 #0057D9 !important;
+    border-left: 3px solid #0057D9 !important;
 }
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell:hover,
 [data-theme="dark"] .ag-theme-alpine-dark .ag-sort-indicator-icon {
-    color: #00c85a !important;
+    color: #1E88E5 !important;
 }
 
 /* Ép màu các dropdown và tooltip bị dính blue */
 .custom-dropdown .Select-value,
 .ssi-dropdown-custom .Select-value {
-    background-color: rgba(0, 166, 81, 0.1) !important;
-    border: 1px solid rgba(0, 166, 81, 0.3) !important;
+    background-color: rgba(0, 87, 217, 0.1) !important;
+    border: 1px solid rgba(0, 87, 217, 0.3) !important;
 }
 
 .custom-dropdown .Select-option:hover,
 .ssi-dropdown-custom .Select-option:hover {
-    background-color: rgba(0, 166, 81, 0.08) !important;
+    background-color: rgba(0, 87, 217, 0.08) !important;
 }
 
 .cyber-tooltip .tooltip-inner {
-    border: 1px solid #00a651 !important;
-    box-shadow: 0 0 12px rgba(0, 166, 81, 0.3) !important;
+    border: 1px solid #0057D9 !important;
+    box-shadow: 0 0 12px rgba(0, 87, 217, 0.3) !important;
 }
 
 .cyber-tooltip[data-popper-placement^="top"] .tooltip-arrow::before {
-    border-bottom-color: #00a651 !important;
+    border-bottom-color: #0057D9 !important;
 }
 
 /* Các tag, badge và text hiển thị phụ */
 #result-count-number {
-    text-shadow: 0 0 20px rgba(0, 166, 81, 0.5) !important;
+    text-shadow: 0 0 20px rgba(0, 87, 217, 0.5) !important;
 }
 
 .trending-chip:hover {
-    color: #00c85a !important;
-    border-color: #00c85a !important;
-    background-color: rgba(0, 166, 81, 0.1) !important;
-    box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2) !important;
+    color: #1E88E5 !important;
+    border-color: #1E88E5 !important;
+    background-color: rgba(0, 87, 217, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 87, 217, 0.2) !important;
 }
 
 /* Ép màu onboarding (Hero banner/IPS) */
 .ips-choice-card.selected {
-    border-color: #00a651 !important;
-    background-color: rgba(0, 166, 81, 0.1) !important;
+    border-color: #0057D9 !important;
+    background-color: rgba(0, 87, 217, 0.1) !important;
 }
 
-#ips-onboarding-wrapper::before,
-#fss-hero-bg {
-    background: radial-gradient(ellipse 80% 60% at 10% 50%, rgba(0,166,81,0.13) 0%, transparent 60%) !important;
+#ips-onboarding-wrapper::before {
+    background: radial-gradient(ellipse 80% 60% at 10% 50%, rgba(0, 87, 217,0.13) 0%, transparent 60%) !important;
 }
+/* (Đã bỏ #fss-hero-bg khỏi rule trên — nền hero giờ dùng gradient terminal
+   phosphor-green định nghĩa trong header.css, không còn ép gradient xanh
+   dương cũ nữa, vì nó đang đè !important lên toàn bộ thiết kế mới.) */
 /* ============================================================
    THEME SÁNG (LIGHT MODE) CHO HEADER & HERO BANNER
    ============================================================ */
@@ -2830,53 +3438,21 @@ span[style*="f59e0b"] {
     color: #0f172a !important;
 }
 
-/* Đổi nền khu vực Hero Banner sang xám nhạt */
+/* Nền khu vực Hero Banner ở light mode — nay dùng gradient terminal nhạt
+   định nghĩa trong header.css (#fss-hero-bg), không ép flat gray nữa */
 [data-theme="light"] #fss-hero {
-    background: #f4f6f8 !important;
+    background: #f2f7f4;
 }
 
-/* CHỮ "Smart Screener" chuyển sang màu đen */
+/* Tagline "FIN SMART SCREENER" và Eyebrow — giữ đúng phong cách terminal
+   (mono, phosphor-green) ở CẢ 2 theme. Trước đây có 1 block patch riêng ép
+   font Montserrat + màu trắng/xanh dương !important đè lên toàn bộ thiết kế
+   terminal mới — đã xoá khối đó, giữ lại đúng 1 định nghĩa trong header.css. */
 [data-theme="light"] .fss-headline-sub {
-    color: #0f172a !important; 
+    color: var(--fss-term-green, #00a86b);
 }
-
-/* Các text nhỏ (Eyebrow, Stats) đổi sang màu xám đậm/xanh lá để dễ đọc trên nền sáng */
 [data-theme="light"] .fss-eyebrow {
-    color: #00a651 !important;
-}
-[data-theme="light"] .fss-stat-pill {
-    color: #334155 !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-    background: rgba(0, 0, 0, 0.03) !important;
-}
-/* Nâng cấp chữ "Smart Screener" - Hiện đại, thanh lịch hơn */
-.fss-headline-sub {
-    font-family: 'Montserrat', sans-serif !important;
-    font-size: clamp(2rem, 4vw, 3.5rem);
-    font-weight: 500 !important; /* Độ dày vừa phải, sang trọng */
-    color: #ffffff;
-    letter-spacing: -0.5px;
-}
-
-/* Nâng cấp dòng chữ nhỏ phía trên (Eyebrow) */
-.fss-eyebrow {
-    font-family: 'Montserrat', sans-serif !important;
-    font-weight: 600 !important;
-    letter-spacing: 2px !important; /* Kéo dãn nhẹ để tạo cảm giác không gian */
-}
-
-/* Nâng cấp các con số định lượng (1500+, 165+) mang phong cách Terminal */
-.fss-stat-pill {
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-}
-
-.fss-stat-pill strong {
-    font-family: 'JetBrains Mono', monospace !important; /* Font số lập trình */
-    font-weight: 700 !important;
-    font-size: 13.5px !important;
-    letter-spacing: 0.5px;
-    color: #00c85a;
+    color: var(--fss-term-green, #00a86b);
 }
 /* ============================================================================
    loại bỏ màu blue, chuyển sang xanh lá vietcap
@@ -2884,9 +3460,9 @@ span[style*="f59e0b"] {
 
 /* 1. đổi màu nút chọn chiến lược đầu tư */
 #strategy-accordion-trigger {
-    background: linear-gradient(135deg, #00c85a 0%, #00a651 100%) !important;
+    background: linear-gradient(135deg, #1E88E5 0%, #0057D9 100%) !important;
     border: none !important;
-    box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(0, 87, 217, 0.2) !important;
 }
 
 #strategy-display-label, 
@@ -2897,7 +3473,7 @@ span[style*="f59e0b"] {
 /* 2. đổi màu đường gạch chân của tab đang chọn (chiến lược) */
 .toolbar-tab-active, 
 .toolbar-tab.active {
-    border-bottom: 2px solid #00a651 !important;
+    border-bottom: 2px solid #0057D9 !important;
     color: #ffffff !important;
 }
 
@@ -2961,14 +3537,14 @@ span[style*="f59e0b"] {
     border-color: #e2e8f0 !important;
 }
 [data-theme="light"] .strategy-group-header span {
-    color: #00a651 !important; /* tiêu đề nhóm chiến lược */
+    color: #0057D9 !important; /* tiêu đề nhóm chiến lược */
 }
 [data-theme="light"] .strategy-item-row {
     color: #334155 !important;
 }
 [data-theme="light"] .strategy-item-row:hover {
-    background-color: rgba(0, 166, 81, 0.05) !important;
-    color: #00a651 !important;
+    background-color: rgba(0, 87, 217, 0.05) !important;
+    color: #0057D9 !important;
 }
 /* ============================================================================
    1. CHUYỂN ĐỔI MỌI SẮC XANH DƯƠNG (BLUE/CYAN) SANG XANH LÁ (GREEN)
@@ -2976,35 +3552,35 @@ span[style*="f59e0b"] {
 
 /* Đổi màu các tag Hot (Trending chips) */
 .trending-chip:hover {
-    color: #00c85a !important;
-    border-color: #00c85a !important;
-    background-color: rgba(0, 200, 90, 0.1) !important;
-    box-shadow: 0 4px 12px rgba(0, 200, 90, 0.2) !important;
+    color: #1E88E5 !important;
+    border-color: #1E88E5 !important;
+    background-color: rgba(30, 136, 229, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(30, 136, 229, 0.2) !important;
 }
 
 /* Đổi màu Nút thả xuống (Dropdown Năm) */
-.year-filter-dropdown .Select-value-label { color: #00a651 !important; }
-.year-filter-dropdown .Select-arrow { border-top-color: #00a651 !important; }
-.year-filter-dropdown .Select-option.is-focused { color: #00a651 !important; }
+.year-filter-dropdown .Select-value-label { color: #0057D9 !important; }
+.year-filter-dropdown .Select-arrow { border-top-color: #0057D9 !important; }
+.year-filter-dropdown .Select-option.is-focused { color: #0057D9 !important; }
 .year-filter-dropdown .Select-option.is-selected { 
-    background-color: rgba(0,166,81,0.1) !important; 
-    color: #00a651 !important; 
+    background-color: rgba(0, 87, 217,0.1) !important; 
+    color: #0057D9 !important; 
 }
 
 /* Đổi viền Thanh tìm kiếm mã khi click vào */
 #search-ticker-input .Select-control:hover, 
 #search-ticker-input.is-focused .Select-control {
-    border-color: #00a651 !important;
-    box-shadow: 0 0 12px rgba(0, 166, 81, 0.15) !important;
+    border-color: #0057D9 !important;
+    box-shadow: 0 0 12px rgba(0, 87, 217, 0.15) !important;
 }
 
 /* ÉP ĐỔI MÀU CÁC ICON BỊ FIX CỨNG MÀU BLUE TRONG PYTHON MÀ KHÔNG CẦN SỬA PYTHON */
 [style*="color: #58a6ff"], 
 [style*="color: rgb(88, 166, 255)"] {
-    color: #00a651 !important;
+    color: #0057D9 !important;
 }
-[style*="color: #00d4ff"] {
-    color: #00c85a !important;
+[style*="color: #1E88E5"] {
+    color: #1E88E5 !important;
 }
 
 /* ============================================================================
@@ -3039,8 +3615,8 @@ span[style*="f59e0b"] {
     color: #334155 !important;
 }
 [data-theme="light"] .ticker-search-dropdown .Select-option:hover {
-    background-color: rgba(0, 166, 81, 0.08) !important;
-    color: #00a651 !important;
+    background-color: rgba(0, 87, 217, 0.08) !important;
+    color: #0057D9 !important;
 }
 
 /* --- Cụm Mã Hot (Trending Chips) --- */
@@ -3050,9 +3626,9 @@ span[style*="f59e0b"] {
     color: #475569 !important;
 }
 [data-theme="light"] .trending-chip:hover {
-    background-color: rgba(0, 166, 81, 0.1) !important;
-    border-color: #00a651 !important;
-    color: #00a651 !important;
+    background-color: rgba(0, 87, 217, 0.1) !important;
+    border-color: #0057D9 !important;
+    color: #0057D9 !important;
 }
 
 /* --- Bảng Điều Khiển Bộ Lọc (Wizard Panel) --- */
@@ -3158,20 +3734,20 @@ span[style*="f59e0b"] {
 
 /* 2. các thẻ tag được chọn (như 'tất cả sàn', 'tất cả ngành') */
 [data-theme="light"] .Select-value {
-    background-color: rgba(0, 166, 81, 0.1) !important;
-    border: 1px solid rgba(0, 166, 81, 0.3) !important;
-    color: #00a651 !important;
+    background-color: rgba(0, 87, 217, 0.1) !important;
+    border: 1px solid rgba(0, 87, 217, 0.3) !important;
+    color: #0057D9 !important;
 }
 
 /* dấu x để xóa tag */
 [data-theme="light"] .Select-value-icon {
-    border-right: 1px solid rgba(0, 166, 81, 0.3) !important;
-    color: #00a651 !important;
+    border-right: 1px solid rgba(0, 87, 217, 0.3) !important;
+    color: #0057D9 !important;
 }
 
 [data-theme="light"] .Select-value-icon:hover {
-    background-color: rgba(0, 166, 81, 0.2) !important;
-    color: #007a3d !important;
+    background-color: rgba(0, 87, 217, 0.2) !important;
+    color: #003B8E !important;
 }
 
 /* 3. menu xổ xuống của toàn bộ dropdown */
@@ -3188,8 +3764,8 @@ span[style*="f59e0b"] {
 
 [data-theme="light"] .Select-option:hover,
 [data-theme="light"] .Select-option.is-focused {
-    background-color: rgba(0, 166, 81, 0.08) !important;
-    color: #00a651 !important;
+    background-color: rgba(0, 87, 217, 0.08) !important;
+    color: #0057D9 !important;
 }
 
 /* 4. fix riêng cho khung chọn "toàn bộ năm" */
@@ -3201,7 +3777,7 @@ span[style*="f59e0b"] {
 /* sửa lỗi chữ trong ô tìm mã bị mờ */
 [data-theme="light"] .ticker-search-dropdown input {
     color: #0f172a !important;
-    caret-color: #00a651 !important;
+    caret-color: #0057D9 !important;
 }
 /* ============================================================================
    NÂNG CẤP TAB THANH CÔNG CỤ (TÌM MÃ, CHIẾN LƯỢC, PHẠM VI...)
@@ -3213,12 +3789,12 @@ span[style*="f59e0b"] {
 .toolbar-tab.active,
 [data-theme="light"] .toolbar-tab.toolbar-tab-active,
 [data-theme="light"] .toolbar-tab.active {
-    background-color: #00a651 !important; 
+    background-color: #0057D9 !important; 
     border-bottom: none !important; /* Xóa đường gạch chân mỏng manh */
     color: #ffffff !important; /* Chữ màu trắng */
     border-radius: 6px !important; /* Bo góc cho giống một nút bấm hiện đại */
     margin: 4px !important; /* Tạo lề để khối xanh không chạm sát viền thanh công cụ */
-    box-shadow: 0 4px 12px rgba(0, 166, 81, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(0, 87, 217, 0.2) !important;
 }
 
 /* 2. Ép tất cả ICON bên trong tab ĐANG CHỌN thành màu TRẮNG (Áp dụng cho cả Sáng/Tối) */
@@ -3238,12 +3814,12 @@ span[style*="f59e0b"] {
 /* 4. Hiệu ứng khi rê chuột (hover) vào tab chưa chọn -> Hiện viền/chữ xanh lá thay vì xanh dương */
 .toolbar-tab:hover:not(.toolbar-tab-active),
 [data-theme="light"] .toolbar-tab:hover:not(.toolbar-tab-active) {
-    background-color: rgba(0, 166, 81, 0.05) !important;
-    color: #00a651 !important;
+    background-color: rgba(0, 87, 217, 0.05) !important;
+    color: #0057D9 !important;
 }
 .toolbar-tab:hover:not(.toolbar-tab-active) i,
 [data-theme="light"] .toolbar-tab:hover:not(.toolbar-tab-active) i {
-    color: #00a651 !important;
+    color: #0057D9 !important;
 }
 /* ============================================================================
    ĐỒNG BỘ NỀN SÁNG (LIGHT MODE) - BỔ SUNG FIX CÁC KHỐI BỊ KẸT MÀU ĐEN
@@ -3276,13 +3852,13 @@ span[style*="f59e0b"] {
 }
 
 [data-theme="light"] #btn-save {
-    color: #00a651 !important;
-    border-color: #00a651 !important;
+    color: #0057D9 !important;
+    border-color: #0057D9 !important;
     background-color: transparent !important;
 }
 
 [data-theme="light"] #btn-save:hover {
-    background-color: rgba(0, 166, 81, 0.1) !important;
+    background-color: rgba(0, 87, 217, 0.1) !important;
 }
 
 
@@ -3311,7 +3887,7 @@ span[style*="f59e0b"] {
 }
 
 /* Chữ trong cột thống kê: Ép xám/đen nhưng BỎ QUA màu Xanh/Đỏ của % thay đổi */
-[data-theme="light"] #idx-stats-panel span:not([style*="color: #10b981"]):not([style*="color: #ef4444"]):not([style*="color: #00a651"]) {
+[data-theme="light"] #idx-stats-panel span:not([style*="color: #10b981"]):not([style*="color: #ef4444"]):not([style*="color: #0057D9"]) {
     color: #334155 !important;
 }
 
@@ -3382,8 +3958,8 @@ span[style*="f59e0b"] {
     color: #0f172a !important;
 }
 [data-theme="light"] #btn-save {
-    color: #00a651 !important;
-    border-color: #00a651 !important;
+    color: #0057D9 !important;
+    border-color: #0057D9 !important;
     background-color: transparent !important;
 }
 
@@ -3404,17 +3980,17 @@ span[style*="f59e0b"] {
 [data-theme="light"] #idx-mini-chart .ytick text {
     fill: #64748b !important; /* Chữ tháng, năm */
 }
-/* ép chữ màu trắng cho thanh navbar ở chế độ sáng */
+/* ép chữ màu đen/xám đậm cho thanh navbar ở chế độ sáng */
 [data-theme="light"] .fss-logo-text,
 [data-theme="light"] .vietcap-nav-link,
 [data-theme="light"] .vietcap-nav-login-btn,
 [data-theme="light"] #navbar-user-name {
-    color: #ffffff !important;
+    color: #0f172a !important; 
 }
 
 /* màu khi rê chuột vào các chữ (màu xanh lá vietcap cho đẹp) */
 [data-theme="light"] .vietcap-nav-link:hover {
-    color: #00c85a !important; 
+    color: #1E88E5 !important; 
     background: rgba(255, 255, 255, 0.1) !important;
 }
 /* ép style cho nút đăng xuất đồng bộ với thanh navbar */
@@ -3433,16 +4009,16 @@ span[style*="f59e0b"] {
 /* màu khi rê chuột vào */
 #btn-logout:hover {
     background: rgba(255, 255, 255, 0.1) !important;
-    color: #00c85a !important; /* chữ ngả xanh lá cho đẹp */
+    color: #1E88E5 !important; /* chữ ngả xanh lá cho đẹp */
 }
 
 /* tạo khung màu xanh khi ấn vào (focus/active) */
 #btn-logout:active,
 #btn-logout:focus,
 #btn-logout:focus-visible {
-    border: 1px solid #00a651 !important; /* viền xanh */
-    box-shadow: 0 0 0 2px rgba(0, 166, 81, 0.3) !important; /* glow xanh nhẹ */
-    background: rgba(0, 166, 81, 0.1) !important;
+    border: 1px solid #0057D9 !important; /* viền xanh */
+    box-shadow: 0 0 0 2px rgba(0, 87, 217, 0.3) !important; /* glow xanh nhẹ */
+    background: rgba(0, 87, 217, 0.1) !important;
     outline: none !important;
 }
 
@@ -3600,9 +4176,9 @@ span[style*="f59e0b"] {
 /* ── 1. NỀN TỔNG: thêm chiều sâu cho void, glass nổi rõ hơn ── */
 [data-theme="dark"] body {
   background-image:
-    radial-gradient(ellipse 70% 50% at 15% -10%, rgba(0, 166, 81, 0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 100% 10%, rgba(0, 212, 255, 0.04) 0%, transparent 55%),
-    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 212, 255, 0.012) 2px, rgba(0, 212, 255, 0.012) 4px);
+    radial-gradient(ellipse 70% 50% at 15% -10%, rgba(0, 87, 217, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 10%, rgba(30, 136, 229, 0.04) 0%, transparent 55%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(30, 136, 229, 0.012) 2px, rgba(30, 136, 229, 0.012) 4px);
   background-attachment: fixed;
 }
 
@@ -3641,7 +4217,7 @@ span[style*="f59e0b"] {
 /* ── 4. AG GRID — chỉ làm kính ở khung viền ngoài, giữ ô dữ liệu sắc nét ── */
 [data-theme="dark"] .ag-theme-alpine-dark {
   border: 1px solid var(--glass-border-accent) !important;
-  box-shadow: var(--glass-shadow-lg), inset 0 1px 0 rgba(0, 212, 255, 0.06) !important;
+  box-shadow: var(--glass-shadow-lg), inset 0 1px 0 rgba(30, 136, 229, 0.06) !important;
 }
 [data-theme="dark"] .ag-theme-alpine-dark .ag-header,
 [data-theme="dark"] .ag-theme-alpine-dark .ag-paging-panel {
@@ -3656,7 +4232,7 @@ span[style*="f59e0b"] {
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border-accent) !important;
-  box-shadow: var(--glass-shadow-lg), 0 0 0 1px rgba(0, 166, 81, 0.06) !important;
+  box-shadow: var(--glass-shadow-lg), 0 0 0 1px rgba(0, 87, 217, 0.06) !important;
 }
 .modal-header {
   background: rgba(4, 13, 24, 0.35) !important;
@@ -3716,7 +4292,7 @@ span[style*="f59e0b"] {
   transition: transform 0.25s var(--ease-glass), box-shadow 0.25s var(--ease-glass) !important;
 }
 
-/* ── 10. HỘI TỤ MÀU LẠC (legacy #58a6ff / #3b82f6 / #00d4ff lẻ tẻ) VỀ HỆ THỐNG ── */
+/* ── 10. HỘI TỤ MÀU LẠC (legacy #58a6ff / #3b82f6 / #1E88E5 lẻ tẻ) VỀ HỆ THỐNG ── */
 .year-filter-dropdown .Select-arrow,
 .ips-choice-card .check-box.checked {
   border-top-color: var(--accent) !important;
@@ -3819,7 +4395,7 @@ input:focus-visible, .Select-control:focus-visible {
 }
 [data-theme="dark"] .info-card:hover,
 [data-theme="dark"] .score-box:hover {
-  border-color: #1abb9c55 !important;
+  border-color: #1E88E555 !important;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45) !important;
   transform: translateY(-2px);
 }
@@ -3946,6 +4522,64 @@ input:focus-visible, .Select-control:focus-visible {
   border-top: 1px solid #2a3548 !important;
 }
 [data-theme="dark"] .ag-theme-alpine-dark .ag-icon { color: #5d6b80 !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER CỘT — Fix màu/icon sắp xếp (đồng bộ về accent xanh lá
+   chính thức #0057D9, thay cho cyan #1E88E5 cũ còn sót lại)
+   ═══════════════════════════════════════════════════════════ */
+/* Header hover: trước đây chữ đổi xanh lá (#1E88E5) nhưng nền hover
+   vẫn còn cyan cũ (rgba(30, 136, 229,0.05)) — 2 màu thương hiệu lẫn
+   lộn trên cùng 1 trạng thái. Đồng bộ nền hover về xanh lá. */
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell:hover {
+  background: rgba(0, 87, 217, 0.08) !important;
+}
+
+/* Icon mũi tên sắp xếp: CSS cũ chỉ nhắm ".ag-sort-indicator-icon"
+   — class này KHÔNG tồn tại trong DOM thật của AG-Grid Alpine theme
+   (tên thật là .ag-sort-ascending-icon / .ag-sort-descending-icon,
+   bọc quanh 1 span.ag-icon). Vì vậy icon mũi tên trước giờ vẫn nhận
+   màu xám mặc định từ rule ".ag-icon" ở trên, KHÔNG PHẢI màu thương
+   hiệu như ý định. Nhắm đúng selector lồng — độ đặc thù cao hơn nên
+   luôn thắng rule ".ag-icon" chung, không phụ thuộc thứ tự khai báo. */
+[data-theme="dark"] .ag-theme-alpine-dark .ag-sort-ascending-icon .ag-icon,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-sort-descending-icon .ag-icon,
+[data-theme="dark"] .ag-theme-alpine-dark .ag-sort-mixed-icon .ag-icon {
+  color: #1E88E5 !important;
+}
+/* Icon filter/menu trên header (phễu lọc, 3 chấm) — giữ tương phản rõ khi hover cả header */
+[data-theme="dark"] .ag-theme-alpine-dark .ag-header-cell:hover .ag-header-icon .ag-icon {
+  color: #1E88E5 !important;
+}
+
+/* Tooltip header (headerTooltip) — trước đây CHƯA TỪNG được style,
+   hiển thị dạng mặc định thô của trình duyệt/AG-Grid, tương phản kém
+   và lệch hẳn theme tối của app. */
+[data-theme="dark"] .ag-tooltip {
+  background: #0f1623 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #2a3548 !important;
+  border-left: 2px solid #0057D9 !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45) !important;
+  max-width: 280px !important;
+}
+[data-theme="light"] .ag-tooltip {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 2px solid #0057D9 !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+  max-width: 280px !important;
+}
 
 /* ── KPI pastel card utility (cho card metric tô màu xen kẽ, dùng chung) ── */
 .kpi-pastel-rose   { background: var(--pbi-rose-bg)   !important; border-color: var(--pbi-rose-bd)   !important; }
@@ -4186,7 +4820,7 @@ input:focus-visible, .Select-control:focus-visible {
   --chart-chip-teal:   #0f766e;
 }
 [data-theme="dark"] {
-  --chart-chip-sky:    #00d4ff;
+  --chart-chip-sky:    #1E88E5;
   --chart-chip-blue:   #58a6ff;
   --chart-chip-purple: #b388ff;
   --chart-chip-teal:   #2dd4bf;
@@ -4294,75 +4928,91 @@ input:focus-visible, .Select-control:focus-visible {
 }
 
 /* ============================================================================
-   🌍 EARTH BACKGROUND + TOP MOVERS CARD — fss-hero
+   TOP MOVERS CARD — fss-hero
+   (Khối "🌍 EARTH BACKGROUND" cũ đã bị xoá — nghệ thuật nền giờ là biểu đồ
+   giá/nến, định nghĩa ở assets/header.css cùng #fss-hero-chart-art, gắn
+   đúng chủ đề tài chính thay vì ảnh chụp Trái Đất không liên quan.)
    ============================================================================ */
-
-/* ── Ảnh nền Trái Đất từ không gian — phủ toàn bộ hero banner ───────────────
-   Đặt file ảnh tại: assets/earth-bg.jpg (Dash tự serve mọi file trong assets/
-   qua đường dẫn /assets/<tên file>). Nếu chưa có ảnh, lớp gradient của
-   #fss-hero-bg (định nghĩa ở phần khác của file) vẫn hiển thị làm fallback. */
 #fss-hero {
   position: relative;
   overflow: hidden;
 }
-#fss-hero-earth-bg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image:
-    linear-gradient(180deg, rgba(2,6,16,0.60) 0%, rgba(2,6,16,0.45) 40%, rgba(2,6,16,0.75) 100%),
-    url('/assets/earth-bg.jpg');
-  background-size: cover;
-  background-position: center 65%;
-  background-repeat: no-repeat;
-  pointer-events: none;
-}
-[data-theme="light"] #fss-hero-earth-bg {
-  background-image:
-    linear-gradient(180deg, rgba(244,246,248,0.55) 0%, rgba(244,246,248,0.30) 35%, rgba(244,246,248,0.70) 100%),
-    url('/assets/earth-bg.jpg');
-}
 
-/* Đảm bảo nội dung hero nổi trên lớp ảnh nền */
+/* Đảm bảo nội dung hero nổi trên lớp nền */
 #fss-hero-content {
   position: relative;
   z-index: 1;
 }
 
 /* ── Hero right column ──────────────────────────────────────────────────────── */
-.fss-hero-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  position: relative;
-  height: 100%;
-  flex: 0 0 auto;
-  padding-top: 101px; /* đẩy card xuống, tránh bị navbar che */
-}
+/* (Layout chính của .fss-hero-right nay nằm ở header.css — bỏ override
+   padding-top:101px cũ vì đó là hack cho navbar tuyệt-đối kiểu cũ, không
+   còn cần thiết từ khi ticker tape trở thành phần tử trong luồng bình thường.) */
 
 /* ── Card "TOP ĐỘNG" — bảng nhỏ góc phải hero, dữ liệu thật ───────────────── */
 .fss-movers-card {
-  width: 240px;
-  background: rgba(8, 14, 26, 0.62);
-  border: 1px solid rgba(120, 160, 210, 0.22);
-  border-radius: 12px;
+  position: relative;
+  width: 260px;
+  background: rgba(3, 10, 6, 0.72);
+  border: 1px solid rgba(0, 255, 157, 0.22);
+  border-radius: 6px;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.45),
+    0 0 40px rgba(0, 255, 157, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
   flex-shrink: 0;
 }
 
+/* Viền sáng mỏng phía trên — gợi cảm giác panel kính cao cấp */
+.fss-movers-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 200, 100, 0.55), transparent);
+}
+
 .fss-movers-header {
-  padding: 12px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 13px 16px 10px;
   border-bottom: 1px solid rgba(120, 160, 210, 0.18);
 }
 .fss-movers-title {
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: #c9e6d8;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Chỉ báo trạng thái dữ liệu — trung thực: đây là dữ liệu cuối phiên (EOD),
+   KHÔNG dùng nhãn "realtime" vì snapshot chỉ cập nhật theo phiên, không phải
+   tick-by-tick. Cùng cách tiếp cận với việc sửa nhãn "TTM"/"Forward P/E" ở
+   phần audit trước — không gắn nhãn sai bản chất dữ liệu. */
+.fss-movers-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(200, 215, 235, 0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.fss-movers-status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #00c864;
+  box-shadow: 0 0 6px rgba(0, 200, 100, 0.7);
+  flex-shrink: 0;
 }
 
 .fss-movers-col-header {
@@ -4450,18 +5100,10 @@ input:focus-visible, .Select-control:focus-visible {
   padding-right: 2px;   /* ← THÊM DÒNG NÀY */
 }
 
-/* ── #fss-hero-content override để 2 cột đúng layout ───────────────────────── */
-#fss-hero-content {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  max-width: 1280px !important;
-  margin: 0 auto !important;
-  padding: 0 40px !important;
-  height: 100% !important;
-  gap: 20px !important;
-}
+/* ── #fss-hero-content: layout chính nay nằm ở header.css (display:grid,
+   2 cột, padding đúng để chừa chỗ cho ticker tape + navbar). Override
+   !important cũ ở đây (height:100%, padding:0 40px) là hack cho layout
+   trước khi có ticker tape trong luồng — đã bỏ vì gây đè chồng nội dung. */
 .fss-hero-left {
   flex: 1 1 auto;
   min-width: 0;
@@ -4474,6 +5116,7 @@ input:focus-visible, .Select-control:focus-visible {
   border-color: rgba(10, 40, 100, 0.15);
 }
 [data-theme="light"] .fss-movers-title  { color: #0a4a30; }
+[data-theme="light"] .fss-movers-status { color: rgba(10, 40, 80, 0.5); }
 [data-theme="light"] .fss-mover-ticker  { color: #0a2040; }
 [data-theme="light"] .fss-mover-price   { color: #4a6080; }
 [data-theme="light"] .fss-mover-col-ticker,
@@ -4499,23 +5142,162 @@ input:focus-visible, .Select-control:focus-visible {
     transition: all 0.2s ease !important;
 }
 #btn-open-psy-clinic:hover {
-    border-color: #10b981 !important;
-    color: #10b981 !important;
-    background-color: rgba(16, 185, 129, 0.1) !important;
+    border-color: #0057D9 !important;
+    color: #0057D9 !important;
+    background-color: rgba(0, 87, 217, 0.1) !important;
 }
 [data-theme="light"] #btn-open-psy-clinic {
     color: #ffffff !important;
     border-color: rgba(255, 255, 255, 0.25) !important;
 }
 [data-theme="light"] #btn-open-psy-clinic:hover {
-    color: #00c85a !important;
-    border-color: #00c85a !important;
+    color: #1E88E5 !important;
+    border-color: #1E88E5 !important;
     background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* ============================================================================
-   🔒 PREMIUM LOCK — Blur nội dung + overlay khóa VIP
+   🎛️  TOOLBAR ACTION BUTTONS — hệ thống nút hành động thống nhất
+   Trước đây mỗi nút (Excel/Thị trường/So sánh/Danh mục/Margin Crisis/
+   Watchlist/Cảnh báo) dùng 1 màu Bootstrap khác nhau (success/danger/info/
+   warning...) khiến hàng nút trông như "cầu vồng", thiếu hệ thống, không
+   chuyên nghiệp. Redesign: MỘT kiểu khung nút duy nhất (chrome trung tính),
+   màu sắc chỉ còn ở icon để giữ ý nghĩa nhận diện — đúng quy ước của các
+   terminal tài chính chuyên nghiệp (Bloomberg, TradingView).
    ============================================================================ */
+.fss-tbtn {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 7px !important;
+  color: #b8c2cf !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+.fss-tbtn:hover {
+  background: rgba(30, 136, 229, 0.10) !important;
+  border-color: rgba(30, 136, 229, 0.45) !important;
+  color: #eaf2fb !important;
+  transform: translateY(-1px);
+}
+.fss-tbtn:active { transform: translateY(0); }
+
+.fss-tbtn .fss-tbtn-icon {
+  font-size: 12px;
+  color: #7d8b9c;
+  transition: color 0.15s ease;
+}
+.fss-tbtn:hover .fss-tbtn-icon { color: #1E88E5; }
+
+/* Icon giữ màu ngữ nghĩa riêng (Excel = xanh lá bảng tính, Margin Crisis =
+   đỏ cảnh báo rủi ro thật) — CHỈ icon, không nhuộm cả khung nút như trước */
+/* (Đã bỏ .fss-tbtn-icon-excel/-danger/-alert cũ — thay bằng hệ thống biến
+   thể màu .fss-tbtn--color đầy đủ hơn, phủ cả viền + icon + hover) */
+
+
+/* Nút chính "Công cụ" — nổi bật nhẹ hơn 1 chút vì là master-toggle */
+.fss-tbtn-primary {
+  border-color: rgba(30, 136, 229, 0.35) !important;
+  color: #cfe3fb !important;
+}
+.fss-tbtn-primary:hover {
+  background: rgba(30, 136, 229, 0.16) !important;
+  border-color: #1E88E5 !important;
+}
+
+/* Vạch phân cách giữa các nhóm nút liên quan */
+.fss-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+.fss-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Biến thể MÀU RIÊNG cho từng nút ─────────────────────────────────────
+   Vẫn giữ NGUYÊN khung/kích thước/font đồng nhất của .fss-tbtn (để không
+   quay lại kiểu "cầu vồng" lộn xộn cũ) — chỉ đổi màu viền + icon + nền tint
+   nhẹ theo từng nút, chữ vẫn giữ màu sáng trung tính để luôn dễ đọc. */
+.fss-tbtn.fss-tbtn--green   { border-color: rgba(46, 160, 67, 0.38)   !important; }
+.fss-tbtn.fss-tbtn--cyan    { border-color: rgba(34, 184, 207, 0.38)  !important; }
+.fss-tbtn.fss-tbtn--blue    { border-color: rgba(59, 130, 246, 0.38)  !important; }
+.fss-tbtn.fss-tbtn--violet  { border-color: rgba(167, 139, 250, 0.38) !important; }
+.fss-tbtn.fss-tbtn--amber   { border-color: rgba(245, 158, 11, 0.38)  !important; }
+.fss-tbtn.fss-tbtn--red     { border-color: rgba(248, 81, 73, 0.38)   !important; }
+.fss-tbtn.fss-tbtn--gold    { border-color: rgba(234, 179, 8, 0.38)   !important; }
+.fss-tbtn.fss-tbtn--lime    { border-color: rgba(216, 239, 68, 0.38)  !important; }
+
+.fss-tbtn.fss-tbtn--green   .fss-tbtn-icon { color: #3fb950 !important; }
+.fss-tbtn.fss-tbtn--cyan    .fss-tbtn-icon { color: #22b8cf !important; }
+.fss-tbtn.fss-tbtn--blue    .fss-tbtn-icon { color: #58a6ff !important; }
+.fss-tbtn.fss-tbtn--violet  .fss-tbtn-icon { color: #a78bfa !important; }
+.fss-tbtn.fss-tbtn--amber   .fss-tbtn-icon { color: #f59e0b !important; }
+.fss-tbtn.fss-tbtn--red     .fss-tbtn-icon { color: #f85149 !important; }
+.fss-tbtn.fss-tbtn--gold    .fss-tbtn-icon { color: #eab308 !important; }
+.fss-tbtn.fss-tbtn--lime    .fss-tbtn-icon { color: #d8ef44 !important; }
+
+.fss-tbtn.fss-tbtn--green:hover   { background: rgba(46, 160, 67, 0.12)   !important; border-color: #3fb950 !important; }
+.fss-tbtn.fss-tbtn--cyan:hover    { background: rgba(34, 184, 207, 0.12)  !important; border-color: #22b8cf !important; }
+.fss-tbtn.fss-tbtn--blue:hover    { background: rgba(59, 130, 246, 0.12)  !important; border-color: #58a6ff !important; }
+.fss-tbtn.fss-tbtn--violet:hover  { background: rgba(167, 139, 250, 0.12) !important; border-color: #a78bfa !important; }
+.fss-tbtn.fss-tbtn--amber:hover   { background: rgba(245, 158, 11, 0.12)  !important; border-color: #f59e0b !important; }
+.fss-tbtn.fss-tbtn--red:hover     { background: rgba(248, 81, 73, 0.12)   !important; border-color: #f85149 !important; }
+.fss-tbtn.fss-tbtn--gold:hover    { background: rgba(234, 179, 8, 0.12)   !important; border-color: #eab308 !important; }
+.fss-tbtn.fss-tbtn--lime:hover    { background: rgba(216, 239, 68, 0.12)  !important; border-color: #d8ef44 !important; }
+
+.fss-tbtn.fss-tbtn--green:hover   .fss-tbtn-icon,
+.fss-tbtn.fss-tbtn--cyan:hover    .fss-tbtn-icon,
+.fss-tbtn.fss-tbtn--blue:hover    .fss-tbtn-icon,
+.fss-tbtn.fss-tbtn--violet:hover  .fss-tbtn-icon,
+.fss-tbtn.fss-tbtn--amber:hover   .fss-tbtn-icon,
+.fss-tbtn.fss-tbtn--red:hover     .fss-tbtn-icon,
+.fss-tbtn.fss-tbtn--gold:hover    .fss-tbtn-icon,
+.fss-tbtn.fss-tbtn--lime:hover    .fss-tbtn-icon { color: inherit; filter: brightness(1.15); }
+.fss-tbtn.fss-tbtn--green:hover   { color: #d3f2d8 !important; }
+.fss-tbtn.fss-tbtn--cyan:hover    { color: #d0f2f7 !important; }
+.fss-tbtn.fss-tbtn--blue:hover    { color: #d6e6fd !important; }
+.fss-tbtn.fss-tbtn--violet:hover  { color: #e6dffc !important; }
+.fss-tbtn.fss-tbtn--amber:hover   { color: #fce4bb !important; }
+.fss-tbtn.fss-tbtn--red:hover     { color: #fdd2cf !important; }
+.fss-tbtn.fss-tbtn--gold:hover    { color: #fbecb0 !important; }
+.fss-tbtn.fss-tbtn--lime:hover    { color: #f2fac0 !important; }
+
+[data-theme="light"] .fss-tbtn.fss-tbtn--green,
+[data-theme="light"] .fss-tbtn.fss-tbtn--cyan,
+[data-theme="light"] .fss-tbtn.fss-tbtn--blue,
+[data-theme="light"] .fss-tbtn.fss-tbtn--violet,
+[data-theme="light"] .fss-tbtn.fss-tbtn--amber,
+[data-theme="light"] .fss-tbtn.fss-tbtn--red,
+[data-theme="light"] .fss-tbtn.fss-tbtn--gold,
+[data-theme="light"] .fss-tbtn.fss-tbtn--lime { color: #334155 !important; }
+
+[data-theme="light"] .fss-tbtn {
+  background: rgba(15, 23, 42, 0.02) !important;
+  border-color: rgba(15, 23, 42, 0.10) !important;
+  color: #475569 !important;
+}
+[data-theme="light"] .fss-tbtn:hover {
+  background: rgba(0, 87, 217, 0.06) !important;
+  border-color: rgba(0, 87, 217, 0.35) !important;
+  color: #0f172a !important;
+}
+[data-theme="light"] .fss-tbtn .fss-tbtn-icon { color: #64748b; }
+[data-theme="light"] .fss-toolbar-divider { background: rgba(15, 23, 42, 0.10); }
+
+
 .premium-wrapper {
   position: relative;
 }
@@ -4620,7 +5402,7 @@ input:focus-visible, .Select-control:focus-visible {
   font-size: 13px !important;
   font-weight: 700 !important;
   letter-spacing: 0.3px !important;
-  color: #00c85a !important;   /* xanh lá thương hiệu Vietcap */
+  color: #1E88E5 !important;   /* xanh lá thương hiệu Vietcap */
 }
 [data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Company Name"],
 [data-theme="dark"] .ag-theme-alpine-dark .ag-cell[col-id="Sector"],
@@ -4651,7 +5433,7 @@ input:focus-visible, .Select-control:focus-visible {
   font-family: 'Sora', 'Inter', sans-serif !important;
   font-size: 13px !important;
   font-weight: 700 !important;
-  color: #00a651 !important;   /* xanh lá Vietcap tone light */
+  color: #0057D9 !important;   /* xanh lá Vietcap tone light */
 }
 [data-theme="light"] .ag-theme-alpine-dark {
   --ag-row-height: 40px !important;
@@ -4680,7 +5462,7 @@ input:focus-visible, .Select-control:focus-visible {
 
 .fss-stat-icon {
   font-size: 15px;
-  color: #00e5ff;
+  color: #1E88E5;
   opacity: 0.85;
   flex-shrink: 0;
 }
@@ -4739,7 +5521,7 @@ input:focus-visible, .Select-control:focus-visible {
   font-size: 9px; font-weight: 800;
   letter-spacing: 0.06em;
   color: #0B132B;
-  background: linear-gradient(135deg, #00e5ff, #00a651);
+  background: linear-gradient(135deg, #1E88E5, #0057D9);
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
@@ -4783,7 +5565,7 @@ input:focus-visible, .Select-control:focus-visible {
   display: flex; align-items: center; justify-content: center;
 }
 .fss-avatar-opt:hover {
-  border-color: #0090ff;
+  border-color: #0057D9;
   transform: scale(1.08);
 }
 .fss-avatar-opt--img {
@@ -4836,4 +5618,263 @@ input:focus-visible, .Select-control:focus-visible {
 .fss-profile-avatar-section {
   text-align: center;
   margin-bottom: 20px;
+}
+
+/* ============================================================================
+   ☀️ LIGHT MODE CHO HERO SLIDESHOW (SỰ KIỆN TÀI CHÍNH)
+   ============================================================================ */
+
+/* 1. Đổi nền tổng và làm sáng ảnh nền */
+[data-theme="light"] .hero {
+    background: #f8f9fa !important;
+}
+[data-theme="light"] .hero-bg {
+    /* Giảm độ xám, tăng độ sáng để ảnh nền hợp với theme trắng */
+    filter: grayscale(30%) brightness(0.95) blur(1px) !important;
+}
+
+/* 2. Lật ngược màng che (overlay) từ Đen sang Trắng */
+[data-theme="light"] .hero-overlay {
+    background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(255,255,255,0.85) 45%, rgba(255,255,255,0) 100%) !important;
+}
+
+/* 3. Đổi màu Text chính (Năm, Tiêu đề, Mô tả) sang xám đen */
+[data-theme="light"] .hero-year {
+    color: #0f172a !important;
+    text-shadow: 0 0 60px rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .hero-tagline {
+    color: #1e293b !important;
+}
+[data-theme="light"] .hero-desc {
+    color: #475569 !important;
+}
+
+/* Ép các chữ highlight (Màu xanh, cam) đậm xuống một xíu để dễ đọc trên nền trắng */
+[data-theme="light"] .hero-tagline .hl-green { color: #059669 !important; } 
+[data-theme="light"] .hero-tagline .hl-amber { color: #d97706 !important; } 
+
+/* 4. Đổi màu Stats (Chỉ số Biến động/Dữ liệu) */
+[data-theme="light"] .stat-label {
+    color: #64748b !important;
+}
+[data-theme="light"] .stat-divider {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 5. Nút bấm và các Text phụ (Counter, Credit, Legend) */
+[data-theme="light"] .hero-btn {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+}
+[data-theme="light"] .hero-btn:hover {
+    background: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+}
+[data-theme="light"] .hero-counter,
+[data-theme="light"] .hero-keys,
+[data-theme="light"] .hero-credit,
+[data-theme="light"] .legend-dot-item {
+    color: #64748b !important;
+}
+
+/* 6. Thanh Timeline và các Tab Kỷ nguyên ở dưới cùng */
+[data-theme="light"] .hero-timeline {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-top: 1px solid #cbd5e1 !important;
+}
+[data-theme="light"] .tl-tick-label {
+    color: #64748b !important;
+}
+[data-theme="light"] .tl-event-dot {
+    border-color: #ffffff !important; /* Viền trắng để các chấm màu nổi lên */
+}
+[data-theme="light"] .tl-event-dot.active {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15) !important;
+}
+[data-theme="light"] .hero-eras {
+    border-top: 1px solid #cbd5e1 !important;
+}
+[data-theme="light"] .era-tab {
+    color: #64748b !important;
+    border-right: 1px solid #cbd5e1 !important;
+}
+[data-theme="light"] .era-tab:hover,
+[data-theme="light"] .era-tab.active {
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* ============================================================================
+   ☀️ LIGHT MODE CHO ONBOARDING (ĐẶC TRỊ NỀN HARDCODE VÀ MÀU ẨN)
+   ============================================================================ */
+
+/* 1. KHỐI SỨ MỆNH FSS: Tẩy gradient xanh lá, ép sang xanh dương nhạt */
+[data-theme="light"] .fss-congrats-match-card,
+[data-theme="light"] .disclaimer {
+    background: rgba(0, 87, 217, 0.05) !important;
+    background-color: rgba(0, 87, 217, 0.05) !important;
+    background-image: none !important; /* Xóa sổ màu loang (gradient) */
+    border: 1px solid rgba(0, 87, 217, 0.2) !important;
+    border-left: 4px solid #0057D9 !important;
+}
+
+/* Chữ trong Sứ mệnh đổi sang xám đậm */
+[data-theme="light"] .fss-congrats-match-card *,
+[data-theme="light"] .disclaimer * {
+    color: #334155 !important;
+}
+
+/* 2. CÁC THẺ KẾT QUẢ TỐI (NAVY, XÁM ĐEN) SANG TRẮNG */
+/* Bắt keyword mã màu bất chấp định dạng rgb hay hex */
+[data-theme="light"] #onboarding-page div[style*="0f172a" i],
+[data-theme="light"] #onboarding-page div[style*="15, 23, 42" i],
+[data-theme="light"] #onboarding-page div[style*="1e293b" i],
+[data-theme="light"] #onboarding-page div[style*="30, 41, 59" i],
+[data-theme="light"] #onboarding-page div[style*="0a1628" i] {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* 3. THẺ KẾT LUẬN "THẬN TRỌNG" (XANH RÊU ĐEN) SANG XANH LỤC NHẠT */
+[data-theme="light"] #onboarding-page div[style*="052e16" i],
+[data-theme="light"] #onboarding-page div[style*="5, 46, 22" i] {
+    background: #ecfdf5 !important;
+    background-color: #ecfdf5 !important;
+    border-color: #6ee7b7 !important;
+}
+/* Đổi chữ bên trong thẻ Thận trọng cho sắc nét */
+[data-theme="light"] #onboarding-page div[style*="052e16" i] *,
+[data-theme="light"] #onboarding-page div[style*="5, 46, 22" i] * {
+    color: #065f46 !important;
+}
+
+/* 4. TRACK PROGRESS BAR (XÁM ĐEN) SANG XÁM NHẠT */
+[data-theme="light"] #onboarding-page div[style*="334155" i],
+[data-theme="light"] #onboarding-page div[style*="51, 65, 85" i] {
+    background: #e2e8f0 !important;
+    background-color: #e2e8f0 !important;
+}
+
+/* 5. TẨY MÀU CHỮ BỊ TÀNG HÌNH (TRẮNG, XÁM MỜ) THÀNH XÁM ĐẬM */
+[data-theme="light"] #onboarding-page span[style*="94a3b8" i],
+[data-theme="light"] #onboarding-page span[style*="cbd5e1" i],
+[data-theme="light"] #onboarding-page span[style*="ffffff" i],
+[data-theme="light"] #onboarding-page span[style*="e8f4ff" i],
+[data-theme="light"] #onboarding-page div[style*="94a3b8" i],
+[data-theme="light"] #onboarding-page div[style*="cbd5e1" i],
+[data-theme="light"] #onboarding-page div[style*="ffffff" i],
+[data-theme="light"] #onboarding-page div[style*="e8f4ff" i] {
+    color: #334155 !important;
+}
+/* ============================================================
+   FAQ SECTION — theme-aware (fix: trước đây hard-code hex nên
+   không đổi màu theo data-theme, khiến khối này "kẹt" ở nền tối
+   khi chuyển sang theme sáng)
+   ============================================================ */
+.fss-faq-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 60px;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    margin: 80px auto 60px auto;
+    padding: 40px;
+    align-items: flex-start;
+    box-sizing: border-box;
+    background-color: var(--bg-card);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-subtle);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.fss-faq-header {
+    flex: 0 0 320px;
+    margin-bottom: 40px;
+}
+
+.fss-faq-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 72px;
+    line-height: 0.82;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.fss-faq-title-dot {
+    color: var(--accent);
+}
+
+.fss-faq-desc {
+    color: var(--text-muted);
+    font-size: 14px;
+    max-width: 250px;
+    margin-top: 24px;
+    line-height: 1.55;
+}
+
+.fss-faq-list {
+    flex: 1;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.fss-faq-item {
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 32px 0;
+}
+
+.fss-faq-btn {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.fss-faq-index {
+    font-family: var(--font-data);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.14em;
+    width: 40px;
+    text-align: left;
+    flex-shrink: 0;
+}
+
+.fss-faq-question {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--text-primary);
+    flex: 1;
+    text-align: left;
+    letter-spacing: -0.01em;
+}
+
+.fss-faq-icon {
+    font-size: 28px;
+    color: var(--text-muted);
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.fss-faq-icon.is-active {
+    color: var(--accent);
+}
+
+.fss-faq-answer {
+    margin-left: 40px;
+    margin-top: 16px;
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 620px;
 }

@@ -93,3 +93,50 @@ def click_trending_chip(n1, n2, n3, n4):
     button_id = ctx.triggered_id
     ticker = button_id.split("-")[-1]  # Lấy đuôi FPT, VIC...
     return ticker
+
+# ============================================================================
+# 4. THANH TÌM KIẾM Ở HERO SECTION (home-hero-search-*)
+# ----------------------------------------------------------------------------
+# Gõ mã -> Bấm tìm kiếm -> Lấy data -> Mở thẳng Pop-up chi tiết doanh nghiệp.
+# ============================================================================
+from dash.exceptions import PreventUpdate
+
+@app.callback(
+    Output("detail-modal", "is_open", allow_duplicate=True),
+    Output("modal-title", "children", allow_duplicate=True),
+    Output("selected-stock-store", "data", allow_duplicate=True),
+    Output("selected-ticker-store", "data", allow_duplicate=True),
+    Input("home-hero-search-submit", "n_clicks"),
+    Input("home-hero-search-input", "n_submit"),
+    State("home-hero-search-input", "value"),
+    prevent_initial_call=True,
+)
+def open_modal_from_hero_search(n_clicks, n_submit, value):
+    if not value:
+        raise PreventUpdate
+        
+    ticker = value.strip().upper()
+    if not ticker:
+        raise PreventUpdate
+        
+    try:
+        from src.backend.data_loader import get_snapshot_df
+        df = get_snapshot_df()
+        
+        if df is not None and not df.empty:
+            stock_data = df[df["Ticker"] == ticker]
+            
+            if not stock_data.empty:
+                # 1. Trích xuất thành Dictionary chuẩn (không bọc list)
+                stock_dict = stock_data.iloc[0].to_dict()
+                
+                # 2. Tạo tiêu đề Pop-up
+                company_name = stock_dict.get('Company Common Name', '')
+                title_text = f"Cổ phiếu {ticker} – {company_name}"
+                
+                # 3. Trả về đúng 4 giá trị giống y hệt thao tác double-click
+                return True, title_text, stock_dict, ticker
+    except Exception:
+        pass
+
+    raise PreventUpdate

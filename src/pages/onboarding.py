@@ -15,18 +15,18 @@ _BORDER   = "#1a3a60"
 _TEXT_PRI = "#e8f4ff"
 _TEXT_SEC = "#7aafcc"
 _TEXT_MUT = "#3d6a8a"
-_BLUE     = "#0090ff"
+_BLUE     = "#0057D9"
 _GREEN    = "#00e676"
 _AMBER    = "#ffb703"
 _RED      = "#ff3d57"
 _PURPLE   = "#8b5cf6"
-_CYAN     = "#00e5ff"
-_ACCENT   = "#00e5ff"
-_ACCENT2  = "#0090ff"
+_CYAN     = "#1E88E5"
+_ACCENT   = "#1E88E5"
+_ACCENT2  = "#0057D9"
 
-_FONT_DISPLAY = "'Be Vietnam Pro', 'DM Sans', sans-serif"
-_FONT_BODY    = "'DM Sans', sans-serif"
-_FONT_MONO    = "'DM Mono', monospace"
+_FONT_DISPLAY = "var(--font-display)"  # trước: 'Be Vietnam Pro' (đảo font riêng) -> đồng bộ với toàn app
+_FONT_BODY    = "var(--font-ui)"       # trước: 'DM Sans'
+_FONT_MONO    = "var(--font-data)"     # trước: 'DM Mono'
 
 # Alias cũ để không vỡ code callbacks
 _FONT_SORA  = _FONT_DISPLAY
@@ -261,8 +261,8 @@ def _step5():
                         "Nhà đầu tư tự chịu trách nhiệm với quyết định của mình.",
                           style={"fontSize": "12px", "color": _TEXT_SEC}),
             ], style={
-                "backgroundColor": "rgba(0,144,255,0.08)",
-                "border": "1px solid rgba(0,144,255,0.2)",
+                "backgroundColor": "rgba(0, 87, 217,0.08)",
+                "border": "1px solid rgba(0, 87, 217,0.2)",
                 "borderRadius": "8px", "padding": "12px 16px",
             }),
         ], style={"marginTop": "24px", "paddingTop": "24px",
@@ -341,7 +341,7 @@ layout = html.Div(
                     ]),
                 ], style={
                     "background": "linear-gradient(135deg, "
-                                "rgba(0,230,118,0.06), rgba(0,229,255,0.04))",
+                                "rgba(0,230,118,0.06), rgba(30, 136, 229,0.04))",
                     "border": "1px solid rgba(0,230,118,0.18)",
                     "borderLeft": f"3px solid {_GREEN}",
                     "borderRadius": "10px",

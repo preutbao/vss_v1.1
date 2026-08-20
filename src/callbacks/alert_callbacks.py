@@ -119,21 +119,39 @@ def load_alert_tickers(is_open):
     State("alert-condition-select","value"),
     State("alert-value-input",     "value"),
     State("alert-store",           "data"),
+    State("auth-store",            "data"),
     prevent_initial_call=True,
 )
-def add_alert(n, ticker, condition, val, current):
+def add_alert(n, ticker, condition, val, current, auth_data):
     if not n or not ticker or not condition:
         return no_update, no_update, no_update, no_update
     current = current or []
     import time
-    current.append({
+
+    new_alert = {
         "id":        str(int(time.time() * 1000)),
         "ticker":    ticker,
         "condition": condition,
         "value":     float(val) if val else None,
         "triggered": False,
         "created":   pd.Timestamp.now().strftime("%d/%m/%Y %H:%M"),
-    })
+    }
+
+    # AUDIT FIX (mục 9 - Alert Engine): mirror alert sang bảng server-side
+    # `alerts` CHỈ khi user đã đăng nhập (có username xác thực) — để backend
+    # scheduler (chạy độc lập browser) có dữ liệu thật để quét. Người dùng
+    # ẩn danh vẫn giữ hành vi cũ (chỉ localStorage) vì không có định danh
+    # ổn định để lưu server-side một cách an toàn/hữu ích.
+    username = (auth_data or {}).get("username") if (auth_data or {}).get("logged_in") else None
+    if username:
+        try:
+            from src.backend.database import create_alert
+            db_id = create_alert(username, ticker, condition, new_alert["value"])
+            new_alert["db_id"] = db_id
+        except Exception as e:
+            logger.warning(f"Không thể lưu alert server-side cho '{username}': {e}")
+
+    current.append(new_alert)
     return current, None, None, None
 
 
@@ -141,18 +159,27 @@ def add_alert(n, ticker, condition, val, current):
     Output("alert-store", "data", allow_duplicate=True),
     Input({"type":"alert-remove-btn","index":ALL}, "n_clicks"),
     State("alert-store", "data"),
+    State("auth-store",  "data"),
     prevent_initial_call=True,
 )
-def remove_alert(n_clicks_list, current):
+def remove_alert(n_clicks_list, current, auth_data):
     ctx = callback_context
     if not ctx.triggered or not any(n_clicks_list):
         return no_update
     triggered = ctx.triggered[0]["prop_id"]
     try:
         alert_id = json.loads(triggered.split(".")[0])["index"]
+        removed  = next((a for a in (current or []) if a["id"] == alert_id), None)
         current  = [a for a in (current or []) if a["id"] != alert_id]
-    except Exception:
-        pass
+
+        # AUDIT FIX (mục 9): nếu alert này có bản ghi server-side (db_id),
+        # xoá luôn ở đó để scheduler không tiếp tục quét alert đã xoá.
+        username = (auth_data or {}).get("username") if (auth_data or {}).get("logged_in") else None
+        if removed and removed.get("db_id") and username:
+            from src.backend.database import delete_alert
+            delete_alert(removed["db_id"], username)
+    except Exception as e:
+        logger.warning(f"Lỗi khi xoá alert: {e}")
     return current
 
 
@@ -168,9 +195,15 @@ def render_and_check_alerts(alerts, _intervals):
     alerts = alerts or []
 
     # ── Check conditions ──
+    # AUDIT FIX (mục 9 - Alert Engine): logic đánh giá điều kiện đã được tách
+    # sang src/backend/alert_engine.py (evaluate_alert) để dùng chung với
+    # backend scheduler mới (src/backend/alert_scheduler.py) — không còn 2
+    # bản sao logic có thể lệch nhau.
     triggered_now = []
     try:
         from src.backend.data_loader import get_snapshot_df
+        from src.backend.alert_engine import evaluate_alert
+
         records = get_snapshot_df().to_dict("records")
         snap    = {r["Ticker"]: r for r in (records or [])}
 
@@ -180,33 +213,9 @@ def render_and_check_alerts(alerts, _intervals):
             if not rec:
                 continue
 
-            cond  = alert["condition"]
-            val   = alert.get("value")
-            price = float(rec.get("Price Close") or 0)
-            rsi   = float(rec.get("RSI_14") or 50)
-            vol_r = float(rec.get("Vol_vs_SMA20") or 1)
-            sma20 = float(rec.get("_sma20") or price)
-            sma200= float(rec.get("_sma200") or price)
-            vgm   = rec.get("VGM Score", "")
-            canslim=float(rec.get("CANSLIM Score") or 0)
-            p1w   = float(rec.get("Perf_1W") or 0)
-
-            hit = False
-            if   cond == "price_above"        and val and price >= val:   hit = True
-            elif cond == "price_below"        and val and price <= val:   hit = True
-            elif cond == "rsi_oversold"       and rsi < 30:               hit = True
-            elif cond == "rsi_overbought"     and rsi > 70:               hit = True
-            elif cond == "price_cross_sma20"  and price > sma20:          hit = True
-            elif cond == "price_below_sma20"  and price < sma20:          hit = True
-            elif cond == "price_cross_sma200" and price > sma200:         hit = True
-            elif cond == "volume_spike"       and vol_r >= 3:             hit = True
-            elif cond == "vgm_a"              and vgm == "A":             hit = True
-            elif cond == "canslim_5"          and canslim >= 5:           hit = True
-            elif cond == "perf_1w_above"      and val and p1w >= val:     hit = True
-
-            if hit and not alert.get("triggered"):
-                alert["triggered"]     = True
-                alert["triggered_at"]  = pd.Timestamp.now().strftime("%d/%m %H:%M")
+            if not alert.get("triggered") and evaluate_alert(alert, rec):
+                alert["triggered"]    = True
+                alert["triggered_at"] = pd.Timestamp.now().strftime("%d/%m %H:%M")
                 triggered_now.append(alert)
 
     except Exception as e:

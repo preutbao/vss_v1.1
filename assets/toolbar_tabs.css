@@ -1,50 +1,66 @@
-/* ── Toolbar Tab Bar ─────────────────────────────────────── */
+/* ── Toolbar Tab Bar ─────────────────────────────────────────────────────
+   NGUỒN DUY NHẤT cho .toolbar-tab (Tìm mã / Chiến lược / Phạm vi / Cá nhân).
+   Trước đây có 3 khối định nghĩa rải rác (2 trong style.css, 1 ở đây),
+   một số bị !important đè chết lẫn nhau khiến style.css thắng, còn thiết
+   kế gốc ở đây (viền gạch chân) không bao giờ thực sự hiển thị — dọn về
+   1 khối duy nhất, giữ đúng hình ảnh cuối cùng đang hiển thị (khối bo tròn
+   xanh dương khi active) nhưng viết sạch, dễ bảo trì. ── */
 .toolbar-tab {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    padding: 0 16px;
+    gap: 7px;
+    padding: 0 18px;
+    margin: 5px 3px;
     cursor: pointer;
     min-width: 76px;
-    height: 100%;
+    border-radius: 7px;
     background-color: transparent;
-    border-bottom: 2px solid transparent;
-    border-right: 1px solid #21262d;
-    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
     user-select: none;
     flex-shrink: 0;
     overflow: visible;
 }
-.toolbar-tab:hover {
-    background-color: rgba(88, 166, 255, 0.06);
-}
-.toolbar-tab:hover .toolbar-tab-icon { color: #58a6ff !important; }
-.toolbar-tab:hover .toolbar-tab-label { color: #c9d1d9 !important; }
-
-/* Non-active — CSS kiểm soát màu, không dùng inline style */
 .toolbar-tab .toolbar-tab-icon {
     font-size: 13px;
-    margin-bottom: 3px;
     color: #6e7681;
-    transition: color 0.15s;
+    transition: color 0.16s ease;
 }
 .toolbar-tab .toolbar-tab-label {
-    font-size: 10px;
+    font-size: 11.5px;
     font-weight: 600;
     white-space: nowrap;
-    color: #6e7681;
-    transition: color 0.15s;
-    letter-spacing: 0.2px;
+    color: #8b949e;
+    letter-spacing: 0.1px;
+    transition: color 0.16s ease;
+}
+.toolbar-tab:hover:not(.active) {
+    background-color: rgba(30, 136, 229, 0.08);
+    border-color: rgba(30, 136, 229, 0.25);
+}
+.toolbar-tab:hover:not(.active) .toolbar-tab-icon,
+.toolbar-tab:hover:not(.active) .toolbar-tab-label {
+    color: #1E88E5;
 }
 
-/* Active state */
-.toolbar-tab-active {
-    background-color: #0d1117 !important;
-    border-bottom: 2px solid #3b82f6 !important;
+/* Active state — khối bo tròn xanh dương Vietcap, nổi bật rõ ràng tab đang mở */
+.toolbar-tab.active {
+    background: linear-gradient(135deg, #0064f0, #0057D9);
+    border-color: transparent;
+    box-shadow: 0 3px 12px rgba(0, 87, 217, 0.35);
 }
-.toolbar-tab-active .toolbar-tab-icon { color: #58a6ff !important; }
-.toolbar-tab-active .toolbar-tab-label { color: #e6edf3 !important; }
+.toolbar-tab.active .toolbar-tab-icon,
+.toolbar-tab.active .toolbar-tab-label {
+    color: #ffffff;
+}
+.toolbar-tab.active .toolbar-tab-label { font-weight: 700; }
+
+[data-theme="light"] .toolbar-tab .toolbar-tab-icon,
+[data-theme="light"] .toolbar-tab .toolbar-tab-label { color: #64748b; }
+[data-theme="light"] .toolbar-tab.active .toolbar-tab-icon,
+[data-theme="light"] .toolbar-tab.active .toolbar-tab-label { color: #ffffff; }
 
 /* ── Panels ───────────────────────────────────────────────── */
 .toolbar-panel {
@@ -109,13 +125,4 @@
 .strategy-item-selected {
     color: #58a6ff !important;
     background-color: rgba(59, 130, 246, 0.08) !important;
-}
-
-/* Trạng thái Active cho Tab Icon và Label */
-.toolbar-tab.active .toolbar-tab-icon {
-    color: #58a6ff; /* Màu sáng (ví dụ: xanh lam) */
-}
-.toolbar-tab.active .toolbar-tab-label {
-    color: #c9d1d9; /* Màu chữ sáng hơn */
-    font-weight: bold;
 }

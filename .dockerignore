@@ -1,0 +1,51 @@
+# .dockerignore — FSS Smart Screener
+# LƯU Ý: Docker KHÔNG đọc .gitignore — build context sẽ bao gồm MỌI THỨ
+# trong thư mục trừ khi liệt kê ở đây. Trước đây project không có file
+# này, nghĩa là .env, database thật, dữ liệu thô, .git... đều có nguy cơ
+# bị copy vào image (rủi ro lộ secret + image nặng không cần thiết).
+
+# Secrets — TUYỆT ĐỐI không đưa vào image
+.env
+.env.*
+*.pem
+*.key
+
+# Version control
+.git/
+.gitignore
+.github/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+myenv/
+venv/
+env/
+.myenv
+
+# Dữ liệu thô / cache — nên mount volume hoặc tải khi runtime,
+# không nên đóng cứng vào image (image nhẹ hơn, dễ update dữ liệu)
+data/raw/
+cache/
+cache*
+snapshot_cache.parquet
+*.bak.parquet
+
+# Dev tools / editor
+.vscode/
+.idea/
+.DS_Store
+**/.DS_Store
+
+# Docs không cần trong runtime image
+README.md
+*.md
+docs/
+
+# Test artifacts (nếu có)
+.pytest_cache/
+htmlcov/
+.coverage

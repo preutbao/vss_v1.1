@@ -1,0 +1,7 @@
+# requirements-dev.txt — Dependency chỉ cần khi CHẠY TEST / phát triển,
+# KHÔNG cần cài trong image production (giữ image nhẹ).
+#
+# Cài bằng: pip install -r requirements.txt -r requirements-dev.txt
+# Chạy test: pytest tests/ -v
+
+pytest==8.3.4

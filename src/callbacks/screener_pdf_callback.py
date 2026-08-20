@@ -332,7 +332,7 @@ def _footer(c, page_num, total=4):
     # =====================================================================
     # 2. CHÈN CALL-TO-ACTION (LEAD GEN) - GIAO DIỆN NÚT BẤM (BUTTON PILL)
     # =====================================================================
-    url_link = "https://huggingface.co/spaces/preut/FinSmartScreener"
+    url_link = "https://huggingface.co/spaces/preut/VietcapSmartScreener"
     cta_label = "Tự tạo danh mục đầu tư theo gu của bạn tại: "
     cta_link_text = "FSS Live Web App" # Rút gọn text hiển thị cho sang trọng
 
@@ -1706,7 +1706,7 @@ def _modal_kpi_strip(row_data: list) -> html.Div:
     n_sectors  = df["Sector"].nunique()        if "Sector"  in df.columns else 0
     n_grade_a  = int((df["VGM Score"]=="A").sum()) if "VGM Score" in df.columns else 0
 
-    def _card(label, value, color="#0090ff"):
+    def _card(label, value, color="#0057D9"):
         return html.Div([
             html.Div(label, style={"fontSize":"9px","color":"#8b949e",
                                    "textTransform":"uppercase","letterSpacing":"0.3px"}),

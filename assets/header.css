@@ -25,14 +25,14 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     box-shadow: 0 4px 28px rgba(0, 0, 0, 0.25);
-    border-bottom: 1px solid rgba(0, 166, 81, 0.15);
+    border-bottom: 1px solid rgba(0, 87, 217, 0.15);
 }
 
 /* Light theme scrolled state */
 [data-theme="light"] #fss-sticky-nav.is-scrolled {
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    border-bottom: 1px solid rgba(0, 166, 81, 0.12);
+    border-bottom: 1px solid rgba(0, 87, 217, 0.12);
 }
 
 /* Subtle bottom highlight line when transparent */
@@ -43,9 +43,9 @@
     height: 1px;
     background: linear-gradient(90deg,
         transparent 0%,
-        rgba(0, 166, 81, 0.3) 30%,
+        rgba(0, 87, 217, 0.3) 30%,
         rgba(0, 200, 100, 0.5) 50%,
-        rgba(0, 166, 81, 0.3) 70%,
+        rgba(0, 87, 217, 0.3) 70%,
         transparent 100%);
     opacity: 0;
     transition: opacity 0.35s ease;
@@ -75,10 +75,10 @@
     transition: color 0.3s;
 }
 
-[data-theme="light"] .fss-logo-text { color: #0f172a; }
+[data-theme="light"] .fss-logo-text { color: #0f172a !important; }
 
 .fss-logo-accent {
-    color: #00c85a;
+    color: #1E88E5;
 }
 
 /* ── Nav links ── */
@@ -97,7 +97,7 @@
 }
 
 [data-theme="light"] .vietcap-nav-link {
-    color: rgba(15, 23, 42, 0.75);
+    color: rgba(15, 23, 42, 0.75) !important;
 }
 
 .vietcap-nav-link:hover {
@@ -107,8 +107,8 @@
 }
 
 [data-theme="light"] .vietcap-nav-link:hover {
-    color: #0f172a;
-    background: rgba(0, 0, 0, 0.06);
+    color: #0f172a !important;
+    background: rgba(0, 0, 0, 0.06) !important;
 }
 
 .vietcap-nav-link::after {
@@ -119,7 +119,7 @@
     transform: translateX(-50%) scaleX(0);
     width: 18px;
     height: 2px;
-    background: #00c85a;
+    background: #1E88E5;
     border-radius: 2px;
     transition: transform 0.22s ease;
 }
@@ -130,17 +130,17 @@
 
 /* Screener pill button */
 .vietcap-nav-screener {
-    background: rgba(0, 166, 81, 0.15) !important;
+    background: rgba(0, 87, 217, 0.15) !important;
     color: #34c759 !important;
-    border: 1px solid rgba(0, 166, 81, 0.35) !important;
+    border: 1px solid rgba(0, 87, 217, 0.35) !important;
     padding: 5px 18px !important;
     font-weight: 600 !important;
 }
 
 .vietcap-nav-screener:hover {
-    background: rgba(0, 166, 81, 0.28) !important;
+    background: rgba(0, 87, 217, 0.28) !important;
     color: #50e688 !important;
-    box-shadow: 0 0 16px rgba(0, 166, 81, 0.25);
+    box-shadow: 0 0 16px rgba(0, 87, 217, 0.25);
 }
 
 .vietcap-nav-screener::after { display: none !important; }
@@ -180,7 +180,7 @@
     font-weight: 700;
     color: #ffffff !important;
     text-decoration: none;
-    background: #00a651;
+    background: #0057D9;
     padding: 8px 20px;
     border-radius: 7px;
     transition: background 0.22s ease, box-shadow 0.22s ease, transform 0.18s ease;
@@ -190,69 +190,104 @@
 
 .vietcap-nav-cta:hover {
     background: #00c45f;
-    box-shadow: 0 4px 20px rgba(0, 166, 81, 0.45);
+    box-shadow: 0 4px 20px rgba(0, 87, 217, 0.45);
     transform: translateY(-1px);
     color: #ffffff !important;
     text-decoration: none;
 }
 
 /* ============================================================
-   FSS HERO BANNER  —  split layout (text left / visual right)
+   FSS HERO BANNER  —  trading-terminal aesthetic
+   Thay cho ảnh Trái Đất (không liên quan chủ đề) + glass-card mặc định.
+   Ngôn ngữ hình ảnh: phosphor-green trên nền gần đen, biểu đồ giá làm
+   hoạ tiết nền, dải ticker chạy dữ liệu thật, số liệu dạng monospace.
    ============================================================ */
 #fss-hero {
+    --fss-term-green: #00ff9d;
+    --fss-term-green-dim: rgba(0, 255, 157, 0.55);
+    --fss-term-red: #ff4d5e;
+    --fss-term-bg: #050907;
+
     position: relative;
     overflow: hidden;
     display: flex;
-    align-items: stretch;
-    /* Dark theme default */
-    background: #05100a;
-    min-height: 500px;
-    /* No padding-top needed: navbar is absolute and overlays hero */
+    flex-direction: column;
+    background: var(--fss-term-bg);
+    min-height: 560px;
 }
 
-/* ── Light theme hero background ── */
+/* ── Light theme: giữ tinh thần terminal nhưng sáng hơn, dễ đọc ── */
 [data-theme="light"] #fss-hero {
-    background: #f0f7f2;
+    --fss-term-green: #00a86b;
+    --fss-term-green-dim: rgba(0, 168, 107, 0.5);
+    --fss-term-red: #d92d3f;
+    --fss-term-bg: #f2f7f4;
+    background: var(--fss-term-bg);
 }
 
-/* ── Background decoration ── */
+/* ── Nền cơ bản: gradient tối pha xanh phosphor rất nhẹ, không dùng ảnh chụp ── */
 #fss-hero-bg {
     position: absolute;
     inset: 0;
     z-index: 0;
-    /* Background photo seamlessly merged with navbar */
-    background-image: url('/assets/anh.png');
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    /* Dark overlay for readability */
-    transition: background 0.4s ease;
-}
-
-/* Dark overlay on top of photo */
-#fss-hero-bg::after {
-    content: '';
-    position: absolute;
-    inset: 0;
     background:
-        linear-gradient(160deg, rgba(3,12,6,0.65) 0%, rgba(6,15,14,0.50) 50%, rgba(4,8,16,0.60) 100%),
-        radial-gradient(ellipse 55% 70% at 0% 50%, rgba(0,166,81,0.12) 0%, transparent 65%);
+        radial-gradient(ellipse 60% 50% at 85% 8%, rgba(0, 255, 157, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 5% 90%, rgba(0, 255, 157, 0.05) 0%, transparent 55%),
+        linear-gradient(180deg, #030604 0%, #050907 55%, #04100a 100%);
 }
 
 [data-theme="light"] #fss-hero-bg {
     background:
-        radial-gradient(ellipse 55% 70% at 0% 50%, rgba(0,166,81,0.10) 0%, transparent 65%),
-        radial-gradient(ellipse 50% 50% at 100% 20%, rgba(0,100,200,0.06) 0%, transparent 60%),
-        linear-gradient(160deg, #e8f5ee 0%, #f0f7f2 50%, #eaf3fb 100%);
+        radial-gradient(ellipse 60% 50% at 85% 8%, rgba(0, 168, 107, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #eef6f1 0%, #f2f7f4 100%);
 }
+
+/* ── Hoạ tiết nền: biểu đồ giá/nến (assets/hero-chart-art.svg) ──
+   Đây là hoạ tiết trang trí tổng hợp, KHÔNG phải dữ liệu thật của mã nào —
+   chỉ để gợi đúng ngôn ngữ hình ảnh "terminal phân tích tài chính" thay
+   cho ảnh chụp Trái Đất không liên quan trước đây. */
+#fss-hero-chart-art {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    opacity: 0.5;
+    mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 75%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 75%, transparent 100%);
+}
+#fss-hero-chart-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
+}
+[data-theme="light"] #fss-hero-chart-art { opacity: 0.28; }
+
+/* ── Scanline: 1 dải sáng quét dọc chậm, gợi màn hình CRT/terminal ── */
+#fss-scanline {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 157, 0.05) 50%, transparent 100%);
+    width: 340px;
+    animation: fssScanline 7s ease-in-out infinite;
+}
+@keyframes fssScanline {
+    0%   { transform: translateX(-340px); opacity: 0; }
+    10%  { opacity: 1; }
+    50%  { transform: translateX(calc(100vw)); opacity: 1; }
+    60%  { opacity: 0; }
+    100% { transform: translateX(calc(100vw)); opacity: 0; }
+}
+[data-theme="light"] #fss-scanline { display: none; }
 
 #fss-hero-grid {
     position: absolute;
     inset: 0;
     z-index: 1;
     background-image:
-        linear-gradient(rgba(0,166,81,0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,166,81,0.035) 1px, transparent 1px);
+        linear-gradient(rgba(0, 255, 157, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 157, 0.04) 1px, transparent 1px);
     background-size: 56px 56px;
     mask-image: radial-gradient(ellipse 80% 80% at 40% 50%, black 10%, transparent 100%);
     -webkit-mask-image: radial-gradient(ellipse 80% 80% at 40% 50%, black 10%, transparent 100%);
@@ -260,28 +295,66 @@
 
 [data-theme="light"] #fss-hero-grid {
     background-image:
-        linear-gradient(rgba(0,120,60,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,120,60,0.05) 1px, transparent 1px);
+        linear-gradient(rgba(0, 120, 60, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 120, 60, 0.05) 1px, transparent 1px);
 }
 
-/* ── Floating orbs ── */
-#fss-orb-1 {
-    position: absolute;
-    width: 380px; height: 380px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,166,81,0.10) 0%, transparent 70%);
-    top: -80px; left: -100px;
-    z-index: 1;
-    animation: orbfloat 9s ease-in-out infinite;
+/* ============================================================
+   TICKER TAPE — dải chạy full-width ngay dưới navbar, dữ liệu thật
+   ============================================================ */
+#fss-ticker-tape {
+    position: relative;
+    z-index: 10;
+    margin-top: 64px; /* chừa chỗ cho navbar trong suốt đè lên trên */
+    height: 34px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.35);
+    border-top: 1px solid rgba(0, 255, 157, 0.15);
+    border-bottom: 1px solid rgba(0, 255, 157, 0.15);
 }
-#fss-orb-2 {
-    position: absolute;
-    width: 260px; height: 260px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,130,210,0.07) 0%, transparent 70%);
-    bottom: -80px; right: 30%;
-    z-index: 1;
-    animation: orbfloat 13s ease-in-out infinite reverse;
+[data-theme="light"] #fss-ticker-tape {
+    background: rgba(255, 255, 255, 0.55);
+    border-color: rgba(0, 168, 107, 0.18);
+}
+
+.fss-tape-track {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    width: max-content;
+    animation: fssTapeScroll 34s linear infinite;
+}
+@keyframes fssTapeScroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+#fss-ticker-tape:hover .fss-tape-track {
+    animation-play-state: paused;
+}
+
+.fss-tape-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 22px;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.fss-tape-ticker {
+    font-weight: 700;
+    color: #eafff4;
+    letter-spacing: 0.02em;
+}
+[data-theme="light"] .fss-tape-ticker { color: #0a2418; }
+.fss-tape-price {
+    color: rgba(230, 240, 235, 0.55);
+}
+[data-theme="light"] .fss-tape-price { color: rgba(10, 30, 20, 0.55); }
+.fss-tape-pct {
+    font-weight: 700;
 }
 
 /* ── Hero inner: 2-column grid ── */
@@ -294,7 +367,7 @@
     width: 100%;
     max-width: 1440px;
     margin: 0 auto;
-    padding: 96px 56px 64px;  /* extra top padding to clear absolute navbar */
+    padding: 56px 56px 64px;
     gap: 40px;
 }
 
@@ -328,18 +401,18 @@
 .fss-eyebrow-dot {
     width: 5px; height: 5px;
     border-radius: 50%;
-    background: #00c864;
-    box-shadow: 0 0 8px #00c864;
+    background: var(--fss-term-green);
+    box-shadow: 0 0 8px var(--fss-term-green);
     animation: blink 2.2s ease-in-out infinite;
 }
 
-/* Main headline — stacked (Vietcap / Smart Screener) */
+/* Main headline — stacked (brand / product tagline dạng terminal) */
 .fss-headline {
-    margin: 0 0 24px;
+    margin: 0 0 20px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 8px;
     animation: fadeslideup 0.65s 0.2s cubic-bezier(.22,1,.36,1) both;
 }
 
@@ -347,161 +420,141 @@
     font-family: 'Inter', sans-serif;
     font-size: clamp(2.8rem, 5.5vw, 4.2rem);
     font-weight: 800;
-    color: #00c85a;
+    color: #1E88E5;
     letter-spacing: -1.5px;
     line-height: 1;
-    text-shadow: 0 0 50px rgba(0,200,90,0.25);
+    text-shadow: 0 0 60px rgba(30, 136, 229, 0.35);
 }
 
 [data-theme="light"] .fss-headline-brand {
-    color: #00a044;
-    text-shadow: 0 2px 20px rgba(0,160,68,0.15);
+    color: #0064c8;
+    text-shadow: 0 2px 20px rgba(0, 100, 200, 0.15);
 }
 
+.fss-headline-sub-wrap {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+/* Tagline dạng dòng lệnh terminal — mono, in hoa, tracking rộng —
+   thay cho serif nghiêng trước đây (không ăn khớp với ngôn ngữ terminal) */
 .fss-headline-sub {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: clamp(2rem, 4vw, 3.4rem);
-    font-weight: 700;
-    font-style: italic;
-    color: #ffffff;
-    letter-spacing: -0.5px;
-    line-height: 1.05;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(1.1rem, 2.1vw, 1.5rem);
+    font-weight: 600;
+    color: var(--fss-term-green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.3;
 }
 
 [data-theme="light"] .fss-headline-sub {
-    color: #0f172a;
+    color: var(--fss-term-green);
 }
 
-/* CTA Button */
+.fss-cursor {
+    display: inline-block;
+    color: var(--fss-term-green);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    animation: blink 1s step-end infinite;
+}
+
+/* Supporting description — trả lời "sản phẩm làm được gì" ngay dưới tiêu đề */
+.fss-hero-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: rgba(230, 238, 245, 0.72);
+    max-width: 480px;
+    margin: 0 0 28px;
+    animation: fadeslideup 0.65s 0.3s cubic-bezier(.22,1,.36,1) both;
+}
+
+[data-theme="light"] .fss-hero-desc {
+    color: rgba(15, 23, 42, 0.65);
+}
+
+/* CTA — ghost button dạng dòng lệnh terminal, thay cho pill button xanh mặc định */
 .fss-cta {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
     font-weight: 700;
-    color: #fff !important;
+    letter-spacing: 0.06em;
+    color: var(--fss-term-green) !important;
     text-decoration: none !important;
-    background: #00a651;
-    border: none;
-    border-radius: 100px;
-    padding: 13px 32px;
+    background: rgba(0, 255, 157, 0.06);
+    border: 1px solid var(--fss-term-green-dim);
+    border-radius: 4px;
+    padding: 13px 22px;
     transition: all 0.25s ease;
     animation: fadeslideup 0.65s 0.38s cubic-bezier(.22,1,.36,1) both;
-    box-shadow: 0 8px 24px rgba(0, 166, 81, 0.35);
-    margin-bottom: 36px;
+    margin-bottom: 40px;
 }
 
 .fss-cta:hover {
-    background: #00bf5d;
-    box-shadow: 0 10px 30px rgba(0, 166, 81, 0.5);
+    background: var(--fss-term-green);
+    color: var(--fss-term-bg) !important;
+    box-shadow: 0 0 28px rgba(0, 255, 157, 0.45);
     transform: translateY(-2px);
 }
 
-.fss-cta-arrow {
-    font-size: 15px;
-    transition: transform 0.25s ease;
+.fss-cta-label {
+    display: inline-block;
 }
 
-.fss-cta:hover .fss-cta-arrow {
-    transform: translateX(4px);
+.fss-cursor-cta {
+    color: inherit;
 }
-
-/* Stats row — card style */
-.fss-stats {
+/* Readout — dãy số liệu dạng bảng điện terminal, thay cho glass-card mặc định */
+.fss-readout {
     display: flex;
     align-items: stretch;
-    gap: 12px;
+    gap: 28px;
     animation: fadeslideup 0.65s 0.48s cubic-bezier(.22,1,.36,1) both;
     flex-wrap: wrap;
 }
 
-.fss-stat-card {
+.fss-readout-item {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 12px;
-    padding: 10px 16px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: border-color 0.2s, background 0.2s;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.fss-stat-card:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(0, 200, 100, 0.25);
-}
-
-[data-theme="light"] .fss-stat-card {
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(0, 150, 70, 0.12);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-}
-
-[data-theme="light"] .fss-stat-card:hover {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(0, 166, 81, 0.28);
-}
-
-.fss-stat-icon {
-    font-size: 16px;
-    color: #00c85a;
-    width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0, 166, 81, 0.12);
-    border-radius: 8px;
-    flex-shrink: 0;
-}
-
-[data-theme="light"] .fss-stat-icon {
-    background: rgba(0, 166, 81, 0.10);
-    color: #00a044;
-}
-
-.fss-stat-body {}
-
-.fss-stat-value {
-    font-family: 'Inter', sans-serif;
-    font-size: 15px;
+.fss-readout-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
     font-weight: 700;
-    color: #ffffff;
-    line-height: 1.2;
+    color: var(--fss-term-green);
+    line-height: 1;
+    letter-spacing: -0.02em;
 }
 
-[data-theme="light"] .fss-stat-value {
-    color: #0f172a;
+[data-theme="light"] .fss-readout-value {
+    color: var(--fss-term-green);
 }
 
-.fss-stat-label {
+.fss-readout-label {
     font-family: 'Inter', sans-serif;
-    font-size: 11px;
-    font-weight: 400;
-    color: rgba(255,255,255,0.5);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: rgba(230, 240, 235, 0.45);
     line-height: 1;
 }
 
-[data-theme="light"] .fss-stat-label {
-    color: rgba(15, 23, 42, 0.5);
+[data-theme="light"] .fss-readout-label {
+    color: rgba(10, 30, 20, 0.5);
 }
 
-/* The pill style (for HOSE · HNX · UPCoM) */
-.fss-stat-pill {
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.7);
-    padding: 6px 16px;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 100px;
-    background: rgba(255, 255, 255, 0.03);
-}
-
-[data-theme="light"] .fss-stat-pill {
-    color: rgba(15, 23, 42, 0.65);
-    border-color: rgba(0, 0, 0, 0.1);
-    background: rgba(255, 255, 255, 0.5);
+.fss-readout-divider {
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(0, 255, 157, 0.25), transparent);
 }
 
 /* RIGHT column — illustration */
@@ -529,13 +582,13 @@
     position: absolute;
     width: 260px; height: 260px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(0,166,81,0.25) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(0, 87, 217,0.25) 0%, transparent 70%);
     filter: blur(30px);
     z-index: 0;
 }
 
 [data-theme="light"] .fss-coin-wrap::before {
-    background: radial-gradient(circle, rgba(0,166,81,0.18) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(0, 87, 217,0.18) 0%, transparent 70%);
 }
 
 .fss-coin-svg {
@@ -637,17 +690,6 @@
 #fss-hero-grid, #fss-orb-1, #fss-orb-2 {
     display: none !important;
 }
-/* ép thanh navbar luôn trong suốt ở mọi trạng thái (sáng/tối/khi cuộn trang) */
-#fss-sticky-nav,
-#fss-sticky-nav.is-scrolled,
-[data-theme="light"] #fss-sticky-nav,
-[data-theme="light"] #fss-sticky-nav.is-scrolled {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    border-bottom: none !important;
-}
 
 /* ẩn đường kẻ highlight viền dưới của navbar */
 #fss-sticky-nav::after {
@@ -664,17 +706,25 @@
 .vietcap-nav-login-btn {
     font-style: normal !important;
 }
-/* ép trong suốt hoàn toàn cho thanh navbar ở mọi chế độ */
+
+/* 1. Ép trong suốt cho thanh navbar ở chế độ tối (mặc định) */
 #fss-sticky-nav,
-[data-theme="light"] #fss-sticky-nav,
-#fss-sticky-nav.is-scrolled,
-[data-theme="light"] #fss-sticky-nav.is-scrolled {
+#fss-sticky-nav.is-scrolled {
     background: transparent !important;
-    background-color: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     box-shadow: none !important;
-    border: none !important;
+    border-bottom: none !important;
+}
+
+/* 2. Tạo khung nền màu sáng, rõ nét hơn cho theme sáng */
+[data-theme="light"] #fss-sticky-nav,
+[data-theme="light"] #fss-sticky-nav.is-scrolled {
+    background: rgba(255, 255, 255, 0.95) !important; /* Tăng độ đục màu trắng lên 95% để rõ khung */
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important; /* Bóng đổ rõ hơn một chút */
+    border-bottom: 1px solid #cbd5e1 !important; /* Viền dưới màu xám nhạt giúp tách biệt hẳn với nền */
 }
 
 /* xóa sạch nền của các thẻ bọc bên ngoài navbar */
@@ -683,4 +733,71 @@
 #vietcap-topbar-only {
     background: transparent !important;
     background-color: transparent !important;
+}
+
+/* 1. tạo khung sáng có viền xám cho header ở theme sáng */
+[data-theme="light"] #fss-sticky-nav,
+[data-theme="light"] #fss-sticky-nav.is-scrolled {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+
+/* 3. sửa nút screener (trắng viền xanh ở theme tối, xanh nhạt ở theme sáng) */
+.vietcap-nav-screener {
+    background: rgba(30, 136, 229, 0.15) !important;
+    color: #ffffff !important;
+    border: 1px solid #1e88e5 !important;
+    padding: 5px 18px !important;
+    font-weight: 600 !important;
+}
+.vietcap-nav-screener:hover {
+    background: rgba(30, 136, 229, 0.3) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 16px rgba(30, 136, 229, 0.3) !important;
+}
+[data-theme="light"] .vietcap-nav-screener {
+    background: #cfe2ff !important;
+    color: #0f172a !important;
+    border: 1px solid #9ec5fe !important;
+}
+
+/* 2. dọn sạch chữ cũ và tự vẽ lại chữ thefiwi + tam giác */
+.fss-logo-text,
+[data-theme="light"] .fss-logo-text,
+[data-theme="dark"] .fss-logo-text {
+    font-size: 0 !important;
+    color: transparent !important;
+}
+
+/* giấu luôn mọi thẻ con (như thẻ chứa tam giác cũ) để không bị vướng */
+.fss-logo-text * {
+    display: none !important;
+}
+
+/* tự tạo chữ thefiwi mới */
+.fss-logo-text::before {
+    content: "thefiwi" !important;
+    font-size: 20px !important;
+    color: #ffffff !important; /* màu trắng ở theme tối */
+    font-weight: 800 !important;
+    font-style: normal !important;
+    display: inline-block !important;
+}
+
+/* ép màu xám đậm cho chữ thefiwi ở theme sáng */
+[data-theme="light"] .fss-logo-text::before {
+    color: #0f172a !important;
+}
+
+/* tự tạo lại cái tam giác xanh */
+.fss-logo-text::after {
+    content: "▲" !important;
+    font-size: 15px !important;
+    color: #1e88e5 !important;
+    display: inline-block !important;
+    margin-left: 2px !important;
+    vertical-align: baseline !important;
 }

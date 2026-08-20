@@ -9,9 +9,11 @@ import logging
 from dash import dcc, Input, Output, State, callback_context, no_update, html, ALL
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from src.app_instance import app
 from src.components.header import _get_avatar_color
+from src.backend.rate_limiter import check_rate_limit, reset_rate_limit, get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +21,6 @@ logger = logging.getLogger(__name__)
 _BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 USERS_FILE = os.path.join(_BASE_DIR, '..', '..', 'data', 'users.json')
 
-# Thêm vào đầu file auth_callbacks.py:
-import hashlib
-
-def _hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
 
 def _load_users() -> dict:
     """Đọc danh sách users từ file JSON."""
@@ -42,6 +39,67 @@ def _is_vip(auth_data: dict | None) -> bool:
         and auth_data.get('logged_in')
         and auth_data.get('tier') == 'vip'
     )
+
+
+def require_entitlement(auth_data: dict | None, tier: str = "vip") -> bool:
+    """
+    AUDIT FIX (mục 4 - Authentication, Major Issue): hàm bảo vệ endpoint
+    premium DÙNG CHUNG, thay cho việc mỗi callback (screener_callbacks.py,
+    chatbot_callbacks.py...) tự viết lại y hệt đoạn code re-check server-side
+    (dễ quên/viết sai khi thêm callback mới, đã từng lặp lại 2 lần trước khi
+    có hàm này).
+
+    KHÔNG bao giờ tin trực tiếp auth_data.tier gửi từ client — auth-store
+    dùng storage_type='local' (localStorage trình duyệt), người dùng có thể
+    tự sửa qua DevTools để giả tier='vip'. Hàm này luôn đối chiếu lại với
+    users.json (nguồn xác thực thật phía server) trước khi trả về True.
+
+    Dùng cho MỌI premium endpoint mới thay vì tự viết logic tương tự:
+        from src.callbacks.auth_callbacks import require_entitlement
+        if not require_entitlement(auth_data):
+            ... trả về nội dung khoá/thông báo cần VIP ...
+    """
+    if not auth_data or not auth_data.get("logged_in"):
+        return False
+    username = auth_data.get("username", "")
+    if not username:
+        return False
+    try:
+        server_users = _load_users()
+    except Exception as e:
+        logger.warning(f"[require_entitlement] Không đọc được users.json: {e}")
+        return False
+    server_tier = server_users.get(username, {}).get("tier", "free")
+    return server_tier == tier
+
+
+def _verify_password(username: str, password: str, users: dict) -> bool:
+    """
+    Kiểm tra mật khẩu, tương thích ngược với dữ liệu cũ chưa hash.
+    Nếu mật khẩu lưu dạng plaintext (chưa hash) mà khớp, tự động hash lại
+    và ghi đè vào users.json ngay lập tức (migrate-on-login).
+    """
+    stored = users.get(username, {}).get('password', '')
+    if not stored:
+        return False
+
+    # werkzeug hash luôn có dạng "method:salt$hash" (vd: "scrypt:32768:8:1$...")
+    looks_hashed = ':' in stored and '$' in stored
+
+    if looks_hashed:
+        try:
+            return check_password_hash(stored, password)
+        except Exception:
+            return False
+
+    # Chưa hash (dữ liệu cũ) → so sánh plaintext, rồi migrate ngay nếu đúng
+    if stored == password:
+        users[username]['password'] = generate_password_hash(password)
+        _save_users(users)
+        logger.info(f"🔐 Đã tự động hash mật khẩu cho user '{username}' (migrate-on-login).")
+        return True
+
+    return False
 
 
 # =============================================================================
@@ -126,9 +184,29 @@ def handle_login(n_clicks, username, password):
     if not username or not password:
         return no_update, "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.", _error_style_show, True
 
+    # AUDIT FIX (mục 15 - Security): chống brute-force đăng nhập.
+    # Giới hạn theo IP (chặn quét nhiều username) VÀ theo cặp IP+username
+    # (chặn kể cả khi kẻ tấn công đổi IP nhưng vẫn nhắm 1 tài khoản cụ thể
+    # từ nhiều IP khác nhau thì lớp IP+username không giúp — đây là lớp
+    # phòng vệ bổ sung, không thay thế WAF/CDN rate-limit ở tầng hạ tầng).
+    client_ip = get_client_ip()
+    allowed_ip, retry_ip = check_rate_limit(f"login:ip:{client_ip}", max_attempts=10, window_seconds=300)
+    allowed_user, retry_user = check_rate_limit(f"login:user:{username}", max_attempts=5, window_seconds=300)
+    if not allowed_ip or not allowed_user:
+        retry_after = max(retry_ip, retry_user)
+        logger.warning(f"🚫 Login bị chặn do rate limit — ip={client_ip}, username='{username}'")
+        return (
+            no_update,
+            f"Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau {retry_after}s.",
+            _error_style_show,
+            True,
+        )
+
     users = _load_users()
 
-    if username in users and users[username]['password'] == _hash_pw(password):
+    if username in users and _verify_password(username, password, users):
+        # Đăng nhập đúng → reset counter để không phạt oan lần sau
+        reset_rate_limit(f"login:user:{username}")
         auth_data = {
             "logged_in": True,
             "username": username,
@@ -293,6 +371,17 @@ def redeem_invite_code(n_clicks, code, auth_data, phone):
     if not n_clicks or not code:
         return no_update, no_update, no_update, no_update
 
+    # AUDIT FIX (mục 15 - Security): mã VIP có không gian giá trị nhỏ
+    # (vd "FSS-VIP-ALPHA") -> có thể bị dò/brute-force nếu không giới hạn
+    # số lần thử theo IP. 8 lần / 10 phút là đủ rộng cho người dùng thật
+    # gõ nhầm vài lần, nhưng chặn được script dò hàng loạt.
+    client_ip = get_client_ip()
+    allowed, retry_after = check_rate_limit(f"redeem:ip:{client_ip}", max_attempts=8, window_seconds=600)
+    if not allowed:
+        style_err = {"fontSize": "11px", "marginTop": "6px", "color": "#f85149"}
+        logger.warning(f"🚫 Redeem invite code bị chặn do rate limit — ip={client_ip}")
+        return f"Quá nhiều lần thử. Vui lòng thử lại sau {retry_after}s.", style_err, no_update, no_update
+
     from src.backend.database import validate_and_redeem_code, get_or_create_user
 
     identifier = phone or (auth_data or {}).get("username", "anonymous")
@@ -314,6 +403,7 @@ def redeem_invite_code(n_clicks, code, auth_data, phone):
                  "color": "#f85149"}
 
     if success:
+        reset_rate_limit(f"redeem:ip:{client_ip}")
         new_auth = {
             **(auth_data or {}),
             "tier":         "vip",

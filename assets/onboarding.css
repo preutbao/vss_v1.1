@@ -1,5 +1,7 @@
-/* Font import */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+/* Font: dùng chung font hệ thống của toàn app (Montserrat/Space Grotesk +
+   Inter + JetBrains Mono, đã @import sẵn trong style.css) — trước đây tự
+   import riêng Be Vietnam Pro/DM Sans/DM Mono, tạo ra "đảo font" tách biệt
+   khỏi phần còn lại của ứng dụng. */
 
 /* Choice card hover */
 .ips-choice-card:hover {
@@ -13,20 +15,20 @@
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: #040810; }
 ::-webkit-scrollbar-thumb { background: #1a3a60; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #00e5ff; }
+::-webkit-scrollbar-thumb:hover { background: #1E88E5; }
 
 /* Checklist label color fix */
 .custom-checklist label {
     color: #e8f4ff !important;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-ui);
 }
 
 /* dcc.Slider thumb */
 .custom-slider .rc-slider-handle {
-    background: #00e5ff !important;
-    border-color: #00e5ff !important;
-    box-shadow: 0 0 10px rgba(0,229,255,0.5) !important;
+    background: #1E88E5 !important;
+    border-color: #1E88E5 !important;
+    box-shadow: 0 0 10px rgba(30, 136, 229,0.5) !important;
 }
 .custom-slider .rc-slider-track {
-    background: #00e5ff !important;
+    background: #1E88E5 !important;
 }

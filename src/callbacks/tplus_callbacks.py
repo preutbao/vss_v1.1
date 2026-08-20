@@ -10,8 +10,8 @@ from src.app_instance import app
 TPLUS_COLS = [
     {
         "field": "T_Plus_Score",
-        "headerName": "Điểm T+2.5",
-        "headerTooltip": "Điểm tăng T+2.5 (0–100). ≥80 = tín hiệu/xác suất tăng giá mạnh.",
+        "headerName": "T+2.5 ⚡",
+        "headerTooltip": "Điểm tín hiệu kỹ thuật ngắn hạn T+2.5 (0–100, KHÔNG PHẢI xác suất đã hiệu chỉnh). ≥80 = tín hiệu mạnh.",
         "type": "rightAligned",
         "sortable": True,
         "width": 110,
@@ -22,9 +22,9 @@ TPLUS_COLS = [
             "function": """
                 if (params.value == null) return {'color':'#484f58'};
                 if (params.value >= 80) return {
-                    'color': '#00d4ff', 'fontWeight': '800',
-                    'backgroundColor': 'rgba(0,212,255,0.08)',
-                    'textShadow': '0 0 8px rgba(0,212,255,0.5)'
+                    'color': '#1E88E5', 'fontWeight': '800',
+                    'backgroundColor': 'rgba(30, 136, 229,0.08)',
+                    'textShadow': '0 0 8px rgba(30, 136, 229,0.5)'
                 };
                 if (params.value >= 60) return {'color': '#3b82f6', 'fontWeight': '700'};
                 if (params.value >= 40) return {'color': '#f59e0b'};
@@ -124,7 +124,7 @@ TPLUS_COLS = [
                 if (params.value >= 70) return {'color':'#ef4444','fontWeight':'700'};
                 if (params.value <= 30) return {'color':'#10b981','fontWeight':'700'};
                 if (params.value >= 45 && params.value <= 65)
-                    return {'color':'#00d4ff','fontWeight':'600'};
+                    return {'color':'#1E88E5','fontWeight':'600'};
                 return {'color':'#c9d1d9'};
             """
         },
@@ -147,11 +147,11 @@ def toggle_tplus_mode(n_clicks, current_state):
     # Style track
     track_on = {
         "width": "36px", "height": "18px", "borderRadius": "9px",
-        "backgroundColor": "rgba(0,212,255,0.25)",
-        "border": "1px solid rgba(0,212,255,0.6)",
+        "backgroundColor": "rgba(30, 136, 229,0.25)",
+        "border": "1px solid rgba(30, 136, 229,0.6)",
         "position": "relative", "cursor": "pointer",
         "transition": "all 0.2s ease",
-        "boxShadow": "0 0 8px rgba(0,212,255,0.3)",
+        "boxShadow": "0 0 8px rgba(30, 136, 229,0.3)",
     }
     track_off = {
         "width": "36px", "height": "18px", "borderRadius": "9px",
@@ -164,10 +164,10 @@ def toggle_tplus_mode(n_clicks, current_state):
     # Style thumb
     thumb_on = {
         "width": "12px", "height": "12px", "borderRadius": "50%",
-        "backgroundColor": "#00d4ff",
+        "backgroundColor": "#1E88E5",
         "position": "absolute", "top": "2px", "left": "20px",
         "transition": "all 0.2s ease",
-        "boxShadow": "0 0 6px rgba(0,212,255,0.6)",
+        "boxShadow": "0 0 6px rgba(30, 136, 229,0.6)",
     }
     thumb_off = {
         "width": "12px", "height": "12px", "borderRadius": "50%",

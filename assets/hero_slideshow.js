@@ -15,196 +15,6 @@
     document.head.appendChild(link);
   }
 
-  // ── Inject enhanced hero typography styles ───────────────────────────────
-  const heroStyle = document.createElement('style');
-  heroStyle.textContent = `
-    #hero-section {
-      height: 720px !important; /* Giả sử chiều cao cũ là 720px hoặc 100vh, bạn chỉnh lại con số này */
-      min-height: 720px !important;
-    }
-    .hero-slide {
-      height: 720px !important;
-    }
-      .cyber-cta-container {
-      margin-top: 20px;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: opacity 0.6s 0.5s ease, transform 0.6s 0.5s ease !important;
-    }
-    .hero-slide.active .cyber-cta-container { opacity:1 !important; transform:translateY(0) !important; }
-
-    .cyber-btn {
-      display: inline-block;
-      padding: 12px 30px;
-      background: rgba(0, 229, 255, 0.05);
-      border: none;
-      color: #00e5ff;
-      font-family: 'DM Mono', monospace !important;
-      font-size: 13px !important;
-      font-weight: 600 !important;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      position: relative;
-      cursor: pointer;
-      /* Cắt góc kiểu Cyberpunk */
-      clip-path: polygon(0% 0%, 90% 0%, 100% 30%, 100% 100%, 10% 100%, 0% 70%);
-      transition: all 0.3s ease;
-    }
-
-    .cyber-btn:hover {
-      background: #00e5ff;
-      color: #080d18;
-      box-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
-      transform: scale(1.05);
-    }
-
-    .cyber-btn::before {
-      content: ">>";
-      margin-right: 8px;
-      font-size: 10px;
-    }
-    
-    /* ĐÃ TRẢ VỀ NGUYÊN BẢN CỦA BẠN VÀ CHỈ KHÓA CHUYỂN ĐỘNG */
-    .hero-bg {
-      position: absolute;
-      top: 0; left: 0; right: 0; 
-      bottom: 100px !important; 
-      pointer-events: none;
-      z-index: 0;
-      /* Giữ lại thuộc tính để hiện hình ảnh mờ */
-      background-size: cover; 
-      background-position: center right; 
-      filter: blur(1px);
-      /* Chặn đứng hiệu ứng pan/zoom */
-      transform: scale(1.05) !important;
-      animation: none !important;
-      transition: none !important;
-    }
-
-    .hero-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; 
-      bottom: 75px !important; 
-      pointer-events: none;
-      z-index: 1;
-      /* Gradient đen mờ để hiện chữ */
-      background: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0) 100%);
-    }
-
-    /* 2. Đưa nội dung chữ lên trên lớp mờ */
-    .hero-content {
-      position: relative;
-      z-index: 10;
-      pointer-events: none; /* Để không chặn click vào các nút điều hướng bên dưới */
-    }
-    
-    /* Cho phép các nút trong nội dung (như nút Thiết lập hồ sơ) vẫn bấm được */
-    .hero-content button, .cyber-btn {
-      pointer-events: auto;
-    }
-
-    /* 3. Nâng toàn bộ các nút điều khiển, số thứ tự và phím tắt lên trên cùng */
-    #hero-prev, #hero-next, .hero-counter, .hero-keys, .hero-credit, #hero-progress-container {
-      z-index: 100 !important;
-      position: relative; /* Đảm bảo z-index có tác dụng */
-    }
-
-    /* Đảm bảo khu vực chứa Era Tabs và Timeline nằm dưới cùng không bị hình ảnh đè */
-    /* Đảm bảo dải ô giai đoạn nổi lên mà KHÔNG làm vỡ vị trí gốc */
-    #hero-eras, #hero-timeline, #hero-legend {
-      z-index: 100 !important;
-    }
-    
-    .era-tab {
-      position: relative;
-      z-index: 100 !important;
-    }
-    
-    .hero-year {
-      font-family: 'Syne', 'Montserrat', sans-serif !important;
-      font-size: clamp(88px, 13vw, 168px) !important;
-      font-weight: 800 !important;
-      line-height: 0.85 !important;
-      letter-spacing: -5px !important;
-      color: #ffffff !important;
-      margin-bottom: 20px !important;
-      text-shadow: 0 0 120px rgba(255,255,255,0.06) !important;
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.7s 0.08s cubic-bezier(0.22,1,0.36,1),
-                  transform 0.7s 0.08s cubic-bezier(0.22,1,0.36,1) !important;
-    }
-                  
-    .hero-slide.active .hero-year { opacity:1 !important; transform:translateY(0) !important; }
-
-    .hero-tagline {
-      font-family: 'Syne', 'Montserrat', sans-serif !important;
-      font-size: clamp(20px, 2.8vw, 34px) !important;
-      font-weight: 700 !important;
-      color: #e8f4ff !important;
-      line-height: 1.18 !important;
-      letter-spacing: -0.3px !important;
-      margin-bottom: 16px !important;
-      max-width: 580px !important;
-      opacity: 0;
-      transform: translateY(16px);
-      transition: opacity 0.65s 0.22s cubic-bezier(0.22,1,0.36,1),
-                  transform 0.65s 0.22s cubic-bezier(0.22,1,0.36,1) !important;
-    }
-    .hero-slide.active .hero-tagline { opacity:1 !important; transform:translateY(0) !important; }
-
-    .hero-desc {
-      font-family: 'DM Sans', 'Inter', sans-serif !important;
-      font-size: 14.5px !important;
-      font-weight: 400 !important;
-      color: rgba(200,220,240,0.62) !important;
-      line-height: 1.75 !important;
-      max-width: 500px !important;
-      margin-bottom: 30px !important;
-      letter-spacing: 0.1px !important;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: opacity 0.6s 0.36s ease, transform 0.6s 0.36s ease !important;
-    }
-    .hero-slide.active .hero-desc { opacity:1 !important; transform:translateY(0) !important; }
-
-    .hero-badge {
-      font-family: 'DM Mono', 'JetBrains Mono', monospace !important;
-      font-size: 10.5px !important; font-weight:500 !important;
-      letter-spacing: 2px !important; border-radius: 3px !important;
-      padding: 4px 11px !important; margin-bottom: 18px !important;
-    }
-    .stat-label {
-      font-family: 'DM Mono', monospace !important;
-      font-size: 9px !important; color: rgba(200,220,240,0.32) !important;
-      letter-spacing: 1.8px !important; text-transform: uppercase !important;
-    }
-    .stat-value {
-      font-family: 'DM Mono', monospace !important;
-      font-size: 17px !important; font-weight: 500 !important; letter-spacing: -0.5px !important;
-    }
-    .hero-stats { opacity:0; transition:opacity 0.5s 0.5s ease !important; }
-    .hero-slide.active .hero-stats { opacity:1 !important; }
-
-    .hero-enter {
-      font-family: 'Syne', sans-serif !important;
-      font-size: 12px !important; font-weight: 800 !important; letter-spacing: 0.8px !important;
-    }
-    .hero-counter { font-family:'DM Mono',monospace !important; font-size:11px !important; color:rgba(200,220,240,0.28) !important; letter-spacing:1px !important; }
-    .hero-keys { font-family:'DM Mono',monospace !important; font-size:10px !important; color:rgba(200,220,240,0.18) !important; }
-    .era-tab { font-family:'DM Mono',monospace !important; font-size:9.5px !important; letter-spacing:1.4px !important; }
-    .tl-tick-label { font-family:'DM Mono',monospace !important; font-size:8.5px !important; color:rgba(200,220,240,0.18) !important; }
-    .legend-dot-item { font-family:'DM Mono',monospace !important; font-size:9.5px !important; letter-spacing:1px !important; }
-    .hero-credit { font-family:'DM Mono',monospace !important; font-size:9px !important; color:rgba(200,220,240,0.16) !important; }
-
-    .era-doi-moi     { color:#3a6eb3 !important; }
-    .era-khung-hoang { color:#b33a3a !important; }
-    .era-ttck        { color:#8b3ab3 !important; }
-    .era-tai-co-cau  { color:#b37a3a !important; }
-    .era-covid       { color:#3ab36e !important; }
-  `;
-  document.head.appendChild(heroStyle);
-
   // ── DỮ LIỆU SỰ KIỆN TÀI CHÍNH VIỆT NAM (GÓC NHÌN ĐỊNH LƯỢNG - SMART SCREENER) ────────────────────────────────
   const EVENTS = [
     {
@@ -212,7 +22,7 @@
       tagline:'Đổi Mới - Khởi nguồn <span class="hl-blue">dữ liệu cơ bản</span>.',
       desc:'Chuyển sang kinh tế thị trường. Đây là bước ngoặt tạo ra các doanh nghiệp tư nhân cốt lõi — nền tảng cho việc phân tích chỉ số tài chính (BCTC) sau này.',
       move:'Khởi nguyên', moveCls:'stat-neut', coverage:'Lịch sử vĩ mô · Mở cửa',
-      bgColor:'#080d18', credit:'', dot:'#00e5ff', eraIdx:0,
+      bgColor:'#080d18', credit:'', dot:'#1E88E5', eraIdx:0,
       bgImage:'assets/slideshow_bg/slide_bg1.png',
     },
     {
@@ -284,7 +94,7 @@
       tagline:'Kỷ nguyên <span class="hl-blue">AI & Đầu tư định lượng</span>.',
       desc:'Không còn dò dẫm thủ công bằng cảm xúc. Hệ thống FinSmartScreener đang quét 165+ chỉ số. Xác định DNA đầu tư của bạn và để AI bốc thuốc ngay.',
       move:'LỌC NGAY', moveCls:'stat-pos', coverage:'Daily · Sẵn sàng',
-      bgColor:'#040d18', credit:'', dot:'#00e5ff', eraIdx:4,
+      bgColor:'#040d18', credit:'', dot:'#1E88E5', eraIdx:4,
       bgImage:'assets/slideshow_bg/slide_bg10.png',
     },
   ];
@@ -298,7 +108,7 @@
   ];
 
   const ERA_ID_MAP = ['doi-moi','khung-hoang','ttck','tai-co-cau','covid'];
-  const TYPE_COLORS = { crash:'#ff3d57', collapse:'#ff8c42', panic:'#ffb703', mania:'#b388ff', boom:'#00e676', policy:'#00e5ff' };
+  const TYPE_COLORS = { crash:'#ff3d57', collapse:'#ff8c42', panic:'#ffb703', mania:'#b388ff', boom:'#00e676', policy:'#1E88E5' };
   const YEAR_RANGE = { min:1985, max:2027 };
   let currentIdx = 0;
   let autoTimer = null;
@@ -317,12 +127,6 @@
       <div class="hero-overlay"></div>
       
       <div class="hero-content">
-        
-        <div class="cyber-cta-container">
-          <div class="cyber-btn" onclick="window.location.href='#learn-more'">
-            TẠI SAO DÙNG FINSMARTSCREENER?
-          </div>
-        </div>
 
         <div class="hero-badge badge-${ev.badge}">${ev.badge.toUpperCase()} &nbsp;·&nbsp; ${ev.badgeDate}</div>
         <div class="hero-year">${ev.year}</div>

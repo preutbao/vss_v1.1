@@ -26,15 +26,15 @@ _BORDER     = "#1a3a60"
 _TEXT_PRI   = "#e8f4ff"
 _TEXT_SEC   = "#7aafcc"
 _TEXT_MUT   = "#3d6a8a"
-_BLUE       = "#0090ff"
+_BLUE       = "#0057D9"
 _GREEN      = "#00e676"
 _AMBER      = "#ffb703"
 _RED        = "#ff3d57"
 _PURPLE     = "#8b5cf6"
-_CYAN       = "#00e5ff"
-_FONT_SORA  = "'Be Vietnam Pro', 'DM Sans', sans-serif"
-_FONT_INTER = "'DM Sans', sans-serif"
-_FONT_MONO  = "'DM Mono', monospace"
+_CYAN       = "#1E88E5"
+_FONT_SORA  = "var(--font-display)"   # trước: 'Be Vietnam Pro' (đảo font riêng) -> đồng bộ với toàn app
+_FONT_INTER = "var(--font-ui)"        # trước: 'DM Sans'
+_FONT_MONO  = "var(--font-data)"      # trước: 'DM Mono'
 
 
 
@@ -99,7 +99,7 @@ def _step_badge(num: int, label: str, active: bool = False, done: bool = False):
         "display": "flex", "alignItems": "center",
         "padding": "6px 10px", "borderRadius": "6px",
         "backgroundColor": bg,
-        "border": f"1px solid {'#1d4ed8' if active else '#0f3d22' if done else _BORDER}",
+        "border": f"1px solid {'#0057D9' if active else '#0f3d22' if done else _BORDER}",
     })
 
 
@@ -138,7 +138,7 @@ def _step1_layout():
             html.Span("IPS · Bước 1 / 5", style={
                 "fontSize": "10px", "color": _BLUE,
                 "backgroundColor": "#0d2137",
-                "border": f"1px solid #1d4ed8",
+                "border": f"1px solid #0057D9",
                 "padding": "3px 8px", "borderRadius": "20px",
                 "fontFamily": _FONT_MONO, "letterSpacing": "0.5px",
                 "marginBottom": "8px", "display": "inline-block",
@@ -195,7 +195,7 @@ def _step1_layout():
             ),
         ], style={
             "backgroundColor": "#071628",
-            "border": f"1px solid #1d4ed8",
+            "border": f"1px solid #0057D9",
             "borderRadius": "6px", "padding": "10px 12px",
         }),
 
@@ -586,7 +586,7 @@ def _wizard_footer():
             id="ips-btn-next",
             size="sm",
             style={
-                "background": "linear-gradient(135deg, #1d4ed8, #2563eb)",
+                "background": "linear-gradient(135deg, #0057D9, #1E88E5)",
                 "border": "none",
                 "color": "#e0f2fe",
                 "borderRadius": "6px",

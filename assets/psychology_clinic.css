@@ -53,7 +53,7 @@
  * cho "Modal chi tiết cổ phiếu" từ trước khi có tính năng theme sáng/tối
  * (.modal-header { background:#040d18 !important }, .modal-content {
  * background: linear-gradient(...#07111f...) !important }, .modal-title
- * { color:#00d4ff !important }) — các rule này áp dụng cho MỌI modal
+ * { color:#1E88E5 !important }) — các rule này áp dụng cho MỌI modal
  * trong app, kể cả modal này, và vì cùng độ ưu tiên (class) + cùng
  * !important nên ai load file sau (style.css load sau psychology_clinic.css
  * theo alphabet) sẽ thắng — đây chính là lý do khung trên cùng trước đó

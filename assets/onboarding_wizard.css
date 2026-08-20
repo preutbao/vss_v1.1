@@ -4,8 +4,9 @@
    Dash tự động load tất cả file trong thư mục assets/
 ═══════════════════════════════════════════════════════════════ */
 
-/* ── GOOGLE FONTS ── */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+/* ── FONT: dùng chung font hệ thống toàn app (đã @import trong style.css),
+   không tự import riêng Be Vietnam Pro/DM Sans/DM Mono nữa để tránh
+   "đảo font" tách biệt + tải trùng Google Fonts 2 lần. ── */
 
 /* ── CSS TOKENS ── */
 :root {
@@ -18,8 +19,8 @@
   --border:    #1a3a60;
   --border-hi: #2a5a90;
 
-  --accent:    #00e5ff;
-  --accent2:   #0090ff;
+  --accent:    #1E88E5;
+  --accent2:   #0057D9;
   --green:     #00e676;
   --amber:     #ffb703;
   --red:       #ff3d57;
@@ -29,16 +30,17 @@
   --t3: #8ab8d0;
   --t4: #4d7a9a;
 
-  --ff-display: 'Be Vietnam Pro', 'DM Sans', sans-serif;
-  --ff-body:    'DM Sans', sans-serif;
-  --ff-mono:    'DM Mono', monospace;
+  --ff-display: var(--font-display);
+  --ff-body:    var(--font-ui);
+  --ff-mono:    var(--font-data);
 
   --r-sm:  6px;
   --r-md:  12px;
   --r-lg:  18px;
   --r-xl:  24px;
 
-  --glow: 0 0 40px rgba(0,229,255,0.15);
+
+  --glow: 0 0 40px rgba(30, 136, 229,0.15);
 }
 
 /* ── GLOBAL RESET (chỉ áp trong wrapper onboarding) ── */
@@ -58,8 +60,8 @@
   content: '';
   position: fixed; inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0,144,255,0.07) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(0,229,255,0.05) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0, 87, 217,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(30, 136, 229,0.05) 0%, transparent 50%);
   pointer-events: none; z-index: 0;
   animation: fss-bgPulse 8s ease-in-out infinite alternate;
 }
@@ -102,7 +104,7 @@
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px;
-  box-shadow: 0 0 24px rgba(0,229,255,0.3);
+  box-shadow: 0 0 24px rgba(30, 136, 229,0.3);
 }
 
 .fss-logo-name {
@@ -157,13 +159,13 @@
   background: linear-gradient(135deg, var(--accent2), var(--accent));
   border-color: var(--accent);
   color: #001a20;
-  box-shadow: 0 0 20px rgba(0,229,255,0.5);
+  box-shadow: 0 0 20px rgba(30, 136, 229,0.5);
   animation: fss-dotPulse 2s ease-in-out infinite;
 }
 
 @keyframes fss-dotPulse {
-  0%,100% { box-shadow: 0 0 20px rgba(0,229,255,0.5); }
-  50%      { box-shadow: 0 0 30px rgba(0,229,255,0.8); }
+  0%,100% { box-shadow: 0 0 20px rgba(30, 136, 229,0.5); }
+  50%      { box-shadow: 0 0 30px rgba(30, 136, 229,0.8); }
 }
 
 .fss-rail-label {
@@ -193,7 +195,7 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7), 0 0 40px rgba(0,144,255,0.05);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7), 0 0 40px rgba(0, 87, 217,0.05);
   overflow: hidden;
 }
 
@@ -224,8 +226,8 @@
   font-family: var(--ff-mono);
   font-size: 11px; font-weight: 500;
   color: var(--accent);
-  background: rgba(0,229,255,0.08);
-  border: 1px solid rgba(0,229,255,0.2);
+  background: rgba(30, 136, 229,0.08);
+  border: 1px solid rgba(30, 136, 229,0.2);
   border-radius: 20px;
   padding: 3px 10px;
   white-space: nowrap;
@@ -282,7 +284,7 @@
 .fss-choice-card::before {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(0,229,255,0.06) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 0%, rgba(30, 136, 229,0.06) 0%, transparent 70%);
   opacity: 0; transition: opacity 0.3s;
 }
 
@@ -297,7 +299,7 @@
 
 .fss-choice-card.selected {
   border-color: var(--accent) !important;
-  background: rgba(0,229,255,0.06) !important;
+  background: rgba(30, 136, 229,0.06) !important;
   box-shadow: 0 0 0 1px var(--accent), var(--glow) !important;
 }
 
@@ -374,7 +376,7 @@
 .fss-slider-row .rc-slider-handle {
   background: var(--accent) !important;
   border-color: var(--accent) !important;
-  box-shadow: 0 0 10px rgba(0,229,255,0.5) !important;
+  box-shadow: 0 0 10px rgba(30, 136, 229,0.5) !important;
 }
 .fss-slider-row .rc-slider-rail { background-color: var(--border) !important; }
 
@@ -442,13 +444,13 @@
   background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%) !important;
   border: none !important;
   color: #001a20 !important;
-  box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+  box-shadow: 0 4px 20px rgba(30, 136, 229,0.3);
   transition: all 0.25s !important;
 }
 
 .fss-btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,229,255,0.5) !important;
+  box-shadow: 0 8px 32px rgba(30, 136, 229,0.5) !important;
 }
 
 .fss-btn-success {
@@ -542,7 +544,7 @@
 }
 
 .fss-congrats-match-card {
-  background: linear-gradient(135deg, rgba(0,230,118,0.08), rgba(0,229,255,0.05));
+  background: linear-gradient(135deg, rgba(0,230,118,0.08), rgba(30, 136, 229,0.05));
   border: 1px solid rgba(0,230,118,0.25);
   border-left: 3px solid var(--green);
   border-radius: var(--r-lg);
@@ -585,4 +587,106 @@
   .fss-choice-grid.cols-3 { grid-template-columns: 1fr; }
   .fss-wizard-body { padding: 28px 20px; }
   .fss-wizard-footer { padding: 16px 20px; }
+}
+
+/* ============================================================================
+   ☀️ LIGHT MODE CHO ONBOARDING WIZARD (THIẾT LẬP HỒ SƠ)
+   ============================================================================ */
+[data-theme="light"] {
+  /* Ghi đè toàn bộ biến màu của màn hình Onboarding sang tông Sáng */
+  --void:      #f4f6f8;      /* Nền ngoài cùng */
+  --base:      #ffffff;
+  --surface:   #ffffff;      /* Nền các thẻ chọn */
+  --card:      #ffffff;      /* Nền khối to giữa màn hình */
+  --elevated:  #f1f5f9;
+  --hover:     #f8f9fa;      /* Màu khi rê chuột */
+  --border:    #cbd5e1;      /* Viền xám nhạt */
+  --border-hi: #94a3b8;      /* Viền xám đậm khi hover */
+
+  --t1: #0f172a;             /* Chữ Tiêu đề (Đen/Xám đậm) */
+  --t2: #334155;             /* Chữ phụ */
+  --t3: #475569;             /* Chữ mô tả */
+  --t4: #64748b;             /* Chữ mờ */
+}
+
+/* 1. Chỉnh lại ánh sáng hắt phía sau (Glow) cho nhẹ nhàng trên nền trắng */
+[data-theme="light"] #ips-onboarding-wrapper::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0, 87, 217, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(30, 136, 229, 0.03) 0%, transparent 50%);
+}
+
+/* 2. Nền của thanh chứa nút bấm (Footer) bên dưới wizard */
+[data-theme="light"] .fss-wizard-footer {
+  background: rgba(255, 255, 255, 0.85);
+  border-top: 1px solid var(--border);
+}
+
+/* 3. Đổ bóng nhẹ cho các thẻ chọn (Choice cards) để nó nổi lên trên nền trắng */
+[data-theme="light"] .fss-choice-card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+[data-theme="light"] .fss-choice-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* 4. Thanh tiến trình (Progress Rail) & Các chấm tròn */
+[data-theme="light"] .fss-rail-dot {
+    background: #ffffff;
+}
+[data-theme="light"] .fss-rail-dot.done {
+    color: #ffffff; /* Cho chữ/số nổi rõ trên cái chấm xanh lá */
+}
+
+/* 5. Khung sứ mệnh / Disclaimer (Ghi đè cái nền tối nếu có) */
+[data-theme="light"] .disclaimer,
+[data-theme="light"] .fss-check-list-wrap {
+    background: #f8f9fa;
+    border-color: #cbd5e1;
+}
+
+/* ============================================================================
+   ☀️ LIGHT MODE CHO KHU VỰC FAQ (GHI ĐÈ MÀU HARDCODE)
+   ============================================================================ */
+
+/* 1. Ép màu chữ Đen/Xám đậm cho chữ "FAQ." khổng lồ và mô tả bên trái */
+[data-theme="light"] #onboarding-page [style*="color: #e8f4ff"],
+[data-theme="light"] #onboarding-page [style*="color: #c9d1d9"],
+[data-theme="light"] #onboarding-page [style*="color: #8b949e"],
+[data-theme="light"] #onboarding-page [style*="color: #ffffff"],
+[data-theme="light"] #onboarding-page [style*="color: white"] {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] #onboarding-page h1,
+[data-theme="light"] #onboarding-page h2,
+[data-theme="light"] #onboarding-page p {
+    color: #334155 !important;
+}
+
+/* 2. Đổi màu Đen cho các câu hỏi (01, 02...) */
+[data-theme="light"] [id^="faq-btn-"] {
+    color: #0f172a !important;
+    border: none !important;
+}
+[data-theme="light"] [id^="faq-btn-"] div,
+[data-theme="light"] [id^="faq-btn-"] span {
+    color: #0f172a !important;
+}
+
+/* Quét sạch mọi đường gạch ngang hardcode của khung FAQ */
+[data-theme="light"] #onboarding-page div[style*="border-bottom"],
+[data-theme="light"] #onboarding-page div[style*="border-top"] {
+    border-bottom: none !important;
+    border-top: none !important;
+}
+
+/* 3. Đổi màu Xám đậm cho nội dung câu trả lời (khi xổ xuống) */
+[data-theme="light"] [id^="faq-content-"] {
+    color: #475569 !important;
+}
+[data-theme="light"] [id^="faq-content-"] div,
+[data-theme="light"] [id^="faq-content-"] span,
+[data-theme="light"] [id^="faq-content-"] p {
+    color: #475569 !important;
 }

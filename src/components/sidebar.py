@@ -20,7 +20,7 @@ theme_switch = html.Div(
         ),
         
         # Đổi thành FontAwesome (fas fa-moon) và áp dụng màu xanh Vietcap
-        html.I(className="fas fa-moon", style={"marginLeft": "4px", "color": "#00a651", "fontSize": "14px"}) 
+        html.I(className="fas fa-moon", style={"marginLeft": "4px", "color": "#0057D9", "fontSize": "14px"}) 
     ],
     className="d-flex align-items-center",
     style={
@@ -83,7 +83,7 @@ _STRATEGY_GROUPS = [
         "strategies": [
             ("STRAT_GARP",    "Tăng trưởng giá hợp lý — GARP (Peter Lynch)"),
             ("STRAT_GROWTH",  "Tăng trưởng bền vững (Philip A. Fisher)"),
-            ("STRAT_CANSLIM", "Siêu cổ phiếu CANSLIM (William J. O'Neil)"),
+            ("STRAT_CANSLIM", "Siêu cổ phiếu CANSLIM Proxy (William J. O'Neil)"),
         ],
     },
     {
@@ -133,7 +133,7 @@ def _premium_wrap(content, wrapper_id: str, section: str, label: str = "Đăng n
                 className="premium-overlay",
                 children=[
                     html.I(className="fas fa-lock",
-                           style={"fontSize": "10px", "color": "#00a651",
+                           style={"fontSize": "10px", "color": "#0057D9",
                                   "marginBottom": "2px"}),
                     html.Span(label,
                               style={"fontSize": "9.5px", "fontWeight": "600",
@@ -320,7 +320,7 @@ WIZARD_GROUPS = [
         "id": "tong-quan",
         "label": "Thông tin chung",
         "icon": "fas fa-info-circle",
-        "color": "#00a651",
+        "color": "#0057D9",
         "items": TONG_QUAN_ITEMS,
     },
     {
@@ -341,7 +341,7 @@ WIZARD_GROUPS = [
         "id": "tang-truong",
         "label": "Tăng trưởng",
         "icon": "fas fa-chart-line",
-        "color": "#00a651",
+        "color": "#0057D9",
         "items": TANG_TRUONG_ITEMS,
     },
     {
@@ -687,7 +687,7 @@ _filter_wizard = html.Div(
     style={
         "display": "flex",
         "flexDirection": "row",
-        "height": "260px",
+        "height": "266px",
         "border": "1px solid #21262d",
         "borderRadius": "8px",
         "overflow": "hidden",
@@ -813,7 +813,7 @@ layout = html.Div(
                                                 children=[
                                                     html.Div([
                                                         html.Div([
-                                                            html.Span(group["label"], style={"flex": "1", "fontWeight": "bold", "color": "#7dd3fc"}),
+                                                            html.Span(group["label"], style={"flex": "1", "fontWeight": "bold", "color": "#1E88E5"}),
                                                             html.I(className="fas fa-plus", id=f"strategy-grp-icon-{group['id']}", style={"fontSize": "10px", "color": "#94a3b8"}),
                                                         ], id=f"strategy-grp-hdr-{group['id']}", n_clicks=0, className="strategy-group-header"),
                                                         dbc.Collapse(
@@ -865,7 +865,7 @@ layout = html.Div(
                         # ── T+2.5 TOGGLE — gộp cùng div với strategy để không có gap thừa ──
                         html.Div([
                             html.Div([
-                                html.Span("T+2.5", style={"fontSize": "11px", "fontWeight": "700", "color": "#00d4ff", "fontFamily": "'Roboto Mono', monospace", "letterSpacing": "0.5px"}),
+                                html.Span("T+2.5", style={"fontSize": "11px", "fontWeight": "700", "color": "#1E88E5", "fontFamily": "'Roboto Mono', monospace", "letterSpacing": "0.5px"}),
                                 html.Span("BETA", style={"fontSize": "8px", "fontWeight": "700", "color": "#f59e0b", "backgroundColor": "rgba(245,158,11,0.12)", "border": "1px solid rgba(245,158,11,0.3)", "borderRadius": "3px", "padding": "1px 4px", "marginLeft": "4px"}),
                             ], style={"marginBottom": "3px"}),
                             html.Div([
@@ -885,7 +885,7 @@ layout = html.Div(
                             )
                         ], id="tplus-wrapper", style={ 
                             "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "4px 10px",
-                            "backgroundColor": "rgba(0,212,255,0.04)", "border": "1px solid rgba(0,212,255,0.12)",
+                            "backgroundColor": "rgba(30, 136, 229,0.04)", "border": "1px solid rgba(30, 136, 229,0.12)",
                             "borderRadius": "8px", "cursor": "pointer", "flexShrink": "0",
                             "marginLeft": "6px",   # ← thay vì dùng gap của toolbar, gắn sát vào strategy
                         }),
@@ -1019,7 +1019,7 @@ layout = html.Div(
                             id="btn-investor-profile",
                             children=[
                                 html.I(className="fas fa-user-circle",
-                                       style={"marginRight": "5px", "color": "#00a651"}),
+                                       style={"marginRight": "5px", "color": "#0057D9"}),
                                 html.Span("Thay đổi hồ sơ NĐT", id="profile-btn-label"),
                             ],
                             n_clicks=0,
@@ -1030,7 +1030,7 @@ layout = html.Div(
                                 "borderRadius": "20px", "fontSize": "11px",
                                 "padding": "4px 12px", "whiteSpace": "nowrap",
                                 "fontWeight": "600",
-                                "borderColor": "#00a651", "color": "#00a651",
+                                "borderColor": "#0057D9", "color": "#0057D9",
                             },
                         ),
                 ], id="toolbar-panel-personal", className="toolbar-panel toolbar-panel-hidden"),

@@ -50,9 +50,90 @@ def init_db():
         )
     """)
 
+    # AUDIT FIX (mục 9 - Alert Engine): trước đây alert-store chỉ nằm trong
+    # localStorage của trình duyệt (dcc.Store storage_type="local") -> KHÔNG
+    # backend process nào (kể cả scheduler) có thể đọc được, vì localStorage
+    # chỉ tồn tại trong browser của người dùng, không gửi lên server ngoài
+    # phạm vi 1 request Dash cụ thể. Bảng này lưu alert ở server để một
+    # scheduler chạy nền (không cần tab trình duyệt mở) có thể đánh giá được.
+    # owner_key = username (chỉ áp dụng cho user đã đăng nhập — người dùng ẩn
+    # danh vẫn dùng localStorage như cũ, không đổi hành vi hiện tại của họ).
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS alerts (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner_key    TEXT    NOT NULL,
+            ticker       TEXT    NOT NULL,
+            condition    TEXT    NOT NULL,
+            value        REAL,
+            triggered    INTEGER NOT NULL DEFAULT 0,
+            created_at   TEXT    NOT NULL,
+            triggered_at TEXT
+        )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_alerts_owner ON alerts(owner_key)")
+
     conn.commit()
     conn.close()
     logger.info("✅ SQLite DB khởi tạo xong.")
+
+
+# ── ALERTS (server-side, dùng cho backend scheduler) ────────────────────────
+
+def create_alert(owner_key: str, ticker: str, condition: str, value=None) -> int:
+    """Tạo 1 alert server-side, trả về id vừa tạo."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO alerts (owner_key, ticker, condition, value, triggered, created_at) "
+        "VALUES (?, ?, ?, ?, 0, ?)",
+        (owner_key, ticker, condition, value, datetime.now().isoformat()),
+    )
+    conn.commit()
+    new_id = cur.lastrowid
+    conn.close()
+    return new_id
+
+
+def delete_alert(alert_id: int, owner_key: str) -> bool:
+    """Xoá alert, chỉ nếu đúng owner_key (không cho xoá alert của người khác)."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM alerts WHERE id=? AND owner_key=?", (alert_id, owner_key))
+    conn.commit()
+    deleted = cur.rowcount > 0
+    conn.close()
+    return deleted
+
+
+def list_alerts_for_owner(owner_key: str) -> list[dict]:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM alerts WHERE owner_key=? ORDER BY created_at DESC", (owner_key,))
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
+
+
+def list_all_active_alerts() -> list[dict]:
+    """Trả về TẤT CẢ alert chưa triggered của MỌI user — dùng bởi scheduler
+    chạy nền để quét 1 lần cho tất cả thay vì query theo từng user."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM alerts WHERE triggered=0")
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
+
+
+def mark_alert_triggered(alert_id: int) -> None:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE alerts SET triggered=1, triggered_at=? WHERE id=?",
+        (datetime.now().isoformat(), alert_id),
+    )
+    conn.commit()
+    conn.close()
 
 
 # ── USERS ────────────────────────────────────────────────────────────────────

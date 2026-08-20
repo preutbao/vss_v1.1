@@ -148,7 +148,7 @@ def _grade(field, header, width=100):
 # để tránh lỗi Python/JS escaping
 def _ssi_ticker_style():
     return {
-        "color": "#00d4ff",
+        "color": "#1E88E5",
         "fontWeight": "800",
         "fontSize": "14px",
         "letterSpacing": "1px",

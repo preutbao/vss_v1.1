@@ -324,9 +324,9 @@ def create_range_filter_ui(filter_id, label, min_val=0, max_val=100, current_ran
             id={"type": "filter-count-badge", "filter": filter_id},
             style={
                 "fontSize": "11px", "fontWeight": "700",
-                "color": "#00d4ff",
-                "backgroundColor": "rgba(0,212,255,0.08)",
-                "border": "1px solid rgba(0,212,255,0.2)",
+                "color": "#1E88E5",
+                "backgroundColor": "rgba(30, 136, 229,0.08)",
+                "border": "1px solid rgba(30, 136, 229,0.2)",
                 "borderRadius": "8px", "padding": "2px 8px",
                 "whiteSpace": "nowrap", "marginLeft": "8px",
                 "minWidth": "55px", "textAlign": "center", "flexShrink": "0",

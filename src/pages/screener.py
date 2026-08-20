@@ -7,6 +7,7 @@ import dash_ag_grid as dag
 from src.components.psychology_modal import psychology_tab_content
 from src.components import sidebar as sidebar
 from src.utils.chart_controls import create_chart_container
+from src.components.header import create_banner, create_topbar, create_market_overview
 
 # === AG GRID COLUMN DEFINITIONS ===
 # Chỉ khai báo cột CỐ ĐỊNH ở đây.
@@ -260,7 +261,7 @@ columnDefs = [
         ),
     },
     {
-        "field": "CANSLIM Proxy Score",
+        "field": "CANSLIM Score",
         "headerName": "CANSLIM",
         "headerTooltip": _TOOLTIPS["CANSLIM"],
         "type": "rightAligned",
@@ -347,7 +348,7 @@ def create_tab_tong_quan():
                 html.Tbody([
                     html.Tr([
                         html.Td("---", id="ov-ticker",
-                                style={"padding": "12px", "fontSize": "13px", "color": "#00a651", "fontWeight": "600"}),
+                                style={"padding": "12px", "fontSize": "13px", "color": "#0057D9", "fontWeight": "600"}),
                         html.Td("---", id="ov-sector",
                                 style={"padding": "12px", "fontSize": "13px", "color": "#d6eaf8"}),
                         html.Td("---", id="ov-value-score",
@@ -410,7 +411,7 @@ def create_tab_bien_dong_gia():
                 html.Tbody([
                     html.Tr([
                         html.Td("---", id="perf-ticker",
-                                style={"padding": "12px", "fontSize": "13px", "color": "#00a651", "fontWeight": "600"}),
+                                style={"padding": "12px", "fontSize": "13px", "color": "#0057D9", "fontWeight": "600"}),
                         html.Td("---", id="perf-price",
                                 style={"padding": "12px", "fontSize": "13px", "textAlign": "right"}),
                         html.Td("---", id="perf-1d",
@@ -633,7 +634,7 @@ def create_tab_ky_thuat():
                 html.Tbody([
                     html.Tr([
                         html.Td("---", id="tech-ticker",
-                                style={"padding": "12px", "fontSize": "13px", "color": "#00a651", "fontWeight": "600"}),
+                                style={"padding": "12px", "fontSize": "13px", "color": "#0057D9", "fontWeight": "600"}),
                         html.Td("---", id="tech-price",
                                 style={"padding": "12px", "fontSize": "13px", "color": "#d6eaf8",
                                        "textAlign": "right"}),
@@ -688,7 +689,7 @@ detail_tabs = dbc.Tabs([
         label="BIỂU ĐỒ",
         tab_id="tab-fin-charts",
         children=html.Div([
-            dcc.Loading(type="dot", color="#00a651", children=[
+            dcc.Loading(type="dot", color="#0057D9", children=[
                 html.Div(id="tab-fin-charts-content", style={"minHeight": "200px"})
             ])
         ])
@@ -795,7 +796,7 @@ layout = html.Div([
             dbc.ModalHeader(
                 dbc.ModalTitle([
                     html.I(className="fas fa-chart-bar",
-                           style={"marginRight":"8px","color":"#0090ff"}),
+                           style={"marginRight":"8px","color":"#0057D9"}),
                     html.Span("Báo cáo Sàng lọc Thị trường: Tổng quan & Xuất PDF"),
                     
                     # Nút chữ i mới thêm vào đây
@@ -896,7 +897,7 @@ layout = html.Div([
                 # 5. MC Results (ẩn mặc định, hiện khi toggle ON)
                 dcc.Loading(
                     type="circle",
-                    color="#0090ff",
+                    color="#0057D9",
                     children=html.Div(
                         id="modal-mc-section",
                         style={"display":"none"},
@@ -975,7 +976,7 @@ layout = html.Div([
                             id="btn-about-fss",
                             n_clicks=0,
                             style={
-                                "color": "#00a651", "fontSize": "16px",
+                                "color": "#0057D9", "fontSize": "16px",
                                 "marginRight": "10px", "cursor": "pointer",
                                 "verticalAlign": "middle",
                                 "transition": "color 0.15s",
@@ -1005,7 +1006,7 @@ layout = html.Div([
                                 "borderRadius": "20px", "fontSize": "11px",
                                 "padding": "4px 12px", "whiteSpace": "nowrap",
                                 "fontWeight": "600", "marginLeft": "10px",
-                                "borderColor": "#00a651", "color": "#00a651", # Đổi từ blue sang green
+                                "borderColor": "#0057D9", "color": "#0057D9", # Đổi từ blue sang green
                             },
                         ),
                         
@@ -1017,8 +1018,8 @@ layout = html.Div([
                             dbc.Tooltip(
                                 children=[
                                     html.Div([
-                                        html.I(className="fas fa-bolt", style={"marginRight": "6px", "color": "#00c85a"}),
-                                        html.B("Chế độ Tích sản", style={"color": "#00c85a", "fontSize": "14px", "letterSpacing": "0.5px"}),
+                                        html.I(className="fas fa-bolt", style={"marginRight": "6px", "color": "#1E88E5"}),
+                                        html.B("Chế độ Tích sản", style={"color": "#1E88E5", "fontSize": "14px", "letterSpacing": "0.5px"}),
                                     ], style={"marginBottom": "6px", "borderBottom": "1px solid rgba(0, 240, 255, 0.2)", "paddingBottom": "4px"}),
                                     
                                     html.Div(
@@ -1042,11 +1043,11 @@ layout = html.Div([
                 ], style={"display": "flex", "alignItems": "center", "marginBottom": "4px"}),
                 html.Div([
                     html.I(className="fas fa-filter", style={
-                        "color": "#00a651", "marginRight": "6px", "fontSize": "10px"
+                        "color": "#0057D9", "marginRight": "6px", "fontSize": "10px"
                     }),
                     dcc.Loading(
                         type="circle",
-                        color="#00a651",
+                        color="#0057D9",
                         style={"display": "inline-block"},
                         children=[
                             html.Span(id="result-count", style={
@@ -1064,17 +1065,11 @@ layout = html.Div([
                 # HÀNG 1 (ngang hàng tiêu đề) — nút Hướng dẫn, sát mép phải
                 html.Div([
                     dbc.Button(
-                        [html.I(className="fas fa-play-circle", style={"marginRight": "5px"}),
+                        [html.I(className="fas fa-play-circle fss-tbtn-icon"),
                          html.Span("Hướng dẫn dùng hệ thống", id="label-start-tour-btn")],
                         id="btn-start-tour",
-                        color="info", outline=True, size="sm",
-                        style={
-                            "borderRadius": "6px",
-                            "fontSize": "10px",
-                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                            "padding": "4px 10px",
-                            "whiteSpace": "nowrap",
-                        },
+                        size="sm",
+                        className="fss-tbtn",
                     ),
                 ], style={"display": "flex", "justifyContent": "flex-end", "marginBottom": "4px"}),
 
@@ -1087,40 +1082,19 @@ layout = html.Div([
                     children=[
                         # Export Excel
                         dbc.Button(
-                            [html.I(className="fas fa-file-excel", style={"marginRight": "5px"}),
+                            [html.I(className="fas fa-file-excel fss-tbtn-icon"),
                              "Excel"],
                             id="btn-export-excel",
-                            color="success", outline=True, size="sm",
-                            style={
-                                "borderRadius": "6px", 
-                                "fontSize": "10px", # Đã giảm kích thước chữ
-                                "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                "padding": "4px 10px", 
-                                "whiteSpace": "nowrap",
-                                "borderColor": "#1D6F42", "color": "#1D6F42"
-                            },
+                            size="sm",
+                            className="fss-tbtn fss-tbtn--green",
                         ),
-                        # Export CSV
-                        # dbc.Button(
-                        #     [html.I(className="fas fa-download", style={"marginRight": "5px"}),
-                        #      html.Span("CSV", id="label-export-btn")],
-                        #     id="btn-export-csv",
-                        #     color="success", outline=True, size="sm",
-                        #     style={"borderRadius": "6px", "fontSize": "11px",
-                        #            "padding": "4px 10px", "whiteSpace": "nowrap"},
-                        # ),
                         # Heatmap
                         dbc.Button([
-                            html.I(className="fas fa-dollar-sign", style={"marginRight": "5px"}),
+                            html.I(className="fas fa-dollar-sign fss-tbtn-icon"),
                             "Dòng tiền ngành",
-                        ], id="btn-heatmap", color="success", outline=True, size="sm",
-                            style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        }),
+                        ], id="btn-heatmap", size="sm", className="fss-tbtn fss-tbtn--cyan"),
+
+                        html.Div(className="fss-toolbar-divider"),
                         
                         # ============================================================
                         # SNIPPET: Premium Wrapper cho nút "Xuất PDF Danh mục"
@@ -1140,6 +1114,7 @@ layout = html.Div([
                         #
                         # SAU (code mới - CÓ premium wrapper, y hệt pattern Watchlist):
                         # ─────────────────────────────────────────────────────────────
+                        html.Div(className="fss-toolbar-divider"),
                         html.Div(
                             id="pw-screener-pdf",
                             className="premium-wrapper premium-locked",   # ← bỏ "premium-locked" nếu user đã VIP
@@ -1149,19 +1124,12 @@ layout = html.Div([
                                     children=[
                                         dbc.Button(
                                             [
-                                                html.I(className="fas fa-file-invoice-dollar",
-                                                    style={"marginRight": "5px"}),
+                                                html.I(className="fas fa-file-invoice-dollar fss-tbtn-icon"),
                                                 "Thị trường",
                                             ],
                                             id="btn-export-screener-pdf",
-                                            color="danger", outline=True, size="sm",
-                                            style={
-                                                "borderRadius": "6px",
-                                                "fontSize": "10px",
-                                                "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-                                                "padding": "4px 10px",
-                                                "whiteSpace": "nowrap",
-                                            },
+                                            size="sm",
+                                            className="fss-tbtn fss-tbtn--blue",
                                         ),
                                         dcc.Download(id="screener-pdf-download"),
                                         html.Span(
@@ -1186,7 +1154,7 @@ layout = html.Div([
                                             className="fas fa-lock",
                                             style={
                                                 "fontSize": "10px",
-                                                "color": "#00a651",
+                                                "color": "#0057D9",
                                                 "marginBottom": "2px",
                                             },
                                         ),
@@ -1210,16 +1178,9 @@ layout = html.Div([
                             children=[
                                 html.Div(
                                     dbc.Button([
-                                        html.I(className="fas fa-code-compare", style={"marginRight": "5px"}),
+                                        html.I(className="fas fa-code-compare fss-tbtn-icon"),
                                         "So sánh",
-                                    ], id="btn-compare", color="info", outline=True, size="sm",
-                                        style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        }),
+                                    ], id="btn-compare", size="sm", className="fss-tbtn fss-tbtn--violet"),
                                     className="premium-content",
                                 ),
                                 html.Div(
@@ -1228,13 +1189,14 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                               style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
                                         html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
                             ],
                         ),
 
+                        html.Div(className="fss-toolbar-divider"),
                         # Danh mục — PREMIUM (giữ nguyên)
                         html.Div(
                             id="pw-portfolio",
@@ -1242,16 +1204,9 @@ layout = html.Div([
                             children=[
                                 html.Div(
                                     dbc.Button([
-                                        html.I(className="fas fa-briefcase", style={"marginRight": "5px"}),
+                                        html.I(className="fas fa-briefcase fss-tbtn-icon"),
                                         "Danh mục",
-                                    ], id="btn-portfolio", color="warning", outline=True, size="sm",
-                                        style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        }),
+                                    ], id="btn-portfolio", size="sm", className="fss-tbtn fss-tbtn--amber"),
                                     className="premium-content",
                                 ),
                                 html.Div(
@@ -1260,31 +1215,24 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                            style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                            style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
                                         html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
                             ],
                         ),
 
-                        # Margin Crisis — PREMIUM (mới)
+                        # Margin Crisis — PREMIUM (mới) — giữ tint đỏ ở icon vì đây
+                        # là công cụ cảnh báo rủi ro thật, cần nổi bật hơn 1 chút
                         html.Div(
                             id="pw-crisis",
                             className="premium-wrapper premium-locked",
                             children=[
                                 html.Div(
                                     dbc.Button([
-                                        html.I(className="fas fa-fire-flame-curved",
-                                            style={"marginRight": "5px", "color": "#ef4444"}),
+                                        html.I(className="fas fa-fire-flame-curved fss-tbtn-icon"),
                                         "Margin Crisis",
-                                    ], id="btn-crisis", color="danger", outline=True, size="sm",
-                                        style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        }),
+                                    ], id="btn-crisis", size="sm", className="fss-tbtn fss-tbtn--red"),
                                     className="premium-content",
                                 ),
                                 html.Div(
@@ -1293,13 +1241,14 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                            style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                            style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
                                         html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
                             ],
                         ),
 
+                        html.Div(className="fss-toolbar-divider"),
                         # Watchlist — PREMIUM
                         html.Div(
                             id="pw-watchlist",
@@ -1308,18 +1257,12 @@ layout = html.Div([
                                 html.Div(
                                     dbc.Button(
                                         [
-                                            html.I(className="fas fa-eye", style={"marginRight": "5px"}),
+                                            html.I(className="fas fa-eye fss-tbtn-icon"),
                                             html.Span("Watchlist", id="label-watchlist-btn")
                                         ],
                                         id="btn-watchlist",
-                                        color="warning", outline=True, size="sm",
-                                        style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap"
-                                        },
+                                        size="sm",
+                                        className="fss-tbtn fss-tbtn--gold",
                                     ),
                                     className="premium-content",
                                 ),
@@ -1329,31 +1272,24 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                               style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
                                         html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
                             ],
                         ),
 
-                        # Cảnh báo — PREMIUM
+                        # Cảnh báo — PREMIUM — giữ tint vàng-lime ở icon chuông vì
+                        # gắn với badge số lượng cảnh báo, cần dễ nhận diện
                         html.Div(
                             id="pw-alerts",
                             className="premium-wrapper premium-locked",
                             children=[
                                 html.Div([
                                     dbc.Button([
-                                        html.I(className="fas fa-bell", style={"marginRight": "5px", "color": "#d8ef44"}),
+                                        html.I(className="fas fa-bell fss-tbtn-icon"),
                                         "Cảnh báo",
-                                    ], id="btn-alerts", outline=True, size="sm",
-                                        style={
-                                            "borderRadius": "6px", 
-                                            "fontSize": "10px", # Đã giảm kích thước chữ
-                                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                                            "padding": "4px 10px", 
-                                            "whiteSpace": "nowrap",
-                                            "borderColor": "#d8ef44"
-                                        }), # 🛠 Bổ sung padding
+                                    ], id="btn-alerts", size="sm", className="fss-tbtn fss-tbtn--lime"),
                                     html.Span("0", id="alert-badge", style={"display": "none"}),
                                 ], style={"position": "relative"}, className="premium-content"),
                                 html.Div(
@@ -1362,7 +1298,7 @@ layout = html.Div([
                                     className="premium-overlay",
                                     children=[
                                         html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#00a651", "marginBottom": "2px"}),
+                                               style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
                                         html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
                                     ],
                                 ),
@@ -1376,17 +1312,12 @@ layout = html.Div([
                     # 1. Nút mở rộng (Thêm chữ "Công cụ" để chống mù UX)
                     dbc.Button(
                         [
-                            html.I(id="toggle-actions-icon", className="fas fa-angles-left", style={"marginRight": "6px"}),
-                            html.Span("Công cụ", id="toggle-actions-text", style={"fontSize": "11px", "fontWeight": "600"})
+                            html.I(id="toggle-actions-icon", className="fas fa-angles-left fss-tbtn-icon"),
+                            html.Span("Công cụ", id="toggle-actions-text")
                         ],
                         id="btn-toggle-actions",
-                        color="secondary", outline=True, size="sm",
-                        style={
-                            "borderRadius": "6px", 
-                            "fontSize": "10px", # Đã giảm kích thước chữ
-                            "fontFamily": "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif", # Ép dùng font chuẩn, nhỏ gọn
-                            "padding": "4px 10px", 
-                            "whiteSpace": "nowrap",},
+                        size="sm",
+                        className="fss-tbtn fss-tbtn-primary",
                     ),
                     
                     # 2. Tooltip giải thích chi tiết (Gắn ID target vào nút bên trên)
@@ -1519,7 +1450,7 @@ layout = html.Div([
                             dbc.Button("Đăng nhập VIP ngay",
                                     id="fss-banner-login-btn",
                                     n_clicks=0,
-                                    style={"background": "linear-gradient(135deg,#0090ff,#00e5ff)",
+                                    style={"background": "linear-gradient(135deg,#0057D9,#1E88E5)",
                                             "border": "none", "color": "#001a20",
                                             "fontWeight": "700", "fontSize": "13px",
                                             "padding": "8px 24px", "borderRadius": "8px"}),
@@ -1534,6 +1465,44 @@ layout = html.Div([
                 ),
                 html.Div(id="filter-null-alert", style={"padding": "0 16px 8px 16px"})
             ], className="info-card mb-3")
+        ]),
+
+    # ── FAQ SECTION (theme-aware — dùng biến CSS thay vì màu hard-code) ───
+        html.Div(id="faq-section", className="fss-faq-section", children=[
+            html.Div([
+                html.H2(["FAQ", html.Span(".", className="fss-faq-title-dot")],
+                        className="fss-faq-title"),
+                html.P("Giải đáp nhanh các thắc mắc trước khi bạn bắt đầu hành trình đầu tư.",
+                       className="fss-faq-desc"),
+            ], className="fss-faq-header"),
+            html.Div([
+                *[html.Div([
+                    html.Button([
+                        html.Span(f"0{i}", className="fss-faq-index"),
+                        html.Span(q, className="fss-faq-question"),
+                        html.Span("+" if i > 1 else "×", id=f"faq-icon-{i}",
+                                  className="fss-faq-icon" + (" is-active" if i == 1 else "")),
+                    ], id=f"faq-btn-{i}", n_clicks=0, className="fss-faq-btn"),
+                    html.Div(a, id=f"faq-content-{i}", className="fss-faq-answer",
+                             style={"display": "block" if i == 1 else "none"}),
+                ], className="fss-faq-item")
+                for i, q, a in [
+                    (1, "FinSmartScreener (FSS) là gì?",
+                     "FSS là nền tảng Robo-Advisor kết hợp lọc cổ phiếu định lượng. Không chỉ giúp bạn tìm ra cổ phiếu tốt theo dữ liệu thực tế, FSS còn đóng vai trò như một Cố vấn Tài chính: Gợi ý cách đi tiền, quản trị rủi ro và 'cấp cứu' danh mục khi thị trường biến động..."),
+                    (2, "Điểm xếp hạng VGM có ý nghĩa gì?",
+                     "Đây là hệ thống đánh giá độc quyền qua 3 trụ cột: Value (Định giá), Growth (Tăng trưởng) và Momentum (Động lượng). Điểm VGM tổng hợp giúp bạn nhanh chóng nhận diện cổ phiếu nào đang được thị trường đánh giá cao về cả tiềm năng tăng trưởng lẫn định giá hợp lý, từ đó tối ưu hóa danh mục đầu tư của mình."),
+                    (3, "Tôi có vốn ít (10-50 triệu) có dùng được không?",
+                     "Chắc chắn có! Nhập số tiền vào ô NAV, hệ thống sẽ ẩn các mã quá đắt, đồng thời Trợ lý AI sẽ đề xuất chính xác số lượng lô cổ phiếu bạn nên mua để tối ưu hóa rủi ro."),
+                    (4, "Trợ lý VinanceAI có thể làm gì?",
+                     "Hãy mở VinanceAI (Icon góc phải) khi đang xem một cổ phiếu. Bot sẽ lập tức đọc dữ liệu thị trường và phân tích cơ hội/rủi ro cho riêng mã đó như một Broker thực thụ."),
+                    (5, "Tính năng 'Danh mục' khác gì bảng điện?",
+                     "Khác biệt ở chức năng 'Phòng khám danh mục'. FSS không chỉ hiển thị Lãi/Lỗ mà còn dự báo kịch bản sập hầm, đo lường tỷ lệ Margin và chỉ định nên Bán/Giữ mã nào để cứu tài khoản."),
+                    (6, "Có thể tự tạo bộ lọc cá nhân không?",
+                     "Hoàn toàn được. Ở tab Chiến lược, bạn có thể chọn các mẫu có sẵn (CANSLIM, Tích sản...) hoặc tự kết hợp các chỉ số cơ bản/kỹ thuật để tạo nên 'chén thánh' của riêng mình."),
+                    (7, "FSS chọn lọc cổ phiếu dựa trên nguyên tắc nào?",
+                     "FSS vận hành trên 2 nguyên tắc cốt lõi: (1) Phòng thủ chặt — tự động quét và loại bỏ các công ty xào nấu sổ sách, lãi giả lỗ thật, giúp bạn an tâm giải ngân; (2) Tấn công chuẩn — xác định thời điểm mua/bán tối ưu bằng cách theo dõi sát dòng tiền lớn và sức mạnh giá của từng cổ phiếu so với thị trường chung."),
+                ]],
+            ], className="fss-faq-list"),
         ]),
 
     ], className="main-content"),
@@ -1564,8 +1533,8 @@ layout = html.Div([
                 html.Div([
                     html.I(className="fas fa-computer-mouse", style={
                         "fontSize": "28px",
-                        "color": "#00a651",
-                        "filter": "drop-shadow(0 0 8px rgba(0,212,255,0.5))",
+                        "color": "#0057D9",
+                        "filter": "drop-shadow(0 0 8px rgba(30, 136, 229,0.5))",
                     }),
                 ], style={"marginBottom": "14px"}),
 
@@ -1573,13 +1542,13 @@ layout = html.Div([
                 html.Div("Mẹo sử dụng", style={
                     "fontFamily": "'JetBrains Mono', monospace",
                     "fontSize": "11px", "fontWeight": "700",
-                    "color": "#00a651", "letterSpacing": "2px",
+                    "color": "#0057D9", "letterSpacing": "2px",
                     "textTransform": "uppercase", "marginBottom": "10px",
                 }),
 
                 # Nội dung chính
                 html.P([
-                    "Nhấp đúp chuột (", html.Strong("double-click", style={"color": "#00a651"}),
+                    "Nhấp đúp chuột (", html.Strong("double-click", style={"color": "#0057D9"}),
                     ") vào bất kỳ mã cổ phiếu nào trong bảng kết quả để xem ",
                     html.Strong("hồ sơ phân tích chi tiết", style={"color": "#c9d1d9"}),
                     " — bao gồm biểu đồ giá, báo cáo tài chính và chỉ số kỹ thuật.",
@@ -1636,7 +1605,7 @@ layout = html.Div([
                 # Nút đóng
                 html.Div([
                     dbc.Button("Đã hiểu!", id="hint-modal-ok", size="sm", style={
-                        "background": "linear-gradient(135deg, #007a3d, #00a651)",
+                        "background": "linear-gradient(135deg, #003B8E, #1E88E5)",
                         "border": "none", "borderRadius": "6px",
                         "fontFamily": "'JetBrains Mono', monospace",
                         "fontSize": "11px", "fontWeight": "700",
@@ -1667,7 +1636,7 @@ dbc.Modal([
     dbc.ModalHeader(
         dbc.ModalTitle([
             html.I(className="fas fa-chart-network",
-                   style={"color": "#00a651", "marginRight": "10px"}),
+                   style={"color": "#0057D9", "marginRight": "10px"}),
             "Về FinSmartScreener",
         ]),
         close_button=True,
@@ -1695,18 +1664,18 @@ dbc.Modal([
             )
         ], style={
             "padding": "16px 18px",
-            "background": "linear-gradient(135deg, rgba(0,166,81,0.08), rgba(0,144,255,0.06))",
+            "background": "linear-gradient(135deg, rgba(0, 87, 217,0.08), rgba(0, 87, 217,0.06))",
             "borderRadius": "8px",
-            "border": "1px solid rgba(0,166,81,0.2)",
+            "border": "1px solid rgba(0, 87, 217,0.2)",
             "marginBottom": "18px",
         }),
 
         # --- PHẦN 2: 2 NGUYÊN TẮC CỐT LÕI (Thu gọn lại cho mượt) ---
         html.Div([
             html.Div([
-                html.I(className="fas fa-info-circle", style={"color": "#0090ff", "marginRight": "8px"}),
+                html.I(className="fas fa-info-circle", style={"color": "#0057D9", "marginRight": "8px"}),
                 html.Span("Cách FSS bảo vệ bạn",
-                          style={"fontSize": "13px", "fontWeight": "700", "color": "#0090ff", "letterSpacing": "0.05em"}),
+                          style={"fontSize": "13px", "fontWeight": "700", "color": "#0057D9", "letterSpacing": "0.05em"}),
             ], style={"marginBottom": "12px"}),
             
             html.Div([
@@ -1724,8 +1693,8 @@ dbc.Modal([
                 # Tấn công
                 html.Div([
                     html.Div([
-                        html.I(className="fas fa-crosshairs", style={"color": "#00e5ff", "fontSize": "18px"}),
-                    ], style={"width": "36px", "height": "36px", "borderRadius": "50%", "backgroundColor": "rgba(0,229,255,0.1)", "display": "flex", "alignItems": "center", "justifyContent": "center", "flexShrink": "0"}),
+                        html.I(className="fas fa-crosshairs", style={"color": "#1E88E5", "fontSize": "18px"}),
+                    ], style={"width": "36px", "height": "36px", "borderRadius": "50%", "backgroundColor": "rgba(30, 136, 229,0.1)", "display": "flex", "alignItems": "center", "justifyContent": "center", "flexShrink": "0"}),
                     html.Div([
                         html.Div("Tấn công chuẩn", style={"fontSize": "13px", "fontWeight": "700", "color": "#e8f4ff"}),
                         html.Div("Xác định điểm mua/bán tối ưu qua việc đo lường sức mạnh giá và dòng tiền lớn.", style={"fontSize": "12px", "color": "#7aafcc", "lineHeight": "1.4"}),
@@ -1753,8 +1722,8 @@ dbc.Modal([
                         html.Div("Ngô Cao Nguyên", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("Quant & Data Dev", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
                         html.A(html.I(className="fas fa-envelope"), href="nguyennc23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
-                    width=4, style={"padding": "4px"}
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
+                    width=4, style={"padding": "0 4px"}
                 ),
                 # Member 2: Kiệt
                 dbc.Col(
@@ -1763,8 +1732,8 @@ dbc.Modal([
                         html.Div("Phan Đặng Anh Kiệt", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("Backend Engineer", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
                         html.A(html.I(className="fas fa-envelope"), href="kietpda23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
-                    width=4, style={"padding": "4px"}
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
+                    width=4, style={"padding": "0 4px"}
                 ),
                 # Member 3: Trân
                 dbc.Col(
@@ -1773,32 +1742,10 @@ dbc.Modal([
                         html.Div("Cao Huỳnh Tuyết Trân", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("UI/UX & BA", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
                         html.A(html.I(className="fas fa-envelope"), href="trancht23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
-                    width=4, style={"padding": "4px"}
-                ),
-                # Member 4: Nhân
-                dbc.Col(
-                    html.Div([
-                        html.Div("N", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
-                        html.Div("Trần Thị Hoài Nhân", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
-                        html.Div("UI/UX, Chuyên gia Chiến lược", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
-                        html.A(html.I(className="fas fa-envelope"), href="nhantth23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
-                    width=4, style={"padding": "4px"}
-                ),
-                # Member 5: Nhi
-                dbc.Col(
-                    html.Div([
-                        html.Div("N", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
-                        html.Div("Huỳnh Bảo Nhi", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
-                        html.Div("Phân tích Kinh doanh", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
-                        html.A(html.I(className="fas fa-envelope"), href="nhihb23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
-                    width=4, style={"padding": "4px"}
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
+                    width=4, style={"padding": "0 4px"}
                 )
-            ], className="g-0 justify-content-center"), # Thêm justify-content-center để 2 người cuối tự động căn giữa
-
-        
+            ], className="g-0"), # g-0 để xóa margin thừa giữa các cột
             
         ], style={
             "padding": "14px 16px",
@@ -1876,7 +1823,7 @@ html.Div([
             "lineHeight": "1",
         }),
     ], style={
-        "background": "linear-gradient(135deg, #00a651, #007a3d)",
+        "background": "linear-gradient(135deg, #0057D9, #1E88E5)",
         "padding": "12px 16px",
         "display": "flex", "justifyContent": "space-between", "alignItems": "center",
         "borderRadius": "12px 12px 0 0",

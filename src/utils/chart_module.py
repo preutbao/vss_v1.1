@@ -48,20 +48,20 @@ def get_chart_theme_colors(theme='dark'):
             'border': '#1d4d80',
             'text': '#d6eaf8',
             'text_secondary': '#7fa8cc',
-            'primary': '#00d4ff',
-            'primary_dark': '#0090ff',
-            'primary_light': '#60d4ff',
+            'primary': '#1E88E5',
+            'primary_dark': '#0057D9',
+            'primary_light': '#64B5F6',
             'positive': '#00e676',
             'negative': '#ff3d57',
             'neutral': '#3d6a8a',
             'gradient': 'linear-gradient(135deg, #020810 0%, #091526 100%)',
             'chart_bg': '#020810',
-            'grid_color': 'rgba(0, 212, 255, 0.055)',
+            'grid_color': 'rgba(30, 136, 229, 0.055)',
             'header_bg': 'linear-gradient(135deg, #020810 0%, #071828 50%, #091e35 100%)',
             'accent1': '#ffb703',
             'accent2': '#b388ff',
-            'accent3': '#00d4ff',
-            'area_fill': 'rgba(0, 212, 255, 0.08)'
+            'accent3': '#1E88E5',
+            'area_fill': 'rgba(30, 136, 229, 0.08)'
         }
 
 
@@ -484,7 +484,7 @@ def create_fireant_candlestick(
     # 🟢 CẤU HÌNH LAYOUT CHUẨN TRADINGVIEW
     # ====================================================================
     is_light = (theme == 'light')
-    spike_color = 'rgba(34,197,94,0.45)' if is_light else 'rgba(0,212,255,0.4)'
+    spike_color = 'rgba(34,197,94,0.45)' if is_light else 'rgba(30, 136, 229,0.4)'
     axis_line_color = 'rgba(15,23,42,0.18)' if is_light else 'rgba(29, 77, 128, 0.5)'
     tick_color = colors['text_secondary']
 

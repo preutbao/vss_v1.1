@@ -4,7 +4,7 @@
 // Hiện overlay tối, khoét spotlight quanh element, tooltip cạnh đó
 // ─────────────────────────────────────────────────────────────
 
-window.VssTour = (function () {
+window.FssTour = (function () {
   // 🛠 CHÈN ĐOẠN CODE TẠO HIỆU ỨNG CSS VÀO ĐÂY (NGAY ĐẦU HÀM)
   document.head.insertAdjacentHTML('beforeend', `
     <style>
@@ -479,7 +479,7 @@ window.VssTour = (function () {
     const dotHTML = Array.from({ length: total - 1 }, (_, i) =>
       `<span style="
         display:inline-block; width:${i === stepIndex - 1 ? 18 : 6}px; height:5px;
-        border-radius:3px; background:${i === stepIndex - 1 ? "#0090ff" : "rgba(0,0,0,0.15)"};
+        border-radius:3px; background:${i === stepIndex - 1 ? "#0057D9" : "rgba(0,0,0,0.15)"};
         transition:width 0.2s;
       "></span>`
     ).join("");

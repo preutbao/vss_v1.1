@@ -17,7 +17,18 @@ load_dotenv()
 # THÊM VÀO SAU DÒNG load_dotenv()
 from src.backend.database import init_db, seed_demo_codes
 init_db()
-seed_demo_codes()   # comment dòng này khi production
+# Chỉ seed demo code khi KHÔNG phải production — đặt FSS_ENV=production
+# trong .env/biến môi trường khi deploy thật để không lộ mã VIP demo
+# (FSS-DEMO-2026, FSS-VIP-ALPHA...) trong database.
+if os.environ.get("FSS_ENV", "development").lower() != "production":
+    seed_demo_codes()
+
+# AUDIT FIX (mục 9 - Alert Engine): khởi động backend scheduler để alert được
+# đánh giá kể cả khi không có browser nào mở tab (xem src/backend/alert_scheduler.py).
+# Bỏ qua khi FSS_ENV=test để không tạo background thread trong lúc chạy pytest/CI.
+if os.environ.get("FSS_ENV", "development").lower() != "test":
+    from src.backend.alert_scheduler import start_alert_scheduler
+    start_alert_scheduler(interval_minutes=5)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -140,7 +151,7 @@ import src.callbacks.psychology_callbacks
 # ─────────────────────────────────────────────────────────────────────────────
 from dash import Dash, html, dcc, Input, Output, State
 from src.pages import screener, onboarding
-from src.components.header import create_header, create_topbar, create_banner
+from src.components.header import create_header, create_topbar, create_banner, create_market_overview, create_picks_and_pulse_section
 from src.callbacks.chatbot_callbacks import create_chatbot_layout
 from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_help_modal
 from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_help_modal
@@ -209,6 +220,9 @@ app.layout = html.Div(
             children=[
                 # THAY create_header() BẰNG create_banner() ĐỂ KHÔNG BỊ TRÙNG TOPBAR
                 create_banner(), 
+                create_market_overview(),  # <--- MÁ THÊM ĐÚNG DÒNG NÀY VÀO ĐÂY NÈ
+                create_picks_and_pulse_section(),  # [BƯỚC 3] Top Fin Picks + Market Pulse
+                
                 # Tour Guide Overlay
                 html.Div(id="tour-overlay-container", children=[
                     # Overlay tối
@@ -293,6 +307,25 @@ app.clientside_callback(
     Output("dummy-autosize-output", "data"),
     Input("screener-table", "rowData"),
     Input("screener-table", "columnDefs"),
+    prevent_initial_call=False,
+)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CALLBACK: Theme toggle (sáng/tối) — ghi data-theme lên <html> + đồng bộ
+# xuống theme-store để các callback Python (biểu đồ, màu sắc...) dùng chung.
+# THÊM VÀO ĐÂY vì mọi clientside_callback khác của app đều đăng ký qua
+# app.clientside_callback (không phải clientside_callback rời từ module dash).
+# ─────────────────────────────────────────────────────────────────────────────
+app.clientside_callback(
+    """
+    function(isDark) {
+        var theme = isDark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        return theme;
+    }
+    """,
+    Output("theme-store", "data"),
+    Input("theme-switch-button", "value"),
     prevent_initial_call=False,
 )
 
@@ -430,8 +463,8 @@ app.clientside_callback(
 
         // Kích hoạt tour
         setTimeout(function() {
-            if (window.VssTour) {
-                window.VssTour.start();
+            if (window.FssTour) {
+                window.FssTour.start();
             }
         }, 1500);
 
@@ -461,8 +494,8 @@ app.clientside_callback(
 app.clientside_callback(
     """
     function(n_clicks) {
-        if (n_clicks && window.VssTour) {
-            window.VssTour.start();
+        if (n_clicks && window.FssTour) {
+            window.FssTour.start();
         }
         return window.dash_clientside.no_update;
     }

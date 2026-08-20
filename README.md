@@ -18,10 +18,10 @@ app_port: 7860
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Dash](https://img.shields.io/badge/Dash-2.14-00d4ff?style=for-the-badge&logo=plotly&logoColor=white)](https://dash.plotly.com)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
-[![HuggingFace](https://img.shields.io/badge/🤗_HuggingFace-Spaces-FFD21E?style=for-the-badge)](https://huggingface.co/spaces/preut/FinSmartScreener)
+[![HuggingFace](https://img.shields.io/badge/🤗_HuggingFace-Spaces-FFD21E?style=for-the-badge)](https://huggingface.co/spaces/preut/VietcapSmartScreener)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-[🚀 Demo Live](https://huggingface.co/spaces/preut/FinSmartScreener) · [📖 Docs](#cài-đặt--chạy-local) · [🐛 Issues](https://github.com/preut/VietcapSmartScreener/issues)
+[🚀 Demo Live](https://huggingface.co/spaces/preut/VietcapSmartScreener) · [📖 Docs](#cài-đặt--chạy-local) · [🐛 Issues](https://github.com/preut/VietcapSmartScreener/issues)
 
 </div>
 

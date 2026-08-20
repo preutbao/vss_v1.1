@@ -4,8 +4,8 @@
 
 /* ── Criteria item hover ───────────────────────────────────── */
 .criteria-item-hover:hover {
-  background-color: rgba(0, 212, 255, 0.06) !important;
-  border-left-color: #00d4ff !important;
+  background-color: rgba(30, 136, 229, 0.06) !important;
+  border-left-color: #1E88E5 !important;
 }
 
 /* ── Collapse header hover ─────────────────────────────────── */
@@ -21,7 +21,7 @@
   border-radius: 2px;
 }
 #filter-offcanvas ::-webkit-scrollbar-thumb:hover {
-  background-color: #00d4ff;
+  background-color: #1E88E5;
 }
 
 /* ── Smooth collapse animation ─────────────────────────────── */
@@ -31,25 +31,25 @@
 
 /* ── Toggle button ─────────────────────────────────────────── */
 #toggle-filter-btn:hover {
-  box-shadow: 0 0 16px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 16px rgba(30, 136, 229, 0.3);
   transform: translateY(-1px);
   transition: all 0.2s;
 }
 
 /* ── Apply button ──────────────────────────────────────────── */
 .btn-apply-ssi {
-  background: linear-gradient(135deg, #0090ff, #00d4ff) !important;
+  background: linear-gradient(135deg, #0057D9, #1E88E5) !important;
   border: none !important;
   color: #001a20 !important;
   font-weight: 800 !important;
   letter-spacing: 1px !important;
   transition: all 0.25s !important;
-  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3) !important;
+  box-shadow: 0 4px 16px rgba(30, 136, 229, 0.3) !important;
 }
 
 .btn-apply-ssi:hover {
   filter: brightness(1.1) !important;
-  box-shadow: 0 8px 28px rgba(0, 212, 255, 0.5) !important;
+  box-shadow: 0 8px 28px rgba(30, 136, 229, 0.5) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -61,8 +61,8 @@
 
 /* ── Active filter tag glow on hover ───────────────────────── */
 .active-filter-tag:hover {
-  border-color: #00d4ff !important;
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+  border-color: #1E88E5 !important;
+  box-shadow: 0 0 12px rgba(30, 136, 229, 0.15);
 }
 
 /* ── Input fields inside filter panel ─────────────────────── */
@@ -77,8 +77,8 @@
 }
 
 #filter-offcanvas input[type="number"]:focus {
-  border-color: #00d4ff !important;
-  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.15) !important;
+  border-color: #1E88E5 !important;
+  box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.15) !important;
   outline: none !important;
 }
 

@@ -1075,7 +1075,7 @@ def render_portfolio(positions, rtt_input, debt_input, asset_input, atc_mode):
         # BIỂU ĐỒ HIỆU SUẤT
         # ══════════════════════════════════════════════════════════════════════
         fig    = go.Figure()
-        COLORS = ["#00d4ff", "#10b981", "#f59e0b", "#a78bfa", "#f87171", "#34d399"]
+        COLORS = ["#1E88E5", "#10b981", "#f59e0b", "#a78bfa", "#f87171", "#34d399"]
 
         for i, (t, series) in enumerate(chart_data.items()):
             base = float(series.iloc[0])

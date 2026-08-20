@@ -13,14 +13,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-COMPARE_COLORS = ["#00d4ff", "#10b981", "#f59e0b", "#a78bfa", "#f87171", "#34d399"]
+COMPARE_COLORS = ["#1E88E5", "#10b981", "#f59e0b", "#a78bfa", "#f87171", "#34d399"]
 
 # ── Modal layout ──
 compare_modal = dbc.Modal([
     dbc.ModalHeader(
         dbc.ModalTitle([
             html.Div([
-                html.I(className="fas fa-code-compare", style={"marginRight": "8px", "color": "#00d4ff"}),
+                html.I(className="fas fa-code-compare", style={"marginRight": "8px", "color": "#1E88E5"}),
                 html.Span("So sánh cổ phiếu"),
                 # 🟢 THÊM NÚT HELP Ở ĐÂY:
                 html.I(className="fas fa-info-circle", id="btn-compare-help",
@@ -97,7 +97,7 @@ compare_modal = dbc.Modal([
 
 compare_help_modal = dbc.Modal([
     dbc.ModalHeader(dbc.ModalTitle([
-        html.I(className="fas fa-code-compare", style={"marginRight": "8px", "color": "#00d4ff"}),
+        html.I(className="fas fa-code-compare", style={"marginRight": "8px", "color": "#1E88E5"}),
         "Hướng dẫn So sánh Cổ phiếu"
     ], style={"fontSize": "16px"})),
     dbc.ModalBody([

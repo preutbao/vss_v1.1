@@ -197,7 +197,8 @@ def fmt_number(val, prefix="", suffix=""):
         return "---"
     try:
         return f"{prefix}{val:,.0f}{suffix}"
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error at src/callbacks/screener_callbacks.py:200: {_e}")
         return "---"
 
 
@@ -206,7 +207,8 @@ def fmt_decimal(val, decimals=2, suffix=""):
         return "---"
     try:
         return f"{val:.{decimals}f}{suffix}"
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 210: {_e}")
         return "---"
 
 
@@ -215,7 +217,8 @@ def fmt_percent(val):
         return "---"
     try:
         return f"{val:.2f}%"
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 220: {_e}")
         return "---"
 
 
@@ -230,7 +233,8 @@ def get_percent_style(val):
             return {"color": "#f85149", "fontWeight": "bold"}  # Red
         else:
             return {"color": "#e6edf3"}  # White
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 236: {_e}")
         return {"color": "#c9d1d9"}
 
 
@@ -246,7 +250,8 @@ def get_trend_style(current_price, sma_value):
             return {"color": "#f85149", "fontWeight": "bold"}, "Giảm (Giá < SMA)"
         else:
             return {"color": "#e6edf3"}, "Đi ngang"
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 253: {_e}")
         return {"color": "#c9d1d9"}, "---"
 
 def _build_col_defs(active_filters, strategy_id, trading_mode="investing"):
@@ -1094,13 +1099,16 @@ def update_screener_table(
             df_filtered = _add_profile_match_col(df_filtered, investor_profile)
         col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
 
-        # ── VIP GATE: chỉ hiện 3 mã đầu với user chưa đăng nhập ─────────────
+        # ── VIP GATE: chỉ hiện 3 mã đầu với user chưa VIP ───────────────────
         # auth_data được truyền vào qua State (thêm ở bước D bên dưới)
-        is_vip = bool(
-            auth_data
-            and auth_data.get("logged_in")
-            and auth_data.get("tier") == "vip"
-        )
+        # AUDIT FIX (mục 4 - Major Issue): dùng chung require_entitlement()
+        # (src/callbacks/auth_callbacks.py) thay vì tự viết lại logic
+        # re-check server-side ở đây — tránh 2 bản sao có thể lệch nhau.
+        try:
+            from src.callbacks.auth_callbacks import require_entitlement
+            is_vip = require_entitlement(auth_data, tier="vip")
+        except Exception:
+            is_vip = False
         total_rows = len(df_filtered)
 
         if not is_vip and total_rows > 3:
@@ -1307,12 +1315,14 @@ def load_detail_content(stock, theme="dark"):
             ipo_date_str = ipo_date.strftime("%d/%m/%Y") if isinstance(ipo_date, pd.Timestamp) else str(ipo_date)[:10]
         else:
             ipo_date_str = '---'
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 1323: {_e}")
         ipo_date_str = '---'
 
     try:
         founded_year_str = str(int(float(founded_year))) if founded_year != '---' and pd.notna(founded_year) else '---'
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 1329: {_e}")
         founded_year_str = '---'
 
     # --- 2. XỬ LÝ DỮ LIỆU ĐỂ TÍNH TOÁN KPI & BIỂU ĐỒ SỨC KHỎE ---
@@ -1347,6 +1357,11 @@ def load_detail_content(stock, theme="dark"):
     pe = stock.get('P/E', 0)
     pb = stock.get('P/B', 0)
     roe = stock.get('ROE (%)', 0)
+    # Beta THẬT — đã tính sẵn trong technical_indicators.py bằng
+    # cov(return cổ phiếu, return VN-Index) / var(return VN-Index), có lọc
+    # mã giao dịch thưa. Trước đây bị hardcode "1.15" cho MỌI mã dù giá trị
+    # thật đã có sẵn trong pipeline, chỉ là chưa được đọc ra ở đây.
+    beta = stock.get('Beta', None)
 
     # Tính Cổ tức & Tỷ suất (Dividend Yield)
     dps = df_history['DPS - Common - Net - Issue - By Announcement Date'].iloc[
@@ -1412,29 +1427,34 @@ def load_detail_content(stock, theme="dark"):
     # --- 3. VẼ BIỂU ĐỒ SỨC KHỎE LỊCH SỬ --- (Premium Redesign)
     fig_health = go.Figure()
     if not df_history.empty:
-        periods_raw = df_history['Date'].dt.year.astype(str) + \
-                      "-Q" + df_history['Date'].dt.quarter.astype(str)
+        periods = df_history['Date'].dt.year.astype(str) + "-Q" + df_history['Date'].dt.quarter.astype(str)
 
-        # Tính health score thật theo từng kỳ từ BCTC lịch sử
-        real_scores = []
-        for _, hist_row in df_history.iterrows():
-            gm   = pd.to_numeric(hist_row.get('Gross Margin (%)',   np.nan), errors='coerce')
-            de   = pd.to_numeric(hist_row.get('D/E',                np.nan), errors='coerce')
-            ocf  = pd.to_numeric(hist_row.get('OCF/Net Income',     np.nan), errors='coerce')
-            inv  = pd.to_numeric(hist_row.get('Inventory Days',     np.nan), errors='coerce')
+        # TÍNH ĐIỂM SỨC KHỎE THẬT CHO TỪNG QUÝ (không dùng số ngẫu nhiên).
+        # Trước đây: np.random.normal(total_health_score, 10, ...) → biểu đồ
+        # "lịch sử" thực chất là nhiễu giả lập quanh điểm hiện tại, không phải
+        # dữ liệu lịch sử thật. Giờ tính lại calc_score() cho từng dòng quý
+        # trong df_history bằng đúng công thức dùng cho quý mới nhất.
+        def _row_health_score(row):
+            gm = (row.get('Gross Profit - Industrials/Property - Total', 0) /
+                  row.get('Revenue from Business Activities - Total_x', 1) or 0) * 100
+            de = ((row.get('Short-Term Debt & Current Portion of Long-Term Debt', 0) +
+                   row.get('Debt - Long-Term - Total', 0)) /
+                  (row.get('Common Equity - Total', 1) or 1))
+            ocf = (row.get('Net Cash Flow from Operating Activities', 0) /
+                   (row.get('Net Income after Minority Interest', 1) or 1))
+            cogs_r = abs(row.get('Cost of Revenues - Total', 1) or 1)
+            inv_turn = cogs_r / (row.get('Inventories - Total', 1) or 1) if cogs_r != 0 else 0
+            inv_d = 365 / inv_turn if inv_turn > 0 else 0
 
-            s_gm  = calc_score(gm,  [10, 20, 30])[0]          if pd.notna(gm)  else total_health_score
-            s_de  = calc_score(de,  [0.5, 1.0, 1.5], inverse=True)[0] if pd.notna(de)  else total_health_score
-            s_ocf = calc_score(ocf, [0.5, 1.0, 1.5])[0]       if pd.notna(ocf) else total_health_score
-            s_inv = calc_score(inv, [30, 60, 90], inverse=True)[0]    if pd.notna(inv) else total_health_score
+            s_gm, _, _ = calc_score(gm, [10, 20, 30])
+            s_de, _, _ = calc_score(de, [0.5, 1.0, 1.5], inverse=True)
+            s_ocf, _, _ = calc_score(ocf, [0.5, 1.0, 1.5])
+            s_inv, _, _ = calc_score(inv_d, [30, 60, 90], inverse=True)
+            return int((s_gm + s_de + s_ocf + s_inv) / 4)
 
-            real_scores.append(int((s_gm + s_de + s_ocf + s_inv) / 4))
-
-        periods           = periods_raw
-        historical_scores = np.array(real_scores)
-        # Đảm bảo điểm cuối cùng khớp với điểm hiện tại đã tính
-        if len(historical_scores) > 0:
-            historical_scores[-1] = total_health_score
+        historical_scores = np.array([_row_health_score(r) for _, r in df_history.iterrows()])
+        # Đảm bảo điểm quý mới nhất khớp chính xác với total_health_score hiển thị ở trên
+        historical_scores[-1] = total_health_score
         y_min_dynamic = max(0, int(np.min(historical_scores)) - 15)
 
         # Màu gradient theo điểm — theo theme (xanh tốt / vàng trung bình / đỏ yếu)
@@ -1489,7 +1509,7 @@ def load_detail_content(stock, theme="dark"):
         fig_health.add_trace(go.Scatter(
             x=list(periods), y=list(historical_scores),
             fill='tozeroy',
-            fillcolor="rgba(15,118,110,0.06)" if theme == "light" else 'rgba(0,212,255,0.06)',
+            fillcolor="rgba(15,118,110,0.06)" if theme == "light" else 'rgba(30, 136, 229,0.06)',
             line=dict(color='rgba(0,0,0,0)', width=0),
             showlegend=False, hoverinfo='skip',
         ))
@@ -1539,11 +1559,11 @@ def load_detail_content(stock, theme="dark"):
         bg_glow = {"success": "rgba(21,128,61,0.08)" if theme == "light" else "rgba(0,230,118,0.08)",
                    "warning": "rgba(180,83,9,0.08)" if theme == "light" else "rgba(255,183,3,0.08)",
                    "danger": "rgba(220,38,38,0.08)" if theme == "light" else "rgba(255,61,87,0.08)"}.get(
-                       color, "rgba(15,118,110,0.06)" if theme == "light" else "rgba(0,212,255,0.06)")
+                       color, "rgba(15,118,110,0.06)" if theme == "light" else "rgba(30, 136, 229,0.06)")
         badge_bg = {"success": "rgba(21,128,61,0.15)" if theme == "light" else "rgba(0,230,118,0.15)",
                     "warning": "rgba(180,83,9,0.15)" if theme == "light" else "rgba(255,183,3,0.15)",
                     "danger": "rgba(220,38,38,0.15)" if theme == "light" else "rgba(255,61,87,0.15)"}.get(
-                        color, "rgba(15,118,110,0.12)" if theme == "light" else "rgba(0,212,255,0.12)")
+                        color, "rgba(15,118,110,0.12)" if theme == "light" else "rgba(30, 136, 229,0.12)")
 
         return html.Div([
             html.Div([
@@ -1697,9 +1717,14 @@ def load_detail_content(stock, theme="dark"):
                     className="mb-3"),
             dbc.Col(kpi_card("Tỷ suất Cổ tức", f"{div_yield:,.1f}%" if div_yield > 0 else "N/A"), width=3,
                     className="mb-3"),
-            dbc.Col(kpi_card("Beta", "1.15"), width=3, className="mb-3"),
-            # Giả lập Beta vì cần dữ liệu Index lịch sử sâu
-            dbc.Col(kpi_card("P/E (TTM)", f"{pe:,.1f}x" if pd.notna(pe) else "N/A"), width=3),
+            dbc.Col(kpi_card("Beta", f"{beta:,.2f}" if pd.notna(beta) else "N/A"), width=3, className="mb-3"),
+            # Beta = None/NaN nghĩa là mã giao dịch quá thưa (<60% số ngày có
+            # biến động giá trong 252 phiên) nên chưa đủ tin cậy để tính —
+            # hiển thị "N/A" trung thực thay vì một con số không có căn cứ.
+            # LƯU Ý: đổi nhãn từ "P/E (TTM)" → "P/E (Năm gần nhất)" vì EPS
+            # dùng ở đây tính từ BCTC năm gần nhất, KHÔNG PHẢI TTM thật (tổng
+            # 4 quý gần nhất). Gọi là TTM khi chưa đúng bản chất gây hiểu lầm.
+            dbc.Col(kpi_card("P/E (Năm gần nhất)", f"{pe:,.1f}x" if pd.notna(pe) else "N/A"), width=3),
             dbc.Col(kpi_card("P/B", f"{pb:,.2f}x" if pd.notna(pb) else "N/A"), width=3),
             dbc.Col(kpi_card("EPS", f"{eps:,.0f} VND"), width=3),
             dbc.Col(kpi_card("ROE", f"{roe:,.1f}%" if pd.notna(roe) else "N/A"), width=3),
@@ -2314,7 +2339,7 @@ def load_financial_tab(active_tab, period_toggle, stock, theme="dark"):
             equity = _raw('Common Equity - Total')
             kpi_specs = [
                 ("DOANH THU KỲ GẦN NHẤT", revenue, "sky", "fas fa-coins"),
-                ("LỢI NHUẬN SAU THUẾ", net_income, "green" if (net_income or 0) >= 0 else "rose", "fas fa-dollar"),
+                ("LỢI NHUẬN SAU THUẾ", net_income, "green" if (net_income or 0) >= 0 else "rose", "fas fa-sack-dollar"),
                 ("TỔNG TÀI SẢN", total_assets, "purple", "fas fa-building-columns"),
                 ("VỐN CHỦ SỞ HỮU", equity, "amber", "fas fa-scale-balanced"),
             ]
@@ -2584,7 +2609,8 @@ def toggle_strategy_info(n_clicks, current_strategy, is_open):
             if float(val).is_integer():
                 return int(val)
             return val
-        except:
+        except Exception as _e:  # noqa: audit-fix bare-except
+            logger.debug(f"Suppressed non-critical error in {__name__} near line 2617: {_e}")
             return val
 
     # ==========================================================
@@ -2635,7 +2661,7 @@ def toggle_strategy_info(n_clicks, current_strategy, is_open):
             html.Hr(style={"borderColor": "#30363d"}),
 
             # Phần 4: Mô tả UI
-            html.H5([html.I(className="fas fa-desktop me-2", style={"color": "#00d4ff"}), "Tính năng mở rộng"],
+            html.H5([html.I(className="fas fa-desktop me-2", style={"color": "#1E88E5"}), "Tính năng mở rộng"],
                     style={"color": "#e6edf3", "fontWeight": "bold"}),
             html.P(
                 "Cột Value Score trong bảng sẽ chấm điểm A, B, C, D dựa trên việc mã đó thỏa mãn được bao nhiêu tiêu chí của Graham.",
@@ -2685,7 +2711,7 @@ def toggle_strategy_info(n_clicks, current_strategy, is_open):
                       "padding": "15px 15px 15px 35px", "borderRadius": "8px"}),
             html.Hr(style={"borderColor": "#30363d"}),
 
-            html.H5([html.I(className="fas fa-desktop", style={"color": "#00d4ff", "marginRight": "8px"}),
+            html.H5([html.I(className="fas fa-desktop", style={"color": "#1E88E5", "marginRight": "8px"}),
                      "Tính năng mở rộng"], style={"color": "#e6edf3", "fontWeight": "bold"}),
             html.P(
                 "Biểu đồ Performance ở Tab Kỹ thuật giúp bạn theo dõi đà giảm sâu trong 1 năm qua (Global Pessimism) và nhịp phục hồi (Recovery Tracker) trong 3 tháng gần nhất.",
@@ -2983,7 +3009,7 @@ def toggle_strategy_info(n_clicks, current_strategy, is_open):
     # 🚀 CHIẾN LƯỢC CANSLIM (ĐỘNG LƯỢNG TĂNG TRƯỞNG)
     # ==========================================================
     elif current_strategy == "STRAT_CANSLIM":
-        title = "🚀 Siêu cổ phiếu (CANSLIM)"
+        title = "🚀 Siêu cổ phiếu (CANSLIM Proxy)"
 
         # Đọc trực tiếp biến số từ hệ thống Quant
         eps_q = CANSLIM_THRESHOLDS[CANSLIM_IDX_EPS_GROWTH_Q_MIN]
@@ -3009,6 +3035,22 @@ def toggle_strategy_info(n_clicks, current_strategy, is_open):
                        href="https://www.vietcap.com.vn/kien-thuc/huong-dan-thuc-hanh-canslim-phuong-phap-loc-co-phieu-hieu-qua",
                        target="_blank", style={"color": "#58a6ff", "textDecoration": "none"})
             ], className="mb-4"),
+
+            html.Div([
+                html.I(className="fas fa-triangle-exclamation", style={"color": "#e3b341", "marginRight": "8px"}),
+                html.Strong("Minh bạch phương pháp: ", style={"color": "#e3b341"}),
+                "Đây là bản CANSLIM PROXY (thích ứng), không phải CANSLIM chuẩn hóa đầy đủ. "
+                "2 tiêu chí gốc của O'Neil được thay bằng proxy do thiếu dữ liệu: "
+                "\"I - Institutional Sponsorship\" dùng Vốn hóa so với trung vị thị trường "
+                "(không phải % sở hữu tổ chức thật), và \"M - Market Direction\" hiện chưa được "
+                "mô hình hóa. Điểm số này là công cụ tham khảo, không phải phiên bản CANSLIM "
+                "được kiểm định/backtest theo chuẩn gốc.",
+            ], style={
+                "fontSize": "0.85rem", "lineHeight": "1.6", "color": "#c9d1d9",
+                "padding": "12px 14px", "background": "rgba(227,179,65,0.08)",
+                "border": "1px solid rgba(227,179,65,0.3)", "borderRadius": "8px",
+                "marginBottom": "16px",
+            }),
 
             html.H5([html.I(className="fas fa-brain", style={"color": "#3fb950", "marginRight": "8px"}),
                      "Triết lý cốt lõi"], style={"color": "#e6edf3", "fontWeight": "bold"}),
@@ -3657,7 +3699,7 @@ def manage_watchlist(n_open, n_close, selected_rows, watchlist, is_open):
 
                 rows.append(html.Div([
                     html.Span(ticker, style={"fontFamily": "'JetBrains Mono', monospace", "fontWeight": "700",
-                                             "color": "#00d4ff", "width": "80px", "display": "inline-block"}),
+                                             "color": "#1E88E5", "width": "80px", "display": "inline-block"}),
                     html.Span(sector, style={"color": "#7fa8cc", "fontSize": "12px", "width": "160px",
                                              "display": "inline-block"}),
                     html.Span(f"{price:,.0f}" if isinstance(price, (int, float)) else str(price),
@@ -3793,7 +3835,7 @@ def remove_watchlist_ticker(n_clicks_list, watchlist):
 
         rows.append(html.Div([
             html.Span(ticker, style={"fontFamily": "'JetBrains Mono', monospace", "fontWeight": "700",
-                                     "color": "#00d4ff", "width": "80px", "display": "inline-block"}),
+                                     "color": "#1E88E5", "width": "80px", "display": "inline-block"}),
             html.Span(sector, style={"color": "#7fa8cc", "fontSize": "12px", "width": "160px",
                                      "display": "inline-block"}),
             html.Span(f"{price:,.0f}" if isinstance(price, (int, float)) else str(price),

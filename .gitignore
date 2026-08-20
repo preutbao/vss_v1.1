@@ -15,3 +15,5 @@ cache/
 snapshot_cache.parquet
 *.parquet binary
 .myenv
+.DS_Store
+**/.DS_Store

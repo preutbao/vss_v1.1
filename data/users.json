@@ -1,6 +1,6 @@
 {
   "abcABC": {
-    "password": "c1d0e46fdeb2b72758a6a5bd5eecf2622ff8b84a8964c8e9687c6c05c9f474b5",
+    "password": "scrypt:32768:8:1$MLvLYygK5UWjUWrq$5b95f0a6d2681a3f4af82f0ed0dca9f4f94b598ebd3c7f138d5c2ec9a6777bcd03de8562e4f511f3a60f64c1dfddc9148fe29443bb011e70f724b1e66354c95e",
     "tier": "vip",
     "display_name": "Guest Demo"
   },

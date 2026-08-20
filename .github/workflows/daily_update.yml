@@ -80,7 +80,7 @@ jobs:
           git commit -m "Auto-deploy clean version with data"
           
           # 6. Ép đẩy nhánh tạm này đè thẳng lên nhánh main của Hugging Face
-          git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/FinSmartScreener" "${branchName}:main"
+          git push --force "https://preut:$env:HF_TOKEN@huggingface.co/spaces/preut/VietcapSmartScreener" "${branchName}:main"
           
           # 7. Hủy thi diệt tích: Trở về main và xóa sổ nhánh tạm vừa tạo
           git checkout main

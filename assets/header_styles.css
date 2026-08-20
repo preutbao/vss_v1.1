@@ -119,10 +119,10 @@ header img:not([src*="logo"]) {
 /* Pulse glow */
 @keyframes pulseGlow {
     0%, 100% {
-        box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        box-shadow: 0 0 10px rgba(30, 136, 229, 0.3);
     }
     50% {
-        box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+        box-shadow: 0 0 20px rgba(30, 136, 229, 0.6);
     }
 }
 
@@ -171,7 +171,7 @@ header img:not([src*="logo"]) {
 
 #main-header img:hover {
     transform: translateY(-10px) scale(1.1);
-    filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.6)) !important;
+    filter: drop-shadow(0 0 30px rgba(30, 136, 229, 0.6)) !important;
 }
 
 
@@ -197,10 +197,10 @@ header img:not([src*="logo"]) {
     transform: translateX(-50%);
     width: 0;
     height: 3px;
-    background: linear-gradient(90deg, #00d4ff, #0090ff);
+    background: linear-gradient(90deg, #1E88E5, #0057D9);
     border-radius: 2px;
     transition: width 0.4s ease;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 10px rgba(30, 136, 229, 0.5);
 }
 
 #main-header .brand-name:hover::after {
@@ -385,7 +385,7 @@ header img:not([src*="logo"]) {
 /* Focus states */
 #main-header a:focus-visible,
 #main-header button:focus-visible {
-    outline: 3px solid #00d4ff;
+    outline: 3px solid #1E88E5;
     outline-offset: 4px;
     border-radius: 4px;
 }

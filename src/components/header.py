@@ -17,7 +17,7 @@ sys_font = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
 
 def _get_avatar_color(name: str) -> str:
     """Màu nền avatar Google-style dựa theo chữ cái đầu tên."""
-    _palette = ["#00a651","#0090ff","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#ec4899"]
+    _palette = ["#0057D9","#0057D9","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#ec4899"]
     idx = ord(name.split()[-1][0].upper()) % len(_palette) if name else 0
     return _palette[idx]
 
@@ -260,7 +260,7 @@ def _create_profile_modal():
                     n_clicks=0,
                     className="",
                     style={
-                        "background": "linear-gradient(135deg, #0090ff, #00c8ff)",
+                        "background": "linear-gradient(135deg, #0057D9, #00c8ff)",
                         "border": "none",
                         "color": "#fff",
                         "fontSize": "13px", "fontWeight": "600",
@@ -316,10 +316,10 @@ def _create_login_modal():
                             html.I(className="fas fa-user", style={"color": "#fff", "fontSize": "16px"}),
                         ], style={
                             "width": "40px", "height": "40px",
-                            "background": "linear-gradient(135deg, #00a651, #00c85a)",
+                            "background": "linear-gradient(135deg, #0057D9, #1E88E5)",
                             "borderRadius": "10px", "display": "flex",
                             "alignItems": "center", "justifyContent": "center",
-                            "boxShadow": "0 8px 16px rgba(0,166,81,0.25)",
+                            "boxShadow": "0 8px 16px rgba(0, 87, 217,0.25)",
                             "marginBottom": "20px",
                         }),
                         html.H2("Đăng nhập", style={"fontSize": "24px", "fontWeight": "700", "color": "#f9fafb", "marginBottom": "6px", "letterSpacing": "-0.02em"}),
@@ -342,7 +342,7 @@ def _create_login_modal():
                         html.Div([
                             html.Span("Chưa có tài khoản? ", style={"color": "#6b7280"}),
                             html.A("Mở tài khoản ngay", href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi", target="_blank",
-                                style={"color": "#00a651", "textDecoration": "none", "fontWeight": "600"}),
+                                style={"color": "#0057D9", "textDecoration": "none", "fontWeight": "600"}),
                         ]),
                         html.Br(),
                         html.Div([
@@ -356,16 +356,16 @@ def _create_login_modal():
                 html.Div(style={
                     "flex": "1 1 55%", "padding": "48px 32px",
                     "background": "linear-gradient(145deg, #05130a 0%, #020604 100%)",
-                    "borderLeft": "1px solid rgba(0, 166, 81, 0.1)",
+                    "borderLeft": "1px solid rgba(0, 87, 217, 0.1)",
                     "position": "relative", "overflow": "hidden"
                 }, children=[
                     html.Div(style={
                         "position": "absolute", "top": "-50px", "right": "-50px",
-                        "width": "200px", "height": "200px", "background": "#00a651",
+                        "width": "200px", "height": "200px", "background": "#0057D9",
                         "filter": "blur(100px)", "opacity": "0.15", "borderRadius": "50%"
                     }),
                     html.Div("NÂNG TẦM CHIẾN LƯỢC ĐẦU TƯ", style={
-                        "fontSize": "11px", "fontWeight": "800", "color": "#00a651",
+                        "fontSize": "11px", "fontWeight": "800", "color": "#0057D9",
                         "letterSpacing": "0.15em", "marginBottom": "12px",
                         "display": "flex", "alignItems": "center", "gap": "8px"
                     }),
@@ -388,16 +388,16 @@ def _create_login_modal():
                         ]),
                         html.Div(style={
                             "flex": "1", "padding": "20px 16px",
-                            "backgroundColor": "rgba(0, 166, 81, 0.05)",
-                            "borderRadius": "12px", "border": "1px solid rgba(0, 166, 81, 0.3)",
-                            "boxShadow": "0 10px 30px -10px rgba(0, 166, 81, 0.2)",
+                            "backgroundColor": "rgba(0, 87, 217, 0.05)",
+                            "borderRadius": "12px", "border": "1px solid rgba(0, 87, 217, 0.3)",
+                            "boxShadow": "0 10px 30px -10px rgba(0, 87, 217, 0.2)",
                             "position": "relative", "display": "flex", "flexDirection": "column"
                         }, children=[
                             html.Div("✦ PRO PLAN", style={
                                 "position": "absolute", "top": "-10px", "left": "50%",
                                 "transform": "translateX(-50%)",
-                                "background": "linear-gradient(90deg, #00a651, #00c85a)",
-                                "color": "#000", "fontSize": "10px", "fontWeight": "800",
+                                "background": "linear-gradient(90deg, #0057D9, #1E88E5)",
+                                "color": "#ffffff", "fontSize": "10px", "fontWeight": "800",
                                 "padding": "4px 10px", "borderRadius": "12px", "letterSpacing": "0.05em"
                             }),
                             html.Div([
@@ -415,10 +415,12 @@ def _create_login_modal():
 
                             html.A("Nâng cấp ngay", href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi", target="_blank", style={
                                 "display": "block", "textAlign": "center", "marginTop": "18px",
-                                "padding": "10px 0", "background": "rgba(0,166,81,0.15)",
-                                "color": "#00e676", "fontWeight": "600", "fontSize": "13px",
+                                "padding": "11px 0",
+                                "background": "linear-gradient(135deg, #F9A11B, #F57C00)",
+                                "color": "#ffffff", "fontWeight": "700", "fontSize": "13.5px",
                                 "borderRadius": "6px", "textDecoration": "none",
-                                "border": "1px solid rgba(0,166,81,0.4)", "transition": "all 0.2s"
+                                "border": "none", "transition": "all 0.2s",
+                                "boxShadow": "0 4px 14px rgba(245, 124, 0, 0.35)",
                             }),
 
                             # ── Ô nhập mã kích hoạt ──
@@ -433,7 +435,7 @@ def _create_login_modal():
                                         style={
                                             "flex": "1",
                                             "backgroundColor": "rgba(255,255,255,0.05)",
-                                            "border": "1px solid rgba(0,166,81,0.3)",
+                                            "border": "1px solid rgba(0, 87, 217,0.3)",
                                             "borderRadius": "6px 0 0 6px",
                                             "color": "#f3f4f6", "fontSize": "13px",
                                             "padding": "8px 12px",
@@ -447,10 +449,10 @@ def _create_login_modal():
                                         id="invite-code-submit-btn",
                                         n_clicks=0,
                                         style={
-                                            "backgroundColor": "#00a651",
+                                            "backgroundColor": "#0057D9",
                                             "border": "none",
                                             "borderRadius": "0 6px 6px 0",
-                                            "color": "#000",
+                                            "color": "#ffffff",
                                             "fontSize": "12px",
                                             "fontWeight": "700",
                                             "padding": "8px 14px",
@@ -464,8 +466,8 @@ def _create_login_modal():
                                         "minHeight": "16px"},
                                 ),
                             ], style={
-                                "backgroundColor": "rgba(0,166,81,0.05)",
-                                "border": "1px solid rgba(0,166,81,0.15)",
+                                "backgroundColor": "rgba(0, 87, 217,0.05)",
+                                "border": "1px solid rgba(0, 87, 217,0.15)",
                                 "borderRadius": "8px",
                                 "padding": "12px 14px",
                                 "marginBottom": "12px",
@@ -556,10 +558,10 @@ def create_topbar(id_suffix=""):
                     style={"textDecoration": "none", "display": "flex", "alignItems": "center"}),
                 # Nav links
                 html.Div([
-                    html.A("Về Vietcap", href="https://www.vietcap.com.vn/ve-vietcap", target="_blank", className="vietcap-nav-link"),
-                    html.A("Dịch vụ", href="https://www.vietcap.com.vn/tu-van-khach-hang-ca-nhan", target="_blank", className="vietcap-nav-link"),
+                    html.A("Về chúng tôi", href="#faq-section", className="vietcap-nav-link"),
+                    html.A("Dịch vụ", href="#faq-section", className="vietcap-nav-link"),
                     html.A("Sản phẩm", href="#", className="vietcap-nav-link"),
-                    html.A("Truyền thông", href="https://www.vietcap.com.vn/chien-dich", target="_blank", className="vietcap-nav-link"),
+                    html.A("Truyền thông", href="#faq-section", className="vietcap-nav-link"),
                     html.A("Screener", href="#screener-scroll-anchor", className="vietcap-nav-link vietcap-nav-screener"),
                 ], className="d-flex align-items-center gap-4"),
                 # Auth area
@@ -614,8 +616,8 @@ def create_topbar(id_suffix=""):
             "zIndex": "1030",  # 🟢 SỬA TỪ 8999 -> 1030: Đảm bảo luôn nằm dưới mọi Popup/Modal (chuẩn Bootstrap)
             "width": "100%",
             # 🟢 SỬA THÀNH BIẾN CSS: Hãy thay '--bg-color' bằng biến màu nền bạn đang dùng trong file style.css
-            "backgroundColor": "var(--bg-color, #000000)",
-            "borderBottom": "1px solid var(--border-color, #333)",  # Tương tự cho màu viền
+            "backgroundColor": "var(--bg-base)",
+            "borderBottom": "1px solid var(--border-subtle)",  # Tương tự cho màu viền
         }),
         html.Div(id="navbar-user-menu", style={"display": "none"}),
     ])
@@ -691,7 +693,7 @@ def _build_top_movers_card(movers):
     giờ nền hero dùng ảnh thật Trái Đất chụp từ không gian (assets/earth-bg.jpg)
     nên không cần dựng quả cầu giả lập nữa."""
     def _row(m):
-        color = "#00e676" if m["up"] else "#ff4d4f"
+        color = "var(--fss-term-green)" if m["up"] else "var(--fss-term-red)"
         sign = "+" if m["up"] else ""
         return html.Div(className="fss-mover-row", children=[
             html.Span(m["ticker"], className="fss-mover-ticker"),
@@ -703,6 +705,10 @@ def _build_top_movers_card(movers):
         # Header cố định — KHÔNG nằm trong track-wrap nên không bị cuộn
         html.Div(className="fss-movers-header", children=[
             html.Span("TOP MÃ BIẾN ĐỘNG - VN100", className="fss-movers-title"),
+            html.Div(className="fss-movers-status", children=[
+                html.Span(className="fss-movers-status-dot"),
+                html.Span("Dữ liệu cuối phiên"),
+            ]),
         ]),
         html.Div(className="fss-movers-col-header", children=[
             html.Span("Mã CK", className="fss-mover-col-ticker"),
@@ -716,53 +722,243 @@ def _build_top_movers_card(movers):
     ])
 
 
+def _build_ticker_tape(movers):
+    """Dải ticker chạy ngang full-width ngay dưới navbar — dùng CHÍNH dữ liệu
+    thật từ _get_top_movers() (không phải trang trí giả), nhân đôi để cuộn
+    liền mạch giống bảng điện sàn giao dịch thật."""
+    def _chip(m):
+        color = "var(--fss-term-green)" if m["up"] else "var(--fss-term-red)"
+        arrow = "▲" if m["up"] else "▼"
+        sign = "+" if m["up"] else ""
+        return html.Div(className="fss-tape-chip", children=[
+            html.Span(m["ticker"], className="fss-tape-ticker"),
+            html.Span(m["price"], className="fss-tape-price"),
+            html.Span(f"{arrow} {sign}{m['pct']:.2f}%", className="fss-tape-pct", style={"color": color}),
+        ])
+    chips = [_chip(m) for m in movers]
+    return html.Div(id="fss-ticker-tape", children=[
+        html.Div(className="fss-tape-track", children=chips + chips),
+    ])
+
+
 def create_banner():
-    movers = _get_top_movers()
-    return html.Div(id="fss-hero", children=[
-        # Background layers — ảnh Trái Đất thật từ không gian (đặt file tại assets/earth-bg.jpg)
-        html.Div(id="fss-hero-bg"),
-        html.Div(id="fss-hero-earth-bg"),
-        html.Div(id="fss-hero-grid"),
-        html.Div(id="fss-orb-1"),
-        html.Div(id="fss-orb-2"),
-        # 2-column content
-        html.Div(id="fss-hero-content", children=[
-            # ── LEFT: Text ──
-            html.Div(className="fss-hero-left", children=[
-                html.H1(className="fss-headline", children=[
-                    html.Span("TheFinWings", className="fss-headline-brand"),
-                    html.Span("Fin Smart Screener", className="fss-headline-sub"),
-                ]),
-                html.Div(className="fss-stats", children=[
-                    html.Div(className="fss-stat-card", children=[
-                        html.Div(html.I(className="fas fa-file-alt"), className="fss-stat-icon"),
-                        html.Div(children=[
-                            html.Div("1,500+", className="fss-stat-value"),
-                            html.Div("mã niêm yết", className="fss-stat-label"),
-                        ], className="fss-stat-body"),
-                    ]),
-                    html.Div(className="fss-stat-card", children=[
-                        html.Div(html.I(className="fas fa-chart-bar"), className="fss-stat-icon"),
-                        html.Div(children=[
-                            html.Div("165+", className="fss-stat-value"),
-                            html.Div("chỉ báo định lượng", className="fss-stat-label"),
-                        ], className="fss-stat-body"),
-                    ]),
-                    html.Div(className="fss-stat-card", children=[
-                        html.Div(html.I(className="fas fa-shield-alt"), className="fss-stat-icon"),
-                        html.Div(children=[
-                            html.Div("HOSE · HNX · UPCoM", className="fss-stat-value",
-                                     style={"fontSize": "13px"}),
-                            html.Div("sàn giao dịch", className="fss-stat-label"),
-                        ], className="fss-stat-body"),
-                    ]),
-                ]),
+    """[BƯỚC 1] Home Hero mới — Tiêu đề serif xanh lá + mô tả + thanh tìm kiếm.
+    Thay thế hero cyberpunk/terminal cũ. Không component nào bên trong hero cũ
+    (fss-headline, fss-cta, fss-readout, ticker tape, top-movers card...) có
+    callback tham chiếu (đã kiểm tra chéo header/sidebar/screener/ips_wizard/
+    psychology_modal) nên gỡ bỏ an toàn. Các bước sau (KPI strip, Top AI Picks,
+    Market Pulse, Watchlist) sẽ được thêm bên dưới hero này, bọc trong Div/
+    className mới — không đụng lại phần này.
+    """
+    return html.Div(id="home-hero", className="home-hero", children=[
+        html.H1("Fin Smart Screener", className="home-hero-title"),
+        html.P(
+            "Lọc, xếp hạng và theo dõi hơn 1.500 mã chứng khoán Việt Nam bằng 165+ "
+            "chỉ báo định lượng — từ định giá, tăng trưởng đến kỹ thuật — trong một màn hình duy nhất.",
+            className="home-hero-desc",
+        ),
+        html.Div(className="home-hero-search", children=[
+            dcc.Input(
+                id="home-hero-search-input",
+                type="text",
+                placeholder="Enter ticker symbol (e.g. VCB, HPG, FPT)...",
+                className="home-hero-search-input",
+                debounce=True,
+                autoComplete="off",
+            ),
+            html.Span("⌘K", className="home-hero-kbd"),
+            html.Button(
+                html.I(className="fa-solid fa-arrow-right"),
+                id="home-hero-search-submit",
+                className="home-hero-search-btn",
+                n_clicks=0,
+                title="Tìm kiếm",
+            ),
+        ]),
+    ])
+
+
+# ── [BƯỚC 2] MARKET OVERVIEW — 4 thẻ chỉ số ngang ──────────────────────────────
+def _market_index_card(key: str, label: str) -> html.Div:
+    """1 thẻ chỉ số (VN-INDEX / HNX-INDEX / VN30-INDEX).
+    key dùng làm hậu tố id, vd key='vnindex' -> home-mkt-vnindex-value...
+    Toàn bộ nội dung động (value/badge/pts/spark) để trống/placeholder —
+    callback (bạn tự nối) sẽ đổ dữ liệu thật vào các id này.
+    """
+    return html.Div(id=f"home-mkt-{key}-card", className="home-market-card", children=[
+        html.Div(className="home-market-card-top", children=[
+            html.Span(label, className="home-market-card-label"),
+            html.Span(id=f"home-mkt-{key}-badge", className="home-market-badge"),
+        ]),
+        html.Div(id=f"home-mkt-{key}-value", className="home-market-card-value", children="—"),
+        html.Div(id=f"home-mkt-{key}-pts", className="home-market-card-pts"),
+        dcc.Graph(
+            id=f"home-mkt-{key}-spark",
+            className="home-market-card-spark",
+            figure={},
+            config={"staticPlot": True, "displayModeBar": False},
+        ),
+    ])
+
+
+def _market_volume_card() -> html.Div:
+    """Thẻ TOTAL VOLUME — khác 3 thẻ index ở chỗ badge là nhãn xu hướng
+    (vd 'Avg. High') thay vì %, và biểu đồ mini là bar chart thay vì line."""
+    return html.Div(id="home-mkt-volume-card", className="home-market-card", children=[
+        html.Div(className="home-market-card-top", children=[
+            html.Span("TOTAL VOLUME", className="home-market-card-label"),
+            html.Span(id="home-mkt-volume-badge", className="home-market-badge"),
+        ]),
+        html.Div(id="home-mkt-volume-value", className="home-market-card-value", children="—"),
+        dcc.Graph(
+            id="home-mkt-volume-spark",
+            className="home-market-card-spark",
+            figure={},
+            config={"staticPlot": True, "displayModeBar": False},
+        ),
+    ])
+
+
+def create_market_overview() -> html.Div:
+    """Grid ngang 4 cột: VN-INDEX, HNX-INDEX, VN30-INDEX, TOTAL VOLUME.
+    Bọc trong className mới (home-market-grid) theo đúng nguyên tắc — không
+    đụng tới các Div/id đã tồn tại ở nơi khác trong app.
+    """
+    return html.Div(id="home-market-overview", className="home-market-grid", children=[
+        _market_index_card("vnindex", "VN-INDEX"),
+        _market_index_card("hnxindex", "HNX-INDEX"),
+        _market_index_card("vn30index", "VN30-INDEX"),
+        _market_volume_card(),
+    ])
+
+
+# ── [BƯỚC 3] TOP FIN PICKS + MARKET PULSE — layout 65/35 ──────────────────────
+_PICK_TAGS = {
+    # variant: (nhãn hiển thị, biến CSS màu tái dùng từ design token có sẵn)
+    "growth":   ("GROWTH",   "positive"),   # xanh lá — dùng chung --positive
+    "value":    ("VALUE",    "accent"),     # xanh dương — dùng chung --accent
+    "momentum": ("MOMENTUM", "warning"),    # cam — dùng chung --warning
+}
+
+
+def _pick_tag(variant: str) -> html.Span:
+    label, _ = _PICK_TAGS[variant]
+    return html.Span(label, className=f"home-pick-tag home-pick-tag-{variant}")
+
+
+def _star_row(filled: int = 5, total: int = 5) -> html.Div:
+    """Dải sao — mặc định 5/5 vì đây là các mã đã đạt chuẩn 5 sao từ bộ lọc.
+    Dùng html.I (Font Awesome) để dễ đổi trạng thái filled/empty qua callback sau này."""
+    stars = []
+    for i in range(total):
+        is_filled = i < filled
+        stars.append(html.I(className=f"fa-{'solid' if is_filled else 'regular'} fa-star"))
+    return html.Div(stars, className="home-pick-card-stars")
+
+
+def _pick_card(key: str, ticker: str, tag_variant: str, price_str: str = "—",
+                change_str: str = "", is_positive: bool = True, stars_filled: int = 5,
+                insight_text: str = None) -> html.Div:
+    """1 thẻ trong Top Fin Picks — [BƯỚC 3.1] nhận đủ dữ liệu động qua tham số
+    (không còn id con cố định cho price/change) vì danh sách mã sẽ đổi liên tục
+    theo bảng lọc thật (không còn cố định TPB/MBB/VHM). Toàn bộ thẻ được callback
+    dựng lại mỗi lần từ đầu và trả về nguyên khối trong `home-picks-grid.children`.
+    `key` (vd 'tpb') chỉ dùng làm hậu tố id container cho card, để debug dễ hơn —
+    KHÔNG dùng làm Output riêng lẻ nữa.
+    """
+    change_cls = "home-pick-card-change is-positive" if is_positive else "home-pick-card-change is-negative"
+    children = [
+        html.Div(className="home-pick-card-top", children=[
+            _pick_tag(tag_variant),
+            _star_row(filled=stars_filled),
+        ]),
+        html.Div(ticker, className="home-pick-card-ticker"),
+    ]
+    if insight_text:
+        children.append(html.Div(insight_text, className="home-pick-card-insight"))
+    children.append(html.Div(className="home-pick-card-bottom", children=[
+        html.Div(price_str, className="home-pick-card-price"),
+        html.Div(change_str, className=change_cls),
+    ]))
+    return html.Div(id=f"home-pick-{key}-card", className="home-pick-card", children=children)
+
+
+def create_top_fin_picks() -> html.Div:
+    """Cột trái (65%) — Top Fin Picks. [BƯỚC 3.1] `home-picks-grid` khởi tạo
+    RỖNG (children=[]) — không còn fix cứng TPB/MBB/VHM. Callback trong
+    home_callbacks.py sẽ Output thẳng vào `home-picks-grid.children` với danh
+    sách card linh hoạt (3 mã 5 sao thật, đứng đầu bảng lọc, đổi theo dữ liệu).
+    """
+    return html.Div(id="home-picks-col", className="home-picks-col", children=[
+        html.Div(className="home-picks-header", children=[
+            html.Div(children=[
+                html.H3("Top Fin Picks", className="home-picks-title"),
+                html.P("Các mã đạt chuẩn 5 sao, xếp hạng đầu bộ lọc của bạn.",
+                       className="home-picks-subtitle"),
             ]),
-            # ── RIGHT: Card "TOP ĐỘNG" (dữ liệu thật từ data_loader) ──
-            html.Div(className="fss-hero-right", children=[
-                _build_top_movers_card(movers),
+            html.A(["Xem tất cả ", html.I(className="fa-solid fa-arrow-up-right-from-square")],
+                   href="#screener-scroll-anchor", className="home-picks-viewall"),
+        ]),
+        html.Div(id="home-picks-grid", className="home-picks-grid", children=[]),
+    ])
+
+
+def create_market_pulse() -> html.Div:
+    """Cột phải (35%) — thanh Market Breadth + danh sách cảnh báo dòng tiền.
+    Toàn bộ nội dung động để id trống/placeholder cho callback tự nối sau.
+    """
+    return html.Div(id="home-market-pulse", className="home-pulse-col", children=[
+        html.H3("Market Pulse", className="home-pulse-title"),
+
+        # ── Market Breadth ──
+        html.Div(className="home-pulse-breadth", children=[
+            html.Div(className="home-pulse-breadth-head", children=[
+                html.Span("MARKET BREADTH", className="home-pulse-breadth-label-static"),
+                html.Span(id="home-pulse-breadth-label", className="home-pulse-breadth-label",
+                           children="62% Bullish"),
+            ]),
+            html.Div(className="home-pulse-breadth-track", children=[
+                html.Div(id="home-pulse-breadth-fill-bull", className="home-pulse-breadth-fill-bull",
+                          style={"width": "62%"}),
+                html.Div(id="home-pulse-breadth-fill-bear", className="home-pulse-breadth-fill-bear",
+                          style={"width": "38%"}),
             ]),
         ]),
+
+        # ── Danh sách cảnh báo — callback trả list các <li> mới để thay children ──
+        html.Ul(id="home-pulse-alerts-list", className="home-pulse-alerts", children=[
+            html.Li(className="home-pulse-alert-item", children=[
+                html.I(className="fa-solid fa-bolt home-pulse-alert-icon home-pulse-alert-icon-positive"),
+                html.Div(children=[
+                    html.Div("Strong Accumulation", className="home-pulse-alert-title"),
+                    html.Div("Dòng tiền mạnh đổ vào nhóm Tài chính", className="home-pulse-alert-desc"),
+                ]),
+            ]),
+            html.Li(className="home-pulse-alert-item", children=[
+                html.I(className="fa-solid fa-arrow-right home-pulse-alert-icon home-pulse-alert-icon-neutral"),
+                html.Div(children=[
+                    html.Div("Sector Consolidation", className="home-pulse-alert-title"),
+                    html.Div("Nhóm Bất động sản đang tích lũy ổn định", className="home-pulse-alert-desc"),
+                ]),
+            ]),
+            html.Li(className="home-pulse-alert-item", children=[
+                html.I(className="fa-solid fa-triangle-exclamation home-pulse-alert-icon home-pulse-alert-icon-negative"),
+                html.Div(children=[
+                    html.Div("Volatile Resistance", className="home-pulse-alert-title"),
+                    html.Div("Nhóm Năng lượng chạm kháng cự 52 tuần", className="home-pulse-alert-desc"),
+                ]),
+            ]),
+        ]),
+    ])
+
+
+def create_picks_and_pulse_section() -> html.Div:
+    """Bọc chung 'Top Fin Picks' (65%) + 'Market Pulse' (35%) trong 1 grid.
+    className mới hoàn toàn — không đụng tới phần Hero/Market Overview đã có.
+    """
+    return html.Div(id="home-picks-pulse-section", className="home-picks-pulse-grid", children=[
+        create_top_fin_picks(),
+        create_market_pulse(),
     ])
 
 
@@ -771,4 +967,11 @@ def create_header():
     return html.Div(id="vietcap-master-header", style={"position": "relative"}, children=[
         create_topbar(),
         create_banner(),
+        create_market_overview(),
+        create_picks_and_pulse_section(),
     ])
+
+# LƯU Ý: callback theme toggle (đổi data-theme trên <html>) nằm trong
+# main.py, dùng app.clientside_callback(...) — đúng convention của dự án
+# (mọi clientside_callback khác đều đăng ký qua app, không đăng ký rời
+# trong file component). Không cần thêm callback nào ở đây nữa.

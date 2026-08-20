@@ -73,7 +73,7 @@ def sync_trading_mode(btn_clicks, tour_val, current_mode):
     }
     btn_color, btn_label = _btn_config.get(new_mode, _btn_config["investing"])
 
-    # Trả về: [Lưu vào Store], [Đổi màu nút], [Đổi chữ nút]
+    # Trả về: [Lưu vào Store], [Đổi màu nút], [Đổi chữ nút].
     return new_mode, btn_color, btn_label
 
 

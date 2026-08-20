@@ -4,7 +4,9 @@ from dash import Input, Output, State, dash_table, html, no_update, callback_con
 import plotly.graph_objects as go
 
 from src.app_instance import app
-from src.backend.data_loader import load_market_data
+from src.backend.data_loader import load_market_data, load_index_data, get_snapshot_df, get_company_name_vi
+from src.components.header import _pick_card  # tái dùng đúng markup/CSS class đã dựng ở Bước 3
+import pandas as pd
 
 # ============================================================================
 # CẤU HÌNH TÊN CỘT DỮ LIỆU
@@ -154,7 +156,7 @@ def _build_tour_step(step: int):
         "padding": "24px 40px 16px", # Giảm padding dọc, tăng padding ngang
     }
     
-    _dot_active = {"width": "8px", "height": "8px", "borderRadius": "50%", "backgroundColor": "#00d4ff", "display": "inline-block", "margin": "0 3px"}
+    _dot_active = {"width": "8px", "height": "8px", "borderRadius": "50%", "backgroundColor": "#1E88E5", "display": "inline-block", "margin": "0 3px"}
     _dot_inactive = {"width": "8px", "height": "8px", "borderRadius": "50%", "backgroundColor": "#30363d", "display": "inline-block", "margin": "0 3px"}
 
     def _dots(active):
@@ -167,7 +169,7 @@ def _build_tour_step(step: int):
         })
 
     def _action_row(label, icon="fas fa-arrow-right", is_last=False):
-        grad = "linear-gradient(135deg, #f59e0b, #f97316)" if is_last else "linear-gradient(135deg, #0090ff, #00d4ff)"
+        grad = "linear-gradient(135deg, #f59e0b, #f97316)" if is_last else "linear-gradient(135deg, #0057D9, #1E88E5)"
         text_col = "#1a0800" if is_last else "#001a20"
         return html.Div([
             dbc.Button([html.I(className=f"{icon} me-2"), label], id="hint-modal-ok", n_clicks=0,
@@ -187,21 +189,21 @@ def _build_tour_step(step: int):
                 html.Div([
                     html.Div(style={
                         "width": "56px", "height": "56px", "borderRadius": "50%",
-                        "background": "linear-gradient(135deg, #0090ff22, #00d4ff33)",
-                        "border": "2px solid #00d4ff55",
+                        "background": "linear-gradient(135deg, #0057D922, #1E88E533)",
+                        "border": "2px solid #1E88E555",
                         "display": "flex", "alignItems": "center", "justifyContent": "center",
                         "margin": "0 auto 16px",
                         "animation": "pulse 2s infinite",
                     }, children=[
                         html.I(className="fas fa-chart-line",
-                               style={"fontSize": "24px", "color": "#00d4ff"}),
+                               style={"fontSize": "24px", "color": "#1E88E5"}),
                     ]),
                 ]),
                 # Badge
                 html.Div("FINSMARTSCREENER", style={
                     "fontFamily": "'JetBrains Mono', monospace",
                     "fontSize": "9px", "fontWeight": "700",
-                    "color": "#00d4ff", "letterSpacing": "3px",
+                    "color": "#1E88E5", "letterSpacing": "3px",
                     "textAlign": "center", "marginBottom": "8px",
                 }),
                 html.H5("Chào mừng bạn 👋", style={
@@ -296,12 +298,12 @@ def _build_tour_step(step: int):
                     "border": f"1px solid {border}",
                 })
                   for n, grad, bg, border, title, desc in [
-                    (1, "linear-gradient(135deg,#0090ff,#00d4ff)",
-                     "#0a1929", "#0090ff33",
+                    (1, "linear-gradient(135deg,#0057D9,#1E88E5)",
+                     "#0a1929", "#0057D933",
                      "Chọn Trường phái",
                      "Mở dropdown 'Trường phái' → chọn phong cách phù hợp. "
                      "Các thẻ chỉ tiêu 'Tham khảo' sẽ hiện ngay."),
-                    (2, "linear-gradient(135deg,#3fb950,#00d4ff)",
+                    (2, "linear-gradient(135deg,#3fb950,#1E88E5)",
                      "#0a1f15", "#3fb95033",
                      "Tinh chỉnh bộ lọc",
                      "Kéo thanh trượt hoặc gõ trực tiếp vào ô số để điều chỉnh ngưỡng theo ý muốn."),
@@ -547,3 +549,484 @@ def toggle_zalo(icon_clicks, chat_close, bubble_close, chat_style, bubble_style,
     if "zalo-chat-close" in triggered:
         return base_chat_hidden, base_bubble, no_update
     return no_update, no_update, no_update
+
+import plotly.graph_objects as go
+from dash import Input, Output, callback, no_update
+import pandas as pd
+import numpy as np
+
+def create_mini_chart(y_data, color="#10b981", is_bar=False):
+    """Vẽ sparkline (line) hoặc bar chart mini, nền trong suốt."""
+    fig = go.Figure()
+    if is_bar:
+        fig.add_trace(go.Bar(y=y_data, marker_color=color, hoverinfo='skip'))
+    else:
+        fig.add_trace(go.Scatter(y=y_data, mode='lines', line=dict(color=color, width=2), hoverinfo='skip'))
+    
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        showlegend=False,
+        xaxis=dict(visible=False, fixedrange=True),
+        yaxis=dict(visible=False, fixedrange=True)
+    )
+    return fig
+
+@app.callback(
+    # --- VN-INDEX ---
+    Output('home-mkt-vnindex-value', 'children'),
+    Output('home-mkt-vnindex-badge', 'children'),
+    Output('home-mkt-vnindex-badge', 'className'),
+    Output('home-mkt-vnindex-pts', 'children'),
+    Output('home-mkt-vnindex-pts', 'className'),
+    Output('home-mkt-vnindex-spark', 'figure'),
+    
+    # --- HNX-INDEX ---
+    Output('home-mkt-hnxindex-value', 'children'),
+    Output('home-mkt-hnxindex-badge', 'children'),
+    Output('home-mkt-hnxindex-badge', 'className'),
+    Output('home-mkt-hnxindex-pts', 'children'),
+    Output('home-mkt-hnxindex-pts', 'className'),
+    Output('home-mkt-hnxindex-spark', 'figure'),
+    
+    # --- VN30-INDEX ---
+    Output('home-mkt-vn30index-value', 'children'),
+    Output('home-mkt-vn30index-badge', 'children'),
+    Output('home-mkt-vn30index-badge', 'className'),
+    Output('home-mkt-vn30index-pts', 'children'),
+    Output('home-mkt-vn30index-pts', 'className'),
+    Output('home-mkt-vn30index-spark', 'figure'),
+    
+    # --- TOTAL VOLUME ---
+    Output('home-mkt-volume-value', 'children'),
+    Output('home-mkt-volume-badge', 'children'),
+    Output('home-mkt-volume-spark', 'figure'),
+    
+    # Dùng id của tiêu đề hero để kích hoạt khi trang load xong
+    Input('home-hero', 'children'), 
+    prevent_initial_call=False
+)
+def update_market_overview_cards(pathname):
+    # ==========================================
+    # 1. HELPER — format số + màu tăng/giảm, dùng chung cho 3 thẻ index
+    # (giữ nguyên logic gốc, không đổi)
+    # ==========================================
+    def format_index_data(current_val, change_pct, change_pts, chart_data):
+        is_up = change_pct >= 0
+        color_class = "home-market-badge is-positive" if is_up else "home-market-badge is-negative"
+        chart_color = "#10b981" if is_up else "#ef4444"  # Xanh lục nếu tăng, đỏ nếu giảm
+
+        val_str = f"{current_val:,.2f}"
+        badge_str = f"{'+' if is_up else ''}{change_pct:.2f}%"
+        pts_str = f"{'+' if is_up else ''}{change_pts:.2f} pts"
+
+        fig = create_mini_chart(chart_data, color=chart_color, is_bar=False)
+        return val_str, badge_str, color_class, pts_str, color_class, fig
+
+    def _index_series(df, col, n=30):
+        """current_val, pts, pct, spark(n phiên gần nhất) từ 1 cột chỉ số của load_index_data()."""
+        if df is None or df.empty or col not in df.columns:
+            return 0.0, 0.0, 0.0, [0, 0]
+        d = df.dropna(subset=[col]).sort_values("Date")
+        if d.empty:
+            return 0.0, 0.0, 0.0, [0, 0]
+        last_val = float(d[col].iloc[-1])
+        prev_val = float(d[col].iloc[-2]) if len(d) >= 2 else last_val
+        pts = last_val - prev_val
+        pct = (pts / prev_val * 100) if prev_val else 0.0
+        spark = d[col].tail(n).tolist()
+        if len(spark) < 2:
+            spark = [last_val, last_val]
+        return last_val, pts, pct, spark
+
+    # ==========================================
+    # 2. VN-INDEX & VN30-INDEX — dữ liệu THẬT từ load_index_data()
+    # ==========================================
+    try:
+        df_idx = load_index_data()
+    except Exception:
+        df_idx = pd.DataFrame()
+
+    vn_current, vn_pts_raw, vn_pct, vn_spark = _index_series(df_idx, "VNINDEX_Close")
+    vn_val, vn_badge, vn_badge_cls, vn_pts, vn_pts_cls, vn_fig = format_index_data(
+        current_val=vn_current, change_pct=vn_pct, change_pts=vn_pts_raw, chart_data=vn_spark
+    )
+
+    vn30_current, vn30_pts_raw, vn30_pct, vn30_spark = _index_series(df_idx, "VN30_Close")
+    vn30_val, vn30_badge, vn30_badge_cls, vn30_pts, vn30_pts_cls, vn30_fig = format_index_data(
+        current_val=vn30_current, change_pct=vn30_pct, change_pts=vn30_pts_raw, chart_data=vn30_spark
+    )
+
+    # ==========================================
+    # 3. HNX-INDEX — MOCK TẠM THỜI
+    # data_loader.py hiện chưa có cột HNX-INDEX (chỉ có VNINDEX_Close/VN30_Close).
+    # TODO: khi có nguồn dữ liệu HNX thật (Excel/API riêng, cột vd "HNXINDEX_Close"),
+    # xoá khối mock này và gọi thẳng:
+    #   hnx_current, hnx_pts_raw, hnx_pct, hnx_spark = _index_series(df_hnx, "HNXINDEX_Close")
+    # ==========================================
+    HNX_MOCK_SERIES = [
+        241.10, 239.85, 238.40, 237.90, 236.55, 238.20, 239.00, 237.65,
+        236.10, 234.80, 233.95, 232.40, 231.85, 230.60, 229.75, 231.20,
+        232.85, 234.10, 235.95, 237.40, 236.80, 235.20, 233.75, 232.90,
+        234.15, 235.60, 236.85, 235.40, 234.60, 235.80,
+    ]
+    hnx_current = HNX_MOCK_SERIES[-1]
+    hnx_pts_raw = hnx_current - HNX_MOCK_SERIES[-2]
+    hnx_pct = (hnx_pts_raw / HNX_MOCK_SERIES[-2] * 100) if HNX_MOCK_SERIES[-2] else 0.0
+    hnx_val, hnx_badge, hnx_badge_cls, hnx_pts, hnx_pts_cls, hnx_fig = format_index_data(
+        current_val=hnx_current, change_pct=hnx_pct, change_pts=hnx_pts_raw, chart_data=HNX_MOCK_SERIES
+    )
+
+    # ==========================================
+    # 4. TOTAL VOLUME — dữ liệu THẬT từ load_market_data()
+    # Gộp Turnover (Volume × Price Close) toàn thị trường theo từng ngày.
+    # ==========================================
+    try:
+        df_mkt = load_market_data()
+    except Exception:
+        df_mkt = pd.DataFrame()
+
+    if df_mkt is not None and not df_mkt.empty and COL_DATE in df_mkt.columns:
+        d = df_mkt.copy()
+        if "Turnover" not in d.columns:
+            # File giá gốc (chưa qua auto-update yfinance) có thể chưa có cột Turnover
+            # -> tự tính Volume × Price Close để vẫn ra được số hợp lệ.
+            d["Turnover"] = pd.to_numeric(d.get(COL_VOLUME, 0), errors="coerce") * \
+                             pd.to_numeric(d.get(COL_CLOSE, 0), errors="coerce")
+        daily_turnover = (
+            d.dropna(subset=[COL_DATE])
+             .groupby(COL_DATE)["Turnover"]
+             .sum()
+             .sort_index()
+        )
+    else:
+        daily_turnover = pd.Series(dtype="float64")
+
+    if not daily_turnover.empty:
+        latest_turnover = float(daily_turnover.iloc[-1])
+        avg20 = float(daily_turnover.tail(20).mean())
+        vol_chart_data = daily_turnover.tail(15).tolist()
+        vol_badge_str = "Avg. High" if latest_turnover >= avg20 else "Avg. Low"
+    else:
+        latest_turnover = 0.0
+        vol_chart_data = [0, 0]
+        vol_badge_str = "—"
+
+    vol_val_str = f"{latest_turnover / 1e9:,.0f}B"  # Tỷ VNĐ
+    vol_fig = create_mini_chart(vol_chart_data, color="#3b82f6", is_bar=True)  # Màu xanh dương
+
+    # ==========================================
+    # 5. TRẢ VỀ ĐÚNG THỨ TỰ OUTPUT (không đổi)
+    # ==========================================
+    return (
+        vn_val, vn_badge, vn_badge_cls, vn_pts, vn_pts_cls, vn_fig,
+        hnx_val, hnx_badge, hnx_badge_cls, hnx_pts, hnx_pts_cls, hnx_fig,
+        vn30_val, vn30_badge, vn30_badge_cls, vn30_pts, vn30_pts_cls, vn30_fig,
+        vol_val_str, vol_badge_str, vol_fig
+    )
+
+# ============================================================================
+# [BƯỚC 3.1] TOP FIN PICKS — Nối dữ liệu thật từ bảng kết quả lọc
+# ============================================================================
+# Cột "Growth Score"/"Value Score"/"Momentum Score" trong get_snapshot_df()
+# lưu dưới dạng XẾP HẠNG CHỮ (A/B/C/D/F), giống hệt cột "VGM Score" đang được
+# xử lý ở screener_callbacks.py (grade_order = {'A':1,'B':2,...}). 'A' = tốt
+# nhất -> quy đổi ngược lại thành số để "điểm cao nhất thắng" vẫn đúng logic.
+_GRADE_TO_SCORE = {"A": 5, "B": 4, "C": 3, "D": 2, "F": 1}
+
+
+def _grade_to_score(val) -> float:
+    """'A' -> 5.0 (tốt nhất) ... 'F' -> 1.0. Giá trị lạ/rỗng -> 0.0 (thấp nhất)."""
+    if val is None:
+        return 0.0
+    s = str(val).strip().upper()
+    return float(_GRADE_TO_SCORE.get(s, 0))
+
+
+def _get_top_fin_picks(n: int = 3) -> list:
+    """Lấy đúng n mã đạt chuẩn 5 sao, đứng đầu bảng kết quả lọc thật.
+
+    Nguồn:
+    - get_snapshot_df()  -> bảng lọc đầy đủ (điểm số, Star_Rating, giá mới nhất)
+      Cách sắp xếp lấy lại ĐÚNG logic gốc đang dùng ở screener_callbacks.py
+      (ưu tiên FSS_Smart_Rank, fallback Star_Rating) để đồng nhất thứ hạng
+      hiển thị ở Home với bảng Screener chính.
+    - load_market_data() -> lịch sử giá đầy đủ, dùng để tính % thay đổi so với
+      phiên trước (snapshot chỉ có 1 dòng/mã = phiên mới nhất, không có phiên
+      liền trước để so sánh).
+
+    Mỗi item trả về: {key, ticker, tag_variant, price, pct, stars, insight}
+    (insight ở đây là TÊN DOANH NGHIỆP thật, lấy qua get_company_name_vi())
+    """
+    try:
+        df = get_snapshot_df()
+    except Exception:
+        df = pd.DataFrame()
+
+    if df is None or df.empty or "Ticker" not in df.columns:
+        return []
+
+    df = df.copy()
+
+    # ── Sắp xếp — đồng bộ với logic ở screener_callbacks.py ──
+    if "FSS_Smart_Rank" in df.columns:
+        df = df.sort_values("FSS_Smart_Rank", ascending=False)
+    elif "Star_Rating" in df.columns:
+        df = df.sort_values("Star_Rating", ascending=False)
+    else:
+        return []  # không có cột xếp hạng nào -> không đủ cơ sở chọn "top"
+
+    # ── Lọc đúng chuẩn 5 sao nếu có cột Star_Rating; nếu chưa đủ n mã 5 sao
+    # thì fallback lấy top n theo thứ hạng chung (tránh trả về rỗng) ──
+    if "Star_Rating" in df.columns:
+        df_5star = df[pd.to_numeric(df["Star_Rating"], errors="coerce") >= 5]
+        df_top = df_5star if len(df_5star) >= n else df
+    else:
+        df_top = df
+
+    top_rows = df_top.head(n).to_dict("records")
+    if not top_rows:
+        return []
+
+    # ── Lịch sử giá đầy đủ để tính % thay đổi thật so với phiên trước ──
+    try:
+        df_price = load_market_data()
+    except Exception:
+        df_price = pd.DataFrame()
+
+    picks = []
+    for row in top_rows:
+        ticker = str(row.get("Ticker", "")).strip().upper()
+        if not ticker:
+            continue
+
+        price = float(row.get("Price Close", 0) or 0)
+        pct = 0.0
+        if df_price is not None and not df_price.empty and "Ticker" in df_price.columns:
+            d = df_price[df_price["Ticker"].astype(str).str.upper() == ticker].sort_values("Date")
+            if len(d) >= 2:
+                last_c = float(d["Price Close"].iloc[-1])
+                prev_c = float(d["Price Close"].iloc[-2])
+                if prev_c:
+                    pct = (last_c - prev_c) / prev_c * 100
+                price = last_c  # đồng bộ giá với phiên gần nhất thật trong lịch sử
+
+        # ── Xác định tag Growth/Value/Momentum — điểm nào cao nhất thắng ──
+        # Cột Score trong snapshot là XẾP HẠNG CHỮ (A/B/C/D/F), không phải số
+        # -> quy đổi sang thang điểm trước khi so sánh. 'A' = tốt nhất.
+        g = _grade_to_score(row.get("Growth Score"))
+        v = _grade_to_score(row.get("Value Score"))
+        m = _grade_to_score(row.get("Momentum Score"))
+        scores = {"growth": g, "value": v, "momentum": m}
+        tag_variant = max(scores, key=scores.get) if any(scores.values()) else "growth"
+
+        # ── Tên doanh nghiệp thật (thay cho câu nhận xét) — ưu tiên get_company_name_vi(),
+        # fallback cột "Company Common Name" nếu có sẵn trong snapshot, cuối cùng để trống ──
+        company_name = get_company_name_vi(ticker)
+        if not company_name:
+            company_name = str(row.get("Company Common Name", "") or "").strip()
+
+        stars_raw = row.get("Star_Rating", 5)
+        try:
+            stars_filled = int(round(float(stars_raw)))
+        except (TypeError, ValueError):
+            stars_filled = 5
+        stars_filled = max(0, min(5, stars_filled))
+
+        picks.append({
+            "key": ticker.lower(),
+            "ticker": ticker,
+            "tag_variant": tag_variant,
+            "price": price,
+            "pct": pct,
+            "stars": stars_filled,
+            "insight": company_name,  # hiển thị tên doanh nghiệp thay cho câu nhận xét
+        })
+
+    return picks
+
+
+@app.callback(
+    Output("home-picks-grid", "children"),
+    Input("home-market-overview", "id"),  # trigger khi trang load, cùng kiểu với Bước 2
+    prevent_initial_call=False,
+)
+def update_top_fin_picks(_):
+    picks = _get_top_fin_picks(n=3)
+
+    if not picks:
+        return html.Div(
+            "Chưa có mã nào đạt chuẩn 5 sao trong bảng lọc hiện tại.",
+            className="home-picks-empty",
+        )
+
+    cards = []
+    for p in picks:
+        is_up = p["pct"] >= 0
+        change_str = f"{'+' if is_up else ''}{p['pct']:.2f}%"
+        price_str = f"{p['price']:,.0f}"
+        cards.append(_pick_card(
+            key=p["key"],
+            ticker=p["ticker"],
+            tag_variant=p["tag_variant"],
+            price_str=price_str,
+            change_str=change_str,
+            is_positive=is_up,
+            stars_filled=p["stars"],
+            insight_text=p["insight"],
+        ))
+    return cards
+
+
+# ============================================================================
+# [BƯỚC 3.2] MARKET PULSE — Nối dữ liệu thật (Market Breadth + cảnh báo ngành)
+# ============================================================================
+def _build_alert_li(icon_class: str, icon_variant: str, title: str, desc: str) -> html.Li:
+    """1 dòng cảnh báo trong Market Pulse — giữ đúng className đã dựng ở Bước 3
+    (home-pulse-alert-item / -icon / -title / -desc), chỉ đổi nội dung động."""
+    return html.Li(className="home-pulse-alert-item", children=[
+        html.I(className=f"fa-solid {icon_class} home-pulse-alert-icon home-pulse-alert-icon-{icon_variant}"),
+        html.Div(children=[
+            html.Div(title, className="home-pulse-alert-title"),
+            html.Div(desc, className="home-pulse-alert-desc"),
+        ]),
+    ])
+
+
+def _compute_market_pulse() -> dict:
+    """Tính Market Breadth (%mã tăng/giảm hôm nay) + 3 ngành nổi bật nhất phiên
+    (dựa trên % thay đổi giá TB ngành + tỉ lệ khối lượng so với TB 20 phiên).
+    Trả về None nếu không đủ dữ liệu để tính (caller giữ nguyên UI cũ, không update).
+    """
+    try:
+        df_price = load_market_data()
+    except Exception:
+        df_price = pd.DataFrame()
+
+    if df_price is None or df_price.empty or "Ticker" not in df_price.columns:
+        return None
+
+    d = df_price.sort_values(["Ticker", "Date"])
+
+    def _last_pct(g):
+        if len(g) < 2:
+            return np.nan
+        last_c = g["Price Close"].iloc[-1]
+        prev_c = g["Price Close"].iloc[-2]
+        return (last_c - prev_c) / prev_c * 100 if prev_c else np.nan
+
+    pct_series = d.groupby("Ticker").apply(_last_pct).dropna()
+    if pct_series.empty:
+        return None
+
+    # ── Market Breadth: %mã tăng / (mã tăng + mã giảm) ──
+    up_count = int((pct_series > 0).sum())
+    down_count = int((pct_series < 0).sum())
+    total_ud = up_count + down_count
+    bullish_pct = (up_count / total_ud * 100) if total_ud else 50.0
+    bearish_pct = 100 - bullish_pct
+
+    # ── Khối lượng phiên gần nhất mỗi mã (dùng để tính tỉ lệ KL theo ngành) ──
+    latest_vol = d.groupby("Ticker")["Volume"].last()
+
+    try:
+        df_snap = get_snapshot_df()
+    except Exception:
+        df_snap = pd.DataFrame()
+
+    sector_col = None
+    if df_snap is not None and not df_snap.empty:
+        for c in ("Sector", "GICS Sector Name"):
+            if c in df_snap.columns:
+                sector_col = c
+                break
+
+    alerts = []
+    if sector_col:
+        cols_needed = ["Ticker", sector_col] + (["Avg_Vol_20D"] if "Avg_Vol_20D" in df_snap.columns else [])
+        df_s = df_snap[cols_needed].copy().rename(columns={sector_col: "Sector"})
+        df_s["Ticker"] = df_s["Ticker"].astype(str).str.upper()
+        df_s["pct_change"] = df_s["Ticker"].map(pct_series)
+        df_s["latest_vol"] = df_s["Ticker"].map(latest_vol)
+        if "Avg_Vol_20D" in df_s.columns:
+            df_s["vol_ratio"] = df_s["latest_vol"] / df_s["Avg_Vol_20D"].replace(0, np.nan)
+        else:
+            df_s["vol_ratio"] = np.nan
+
+        df_s = df_s.dropna(subset=["pct_change"])
+        df_s = df_s[df_s["Sector"].notna() & (df_s["Sector"] != "") & (df_s["Sector"] != "Chưa phân loại")]
+
+        sector_stats = (
+            df_s.groupby("Sector")
+                .agg(avg_pct=("pct_change", "mean"), avg_vol_ratio=("vol_ratio", "mean"), n=("Ticker", "count"))
+                .reset_index()
+        )
+        sector_stats = sector_stats[sector_stats["n"] >= 3]  # đủ mẫu ngành mới đáng tin
+
+        if not sector_stats.empty:
+            used = set()
+
+            # 1. Strong Accumulation — tăng giá TB mạnh nhất, ưu tiên ngành có KL >= TB
+            acc_pool = sector_stats[sector_stats["avg_vol_ratio"] >= 1.0]
+            if acc_pool.empty:
+                acc_pool = sector_stats
+            acc_row = acc_pool.sort_values("avg_pct", ascending=False).iloc[0]
+            used.add(acc_row["Sector"])
+            vol_txt = f", KL x{acc_row['avg_vol_ratio']:.1f} TB" if pd.notna(acc_row["avg_vol_ratio"]) else ""
+            alerts.append(_build_alert_li(
+                "fa-bolt", "positive", "Strong Accumulation",
+                f"Dòng tiền vào nhóm {acc_row['Sector']} (+{acc_row['avg_pct']:.2f}%{vol_txt})",
+            ))
+
+            # 2. Sector Consolidation — |%thay đổi TB| nhỏ nhất trong các ngành còn lại
+            remain = sector_stats[~sector_stats["Sector"].isin(used)].copy()
+            if not remain.empty:
+                remain["abs_pct"] = remain["avg_pct"].abs()
+                con_row = remain.sort_values("abs_pct", ascending=True).iloc[0]
+                used.add(con_row["Sector"])
+                alerts.append(_build_alert_li(
+                    "fa-arrow-right", "neutral", "Sector Consolidation",
+                    f"Nhóm {con_row['Sector']} đi ngang ({con_row['avg_pct']:+.2f}%), đang tích lũy",
+                ))
+
+            # 3. Volatile Resistance — %thay đổi TB thấp nhất (áp lực bán) trong các ngành còn lại
+            remain2 = sector_stats[~sector_stats["Sector"].isin(used)]
+            if not remain2.empty:
+                neg_row = remain2.sort_values("avg_pct", ascending=True).iloc[0]
+                alerts.append(_build_alert_li(
+                    "fa-triangle-exclamation", "negative", "Volatile Resistance",
+                    f"Nhóm {neg_row['Sector']} chịu áp lực bán ({neg_row['avg_pct']:.2f}%)",
+                ))
+
+    return {"bullish_pct": bullish_pct, "bearish_pct": bearish_pct, "alerts": alerts}
+
+
+@app.callback(
+    Output("home-pulse-breadth-label", "children"),
+    Output("home-pulse-breadth-fill-bull", "style"),
+    Output("home-pulse-breadth-fill-bear", "style"),
+    Output("home-pulse-alerts-list", "children"),
+    Input("home-market-overview", "id"),  # trigger on-load, cùng kiểu Bước 2/3
+    prevent_initial_call=False,
+)
+def update_market_pulse(_):
+    result = _compute_market_pulse()
+    if not result:
+        # Không đủ dữ liệu -> giữ nguyên UI hiện tại thay vì phá layout
+        return no_update, no_update, no_update, no_update
+
+    bullish_pct = result["bullish_pct"]
+    bearish_pct = result["bearish_pct"]
+    label = f"{bullish_pct:.0f}% Bullish"
+    bull_style = {"width": f"{bullish_pct:.1f}%"}
+    bear_style = {"width": f"{bearish_pct:.1f}%"}
+
+    alerts = result["alerts"]
+    if not alerts:
+        alerts = [html.Li(
+            "Chưa đủ dữ liệu ngành (cột Sector) để đưa ra nhận định.",
+            className="home-pulse-alert-item",
+        )]
+
+    return label, bull_style, bear_style, alerts

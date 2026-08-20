@@ -49,6 +49,17 @@ SMART_MAPPING = {
         "EPS - Basic - excl Extraordinary Items, Common - Total_x",
         "EPS - Basic - incl Extraordinary Items, Common - Total_x",
     ],
+    # LƯU Ý QUAN TRỌNG: Nếu nguồn dữ liệu KHÔNG có sẵn cột "Free Cash Flow"
+    # (rất có thể xảy ra vì hầu hết vendor dữ liệu tài chính không cung cấp
+    # FCF trực tiếp — nó là chỉ tiêu phái sinh = CFO - CapEx), code sẽ TỰ ĐỘNG
+    # rơi xuống "Net Cash Flow from Operating Activities" (CFO) và gán nhãn
+    # là 'fcf'. CFO ≠ FCF — dùng thẳng CFO sẽ làm FCF bị TÍNH CAO HƠN THỰC TẾ
+    # đúng bằng phần CapEx (rất đáng kể với ngành thâm dụng vốn: BĐS, hạ tầng,
+    # sản xuất). Cột `_fcf_is_estimated` bên dưới đánh dấu khi nào việc fallback
+    # này xảy ra để UI/báo cáo có thể hiển thị cảnh báo minh bạch cho người dùng.
+    # TODO: khi xác định được tên cột CapEx thật trong dữ liệu gốc (vd:
+    # "Purchase of Fixed Assets", "Capital Expenditures - Total"...), sửa lại
+    # thành FCF = CFO - CapEx để có chỉ số đúng nghĩa.
     "fcf": [
         "Free Cash Flow",
         "Net Cash Flow from Operating Activities",
@@ -141,6 +152,16 @@ def calculate_financial_metrics(df_price_latest, df_fin_latest):
             if best_col:
                 df_f[metric_name] = pd.to_numeric(df_f[best_col], errors='coerce')
                 found_metrics.append(f"{metric_name} (từ '{best_col}')")
+                if metric_name == 'fcf' and best_col != 'Free Cash Flow':
+                    # Đánh dấu: đây là CFO fallback, KHÔNG PHẢI FCF thật (CFO - CapEx)
+                    df_f['_fcf_is_estimated'] = True
+                    logger.warning(
+                        f"   ⚠️ Không có cột 'Free Cash Flow' thật — dùng fallback "
+                        f"'{best_col}' (CFO), giá trị này CAO HƠN FCF thực tế "
+                        f"(chưa trừ CapEx)."
+                    )
+                elif metric_name == 'fcf':
+                    df_f['_fcf_is_estimated'] = False
             else:
                 df_f[metric_name] = np.nan
                 logger.warning(f"   ⚠️ Không tìm thấy cột cho: {metric_name}")
@@ -149,7 +170,7 @@ def calculate_financial_metrics(df_price_latest, df_fin_latest):
 
         # --- BƯỚC 3: MERGE DỮ LIỆU ---
         # Chỉ giữ lại các cột cần thiết từ df_f để tránh conflict tên cột
-        fin_keep_cols = ['Ticker'] + list(SMART_MAPPING.keys()) + [
+        fin_keep_cols = ['Ticker'] + list(SMART_MAPPING.keys()) + ['_fcf_is_estimated'] + [
             c for c in df_f.columns
             if any(kw in c for kw in [
                 'GICS', 'Company', 'Gross Profit', 'Debt', 'Cash',
@@ -192,24 +213,33 @@ def calculate_financial_metrics(df_price_latest, df_fin_latest):
         ])
         if eps_source_col and eps_source_col in df_merged.columns:
             df_merged['_eps_for_pe'] = pd.to_numeric(df_merged[eps_source_col], errors='coerce')
+            df_merged['P/E'] = np.where(
+                df_merged['_eps_for_pe'] > 0,
+                df_merged['Price Close'] / df_merged['_eps_for_pe'],
+                np.nan
+            )
         elif 'shares' in df_merged.columns and df_merged['shares'].sum() > 0:
             df_merged['_eps_for_pe'] = np.where(
                 df_merged['shares'] > 0,
                 df_merged['net_income'] / df_merged['shares'],
                 np.nan
             )
+            df_merged['P/E'] = np.where(
+                df_merged['_eps_for_pe'] > 0,
+                df_merged['Price Close'] / df_merged['_eps_for_pe'],
+                np.nan
+            )
         else:
-            # Fallback cuối: MC/NI
-            df_merged['_eps_for_pe'] = np.where(
+            # Fallback cuối: P/E = Market Cap / Net Income trực tiếp.
+            # LƯU Ý: BUG CŨ đã gán giá trị này vào "_eps_for_pe" rồi lại chia
+            # Price Close cho nó lần nữa → về mặt toán học triệt tiêu ngược lại
+            # thành Net Income/Shares (~EPS), KHÔNG PHẢI P/E. Giờ gán P/E trực
+            # tiếp, không đi vòng qua bước chia thêm lần nữa.
+            df_merged['P/E'] = np.where(
                 df_merged['net_income'] > 0,
                 df_merged['Market Cap'] / df_merged['net_income'],
                 np.nan
             )
-        df_merged['P/E'] = np.where(
-            df_merged['_eps_for_pe'] > 0,
-            df_merged['Price Close'] / df_merged['_eps_for_pe'],
-            np.nan
-        )
         df_merged.drop(columns=['_eps_for_pe'], inplace=True, errors='ignore')
 
         # 3. ROE (Return on Equity)
@@ -278,8 +308,14 @@ def calculate_financial_metrics(df_price_latest, df_fin_latest):
             df_merged['total_debt'] = pd.to_numeric(
                 df_merged[total_debt_col], errors='coerce').fillna(0).abs()
         else:
-            short_d = pd.to_numeric(df_merged.get(short_debt_col, 0), errors='coerce').fillna(0).abs()
-            long_d  = pd.to_numeric(df_merged.get(long_debt_col,  0), errors='coerce').fillna(0).abs()
+            # LƯU Ý: df_merged.get(col, 0) trả về SỐ NGUYÊN 0 (không phải
+            # Series) khi cột không tồn tại — gọi .fillna() lên số nguyên sẽ
+            # crash ('int' object has no attribute 'fillna'). Bug này bị phát
+            # hiện qua unit test khi dữ liệu thiếu HẾT cả 2 cột nợ ngắn/dài
+            # hạn. Dùng Series 0 làm fallback để luôn an toàn gọi .fillna().
+            _zero = pd.Series(0, index=df_merged.index)
+            short_d = pd.to_numeric(df_merged.get(short_debt_col, _zero), errors='coerce').fillna(0).abs()
+            long_d  = pd.to_numeric(df_merged.get(long_debt_col,  _zero), errors='coerce').fillna(0).abs()
             df_merged['total_debt'] = short_d + long_d
 
         df_merged['D/E'] = np.where(
@@ -337,13 +373,24 @@ def calculate_financial_metrics(df_price_latest, df_fin_latest):
         )
 
         # --- 7f. DIVIDEND YIELD (Tỷ suất Cổ tức %) ---
-        dps_col = find_best_column(df_f, [
+        # LƯU Ý: 'Dividends Provided/Paid - Common' là TỔNG TIỀN cổ tức đã trả
+        # (đơn vị: VNĐ toàn công ty), KHÔNG PHẢI cổ tức/cổ phiếu (DPS). Dùng
+        # thẳng cột này làm 'dps' sẽ ra Dividend Yield sai lệch gấp hàng triệu
+        # lần (vì tử số chưa chia cho số cổ phiếu đang lưu hành).
+        dps_direct_col = find_best_column(df_f, [
             'DPS - Common - Net - Issue - By Announcement Date',
             'DPS - Common - Gross - Issue - By Announcement Date',
-            'Dividends Provided/Paid - Common'
         ])
-        if dps_col and dps_col in df_merged.columns:
-            df_merged['dps'] = pd.to_numeric(df_merged[dps_col], errors='coerce').fillna(0)
+        dps_total_col = find_best_column(df_f, ['Dividends Provided/Paid - Common'])
+
+        if dps_direct_col and dps_direct_col in df_merged.columns:
+            df_merged['dps'] = pd.to_numeric(df_merged[dps_direct_col], errors='coerce').fillna(0)
+        elif (dps_total_col and dps_total_col in df_merged.columns
+              and 'shares' in df_merged.columns):
+            # Fallback: tự tính DPS = Tổng cổ tức đã trả / Số cổ phiếu lưu hành
+            total_div = pd.to_numeric(df_merged[dps_total_col], errors='coerce').fillna(0).abs()
+            shares_safe = pd.to_numeric(df_merged['shares'], errors='coerce')
+            df_merged['dps'] = np.where(shares_safe > 0, total_div / shares_safe, 0)
         else:
             df_merged['dps'] = 0
 
@@ -454,7 +501,8 @@ def assign_grade(value, percentiles, ascending=True):
             elif value <= percentiles[0.6]: return 'C'
             elif value <= percentiles[0.8]: return 'D'
             else: return 'F'
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error at src/backend/quant_engine.py:504: {_e}")
         return 'F'
 
 def _assign_grade_series(series, percentiles, ascending=True):
@@ -490,12 +538,9 @@ def calculate_value_score(df):
     logger.info("📊 Đang tính Value Score (EV/EBITDA + P/E + P/B + P/S)...")
     try:
         df = df.copy()
-        # DEBUG: kiểm tra cột có tồn tại không
-        _check = [c for c in ['EV/EBITDA','P/E','P/B','P/S'] if c in df.columns]
-        logger.info(f"[Value Score] Cột có sẵn: {_check} / 4")
         grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
-        component_grades = []
-        weights = []
+        component_grades_by_name = {}  # tên cột -> grade series (tránh bug lệch vị trí)
+        weights_by_name = {}
 
         def _grade_valuation(col, w):
             if col not in df.columns: return
@@ -508,27 +553,30 @@ def calculate_value_score(df):
             masked = series.where(series > 0) 
             g = _assign_grade_series(masked, pct, ascending=False)
             g[series <= 0] = 'F'
-            component_grades.append(g)
-            weights.append(w)
+            component_grades_by_name[col] = g
+            weights_by_name[col] = w
 
         # Ưu tiên EV/EBITDA cho cấu trúc vốn
+        # LƯU Ý: Tên cột PHẢI khớp với cột thực tế do calculate_financial_metrics() tạo ra
+        # (xem 'EV/EBITDA', 'P/E', 'P/B', 'P/S' trong calculate_financial_metrics),
+        # nếu không toàn bộ Value Score sẽ rơi vào nhánh fallback 'F'.
         _grade_valuation('EV/EBITDA', 0.35)
         _grade_valuation('P/E',       0.25)
         _grade_valuation('P/B',       0.25)
         _grade_valuation('P/S',       0.15)
 
-        df['Value_PE_Grade'] = component_grades[1] if len(component_grades) > 1 else 'F'
-        df['Value_PB_Grade'] = component_grades[2] if len(component_grades) > 2 else 'F'
+        # Lấy đúng grade theo TÊN cột, không phụ thuộc thứ tự chèn vào list
+        df['Value_PE_Grade'] = component_grades_by_name.get('P/E', pd.Series('F', index=df.index))
+        df['Value_PB_Grade'] = component_grades_by_name.get('P/B', pd.Series('F', index=df.index))
 
-        if not component_grades:
+        if not component_grades_by_name:
             df['Value Score'] = 'F'
             return df
 
-        total_w = sum(weights)
-        weights = [w / total_w for w in weights]
-
+        total_w = sum(weights_by_name.values())
         score_num = pd.Series(0.0, index=df.index)
-        for grade_series, w in zip(component_grades, weights):
+        for col, grade_series in component_grades_by_name.items():
+            w = weights_by_name[col] / total_w
             score_num += grade_series.map(grade_map).fillna(1) * w
 
         df['Value_Score_Num'] = score_num
@@ -554,11 +602,13 @@ def calculate_growth_score(df):
     logger.info("📊 Đang tính Growth Score (EPS ưu tiên)...")
     try:
         df = df.copy()
-        _check = [c for c in ['EPS Growth YoY (%)','Revenue Growth YoY (%)','ROE (%)','ROA (%)'] if c in df.columns]
-        logger.info(f"[Growth Score] Cột có sẵn: {_check} / 4")
         grade_map = {'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1}
         component_grades = []
         weights = []
+
+        # LƯU Ý: Tên cột PHẢI khớp với cột thực tế do calculate_financial_metrics()/
+        # calculate_all_scores() tạo ra ('EPS Growth YoY (%)', 'Revenue Growth YoY (%)',
+        # 'ROE (%)', 'ROA (%)'), nếu không toàn bộ Growth Score sẽ rơi vào fallback 'F'.
 
         # EPS Growth YoY (40%) - Driver chính
         if 'EPS Growth YoY (%)' in df.columns:
@@ -842,8 +892,12 @@ def calculate_canslim_score(df):
 #Thêm hàm tính điểm vào quant_engine.py
 def calculate_tplus_score(df):
     """
-    T_PLUS_SCORE (Thang điểm 100): Đánh giá xác suất tăng giá trong T+2.5.
-    Tập trung vào Dòng tiền (Volume), Động lượng (MACD, SMA5), Sức mạnh 3 ngày (RS_3D).
+    T_PLUS_SCORE (Thang điểm 100): ĐIỂM TÍN HIỆU kỹ thuật ngắn hạn T+2.5
+    (KHÔNG PHẢI xác suất đã hiệu chỉnh/backtest — đây là tổng điểm cộng dồn
+    theo quy tắc: Dòng tiền, Động lượng MACD/SMA5, Sức mạnh RS 3 ngày, RSI).
+    Muốn gọi là "xác suất" cần backtest walk-forward + calibration (Brier
+    score, reliability curve) trước — hiện chưa có, nên không dùng từ này
+    khi hiển thị cho người dùng.
     """
     logger.info("⚡ Đang tính T+2.5 Score...")
     try:
@@ -995,6 +1049,20 @@ def calculate_all_scores(df_price, df_financial):
             logger.warning("   ⚠️ Không có dữ liệu shares, gán BVPS = 0")
 
         # 2.4. Thêm các cột raw financial data
+        # LƯU Ý QUAN TRỌNG VỀ TÊN GỌI: "Revenue_TTM"/"Net_Income_TTM" ở đây
+        # thực chất lấy từ df['revenue']/df['net_income'], vốn được build từ
+        # load_financial_data("yearly") — tức là DOANH THU/LNST CỦA NĂM TÀI
+        # CHÍNH GẦN NHẤT, KHÔNG PHẢI trailing-twelve-months thật (tổng 4 quý
+        # gần nhất). TTM thật đã được tính đúng ở nơi khác trong dự án (xem
+        # pdf_export_callback.py hàm _p6: TTM = qtr_df.tail(4).sum() theo từng
+        # chỉ tiêu) — nhưng pipeline snapshot chính (dùng cho toàn bộ Screener)
+        # chỉ load dữ liệu yearly để tiết kiệm RAM khi host (xem comment trong
+        # data_loader.py: quarterly ~100MB, tránh giữ mãi trong RAM).
+        # Muốn có TTM thật ở đây cần merge thêm quarterly data vào snapshot —
+        # đây là đánh đổi hiệu năng/bộ nhớ cần cân nhắc kỹ trước khi đổi,
+        # không sửa vội trong bản vá này. Trước mắt, KHÔNG hiển thị các cột
+        # này với nhãn "(TTM)" ra UI nếu nguồn thực chất là dữ liệu năm gần
+        # nhất — xem sửa nhãn "P/E (TTM)" → "P/E (Năm gần nhất)" bên dưới.
         df['Revenue_TTM']    = df['revenue']
         df['Net_Income_TTM'] = df['net_income']
         df['EBIT_Margin']    = df.get('EBIT Margin (%)', df['Net Margin (%)'])

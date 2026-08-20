@@ -40,7 +40,8 @@ def setup_fonts():
             font_path = fm.findfont(f, fallback_to_default=False)
             bold_font_path = fm.findfont(fm.FontProperties(family=f, weight='bold'), fallback_to_default=False)
             if font_path: break
-        except:
+        except Exception as _e:  # noqa: audit-fix bare-except
+            logger.debug(f"Suppressed non-critical error at src/callbacks/pdf_export_callback.py:43: {_e}")
             continue
 
     if not font_path:
@@ -73,8 +74,8 @@ C_LIGHT_GREY = colors.HexColor("#dce8f0")  # Viền, Grid
 C_RED = colors.HexColor("#D32F2F")  # Số âm, Nến giảm (giữ cho tài chính)
 C_GREEN = colors.HexColor("#00875a")  # Số dương, Nến tăng - IDX Green
 C_BLUE = colors.HexColor("#0057b8")  # Line giá chính
-C_ACCENT = colors.HexColor("#0090ff")  # Accent chính IDX
-C_ACCENT2 = colors.HexColor("#00d4ff")  # Cyan IDX
+C_ACCENT = colors.HexColor("#0057D9")  # Accent chính IDX
+C_ACCENT2 = colors.HexColor("#1E88E5")  # Cyan IDX
 
 GRADE_MAP = {"A": 5.0, "B": 4.0, "C": 3.0, "D": 2.0, "F": 1.0}
 
@@ -92,7 +93,8 @@ def _fmt(v, pct=False, bn=True, dec=1):
         if bn and abs(v) >= 1e6: return f"{v / 1e6:,.{dec}f}M"
         if bn and abs(v) >= 1e3: return f"{v / 1e3:,.{dec}f}K"
         return f"{v:,.{dec}f}"
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 96: {_e}")
         return str(v) if v is not None else "---"
 
 
@@ -113,7 +115,8 @@ def _pct_chg(new, old):
     try:
         if float(old) == 0: return 0
         return (float(new) - float(old)) / abs(float(old)) * 100
-    except:
+    except Exception as _e:  # noqa: audit-fix bare-except
+        logger.debug(f"Suppressed non-critical error in {__name__} near line 118: {_e}")
         return 0
 
 
@@ -239,7 +242,8 @@ def _header(c, ticker, company, exchange, title: str, stock: dict):
                         fc = C_GREEN
                     elif fv < 0:
                         fc = C_RED
-                except:
+                except Exception as _e:  # noqa: audit-fix bare-except
+                    logger.debug(f"Suppressed non-critical error in {__name__} near line 245: {_e}")
                     pass
 
             c.setFillColor(fc)
@@ -327,7 +331,8 @@ def _table(c, headers, rows, x, y, widths, row_h=15, hdr_h=17, font_sz=7.5):
                         fc = C_RED
                     elif float(txt.replace('%', '').replace(',', '')) < 0:
                         fc = C_RED
-                except:
+                except Exception as _e:  # noqa: audit-fix bare-except
+                    logger.debug(f"Suppressed non-critical error in {__name__} near line 334: {_e}")
                     pass
 
             c.setFillColor(fc)
@@ -776,7 +781,8 @@ def _p2(c, stock, yearly_df):
             try:
                 v = float(r.get(col, 0) or 0) / scale
                 row.append(f"{v:.1f}%" if is_pct else f"{v:,.1f}")
-            except:
+            except Exception as _e:  # noqa: audit-fix bare-except
+                logger.debug(f"Suppressed non-critical error in {__name__} near line 784: {_e}")
                 row.append("---")
         rows.append(row)
     # Dùng font_sz nhỏ hơn xíu cho bảng nhiều cột
@@ -800,7 +806,8 @@ def _p2(c, stock, yearly_df):
         for _, r in df7.iterrows():
             try:
                 row.append(f"{float(r.get(col, 0) or 0) / scale:,.1f}")
-            except:
+            except Exception as _e:  # noqa: audit-fix bare-except
+                logger.debug(f"Suppressed non-critical error in {__name__} near line 809: {_e}")
                 row.append("---")
         bs_rows.append(row)
     y0 = _table(c, hdrs, bs_rows, MARGIN, y0, wids, row_h=16, hdr_h=18, font_sz=7.0)
@@ -872,7 +879,8 @@ def _p3(c, stock, qtr_df):
             try:
                 v = float(r.get(col, 0) or 0) / sc
                 row.append(f"{v:.1f}%" if isp else f"{v:,.1f}")
-            except:
+            except Exception as _e:  # noqa: audit-fix bare-except
+                logger.debug(f"Suppressed non-critical error in {__name__} near line 882: {_e}")
                 row.append("---")
         rows.append(row)
     # Bảng quý 10 cột cực hẹp nên dùng font size 6.5 để tuyệt đối tránh đè chữ
@@ -1103,7 +1111,8 @@ def _p5(c, stock, qtr_df):
                         row.append(f"{v:.2f}")
                     else:
                         row.append(f"{v / 1e9:,.1f}")
-                except:
+                except Exception as _e:  # noqa: audit-fix bare-except
+                    logger.debug(f"Suppressed non-critical error in {__name__} near line 1114: {_e}")
                     row.append("---")
             rows.append(row)
         cw_bs = (CW - 110) / 4
@@ -1423,7 +1432,8 @@ def _p8(c, stock, prices_df):
             ax.set_xticks([])
             fig_st.tight_layout(pad=0.2)
             _embed(c, fig_st, MARGIN, y0 - ch3b, cw3, ch3b)
-        except:
+        except Exception as _e:  # noqa: audit-fix bare-except
+            logger.debug(f"Suppressed non-critical error in {__name__} near line 1435: {_e}")
             pass
 
         # Bollinger
@@ -1442,7 +1452,8 @@ def _p8(c, stock, prices_df):
             ax.set_xticks([])
             fig_bb.tight_layout(pad=0.2)
             _embed(c, fig_bb, MARGIN + cw3 + 4, y0 - ch3b, cw3, ch3b)
-        except:
+        except Exception as _e:  # noqa: audit-fix bare-except
+            logger.debug(f"Suppressed non-critical error in {__name__} near line 1455: {_e}")
             pass
 
         # ADX
@@ -1460,7 +1471,8 @@ def _p8(c, stock, prices_df):
             ax.set_xticks([])
             fig_adx.tight_layout(pad=0.2)
             _embed(c, fig_adx, MARGIN + 2 * (cw3 + 4), y0 - ch3b, cw3, ch3b)
-        except:
+        except Exception as _e:  # noqa: audit-fix bare-except
+            logger.debug(f"Suppressed non-critical error in {__name__} near line 1474: {_e}")
             pass
 
     _footer(c, 8)
