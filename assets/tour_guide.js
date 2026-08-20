@@ -792,7 +792,7 @@ window.FssTour = (function () {
     if (isActive) return; // Nếu tour đang chạy rồi thì bỏ qua
 
     // 🛠 1. TỰ ĐỘNG CUỘN LÊN ĐẦU TRANG
-    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 500, left: 0, behavior: 'smooth' });
 
     // 🛠 2. ĐỢI 300ms CHO MÀN HÌNH CUỘN XONG RỒI MỚI BẬT TOUR
     setTimeout(() => {

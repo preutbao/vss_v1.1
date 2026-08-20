@@ -690,8 +690,6 @@ def update_market_overview_cards(pathname):
     if df_mkt is not None and not df_mkt.empty and COL_DATE in df_mkt.columns:
         d = df_mkt.copy()
         if "Turnover" not in d.columns:
-            # File giá gốc (chưa qua auto-update yfinance) có thể chưa có cột Turnover
-            # -> tự tính Volume × Price Close để vẫn ra được số hợp lệ.
             d["Turnover"] = pd.to_numeric(d.get(COL_VOLUME, 0), errors="coerce") * \
                              pd.to_numeric(d.get(COL_CLOSE, 0), errors="coerce")
         daily_turnover = (
@@ -706,15 +704,29 @@ def update_market_overview_cards(pathname):
     if not daily_turnover.empty:
         latest_turnover = float(daily_turnover.iloc[-1])
         avg20 = float(daily_turnover.tail(20).mean())
+        
+        # Biến gốc của bạn
         vol_chart_data = daily_turnover.tail(15).tolist()
         vol_badge_str = "Avg. High" if latest_turnover >= avg20 else "Avg. Low"
+        
+        # --- BẮT ĐẦU ĐOẠN XỬ LÝ CO GIÃN TRỤC Y (Dùng trực tiếp biến gốc) ---
+        if len(vol_chart_data) > 0:
+            min_v = min(vol_chart_data)
+            max_v = max(vol_chart_data)
+            
+            if max_v > min_v:
+                baseline = min_v - (max_v - min_v) * 0.1 
+                # Ghi đè lại chính nó bằng dữ liệu đã trừ baseline
+                vol_chart_data = [v - baseline for v in vol_chart_data]
+        # --- KẾT THÚC ĐOẠN XỬ LÝ ---
+        
     else:
         latest_turnover = 0.0
         vol_chart_data = [0, 0]
         vol_badge_str = "—"
 
     vol_val_str = f"{latest_turnover / 1e9:,.0f}B"  # Tỷ VNĐ
-    vol_fig = create_mini_chart(vol_chart_data, color="#3b82f6", is_bar=True)  # Màu xanh dương
+    vol_fig = create_mini_chart(vol_chart_data, color="#3b82f6", is_bar=True)
 
     # ==========================================
     # 5. TRẢ VỀ ĐÚNG THỨ TỰ OUTPUT (không đổi)
