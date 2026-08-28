@@ -126,3 +126,26 @@
     color: #58a6ff !important;
     background-color: rgba(59, 130, 246, 0.08) !important;
 }
+
+/* ── ☀️ Light mode — khối "Chiến lược" trước đây chỉ có màu tối,
+   bổ sung bản sáng để đồng bộ khi chuyển theme ──────────────── */
+[data-theme="light"] .strategy-group-header {
+    background-color: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+    color: #47637d;
+}
+[data-theme="light"] .strategy-group-header:hover {
+    background-color: var(--bg-hover);
+}
+[data-theme="light"] .strategy-item-row {
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+[data-theme="light"] .strategy-item-row:hover {
+    background-color: var(--accent-dim);
+    color: var(--text-primary);
+}
+[data-theme="light"] .strategy-item-selected {
+    color: var(--accent) !important;
+    background-color: var(--accent-dim) !important;
+}

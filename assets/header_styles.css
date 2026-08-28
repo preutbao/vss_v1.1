@@ -1,11 +1,17 @@
 /* ============================================================================
-   đŸ¨ HERO HEADER STYLES - FSS Smart Screener
+   🎨 HERO HEADER STYLES - FSS Smart Screener
    Background Image + Glassmorphism + Centered Content
    ============================================================================ */
 
 /* ========== HIDE TRADINGVIEW WATERMARK - HARDCORE MODE ========== */
+/* ⚠️ Ghi chú rà soát: khối #main-header bên dưới nhắm vào 1 id không
+   còn tồn tại trong component nào (header thực tế dùng #fss-sticky-nav,
+   đã được xử lý sáng/tối đầy đủ trong style.css). Đây là code cũ để lại
+   từ bản header trước — không match phần tử nào nên không gây lỗi hiển
+   thị, nhưng cũng không có tác dụng. Giữ nguyên logic gốc, chỉ sửa lại
+   comment tiếng Việt bị lỗi font (mojibake) cho dễ đọc. */
 
-/* áº¨n má»i thá»© liĂªn quan TradingView - AGGRESSIVE */
+/* Ẩn mọi thứ liên quan TradingView - AGGRESSIVE */
 img[src*="tradingview"],
 img[src*="TRADINGVIEW"],
 img[alt*="tradingview"],
@@ -25,15 +31,15 @@ span[class*="tradingview"],
 /* Target specific TradingView watermark classes */
 div[style*="tradingview"],
 img[style*="tradingview"],
-/* Header specific - áº©n má»i img trong header nhá» hÆ¡n 200px */
+/* Header specific - ẩn mọi img trong header nhỏ hơn 200px */
 #main-header img[width="150"],
 #main-header img[height="50"],
 #main-header img[height="40"],
 #main-header img[height="30"],
-/* áº¨n báº¥t ká»³ img nĂ o trong header cĂ³ position absolute (watermark pattern) */
+/* ẩn bất kỳ img nào trong header có position absolute (watermark pattern) */
 #main-header img[style*="absolute"],
 #main-header img[style*="position: absolute"],
-/* áº¨n div chá»©a text TradingView */
+/* ẩn div chứa text TradingView */
 #main-header > div > img,
 header img:not([src*="logo"]) {
     display: none !important;
@@ -47,7 +53,7 @@ header img:not([src*="logo"]) {
     pointer-events: none !important;
 }
 
-/* Che overlay pháº§n gĂ³c pháº£i header (backup method) */
+/* Che overlay phần góc phải header (backup method) */
 #main-header::before {
     content: '';
     position: absolute;
@@ -68,7 +74,7 @@ header img:not([src*="logo"]) {
 
 /* ========== KEYFRAME ANIMATIONS ========== */
 
-/* Gradient flow animation - thay áº£nh TradingView xáº¥u */
+/* Gradient flow animation - thay ảnh TradingView xấu */
 @keyframes gradientFlow {
     0% {
         background-position: 0% 50%;

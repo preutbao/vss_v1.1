@@ -1,6 +1,14 @@
 /* FSS Smart Screener — Futuristic Animations */
 /* Bỏ file này vào thư mục: assets/ */
 
+/* ⚠️ Ghi chú rà soát: do các file .css trong assets/ được Dash nạp theo
+   thứ tự alphabet, các @keyframes cùng tên định nghĩa lại ở file nạp
+   sau (header.css, header_styles.css, style.css) sẽ đè lên bản ở đây —
+   "blink", "float", "gradientFlow", "gradient-shift" đang bị các file đó
+   ghi đè, và "sweep" hiện không được dùng ở đâu. Chỉ "pulse" thực sự
+   còn phát huy tác dụng (dùng cho .loading-pulse), nay đã đổi sang biến
+   theme (--accent) để tự đổi màu theo sáng/tối thay vì cyan cứng. */
+
 @keyframes sweep {
   0%   { left: -60%; }
   100% { left: 120%; }
@@ -12,8 +20,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 8px #00ffc8, 0 0 16px rgba(0,255,200,0.5); }
-  50%       { box-shadow: 0 0 4px #00ffc8, 0 0 8px rgba(0,255,200,0.3); }
+  0%, 100% { box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent-glow); }
+  50%       { box-shadow: 0 0 4px var(--accent), 0 0 8px var(--accent-dim); }
 }
 
 @keyframes gradientFlow {

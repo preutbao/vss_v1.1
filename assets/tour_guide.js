@@ -161,8 +161,8 @@ window.FssTour = (function () {
       skipBtn: "Bỏ qua",
       nextBtn: "Tiếp theo",
       disableInteraction: true,
-      // 🛠 THÊM DÒNG NÀY ĐỂ CUỘN MÀN HÌNH XUỐNG 391px
-      scrollToY: 391
+      // 🛠 THÊM DÒNG NÀY ĐỂ CUỘN MÀN HÌNH XUỐNG 700px
+      scrollToY: 700
     },
     
     // 2. Chỉ khoanh bảng kết quả

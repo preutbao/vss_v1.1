@@ -2,33 +2,6 @@ from dash import html, Input, Output, State, callback, callback_context, no_upda
 from src.app_instance import app
 from dash import clientside_callback, Input, Output
 
-clientside_callback(
-    """
-    function(is_dark_mode) {
-        if(is_dark_mode) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-        }
-        return window.dash_clientside.no_update;
-    }
-    """,
-    Output("theme-switch-button", "id"),
-    Input("theme-switch-button", "value")
-)
-
-# 🎨 Đồng bộ theme hiện tại xuống theme-store (server-side đọc được) —
-# mọi callback Python cần build màu Plotly/HTML theo theme dùng
-# State("theme-store", "data") thay vì cố đọc DOM (server không thấy DOM).
-clientside_callback(
-    """
-    function(is_dark_mode) {
-        return is_dark_mode ? 'dark' : 'light';
-    }
-    """,
-    Output("theme-store", "data"),
-    Input("theme-switch-button", "value")
-)
 
 # ============================================================================
 # CALLBACK 1: Xử lý logic nút bấm Toggle & Bài test Tour Guide

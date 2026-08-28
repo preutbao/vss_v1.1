@@ -686,7 +686,7 @@ app.clientside_callback(
 
             // Đang đóng → kiểm tra VIP
             var isVip = auth_data && auth_data.logged_in
-                        && auth_data.tier === 'vip';
+                        && (auth_data.tier === 'pro' || auth_data.tier === 'b2b');
 
             if (isVip) {
                 // VIP: mở chat panel, ẩn paywall, đóng zalo
@@ -905,7 +905,7 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
     # (src/callbacks/auth_callbacks.py) thay vì tự viết lại logic re-check
     # server-side ở đây — tránh 2 bản sao có thể lệch nhau.
     from src.callbacks.auth_callbacks import require_entitlement
-    is_vip_serverside = require_entitlement(auth_data, tier="vip")
+    is_vip_serverside = require_entitlement(auth_data, allowed_tiers=["pro", "b2b"])
 
     if not is_vip_serverside:
         history.append({

@@ -293,6 +293,16 @@ def convert_price_only():
             sector_count = df_final["GICS Sector Name"].notna().sum() if "GICS Sector Name" in df_final.columns else 0
             print(f"   -> Đã merge Sheet1: {sector_count:,} dòng có GICS Sector Name")
         
+        # ── ÉP KIỂU SỐ cho toàn bộ cột dữ liệu (trừ Ticker/Date/text công ty) ──
+        # Refinitiv đôi khi trả về text lỗi kiểu "Unable to collect data for
+        # the field 'TR.XXX'..." thay vì số ở 1 vài ô -> phải coerce về NaN
+        # trước khi lưu, nếu không to_parquet() sẽ crash vì lẫn str trong cột double.
+        _text_cols = {'Ticker', 'Company Common Name', 'GICS Sub-Industry Name',
+                    'TRBC Industry Name', 'GICS Industry Name', 'GICS Sector Name'}
+        _numeric_cols = [c for c in df_final.columns if c not in _text_cols and c != 'Date']
+        for col in _numeric_cols:
+            df_final[col] = pd.to_numeric(df_final[col], errors='coerce')
+        
         df_final.to_parquet(output_path)
         print(f"   ✅ Xong GIÁ: {len(df_final):,} dòng, cột: {len(df_final.columns)}")
 
@@ -303,32 +313,42 @@ def convert_index_only():
     if os.path.exists(output_path):
         print("   ✅ File Index đã tồn tại. Bỏ qua.")
         return
-
     print("⏳ Đang xử lý INDEX...")
     try:
-        # Header row 0: Date | .VNI (TRDPRC_1) | .VNI30 ... | .VNI100 ...
-        # Header row 1: ''   | Close           | Close       | Close
-        df = pd.read_excel(input_path, header=0)
+        df = pd.read_excel(input_path, header=0, skiprows=[1])
         df.columns = df.columns.str.strip()
 
-        # Đổi tên cột về chuẩn nội bộ
         rename_map = {}
         for col in df.columns:
             cl = col.upper()
             if 'DATE' in cl:
                 rename_map[col] = 'Date'
-            elif 'VNI30' in cl or 'VNI 30' in cl:
+            elif 'VNI30' in cl:
                 rename_map[col] = 'VN30_Close'
-            elif 'VNI100' in cl or 'VNI100' in cl:
+            elif 'VNI100' in cl:
                 rename_map[col] = 'VN100_Close'
+            elif 'HNX' in cl:
+                rename_map[col] = 'HNXINDEX_Close'
             elif 'VNI' in cl:
-                rename_map[col] = 'VNINDEX_Close'   # giữ tên VNINDEX_Close để không đổi code downstream
+                rename_map[col] = 'VNINDEX_Close'
         df = df.rename(columns=rename_map)
 
+        def _to_num(series):
+            if pd.api.types.is_numeric_dtype(series):
+                return series
+            return pd.to_numeric(
+                series.astype(str).str.replace(',', '.', regex=False),
+                errors='coerce'
+            )
+
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        df["VNINDEX_Close"] = pd.to_numeric(df["VNINDEX_Close"], errors="coerce")
+        for col in ("VNINDEX_Close", "VN30_Close", "VN100_Close", "HNXINDEX_Close"):
+            if col in df.columns:
+                df[col] = _to_num(df[col])
+
         df = df.dropna(subset=["Date", "VNINDEX_Close"])
         df = df.drop_duplicates(subset=["Date"]).sort_values("Date")
+
         df.to_parquet(output_path)
         print(f"   ✅ Xong INDEX: {len(df):,} dòng, cột: {list(df.columns)}")
     except Exception as e:

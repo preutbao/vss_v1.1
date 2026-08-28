@@ -1,6 +1,10 @@
 /* modal_backdrop_fix.css
    Fix: zoom:90% trên html làm backdrop của Bootstrap Modal
-   không phủ hết viewport. Ép backdrop dùng fixed + 100vw/vh thực. */
+   không phủ hết viewport. Ép backdrop dùng fixed + 100vw/vh thực.
+
+   Độ tối của lớp phủ (scrim) được chỉnh theo theme: dark mode giữ
+   phủ đen đậm để hợp không khí "terminal tối", light mode dùng phủ
+   nhạt hơn để không bị gắt/lệch tông với nền sáng của trang. */
 
 /* Override backdrop Bootstrap */
 .modal-backdrop {
@@ -11,8 +15,13 @@
     width:  111.1vw !important;
     height: 111.1vh !important;
     transform-origin: top left;
-    background-color: rgba(0, 0, 0, 0.72) !important;
     z-index: 1040 !important;
+}
+[data-theme="dark"] .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.72) !important;
+}
+[data-theme="light"] .modal-backdrop {
+    background-color: rgba(15, 23, 42, 0.45) !important;
 }
 
 /* Offcanvas backdrop cũng cần fix tương tự */
@@ -21,8 +30,13 @@
     top: 0 !important; left: 0 !important;
     width:  111.1vw !important;
     height: 111.1vh !important;
-    background-color: rgba(0, 0, 0, 0.72) !important;
     z-index: 1040 !important;
+}
+[data-theme="dark"] .offcanvas-backdrop {
+    background-color: rgba(0, 0, 0, 0.72) !important;
+}
+[data-theme="light"] .offcanvas-backdrop {
+    background-color: rgba(15, 23, 42, 0.45) !important;
 }
 
 /* Modal itself: đặt lại top để canh giữa đúng sau zoom */

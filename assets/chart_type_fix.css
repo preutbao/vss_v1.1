@@ -1,23 +1,49 @@
-/* Force dark text in chart-type dropdown (Light Power-BI mode) */
-.chart-type-dd .Select-value-label,
-.chart-type-dd [class$="-singleValue"],
-.chart-type-dd [class$="-placeholder"],
-.chart-type-dd input,
-.chart-type-dd .Select-value { color: #1e293b !important; }
+/* Force readable text in chart-type dropdown — theme aware */
 
-.chart-type-dd [class$="-menu"],
-.chart-type-dd .Select-menu-outer {
+/* ☀️ LIGHT mode (Power-BI style) */
+[data-theme="light"] .chart-type-dd .Select-value-label,
+[data-theme="light"] .chart-type-dd [class$="-singleValue"],
+[data-theme="light"] .chart-type-dd [class$="-placeholder"],
+[data-theme="light"] .chart-type-dd input,
+[data-theme="light"] .chart-type-dd .Select-value { color: #1e293b !important; }
+
+[data-theme="light"] .chart-type-dd [class$="-menu"],
+[data-theme="light"] .chart-type-dd .Select-menu-outer {
     background-color: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 10px !important;
     box-shadow: 0 8px 28px rgba(15, 23, 42, 0.10) !important;
 }
-.chart-type-dd [class$="-option"] {
+[data-theme="light"] .chart-type-dd [class$="-option"] {
     color: #334155 !important;
     background-color: transparent !important;
     transition: background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.chart-type-dd [class$="-option"]:hover,
-.chart-type-dd [class$="-option"]:active {
+[data-theme="light"] .chart-type-dd [class$="-option"]:hover,
+[data-theme="light"] .chart-type-dd [class$="-option"]:active {
     background-color: rgba(34, 197, 94, 0.08) !important;
+}
+
+/* 🌙 DARK mode (Terminal style) */
+[data-theme="dark"] .chart-type-dd .Select-value-label,
+[data-theme="dark"] .chart-type-dd [class$="-singleValue"],
+[data-theme="dark"] .chart-type-dd [class$="-placeholder"],
+[data-theme="dark"] .chart-type-dd input,
+[data-theme="dark"] .chart-type-dd .Select-value { color: var(--text-primary) !important; }
+
+[data-theme="dark"] .chart-type-dd [class$="-menu"],
+[data-theme="dark"] .chart-type-dd .Select-menu-outer {
+    background-color: var(--bg-elevated) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.40) !important;
+}
+[data-theme="dark"] .chart-type-dd [class$="-option"] {
+    color: var(--text-secondary) !important;
+    background-color: transparent !important;
+    transition: background-color 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="dark"] .chart-type-dd [class$="-option"]:hover,
+[data-theme="dark"] .chart-type-dd [class$="-option"]:active {
+    background-color: var(--accent-dim) !important;
 }

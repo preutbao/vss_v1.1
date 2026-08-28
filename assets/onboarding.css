@@ -32,3 +32,24 @@
 .custom-slider .rc-slider-track {
     background: #1E88E5 !important;
 }
+
+/* ============================================================================
+   ☀️ LIGHT MODE OVERRIDES
+   File này ban đầu chỉ viết cho nền tối (IPS Wizard) — bổ sung bản
+   Light để onboarding không còn card/scrollbar/label tối màu khi
+   người dùng chọn chế độ sáng.
+   ============================================================================ */
+
+[data-theme="light"] .ips-choice-card:hover {
+    border-color: var(--accent) !important;
+    background-color: var(--bg-hover) !important;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.10);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track { background: var(--bg-surface); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: var(--border-default); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+[data-theme="light"] .custom-checklist label {
+    color: var(--text-primary) !important;
+}

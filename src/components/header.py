@@ -11,16 +11,12 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 import pandas as pd
 from dash_iconify import DashIconify
-
 sys_font = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
-
-
 def _get_avatar_color(name: str) -> str:
     """Màu nền avatar Google-style dựa theo chữ cái đầu tên."""
     _palette = ["#0057D9","#0057D9","#f59e0b","#8b5cf6","#ef4444","#06b6d4","#ec4899"]
     idx = ord(name.split()[-1][0].upper()) % len(_palette) if name else 0
     return _palette[idx]
-
 # ── Helper: Input field ────────────────────────────────────────────────────────
 def _login_field(label, input_id, input_type="text", placeholder="", icon_cls=""):
     return html.Div([
@@ -53,8 +49,6 @@ def _login_field(label, input_id, input_type="text", placeholder="", icon_cls=""
             ),
         ], style={"position": "relative"}),
     ], style={"marginBottom": "16px"})
-
-
 def _pricing_row(icon_cls, color, text, is_pro=False):
     return html.Div([
         html.Div(
@@ -74,12 +68,9 @@ def _pricing_row(icon_cls, color, text, is_pro=False):
             "textDecoration": "line-through" if color == "#484f58" else "none",
         }),
     ], style={"display": "flex", "alignItems": "flex-start", "gap": "10px", "marginBottom": "10px"})
-
-
 def _create_profile_modal():
     """Popup chỉnh profile người dùng — avatar, bio, hồ sơ nhà đầu tư."""
     _avatar_templates = [f"avt_{i}" for i in range(1, 4)]
-
     return dbc.Modal(
         id="profile-modal",
         is_open=False,
@@ -166,7 +157,6 @@ def _create_profile_modal():
                         "Tải ảnh lên",
                     ], className="fss-avatar-upload-btn"),
                 ], className="fss-profile-avatar-section"),
-
                 # ── Tên hiển thị (read-only) ──────────────────────────────
                 html.Div([
                     html.Label("Tên hiển thị",
@@ -177,7 +167,6 @@ def _create_profile_modal():
                     html.Div(id="profile-display-name",
                              className="fss-profile-readonly-field"),
                 ], style={"marginBottom": "16px"}),
-
                 # ── Bio ───────────────────────────────────────────────────
                 html.Div([
                     html.Label("Giới thiệu",
@@ -197,7 +186,6 @@ def _create_profile_modal():
                         },
                     ),
                 ], style={"marginBottom": "16px"}),
-
                 # ── Hồ sơ nhà đầu tư (read-only từ onboarding) ───────────
                 html.Div([
                     html.Label("Hồ sơ nhà đầu tư",
@@ -230,11 +218,9 @@ def _create_profile_modal():
                     ),
                     dcc.Download(id="ips-pdf-download-profile"),
                 ], style={"marginBottom": "8px"}),
-
                 # Store lưu avatar đang chọn tạm trong modal
                 dcc.Store(id="selected-avatar-store", data="initials"),
             ], style={"padding": "32px 28px 16px"}),
-
             # ── Footer ───────────────────────────────────────────────────
             dbc.ModalFooter([
                 dbc.Button(
@@ -278,6 +264,129 @@ def _create_profile_modal():
         ],
     )
 
+def _field(label, input_id, placeholder, input_type="text"):
+    return html.Div([
+        html.Label(label, style={
+            "fontSize": "12px", "fontWeight": "600", "color": "#9ca3af",
+            "marginBottom": "6px", "display": "block", "letterSpacing": "0.02em"
+        }),
+        dbc.Input(
+            id=input_id, type=input_type, placeholder=placeholder,
+            style={
+                "backgroundColor": "rgba(255,255,255,0.03)",
+                "border": "1px solid rgba(255,255,255,0.08)",
+                "borderRadius": "8px", "padding": "10px 14px",
+                "fontSize": "14px", "color": "#f3f4f6", "width": "100%",
+            }
+        ),
+    ], style={"marginBottom": "16px"})
+
+
+def _textarea_field(label, input_id, placeholder):
+    return html.Div([
+        html.Label(label, style={
+            "fontSize": "12px", "fontWeight": "600", "color": "#9ca3af",
+            "marginBottom": "6px", "display": "block", "letterSpacing": "0.02em"
+        }),
+        dbc.Textarea(
+            id=input_id, placeholder=placeholder,
+            style={
+                "backgroundColor": "rgba(255,255,255,0.03)",
+                "border": "1px solid rgba(255,255,255,0.08)",
+                "borderRadius": "8px", "padding": "10px 14px",
+                "fontSize": "14px", "color": "#f3f4f6", "minHeight": "100px",
+            }
+        ),
+    ], style={"marginBottom": "20px"})
+
+
+def _create_contact_demo_modal():
+    """Popup liên hệ nhanh cho khách hàng tổ chức (B2B) — layout 2 cột kiểu WiFeed."""
+    return dbc.Modal(
+        id="contact-demo-modal",
+        is_open=False,
+        centered=True,
+        size="lg",
+        contentClassName="fss-contact-demo-modal-content",
+        style={"border": "none"},
+        children=[
+            html.Button(
+                html.I(className="fas fa-times"),
+                id="btn-close-contact-demo", n_clicks=0,
+                style={
+                    "position": "absolute", "top": "16px", "right": "16px",
+                    "background": "rgba(0,0,0,0.05)", "border": "none",
+                    "color": "#4b5563", "width": "32px", "height": "32px",
+                    "borderRadius": "50%", "zIndex": "10", "cursor": "pointer",
+                    "display": "flex", "alignItems": "center", "justifyContent": "center",
+                }
+            ),
+            html.Div(style={
+                "display": "flex", "flexWrap": "wrap",
+                "backgroundColor": "#030712", "borderRadius": "16px",
+                "overflow": "hidden",
+                "border": "1px solid rgba(255,255,255,0.08)",
+                "boxShadow": "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+            }, children=[
+                # Cột trái: thông tin liên hệ
+                html.Div(style={
+                    "flex": "1 1 32%", "padding": "40px 24px 32px 24px",
+                    "background": "linear-gradient(145deg, #05130a 0%, #020604 100%)",
+                    "borderRight": "1px solid rgba(0, 87, 217, 0.1)",
+                    "position": "relative", "overflow": "hidden",
+                }, children=[
+                    html.Div(style={
+                        "position": "absolute", "top": "-50px", "left": "-50px",
+                        "width": "160px", "height": "160px", "background": "#0057D9",
+                        "filter": "blur(100px)", "opacity": "0.15", "borderRadius": "50%"
+                    }),
+                    html.P("Bạn đang cần truy xuất dữ liệu để phục vụ cho những phân tích của mình?",
+                        style={"fontWeight": "700", "fontSize": "14px", "color": "#f9fafb", "marginBottom": "16px", "position": "relative"}),
+                    html.P("Hãy liên hệ với chúng tôi để đặt lịch hẹn và thảo luận về vấn đề này hoặc bất kỳ nhu cầu thông tin nào khác bạn có.",
+                        style={"fontSize": "13px", "color": "#9ca3af", "lineHeight": "1.6", "position": "relative"}),
+                    html.Div([
+                        html.Span("Nếu cần hỏi đáp trực tiếp, hãy liên hệ với chúng tôi:",
+                                style={"fontSize": "12px", "color": "#6b7280", "display": "block", "marginBottom": "10px"}),
+                        html.Div([
+                            html.Div(html.I(className="fas fa-phone"), style={
+                                "width": "36px", "height": "36px", "borderRadius": "50%",
+                                "backgroundColor": "#0057D9", "color": "#fff",
+                                "display": "flex", "alignItems": "center", "justifyContent": "center",
+                            }),
+                            html.Span("1900 6067", style={"fontWeight": "700", "fontSize": "15px", "color": "#f9fafb"}),
+                        ], style={"display": "flex", "alignItems": "center", "gap": "10px"}),
+                    ], style={"marginTop": "40px", "position": "relative"}),
+                ]),
+                # Cột phải: form liên hệ
+                html.Div(style={"flex": "1 1 68%", "padding": "32px", "backgroundColor": "#030712"}, children=[
+                    html.H4("Hãy để lại thông tin liên hệ", style={
+                        "fontSize": "18px", "fontWeight": "700", "color": "#f9fafb", "marginBottom": "18px"
+                    }),
+                    _field("Họ và tên", "contact-demo-name", "Nhập họ và tên"),
+                    _field("Số điện thoại", "contact-demo-phone", "Nhập số điện thoại"),
+                    _field("Email", "contact-demo-email", "Nhập email", input_type="email"),
+                    html.Div(style={"display": "flex", "gap": "16px"}, children=[
+                        html.Div(_field("Công ty", "contact-demo-company", "Nhập tên công ty"), style={"flex": "1"}),
+                        html.Div(_field("Chức vụ", "contact-demo-role", "Nhập chức vụ"), style={"flex": "1"}),
+                    ]),
+                    _textarea_field("Nhu cầu tư vấn", "contact-demo-note", "Nhập nhu cầu sản phẩm bạn mong muốn"),
+                    html.Div(
+                        dbc.Button(
+                            "Xác Nhận",
+                            id="btn-confirm-contact-demo",  # mock — chưa nối logic gửi dữ liệu đi đâu cả
+                            n_clicks=0,
+                            style={
+                                "backgroundColor": "#fff", "color": "#030712", "fontWeight": "600",
+                                "fontSize": "14px", "border": "none", "borderRadius": "8px",
+                                "padding": "10px 28px",
+                            }
+                        ),
+                        style={"textAlign": "right", "marginTop": "8px"}
+                    ),
+                ]),
+            ]),
+        ]
+    )
 
 # ── Login Modal ────────────────────────────────────────────────────────────────
 def _create_login_modal():
@@ -310,7 +419,7 @@ def _create_login_modal():
                 "boxShadow": "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
             }, children=[
                 # Left: Login form
-                html.Div(style={"flex": "1 1 40%", "padding": "48px 32px", "display": "flex", "flexDirection": "column", "justifyContent": "center"}, children=[
+                html.Div(style={"flex": "1 1 40%", "padding": "32px 32px", "display": "flex", "flexDirection": "column", "justifyContent": "center"}, children=[
                     html.Div([
                         html.Div([
                             html.I(className="fas fa-user", style={"color": "#fff", "fontSize": "16px"}),
@@ -354,7 +463,7 @@ def _create_login_modal():
                 ]),
                 # Right: Upsell
                 html.Div(style={
-                    "flex": "1 1 55%", "padding": "48px 32px",
+                    "flex": "1 1 55%", "padding": "32px 32px",
                     "background": "linear-gradient(145deg, #05130a 0%, #020604 100%)",
                     "borderLeft": "1px solid rgba(0, 87, 217, 0.1)",
                     "position": "relative", "overflow": "hidden"
@@ -412,7 +521,6 @@ def _create_login_modal():
                             _pricing_row("fas fa-check", "#00e676", "Backtest 10 trường phái", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Báo cáo phân tích chuyên sâu", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Tín hiệu Margin Crisis Radar", is_pro=True),
-
                             html.A("Nâng cấp ngay", href="https://www.vietcap.com.vn/mo-tai-khoan?language=vi", target="_blank", style={
                                 "display": "block", "textAlign": "center", "marginTop": "18px",
                                 "padding": "11px 0",
@@ -422,7 +530,6 @@ def _create_login_modal():
                                 "border": "none", "transition": "all 0.2s",
                                 "boxShadow": "0 4px 14px rgba(245, 124, 0, 0.35)",
                             }),
-
                             # ── Ô nhập mã kích hoạt ──
                             html.Div([
                                 html.Div("Đã có mã kích hoạt?",
@@ -472,19 +579,42 @@ def _create_login_modal():
                                 "padding": "12px 14px",
                                 "marginBottom": "12px",
                             }),
-
-                            html.Div([
-                                html.I(className="fas fa-info-circle", style={"marginRight": "4px", "fontSize": "10px"}),
-                                "Kèm theo ưu tiên hỗ trợ chiến lược từ đội ngũ tư vấn Vietcap."
-                            ], style={"fontSize": "10px", "color": "#6b7280", "fontStyle": "italic", "textAlign": "center", "marginTop": "12px", "lineHeight": "1.4"})
                         ]),
+                    ]),
+                    # ── THÊM KHỐI B2B ENTERPRISE Ở ĐÂY ──
+                    html.Div(style={
+                        "marginTop": "24px", 
+                        "padding": "16px",
+                        "backgroundColor": "rgba(255, 255, 255, 0.02)",
+                        "border": "1px dashed rgba(255, 255, 255, 0.15)",
+                        "borderRadius": "8px",
+                        "transition": "all 0.2s"
+                    }, className="b2b-hover-box", children=[
+                        html.Div([
+                            html.Span("GIẢI PHÁP ENTERPRISE & WHITE-LABEL", style={
+                                "fontSize": "11px", "fontWeight": "800", 
+                                "color": "#9ca3af", "letterSpacing": "0.1em"
+                            }),
+                        ], style={"marginBottom": "8px"}),
+                        html.Div([
+                            html.Span("Tích hợp API, Export Data thô & Báo cáo cho Định chế tài chính.", 
+                                      style={"fontSize": "12px", "color": "#6b7280", "flex": "1"}),
+                            html.Span([
+                                "Liên hệ ",
+                                html.I(className="fas fa-phone-volume", style={"marginLeft": "2px"}),
+                            ], id="btn-open-contact-demo", n_clicks=0, style={
+                                "marginLeft": "16px", "fontSize": "12px", "fontWeight": "700",
+                                "color": "#00e676", "textDecoration": "none", "whiteSpace": "nowrap",
+                                "cursor": "pointer", "display": "inline-flex", "alignItems": "center", "gap": "4px",
+                            })
+                        ], style={"display": "flex", "alignItems": "center"})
                     ])
-                ])
+                    # ── KẾT THÚC KHỐI B2B ──
+
+                ]) # Kết thúc phần Right: Upsell
             ])
         ]
     )
-
-
 # ── Vietcap coin illustration (inline SVG) ────────────────────────────────────
 def _create_coin_svg():
     """
@@ -494,8 +624,6 @@ def _create_coin_svg():
     return html.Div(className="fss-coin-wrap", children=[
         html.Img(src="/assets/coin.svg", className="fss-coin-svg", style={"width": "100%", "height": "100%"})
     ])
-
-
 # ── TOPBAR ────────────────────────────────────────────────────────────────────
 def create_topbar(id_suffix=""):
     wrapper_id = f"vietcap-topbar{id_suffix}" if id_suffix else "vietcap-topbar-only"
@@ -544,6 +672,7 @@ def create_topbar(id_suffix=""):
         dcc.Store(id='auth-store', storage_type='local', data={"logged_in": False}),
         dcc.Store(id='user-phone-store', storage_type='session', data=None),
         _create_login_modal(),
+        _create_contact_demo_modal(),
         scroll_script,
         html.Div(id="fss-sticky-nav", children=[
             html.Div(className="fss-nav-inner", children=[
@@ -554,13 +683,13 @@ def create_topbar(id_suffix=""):
                         "fontSize": "10px", "marginLeft": "2px",
                         "verticalAlign": "super", "fontStyle": "normal",
                     }),
-                ], href="https://www.vietcap.com.vn", target="_blank",
+                ], href="#faq-section", target="_blank",
                     style={"textDecoration": "none", "display": "flex", "alignItems": "center"}),
                 # Nav links
                 html.Div([
                     html.A("Về chúng tôi", href="#faq-section", className="vietcap-nav-link"),
                     html.A("Dịch vụ", href="#faq-section", className="vietcap-nav-link"),
-                    html.A("Sản phẩm", href="#", className="vietcap-nav-link"),
+                    html.A("Sản phẩm", href="#screener-scroll-anchor", className="vietcap-nav-link"),
                     html.A("Truyền thông", href="#faq-section", className="vietcap-nav-link"),
                     html.A("Screener", href="#screener-scroll-anchor", className="vietcap-nav-link vietcap-nav-screener"),
                 ], className="d-flex align-items-center gap-4"),
@@ -621,8 +750,6 @@ def create_topbar(id_suffix=""):
         }),
         html.Div(id="navbar-user-menu", style={"display": "none"}),
     ])
-
-
 # ── HERO BANNER ───────────────────────────────────────────────────────────────
 def _get_top_movers():
     """Lấy top 6 tăng mạnh và 4 giảm mạnh nhất từ snapshot thật."""
@@ -685,8 +812,6 @@ def _get_top_movers():
             {"ticker": "NVL",  "pct": -4.5, "price": "7,500",   "up": False},
             {"ticker": "PDR",  "pct": -2.8, "price": "9,200",   "up": False},
         ]
-
-
 def _build_top_movers_card(movers):
     """Tạo card 'TOP ĐỘNG' tĩnh (kiểu bảng nhỏ góc phải hero), lấy dữ liệu
     thật từ _get_top_movers(). Thay cho globe SVG + ticker marquee cũ —
@@ -720,8 +845,6 @@ def _build_top_movers_card(movers):
             html.Div(className="fss-movers-list", children=rows + rows),
         ]),
     ])
-
-
 def _build_ticker_tape(movers):
     """Dải ticker chạy ngang full-width ngay dưới navbar — dùng CHÍNH dữ liệu
     thật từ _get_top_movers() (không phải trang trí giả), nhân đôi để cuộn
@@ -739,45 +862,83 @@ def _build_ticker_tape(movers):
     return html.Div(id="fss-ticker-tape", children=[
         html.Div(className="fss-tape-track", children=chips + chips),
     ])
-
-
 def create_banner():
-    """[BƯỚC 1] Home Hero mới — Tiêu đề serif xanh lá + mô tả + thanh tìm kiếm.
-    Thay thế hero cyberpunk/terminal cũ. Không component nào bên trong hero cũ
-    (fss-headline, fss-cta, fss-readout, ticker tape, top-movers card...) có
-    callback tham chiếu (đã kiểm tra chéo header/sidebar/screener/ips_wizard/
-    psychology_modal) nên gỡ bỏ an toàn. Các bước sau (KPI strip, Top AI Picks,
-    Market Pulse, Watchlist) sẽ được thêm bên dưới hero này, bọc trong Div/
-    className mới — không đụng lại phần này.
-    """
-    return html.Div(id="home-hero", className="home-hero", children=[
-        html.H1("Fin Smart Screener", className="home-hero-title"),
-        html.P(
-            "Lọc, xếp hạng và theo dõi hơn 1.500 mã chứng khoán Việt Nam bằng 165+ "
-            "chỉ báo định lượng — từ định giá, tăng trưởng đến kỹ thuật — trong một màn hình duy nhất.",
-            className="home-hero-desc",
-        ),
-        html.Div(className="home-hero-search", children=[
-            dcc.Input(
-                id="home-hero-search-input",
-                type="text",
-                placeholder="Enter ticker symbol (e.g. VCB, HPG, FPT)...",
-                className="home-hero-search-input",
-                debounce=True,
-                autoComplete="off",
+    """[BƯỚC 1] Home Hero — nền để trong suốt để hero-wrap phía ngoài
+    (vietcap-header-bg-wrap) lộ background GIF ra qua CSS ::before."""
+    return html.Div(
+        id="home-hero",
+        className="home-hero",
+        style={"backgroundColor": "transparent"},
+        children=[
+            html.H1("Fin Smart Screener", className="home-hero-title"),
+            html.P(
+                "Lọc, xếp hạng và theo dõi hơn 1.500 mã chứng khoán Việt Nam bằng 165+ "
+                "chỉ báo định lượng — từ định giá, tăng trưởng đến kỹ thuật — trong một màn hình duy nhất.",
+                className="home-hero-desc",
             ),
-            html.Span("⌘K", className="home-hero-kbd"),
-            html.Button(
-                html.I(className="fa-solid fa-arrow-right"),
-                id="home-hero-search-submit",
-                className="home-hero-search-btn",
-                n_clicks=0,
-                title="Tìm kiếm",
+            html.Div(
+                style={
+                    "display": "flex",
+                    "justifyContent": "center",
+                    "alignItems": "center",
+                    "gap": "10px",
+                    "flexWrap": "nowrap",
+                    "marginTop": "8px",
+                    "marginBottom": "8px",
+                    "width": "100%"
+                },
+                children=[
+                    html.Div(
+                        className="home-hero-search",
+                        style={
+                            "width": "100%",
+                            "maxWidth": "450px"
+                        },
+                        children=[
+                            dcc.Input(
+                                id="home-hero-search-input",
+                                type="text",
+                                placeholder="Nhập mã cổ phiếu (VCB, FPT, HPG,...)",
+                                className="home-hero-search-input",
+                                debounce=True,
+                                autoComplete="off",
+                                style={"width": "100%"}
+                            ),
+                            html.Button(
+                                html.I(className="fa-solid fa-arrow-right"),
+                                id="home-hero-search-submit",
+                                className="home-hero-search-btn",
+                                n_clicks=0,
+                                title="Tìm kiếm",
+                            ),
+                        ]
+                    ),
+                    html.A(
+                        href="#screener-scroll-anchor",
+                        style={"textDecoration": "none"},
+                        children=[
+                            html.Button(
+                                [
+                                    html.I(className="fa-solid fa-filter", style={"marginRight": "8px"}),
+                                    "Lọc Cổ Phiếu Ngay"
+                                ],
+                                className="fss-tour-pulse",
+                                style={
+                                    "padding": "12px 24px",
+                                    "fontSize": "16px",
+                                    "cursor": "pointer",
+                                    "height": "100%",
+                                    "display": "flex",
+                                    "alignItems": "center",
+                                    "whiteSpace": "nowrap"
+                                }
+                            )
+                        ]
+                    )
+                ]
             ),
-        ]),
-    ])
-
-
+        ]
+    )
 # ── [BƯỚC 2] MARKET OVERVIEW — 4 thẻ chỉ số ngang ──────────────────────────────
 def _market_index_card(key: str, label: str) -> html.Div:
     """1 thẻ chỉ số (VN-INDEX / HNX-INDEX / VN30-INDEX).
@@ -799,8 +960,6 @@ def _market_index_card(key: str, label: str) -> html.Div:
             config={"staticPlot": True, "displayModeBar": False},
         ),
     ])
-
-
 def _market_volume_card() -> html.Div:
     """Thẻ TOTAL VOLUME — khác 3 thẻ index ở chỗ badge là nhãn xu hướng
     (vd 'Avg. High') thay vì %, và biểu đồ mini là bar chart thay vì line."""
@@ -817,21 +976,14 @@ def _market_volume_card() -> html.Div:
             config={"staticPlot": True, "displayModeBar": False},
         ),
     ])
-
-
 def create_market_overview() -> html.Div:
-    """Grid ngang 4 cột: VN-INDEX, HNX-INDEX, VN30-INDEX, TOTAL VOLUME.
-    Bọc trong className mới (home-market-grid) theo đúng nguyên tắc — không
-    đụng tới các Div/id đã tồn tại ở nơi khác trong app.
-    """
+    """Grid ngang 4 cột: VN-INDEX, HNX-INDEX, VN30-INDEX, TOTAL VOLUME."""
     return html.Div(id="home-market-overview", className="home-market-grid", children=[
         _market_index_card("vnindex", "VN-INDEX"),
         _market_index_card("hnxindex", "HNX-INDEX"),
         _market_index_card("vn30index", "VN30-INDEX"),
         _market_volume_card(),
     ])
-
-
 # ── [BƯỚC 3] TOP FIN PICKS + MARKET PULSE — layout 65/35 ──────────────────────
 _PICK_TAGS = {
     # variant: (nhãn hiển thị, biến CSS màu tái dùng từ design token có sẵn)
@@ -839,13 +991,9 @@ _PICK_TAGS = {
     "value":    ("VALUE",    "accent"),     # xanh dương — dùng chung --accent
     "momentum": ("MOMENTUM", "warning"),    # cam — dùng chung --warning
 }
-
-
 def _pick_tag(variant: str) -> html.Span:
     label, _ = _PICK_TAGS[variant]
     return html.Span(label, className=f"home-pick-tag home-pick-tag-{variant}")
-
-
 def _star_row(filled: int = 5, total: int = 5) -> html.Div:
     """Dải sao — mặc định 5/5 vì đây là các mã đã đạt chuẩn 5 sao từ bộ lọc.
     Dùng html.I (Font Awesome) để dễ đổi trạng thái filled/empty qua callback sau này."""
@@ -854,8 +1002,6 @@ def _star_row(filled: int = 5, total: int = 5) -> html.Div:
         is_filled = i < filled
         stars.append(html.I(className=f"fa-{'solid' if is_filled else 'regular'} fa-star"))
     return html.Div(stars, className="home-pick-card-stars")
-
-
 def _pick_card(key: str, ticker: str, tag_variant: str, price_str: str = "—",
                 change_str: str = "", is_positive: bool = True, stars_filled: int = 5,
                 insight_text: str = None) -> html.Div:
@@ -881,8 +1027,6 @@ def _pick_card(key: str, ticker: str, tag_variant: str, price_str: str = "—",
         html.Div(change_str, className=change_cls),
     ]))
     return html.Div(id=f"home-pick-{key}-card", className="home-pick-card", children=children)
-
-
 def create_top_fin_picks() -> html.Div:
     """Cột trái (65%) — Top Fin Picks. [BƯỚC 3.1] `home-picks-grid` khởi tạo
     RỖNG (children=[]) — không còn fix cứng TPB/MBB/VHM. Callback trong
@@ -901,15 +1045,12 @@ def create_top_fin_picks() -> html.Div:
         ]),
         html.Div(id="home-picks-grid", className="home-picks-grid", children=[]),
     ])
-
-
 def create_market_pulse() -> html.Div:
     """Cột phải (35%) — thanh Market Breadth + danh sách cảnh báo dòng tiền.
     Toàn bộ nội dung động để id trống/placeholder cho callback tự nối sau.
     """
     return html.Div(id="home-market-pulse", className="home-pulse-col", children=[
         html.H3("Market Pulse", className="home-pulse-title"),
-
         # ── Market Breadth ──
         html.Div(className="home-pulse-breadth", children=[
             html.Div(className="home-pulse-breadth-head", children=[
@@ -924,7 +1065,6 @@ def create_market_pulse() -> html.Div:
                           style={"width": "38%"}),
             ]),
         ]),
-
         # ── Danh sách cảnh báo — callback trả list các <li> mới để thay children ──
         html.Ul(id="home-pulse-alerts-list", className="home-pulse-alerts", children=[
             html.Li(className="home-pulse-alert-item", children=[
@@ -950,27 +1090,112 @@ def create_market_pulse() -> html.Div:
             ]),
         ]),
     ])
-
-
 def create_picks_and_pulse_section() -> html.Div:
-    """Bọc chung 'Top Fin Picks' (65%) + 'Market Pulse' (35%) trong 1 grid.
-    className mới hoàn toàn — không đụng tới phần Hero/Market Overview đã có.
-    """
+    """Bọc chung 'Top Fin Picks' (65%) + 'Market Pulse' (35%) trong 1 grid."""
     return html.Div(id="home-picks-pulse-section", className="home-picks-pulse-grid", children=[
         create_top_fin_picks(),
         create_market_pulse(),
     ])
-
-
 # ── MAIN HEADER ───────────────────────────────────────────────────────────────
-def create_header():
-    return html.Div(id="vietcap-master-header", style={"position": "relative"}, children=[
-        create_topbar(),
+def create_header_content():
+    """
+    Phần "nội dung + nền GIF" của header — KHÔNG bao gồm create_topbar().
+    Tách riêng hàm này vì main.py hiện tại gọi create_topbar() độc lập ở
+    chỗ khác trong app.layout (để topbar dính sticky trên cùng, tách khỏi
+    khối có thể cuộn) — gọi lại create_topbar() lần nữa bên trong sẽ tạo
+    ra 2 topbar trùng lặp (trùng id).
+
+    Vì lý do đó, layout thật trong main.py trước đây gọi thẳng 3 hàm con
+    (create_banner(), create_market_overview(), create_picks_and_pulse_
+    section()) tách rời nhau, bỏ qua toàn bộ lớp bọc GIF nền — đây là
+    hàm thay thế cho đúng 3 dòng đó, giữ nguyên hiệu ứng GIF blur mà
+    không kéo theo create_topbar().
+
+    Cách dùng trong main.py: thay
         create_banner(),
         create_market_overview(),
         create_picks_and_pulse_section(),
-    ])
+    bằng
+        create_header_content(),
+    (một lời gọi hàm duy nhất, trả về đủ cả 3 khối + lớp nền GIF).
 
+    Background GIF dựng 100% bằng INLINE STYLE (không phụ thuộc style.css).
+    Cấu trúc:
+      vietcap-header-bg-wrap (position: relative, overflow: hidden — INLINE)
+        ├── bg_gif_layer (position: absolute, phủ kín, blur — INLINE)
+        └── content_layer (position: relative, zIndex: 1 — INLINE)
+              ├── wrap-transparent > create_banner()
+              ├── wrap-transparent > create_market_overview()
+              └── wrap-transparent > create_picks_and_pulse_section()
+    """
+    GIF_URL = "/assets/infinite_candlesticks_dark_glow.gif"
+
+    bg_gif_layer = html.Div(style={
+        "position": "absolute",
+        "top": "-24px", "bottom": "-24px",
+        # "Full-bleed" trick: ép chiều rộng đúng bằng 100% VIEWPORT (100vw),
+        # canh giữa bằng left:50% + translateX(-50%) — nhờ vậy luôn phủ kín
+        # ngang màn hình dù div cha (vietcap-header-bg-wrap) hẹp hơn do bị
+        # max-width/padding của các khối con (home-hero, home-market-grid...)
+        # bên trong quy định. Chiều cao vẫn giữ nguyên theo cha (top/bottom
+        # -24px), phần dư theo chiều dọc bị cắt bởi overflowY: hidden ở cha.
+        "left": "50%",
+        "width": "100vw",
+        "transform": "translateX(-50%)",
+        "backgroundImage": f"url('{GIF_URL}')",
+        "backgroundSize": "cover",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat",
+        "filter": "blur(8px)",
+        "opacity": "0.35",
+        "zIndex": "0",
+        "pointerEvents": "none",
+    })
+
+    def _transparent_wrap(component):
+        return html.Div(component, style={"backgroundColor": "transparent", "position": "relative"})
+
+    # SAU — thêm dcc.Interval làm phần tử đầu tiên:
+    content_layer = html.Div(
+        style={"position": "relative", "zIndex": "1"},
+        children=[
+            # Interval cập nhật header mỗi 60s — đồng bộ với Wifeed fetch
+            dcc.Interval(
+                id="header-realtime-interval",
+                interval=60_000,   # 60 giây
+                n_intervals=0,
+                disabled=False,
+            ),
+            _transparent_wrap(create_banner()),
+            _transparent_wrap(create_market_overview()),
+            _transparent_wrap(create_picks_and_pulse_section()),
+        ],
+    )
+
+    return html.Div(
+        id="vietcap-header-bg-wrap",
+        # overflowX: visible để lớp gif "100vw" phía trên được phép tràn ra
+        # ngoài bề rộng thật của khối cha (vốn có thể hẹp hơn viewport do
+        # max-width của home-hero/home-market-grid...) và phủ đúng full màn
+        # hình theo chiều ngang. overflowY: hidden để cắt phần dư theo chiều
+        # dọc như yêu cầu (-24px trên/dưới), không cho nó tràn xuống nội
+        # dung phía sau.
+        style={"position": "relative", "overflowX": "visible", "overflowY": "hidden"},
+        children=[bg_gif_layer, content_layer],
+    )
+
+
+def create_header():
+    """
+    Bản đầy đủ (topbar + nội dung + GIF nền) — dùng khi bạn KHÔNG gọi
+    create_topbar() riêng ở chỗ khác trong layout. Với cấu trúc main.py
+    hiện tại (topbar đã tách riêng), dùng create_header_content() ở trên
+    thay vì hàm này để tránh trùng topbar.
+    """
+    return html.Div(id="vietcap-master-header", style={"position": "relative"}, children=[
+        create_topbar(),
+        create_header_content(),
+    ])
 # LƯU Ý: callback theme toggle (đổi data-theme trên <html>) nằm trong
 # main.py, dùng app.clientside_callback(...) — đúng convention của dự án
 # (mọi clientside_callback khác đều đăng ký qua app, không đăng ký rời

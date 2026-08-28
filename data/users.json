@@ -1,12 +1,14 @@
 {
   "abcABC": {
     "password": "scrypt:32768:8:1$MLvLYygK5UWjUWrq$5b95f0a6d2681a3f4af82f0ed0dca9f4f94b598ebd3c7f138d5c2ec9a6777bcd03de8562e4f511f3a60f64c1dfddc9148fe29443bb011e70f724b1e66354c95e",
-    "tier": "vip",
-    "display_name": "Guest Demo"
+    "tier": "pro",
+    "display_name": "Guest Demo",
+    "bio": "",
+    "avatar": "avt_1"
   },
   "muoigio37": {
-    "password": "29062005",
-    "tier": "vip",
+    "password": "scrypt:32768:8:1$xfWIy5PkEkj6NBSD$a8bbcca9b12b643c0843567e310d2fb7fada8e7d4dd632e5b3a8cf21b4f711da7f6f3a60ace21169b0b3e9b265519e8afb579c93657a67ebb28b9e346ad6ce4b",
+    "tier": "b2b",
     "display_name": "Nguyễn Văn Mười",
     "bio": "ihihihi",
     "avatar": "avt_3"

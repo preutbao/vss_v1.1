@@ -22,6 +22,9 @@ COL_VOLUME = "Volume"
 # ============================================================================
 # CALLBACK: CẬP NHẬT BIỂU ĐỒ VÀ BẢNG DỮ LIỆU (DASHBOARD CHÍNH)
 # ============================================================================
+import plotly.graph_objects as go
+from dash import no_update
+
 @app.callback(
     [Output("stock-title", "children"),
      Output("price-chart", "figure"),
@@ -29,16 +32,32 @@ COL_VOLUME = "Volume"
     [Input("ticker-dropdown", "value")]
 )
 def update_dashboard(selected_ticker):
-    # 1. Load và Lọc dữ liệu
+    # 🌟 THUỐC GIẢI: Tạo một biểu đồ tàng hình, tắt luôn trục X, Y để Plotly không bao giờ bị lỗi scale
+    empty_fig = go.Figure(layout=dict(
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=0, r=0, t=0, b=0)
+    ))
+
+    # 1. BẮT LỖI KHI CHƯA CHỌN MÃ
+    if not selected_ticker:
+        # Thay vì no_update, truyền thẳng empty_fig vào để đè bẹp lỗi
+        return "Chưa chọn mã", empty_fig, no_update
+
     df = load_market_data()
     
-    if selected_ticker is None:
-        return "Chưa chọn mã", {}, ""
+    # 2. BẮT LỖI KHI DATA TỔNG BỊ RỖNG
+    if df is None or df.empty:
+        return "Dữ liệu đang cập nhật...", empty_fig, no_update
 
-    # Lọc lấy đúng mã user chọn
     dff = df[df[COL_TICKER] == selected_ticker].copy()
     
-    # Sắp xếp theo ngày tăng dần để vẽ cho đúng
+    # 3. BẮT LỖI KHI MÃ CỔ PHIẾU NÀY KHÔNG CÓ DATA (HOẶC CHỈ CÓ 1 NGÀY)
+    if dff.empty or len(dff) < 2:
+        return f"Không đủ dữ liệu vẽ nến cho {selected_ticker}", empty_fig, no_update
+        
     dff = dff.sort_values(by=COL_DATE)
 
     # 2. Vẽ biểu đồ Nến (Candlestick)
@@ -557,11 +576,27 @@ import numpy as np
 
 def create_mini_chart(y_data, color="#10b981", is_bar=False):
     """Vẽ sparkline (line) hoặc bar chart mini, nền trong suốt."""
+    
+    # 🔴 BƯỚC FIX LỖI 1: Bọc xử lý data an toàn
+    # Đảm bảo có ít nhất 2 điểm. Nếu mảng trống hoặc < 2 phần tử, chèn thêm điểm giả bằng 0
+    safe_y = list(y_data) if y_data is not None else []
+    if len(safe_y) < 2:
+        safe_y = [0, 0]
+        
+    # 🔴 BƯỚC FIX LỖI 2: Xử lý trục Y bằng phẳng (min = max)
+    # Plotly bị lỗi "axis scaling" nếu tất cả các điểm có giá trị y bằng nhau.
+    min_v, max_v = min(safe_y), max(safe_y)
+    y_range_kwargs = {}
+    if min_v == max_v:
+        # Nếu đường thẳng băng, ép buộc range trục Y dao động +/- 1% quanh giá trị đó (hoặc [0, 1] nếu = 0)
+        padding = abs(min_v) * 0.01 if min_v != 0 else 1
+        y_range_kwargs = {"range": [min_v - padding, max_v + padding]}
+
     fig = go.Figure()
     if is_bar:
-        fig.add_trace(go.Bar(y=y_data, marker_color=color, hoverinfo='skip'))
+        fig.add_trace(go.Bar(y=safe_y, marker_color=color, hoverinfo='skip'))
     else:
-        fig.add_trace(go.Scatter(y=y_data, mode='lines', line=dict(color=color, width=2), hoverinfo='skip'))
+        fig.add_trace(go.Scatter(y=safe_y, mode='lines', line=dict(color=color, width=2), hoverinfo='skip'))
     
     fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0),
@@ -569,7 +604,8 @@ def create_mini_chart(y_data, color="#10b981", is_bar=False):
         plot_bgcolor="rgba(0,0,0,0)",
         showlegend=False,
         xaxis=dict(visible=False, fixedrange=True),
-        yaxis=dict(visible=False, fixedrange=True)
+        # 🔴 BƯỚC FIX LỖI 3: Truyền range an toàn vào trục Y nếu bị bằng phẳng
+        yaxis=dict(visible=False, fixedrange=True, **y_range_kwargs)
     )
     return fig
 
@@ -582,7 +618,6 @@ def create_mini_chart(y_data, color="#10b981", is_bar=False):
     Output('home-mkt-vnindex-pts', 'className'),
     Output('home-mkt-vnindex-spark', 'figure'),
     
-    # --- HNX-INDEX ---
     Output('home-mkt-hnxindex-value', 'children'),
     Output('home-mkt-hnxindex-badge', 'children'),
     Output('home-mkt-hnxindex-badge', 'className'),
@@ -604,18 +639,18 @@ def create_mini_chart(y_data, color="#10b981", is_bar=False):
     Output('home-mkt-volume-spark', 'figure'),
     
     # Dùng id của tiêu đề hero để kích hoạt khi trang load xong
-    Input('home-hero', 'children'), 
+    Input('home-hero', 'children'),
+    Input('header-realtime-interval', 'n_intervals'),
     prevent_initial_call=False
 )
-def update_market_overview_cards(pathname):
+def update_market_overview_cards(pathname, n_intervals):
     # ==========================================
     # 1. HELPER — format số + màu tăng/giảm, dùng chung cho 3 thẻ index
-    # (giữ nguyên logic gốc, không đổi)
     # ==========================================
     def format_index_data(current_val, change_pct, change_pts, chart_data):
         is_up = change_pct >= 0
         color_class = "home-market-badge is-positive" if is_up else "home-market-badge is-negative"
-        chart_color = "#10b981" if is_up else "#ef4444"  # Xanh lục nếu tăng, đỏ nếu giảm
+        chart_color = "#10b981" if is_up else "#ef4444"
 
         val_str = f"{current_val:,.2f}"
         badge_str = f"{'+' if is_up else ''}{change_pct:.2f}%"
@@ -624,63 +659,83 @@ def update_market_overview_cards(pathname):
         fig = create_mini_chart(chart_data, color=chart_color, is_bar=False)
         return val_str, badge_str, color_class, pts_str, color_class, fig
 
-    def _index_series(df, col, n=30):
-        """current_val, pts, pct, spark(n phiên gần nhất) từ 1 cột chỉ số của load_index_data()."""
+    def _index_series(df, col, n=30, symbol_key=None):
         if df is None or df.empty or col not in df.columns:
-            return 0.0, 0.0, 0.0, [0, 0]
+            return 0.0, 0.0, 0.0, [0.0, 0.0]
         d = df.dropna(subset=[col]).sort_values("Date")
         if d.empty:
-            return 0.0, 0.0, 0.0, [0, 0]
+            return 0.0, 0.0, 0.0, [0.0, 0.0]
+
         last_val = float(d[col].iloc[-1])
         prev_val = float(d[col].iloc[-2]) if len(d) >= 2 else last_val
         pts = last_val - prev_val
         pct = (pts / prev_val * 100) if prev_val else 0.0
         spark = d[col].tail(n).tolist()
+
+        # ── Ưu tiên realtime nếu có (giống logic bảng lọc dùng get_realtime_snapshot) ──
+        if symbol_key:
+            try:
+                from src.backend.wifeed_updater import get_realtime_index
+                rt = get_realtime_index().get(symbol_key)
+                if rt and rt.get("close") is not None:
+                    rt_close = float(rt["close"])
+                    rt_pct = float(rt.get("change_pct", pct) or 0)
+                    rt_pts = rt_close - prev_val if prev_val else pts
+
+                    last_val = rt_close
+                    pct = rt_pct
+                    pts = rt_pts
+                    if spark:
+                        spark[-1] = rt_close  # cập nhật điểm cuối sparkline theo giá live
+                    else:
+                        spark = [rt_close, rt_close]
+            except Exception:
+                pass
+
         if len(spark) < 2:
             spark = [last_val, last_val]
+
         return last_val, pts, pct, spark
 
     # ==========================================
-    # 2. VN-INDEX & VN30-INDEX — dữ liệu THẬT từ load_index_data()
+    # 2. VN-INDEX & VN30-INDEX
     # ==========================================
     try:
         df_idx = load_index_data()
     except Exception:
         df_idx = pd.DataFrame()
 
-    vn_current, vn_pts_raw, vn_pct, vn_spark = _index_series(df_idx, "VNINDEX_Close")
+    vn_current, vn_pts_raw, vn_pct, vn_spark = _index_series(df_idx, "VNINDEX_Close", symbol_key="VNINDEX")
+
     vn_val, vn_badge, vn_badge_cls, vn_pts, vn_pts_cls, vn_fig = format_index_data(
         current_val=vn_current, change_pct=vn_pct, change_pts=vn_pts_raw, chart_data=vn_spark
     )
 
-    vn30_current, vn30_pts_raw, vn30_pct, vn30_spark = _index_series(df_idx, "VN30_Close")
+    vn30_current, vn30_pts_raw, vn30_pct, vn30_spark = _index_series(df_idx, "VN30_Close", symbol_key="VN30")
+
     vn30_val, vn30_badge, vn30_badge_cls, vn30_pts, vn30_pts_cls, vn30_fig = format_index_data(
         current_val=vn30_current, change_pct=vn30_pct, change_pts=vn30_pts_raw, chart_data=vn30_spark
     )
 
-    # ==========================================
-    # 3. HNX-INDEX — MOCK TẠM THỜI
-    # data_loader.py hiện chưa có cột HNX-INDEX (chỉ có VNINDEX_Close/VN30_Close).
-    # TODO: khi có nguồn dữ liệu HNX thật (Excel/API riêng, cột vd "HNXINDEX_Close"),
-    # xoá khối mock này và gọi thẳng:
-    #   hnx_current, hnx_pts_raw, hnx_pct, hnx_spark = _index_series(df_hnx, "HNXINDEX_Close")
-    # ==========================================
-    HNX_MOCK_SERIES = [
-        241.10, 239.85, 238.40, 237.90, 236.55, 238.20, 239.00, 237.65,
-        236.10, 234.80, 233.95, 232.40, 231.85, 230.60, 229.75, 231.20,
-        232.85, 234.10, 235.95, 237.40, 236.80, 235.20, 233.75, 232.90,
-        234.15, 235.60, 236.85, 235.40, 234.60, 235.80,
-    ]
-    hnx_current = HNX_MOCK_SERIES[-1]
-    hnx_pts_raw = hnx_current - HNX_MOCK_SERIES[-2]
-    hnx_pct = (hnx_pts_raw / HNX_MOCK_SERIES[-2] * 100) if HNX_MOCK_SERIES[-2] else 0.0
+    # 3. HNX-INDEX
+    hnx_current, hnx_pts_raw, hnx_pct, hnx_spark = _index_series(df_idx, "HNXINDEX_Close", symbol_key="HNXINDEX")
+    if hnx_current == 0.0:
+        HNX_MOCK_SERIES = [241.10, 239.85, 238.40, 237.90, 236.55, 238.20, 239.00,
+                           237.65, 236.10, 234.80, 233.95, 232.40, 231.85, 230.60,
+                           229.75, 231.20, 232.85, 234.10, 235.95, 237.40, 236.80,
+                           235.20, 233.75, 232.90, 234.15, 235.60, 236.85, 235.40,
+                           234.60, 235.80]
+        hnx_current = HNX_MOCK_SERIES[-1]
+        hnx_pts_raw = hnx_current - HNX_MOCK_SERIES[-2]
+        hnx_pct     = (hnx_pts_raw / HNX_MOCK_SERIES[-2] * 100) if HNX_MOCK_SERIES[-2] else 0.0
+        hnx_spark   = HNX_MOCK_SERIES
+
     hnx_val, hnx_badge, hnx_badge_cls, hnx_pts, hnx_pts_cls, hnx_fig = format_index_data(
-        current_val=hnx_current, change_pct=hnx_pct, change_pts=hnx_pts_raw, chart_data=HNX_MOCK_SERIES
+        current_val=hnx_current, change_pct=hnx_pct, change_pts=hnx_pts_raw, chart_data=hnx_spark
     )
 
     # ==========================================
-    # 4. TOTAL VOLUME — dữ liệu THẬT từ load_market_data()
-    # Gộp Turnover (Volume × Price Close) toàn thị trường theo từng ngày.
+    # 4. TOTAL VOLUME
     # ==========================================
     try:
         df_mkt = load_market_data()
@@ -705,31 +760,27 @@ def update_market_overview_cards(pathname):
         latest_turnover = float(daily_turnover.iloc[-1])
         avg20 = float(daily_turnover.tail(20).mean())
         
-        # Biến gốc của bạn
         vol_chart_data = daily_turnover.tail(15).tolist()
         vol_badge_str = "Avg. High" if latest_turnover >= avg20 else "Avg. Low"
         
-        # --- BẮT ĐẦU ĐOẠN XỬ LÝ CO GIÃN TRỤC Y (Dùng trực tiếp biến gốc) ---
         if len(vol_chart_data) > 0:
             min_v = min(vol_chart_data)
             max_v = max(vol_chart_data)
-            
             if max_v > min_v:
                 baseline = min_v - (max_v - min_v) * 0.1 
-                # Ghi đè lại chính nó bằng dữ liệu đã trừ baseline
                 vol_chart_data = [v - baseline for v in vol_chart_data]
-        # --- KẾT THÚC ĐOẠN XỬ LÝ ---
-        
+            # 🔴 FIX LỖI TOÁN HỌC: Nếu max_v == min_v (các phiên vol y chang nhau hoặc bằng 0), 
+            # không làm gì cả, để list như cũ, hàm create_mini_chart sẽ tự handle
     else:
         latest_turnover = 0.0
-        vol_chart_data = [0, 0]
+        vol_chart_data = [0.0, 0.0]
         vol_badge_str = "—"
 
     vol_val_str = f"{latest_turnover / 1e9:,.0f}B"  # Tỷ VNĐ
     vol_fig = create_mini_chart(vol_chart_data, color="#3b82f6", is_bar=True)
 
     # ==========================================
-    # 5. TRẢ VỀ ĐÚNG THỨ TỰ OUTPUT (không đổi)
+    # 5. TRẢ VỀ ĐÚNG THỨ TỰ OUTPUT
     # ==========================================
     return (
         vn_val, vn_badge, vn_badge_cls, vn_pts, vn_pts_cls, vn_fig,
@@ -815,6 +866,8 @@ def _get_top_fin_picks(n: int = 3) -> list:
 
         price = float(row.get("Price Close", 0) or 0)
         pct = 0.0
+
+        # 1) Baseline: tính từ lịch sử giá (parquet) trước
         if df_price is not None and not df_price.empty and "Ticker" in df_price.columns:
             d = df_price[df_price["Ticker"].astype(str).str.upper() == ticker].sort_values("Date")
             if len(d) >= 2:
@@ -822,7 +875,19 @@ def _get_top_fin_picks(n: int = 3) -> list:
                 prev_c = float(d["Price Close"].iloc[-2])
                 if prev_c:
                     pct = (last_c - prev_c) / prev_c * 100
-                price = last_c  # đồng bộ giá với phiên gần nhất thật trong lịch sử
+                price = last_c
+
+        # 2) Patch LIVE từ realtime snapshot SAU CÙNG — để nó là giá trị "thắng"
+        try:
+            from src.backend.wifeed_updater import get_realtime_snapshot
+            rt = get_realtime_snapshot().get(ticker)
+            if rt:
+                if rt.get("Price Close"):
+                    price = float(rt["Price Close"])
+                if rt.get("Price_Change_Pct") is not None:
+                    pct = float(rt["Price_Change_Pct"])
+        except Exception:
+            pass
 
         # ── Xác định tag Growth/Value/Momentum — điểm nào cao nhất thắng ──
         # Cột Score trong snapshot là XẾP HẠNG CHỮ (A/B/C/D/F), không phải số
@@ -859,36 +924,7 @@ def _get_top_fin_picks(n: int = 3) -> list:
     return picks
 
 
-@app.callback(
-    Output("home-picks-grid", "children"),
-    Input("home-market-overview", "id"),  # trigger khi trang load, cùng kiểu với Bước 2
-    prevent_initial_call=False,
-)
-def update_top_fin_picks(_):
-    picks = _get_top_fin_picks(n=3)
 
-    if not picks:
-        return html.Div(
-            "Chưa có mã nào đạt chuẩn 5 sao trong bảng lọc hiện tại.",
-            className="home-picks-empty",
-        )
-
-    cards = []
-    for p in picks:
-        is_up = p["pct"] >= 0
-        change_str = f"{'+' if is_up else ''}{p['pct']:.2f}%"
-        price_str = f"{p['price']:,.0f}"
-        cards.append(_pick_card(
-            key=p["key"],
-            ticker=p["ticker"],
-            tag_variant=p["tag_variant"],
-            price_str=price_str,
-            change_str=change_str,
-            is_positive=is_up,
-            stars_filled=p["stars"],
-            insight_text=p["insight"],
-        ))
-    return cards
 
 
 # ============================================================================
@@ -988,7 +1024,7 @@ def _compute_market_pulse() -> dict:
             vol_txt = f", KL x{acc_row['avg_vol_ratio']:.1f} TB" if pd.notna(acc_row["avg_vol_ratio"]) else ""
             alerts.append(_build_alert_li(
                 "fa-bolt", "positive", "Strong Accumulation",
-                f"Dòng tiền vào nhóm {acc_row['Sector']} (+{acc_row['avg_pct']:.2f}%{vol_txt})",
+                f"Dòng tiền vào {acc_row['Sector']} (+{acc_row['avg_pct']:.2f}%{vol_txt})",
             ))
 
             # 2. Sector Consolidation — |%thay đổi TB| nhỏ nhất trong các ngành còn lại
@@ -999,7 +1035,7 @@ def _compute_market_pulse() -> dict:
                 used.add(con_row["Sector"])
                 alerts.append(_build_alert_li(
                     "fa-arrow-right", "neutral", "Sector Consolidation",
-                    f"Nhóm {con_row['Sector']} đi ngang ({con_row['avg_pct']:+.2f}%), đang tích lũy",
+                    f"Nhóm {con_row['Sector']} đi ngang ({con_row['avg_pct']:+.2f}%), tích lũy",
                 ))
 
             # 3. Volatile Resistance — %thay đổi TB thấp nhất (áp lực bán) trong các ngành còn lại
@@ -1008,7 +1044,7 @@ def _compute_market_pulse() -> dict:
                 neg_row = remain2.sort_values("avg_pct", ascending=True).iloc[0]
                 alerts.append(_build_alert_li(
                     "fa-triangle-exclamation", "negative", "Volatile Resistance",
-                    f"Nhóm {neg_row['Sector']} chịu áp lực bán ({neg_row['avg_pct']:.2f}%)",
+                    f"Áp lực bán ở nhóm {neg_row['Sector']} ({neg_row['avg_pct']:.2f}%)",
                 ))
 
     return {"bullish_pct": bullish_pct, "bearish_pct": bearish_pct, "alerts": alerts}
@@ -1019,15 +1055,25 @@ def _compute_market_pulse() -> dict:
     Output("home-pulse-breadth-fill-bull", "style"),
     Output("home-pulse-breadth-fill-bear", "style"),
     Output("home-pulse-alerts-list", "children"),
-    Input("home-market-overview", "id"),  # trigger on-load, cùng kiểu Bước 2/3
+    Input("home-market-overview", "id"),  # trigger on-load
     prevent_initial_call=False,
 )
 def update_market_pulse(_):
     result = _compute_market_pulse()
+    
+    # 🔴 NẾU KHÔNG CÓ DATA THẬT -> TRẢ VỀ PLACEHOLDER TẠI ĐÂY
     if not result:
-        # Không đủ dữ liệu -> giữ nguyên UI hiện tại thay vì phá layout
-        return no_update, no_update, no_update, no_update
+        mock_label = "62% Bullish"
+        mock_bull = {"width": "62%"}
+        mock_bear = {"width": "38%"}
+        mock_alerts = [
+            _build_alert_li("fa-bolt", "positive", "Strong Accumulation", "Dòng tiền mạnh đổ vào nhóm Tài chính"),
+            _build_alert_li("fa-arrow-right", "neutral", "Sector Consolidation", "Nhóm Bất động sản đang tích lũy ổn định"),
+            _build_alert_li("fa-triangle-exclamation", "negative", "Volatile Resistance", "Nhóm Năng lượng chạm kháng cự 52 tuần"),
+        ]
+        return mock_label, mock_bull, mock_bear, mock_alerts
 
+    # 🟢 NẾU CÓ DATA THẬT -> XỬ LÝ BÌNH THƯỜNG
     bullish_pct = result["bullish_pct"]
     bearish_pct = result["bearish_pct"]
     label = f"{bullish_pct:.0f}% Bullish"
@@ -1042,3 +1088,34 @@ def update_market_pulse(_):
         )]
 
     return label, bull_style, bear_style, alerts
+
+# ============================================================================
+# CALLBACK: REALTIME UPDATE — Header market overview + top picks
+# Trigger: header-realtime-interval (60s) + lần đầu load trang
+# ============================================================================
+@app.callback(
+    Output("home-picks-grid", "children"),
+    Input("header-realtime-interval", "n_intervals"),
+    prevent_initial_call=False,
+)
+def update_header_picks(n_intervals):
+    picks = _get_top_fin_picks(n=3)
+    if not picks:
+        return html.Div(
+            "Chưa có mã nào đạt chuẩn 5 sao.",
+            className="home-picks-empty",
+        )
+
+    cards = []
+    for p in picks:
+        cards.append(_pick_card(
+            key=p["key"],
+            ticker=p["ticker"],
+            tag_variant=p["tag_variant"],
+            price_str=f"{p['price']:,.0f}",
+            change_str=f"{'+' if p['pct'] >= 0 else ''}{p['pct']:.2f}%",
+            is_positive=p["pct"] >= 0,
+            stars_filled=p["stars"],
+            insight_text=p["insight"],
+        ))
+    return cards

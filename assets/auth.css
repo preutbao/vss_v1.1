@@ -354,3 +354,98 @@
     border-color: #e2e8f0;
     margin: 4px 0;
 }
+
+/* ============================================================
+   🌙 DARK MODE OVERRIDES
+   auth.css ban đầu chỉ có bản Light — bổ sung bản Dark tương ứng
+   để login modal / dropdown / premium lock hiển thị đúng khi
+   người dùng bật chế độ tối.
+   ============================================================ */
+
+[data-theme="dark"] #login-modal .modal-content {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45),
+                0 0 0 1px rgba(34, 197, 94, 0.08);
+}
+
+[data-theme="dark"] #login-modal .modal-header,
+[data-theme="dark"] #login-modal .modal-footer {
+    border-color: var(--border-subtle);
+}
+
+[data-theme="dark"] .login-modal-title { color: var(--text-primary); }
+[data-theme="dark"] .login-modal-subtitle { color: var(--text-muted); }
+[data-theme="dark"] .login-field-label { color: var(--text-secondary); }
+
+[data-theme="dark"] .login-input {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .login-input:focus {
+    background-color: var(--bg-elevated) !important;
+}
+
+[data-theme="dark"] .login-input::placeholder { color: var(--text-muted) !important; }
+
+[data-theme="dark"] .login-error {
+    background: rgba(244, 63, 94, 0.10);
+    border-color: rgba(244, 63, 94, 0.30);
+}
+
+[data-theme="dark"] .login-divider { color: var(--text-muted); }
+[data-theme="dark"] .login-divider::before,
+[data-theme="dark"] .login-divider::after { background: var(--border-subtle); }
+
+[data-theme="dark"] .vietcap-nav-user-btn {
+    color: var(--text-primary) !important;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle) !important;
+}
+
+[data-theme="dark"] .vietcap-nav-user-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-default) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .premium-wrapper.premium-locked .premium-overlay {
+    background: rgba(15, 22, 35, 0.82);
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .premium-wrapper.premium-locked .premium-overlay:hover {
+    background: rgba(15, 22, 35, 0.95);
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .premium-overlay-text { color: var(--text-muted); }
+
+[data-theme="dark"] #pw-momentum.premium-locked .premium-overlay {
+    background: rgba(15, 22, 35, 0.88);
+}
+
+[data-theme="dark"] #user-dropdown-menu {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-deep);
+}
+
+[data-theme="dark"] #user-dropdown-menu .dropdown-item {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] #user-dropdown-menu .dropdown-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] #user-dropdown-menu .dropdown-item.text-danger:hover {
+    background: rgba(244, 63, 94, 0.10);
+}
+
+[data-theme="dark"] #user-dropdown-menu .dropdown-divider {
+    border-color: var(--border-subtle);
+}

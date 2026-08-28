@@ -41,4 +41,5 @@ diskcache
 multiprocess
 dash[diskcache]
 dash-iconify
-apscheduler==3.11.3     # backend scheduler cho Alert Engine (audit muc 9) — chạy độc lập browser
+apscheduler>=3.10.0
+pytz>=2024.1

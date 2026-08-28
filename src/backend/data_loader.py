@@ -283,7 +283,7 @@ def _process_index_file(file_path):
     if not os.path.exists(file_path):
         return pd.DataFrame()
     try:
-        df = pd.read_excel(file_path, header=0)
+        df = pd.read_excel(file_path, header=0, skiprows=[1])
         df.columns = df.columns.str.strip()
 
         rename_map = {}
@@ -295,12 +295,25 @@ def _process_index_file(file_path):
                 rename_map[col] = 'VN30_Close'
             elif 'VNI100' in cl:
                 rename_map[col] = 'VN100_Close'
+            elif 'HNX' in cl:
+                rename_map[col] = 'HNXINDEX_Close'
             elif 'VNI' in cl:
                 rename_map[col] = 'VNINDEX_Close'
         df = df.rename(columns=rename_map)
 
-        df["Date"]      = pd.to_datetime(df["Date"], errors="coerce")
-        df["VNINDEX_Close"] = pd.to_numeric(df["VNINDEX_Close"], errors="coerce")
+        def _to_num(series):
+            if pd.api.types.is_numeric_dtype(series):
+                return series
+            return pd.to_numeric(
+                series.astype(str).str.replace(',', '.', regex=False),
+                errors='coerce'
+            )
+
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+        for col in ("VNINDEX_Close", "VN30_Close", "VN100_Close", "HNXINDEX_Close"):
+            if col in df.columns:
+                df[col] = _to_num(df[col])
+
         df = df.dropna(subset=["Date", "VNINDEX_Close"])
         return df.drop_duplicates(subset=["Date"]).sort_values("Date")
     except Exception as e:

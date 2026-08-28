@@ -164,6 +164,7 @@ def _render_stress_test(stress_test):
     State("psy-clinic-fear-checklist-f", "value"),
     State("investor-profile-store", "data"),
     State("psy-history-store", "data"),
+    State("auth-store", "data"),    # ← thêm dòng này
     background=True,
     manager=background_callback_manager,
     progress=[Output("psy-clinic-progress-text", "children")],
@@ -173,8 +174,14 @@ def _render_stress_test(stress_test):
     ],
     prevent_initial_call=True,
 )
-def run_psy_clinic_check(set_progress, n_clicks, ticker, fears_a, fears_b, fears_c, fears_d, fears_e, fears_f, profile_data, history_data):
+def run_psy_clinic_check(set_progress, n_clicks, ticker, fears_a, fears_b, fears_c, fears_d, fears_e, fears_f, profile_data, history_data, auth_data):   # ← thêm auth_data
     history_data = history_data or []
+
+    # CHẶN SERVER-SIDE
+    from src.callbacks.auth_callbacks import require_entitlement
+    if not require_entitlement(auth_data, allowed_tiers=["pro", "b2b"]):
+        return dbc.Alert("🔒 Tính năng này chỉ dành cho gói Pro trở lên.", color="warning", className="mb-0"), history_data
+
     selected_fears = [
         *(fears_a or []), *(fears_b or []), *(fears_c or []),
         *(fears_d or []), *(fears_e or []), *(fears_f or []),

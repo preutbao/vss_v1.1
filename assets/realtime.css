@@ -1,0 +1,95 @@
+/* assets/realtime.css — Wifeed Realtime Price UI */
+
+/* ── Spinner ──────────────────────────────────────────── */
+.wifeed-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0, 212, 255, 0.2);
+    border-top-color: #00d4ff;
+    border-radius: 50%;
+    animation: wifeed-spin 0.7s linear infinite;
+}
+
+@keyframes wifeed-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Overlay containers ───────────────────────────────── */
+
+/* Bao ngoài screener AG Grid */
+#screener-table-wrapper {
+    position: relative;
+    overflow: visible;
+}
+
+/* Bao ngoài tab Overview trong detail modal */
+#tab-overview-content-wrapper {
+    position: relative;
+    min-height: 200px;
+}
+
+/* ── Overlay div ──────────────────────────────────────── */
+#screener-blur-overlay,
+#overview-blur-overlay {
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+
+/* ── Badge giá realtime ───────────────────────────────── */
+#realtime-overview-price {
+    transition: color 0.3s ease;
+}
+
+/* ── Dot nhấp nháy báo hiệu realtime đang chạy ─────────── */
+.realtime-live-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00e676;
+    box-shadow: 0 0 6px #00e676, 0 0 12px rgba(0, 230, 118, 0.5);
+    animation: realtime-pulse 2s ease-in-out infinite;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+@keyframes realtime-pulse {
+    0%, 100% { opacity: 1;   transform: scale(1);    }
+    50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ── Label "Live" ─────────────────────────────────────── */
+.realtime-live-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: rgba(0, 230, 118, 0.6);
+    font-family: 'JetBrains Mono', monospace;
+    vertical-align: middle;
+}
+
+.idx-symbol-dropdown .Select-control,
+.idx-symbol-dropdown .Select-value-label,
+.idx-symbol-dropdown div[class*="control"] {
+    background-color: #0d1117 !important;
+    border: none !important;
+    color: #c9d1d9 !important;
+    min-height: 22px !important;
+}
+.idx-symbol-dropdown div[class*="singleValue"] {
+    color: #c9d1d9 !important;
+    font-weight: 700;
+    font-size: 11px;
+}
+.idx-symbol-dropdown div[class*="menu"] {
+    background-color: #161b22 !important;
+    z-index: 20;
+}
+.idx-symbol-dropdown div[class*="option"] {
+    background-color: #161b22 !important;
+    color: #c9d1d9 !important;
+    font-size: 11px;
+}
+.idx-symbol-dropdown div[class*="option"]:hover {
+    background-color: #1c2733 !important;
+}

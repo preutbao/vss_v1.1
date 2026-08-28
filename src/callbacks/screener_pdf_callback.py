@@ -2134,10 +2134,11 @@ def generate_screener_pdf(
      Input("btn-modal-close",         "n_clicks")],
     [State("screener-table",       "rowData"),
      State("active-filters-store", "data"),
-     State("screener-pdf-modal",   "is_open")],
+     State("screener-pdf-modal",   "is_open"),
+     State("auth-store",           "data")],   # [FIX] thêm — trước đây không check quyền
     prevent_initial_call=True,
 )
-def toggle_screener_modal(open_click, close_click, row_data, active_filters, is_open):
+def toggle_screener_modal(open_click, close_click, row_data, active_filters, is_open, auth_data):
     from dash import callback_context
     triggered = callback_context.triggered[0]["prop_id"].split(".")[0]
 
@@ -2145,6 +2146,14 @@ def toggle_screener_modal(open_click, close_click, row_data, active_filters, is_
         return False, no_update, no_update, no_update
 
     if triggered == "btn-export-screener-pdf" and row_data:
+        # [FIX] BẢO VỆ SERVER-SIDE: trước đây callback này (và 2 callback
+        # bên dưới cùng file) không hề check auth-store — premium-overlay
+        # ở UI chỉ là lớp che hình thức, ai gọi trực tiếp callback (DevTools/
+        # curl vào endpoint _dash-update-component) đều dùng được free.
+        from src.callbacks.auth_callbacks import require_entitlement
+        if not require_entitlement(auth_data, allowed_tiers=["pro", "b2b"]):
+            return False, no_update, no_update, no_update
+
         return (
             True,
             _modal_kpi_strip(row_data),
@@ -2163,17 +2172,36 @@ def toggle_screener_modal(open_click, close_click, row_data, active_filters, is_
     Output("modal-mc-section", "children"),
     Input("modal-mc-toggle", "value"),
     [State("screener-table",  "rowData"),
-     State("modal-nav-input", "value")],
+     State("modal-nav-input", "value"),
+     State("auth-store",      "data")],   # [FIX] thêm — trước đây không check quyền
     prevent_initial_call=True,
     running=[
         (Output("modal-mc-toggle", "disabled"), True, False),
         (Output("btn-modal-download-pdf", "disabled"), True, False),
     ],
 )
-def compute_mc_preview(toggle_on, row_data, nav_raw):
+def compute_mc_preview(toggle_on, row_data, nav_raw, auth_data):
     # Toggle OFF → ẩn section
     if not toggle_on:
         return {"display": "none"}, []
+
+    # [FIX] BẢO VỆ SERVER-SIDE — QUAN TRỌNG NHẤT trong file này: đây là nơi
+    # chạy run_full_pipeline() (Markowitz + Monte Carlo 10.000 kịch bản),
+    # tốn CPU đáng kể. Trước đây bất kỳ ai bật toggle này đều chạy được,
+    # không cần đăng nhập, không giới hạn tier — vừa hở doanh thu vừa là
+    # rủi ro DoS (spam toggle để ép server tính Monte Carlo liên tục).
+    from src.callbacks.auth_callbacks import require_entitlement
+    if not require_entitlement(auth_data, allowed_tiers=["pro", "b2b"]):
+        return (
+            {"display": "block"},
+            html.Div(
+                "🔒 Tính năng Tối ưu hóa Danh mục (Markowitz + Monte Carlo) "
+                "chỉ dành cho gói Pro trở lên.",
+                style={"color": "#B45309", "fontSize": "12px",
+                       "padding": "10px", "background": "#fffbeb",
+                       "border": "1px solid #fde68a", "borderRadius": "5px"},
+            ),
+        )
 
     # Parse NAV
     try:
@@ -2224,7 +2252,8 @@ def compute_mc_preview(toggle_on, row_data, nav_raw):
     [State("screener-table",       "rowData"),
      State("active-filters-store", "data"),
      State("modal-mc-toggle",      "value"),
-     State("modal-nav-input",      "value")],
+     State("modal-nav-input",      "value"),
+     State("auth-store",           "data")],   # [FIX] thêm — trước đây không check quyền
     prevent_initial_call=True,
     running=[
         (Output("btn-modal-download-pdf", "disabled"), True, False),
@@ -2236,9 +2265,16 @@ def compute_mc_preview(toggle_on, row_data, nav_raw):
     ],
 )
 def download_pdf_from_modal(n_clicks, row_data, active_filters,
-                            use_quant, nav_raw):
+                            use_quant, nav_raw, auth_data):
     if not row_data:
         return no_update, "⚠️ Bảng đang trống"
+
+    # [FIX] BẢO VỆ SERVER-SIDE — xem chú thích ở compute_mc_preview() phía
+    # trên. Trước đây callback này không hề kiểm tra auth-store, ai cũng
+    # tải được PDF (kể cả trang Quant/Monte Carlo nếu use_quant=True).
+    from src.callbacks.auth_callbacks import require_entitlement
+    if not require_entitlement(auth_data, allowed_tiers=["pro", "b2b"]):
+        return no_update, "🔒 Tính năng này chỉ dành cho gói Pro trở lên."
 
     try:
         nav = max(100_000_000.0, float(nav_raw)) if nav_raw not in (None, "") else 1_000_000_000.0

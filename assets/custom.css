@@ -4,8 +4,8 @@
 }
 
 /* Strategy dropdown group headers */
-.ssi-dropdown-custom .Select-option[aria-disabled="true"],
-.ssi-dropdown-custom .VirtualizedSelectOption[aria-disabled="true"] {
+[data-theme="dark"] .ssi-dropdown-custom .Select-option[aria-disabled="true"],
+[data-theme="dark"] .ssi-dropdown-custom .VirtualizedSelectOption[aria-disabled="true"] {
     color: #58a6ff !important;
     font-size: 10px !important;
     font-weight: 700 !important;
@@ -14,4 +14,18 @@
     cursor: default !important;
     padding-top: 10px !important;
     border-top: 1px solid #21262d !important;
+}
+
+/* ☀️ Light mode — trước đây file này chỉ có màu tối, dropdown group
+   header bị "kẹt" nền đen khi chuyển sang chế độ sáng */
+[data-theme="light"] .ssi-dropdown-custom .Select-option[aria-disabled="true"],
+[data-theme="light"] .ssi-dropdown-custom .VirtualizedSelectOption[aria-disabled="true"] {
+    color: var(--accent) !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+    background-color: var(--bg-surface) !important;
+    cursor: default !important;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--border-subtle) !important;
 }

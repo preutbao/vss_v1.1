@@ -291,6 +291,7 @@ FIXED_COLS = [
         "headerName": "KHỐI LƯỢNG",
         "type": "rightAligned",
         "sortable": True,
+        "headerTooltip": "Khối lượng cổ phiếu khớp lệnh trong phiên giao dịch gần nhất.",
         "width": 120,
         "valueFormatter": {"function": "d3.format(',.0f')(params.value)"},
         "cellStyle": {

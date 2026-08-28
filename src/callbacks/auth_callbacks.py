@@ -3,6 +3,7 @@
 # Xử lý toàn bộ luồng đăng nhập / đăng xuất + cập nhật premium gates
 # ─────────────────────────────────────────────────────────────────────────────
 
+from datetime import datetime
 import json
 import os
 import logging
@@ -32,16 +33,20 @@ def _load_users() -> dict:
         return {}
 
 
-def _is_vip(auth_data: dict | None) -> bool:
-    """Trả về True nếu user đã đăng nhập và có tier vip."""
+def _has_premium_ui(auth_data: dict | None) -> bool:
+    """Trả về True nếu user đã đăng nhập và có tier 'pro' hoặc 'b2b'."""
     return bool(
         auth_data
         and auth_data.get('logged_in')
-        and auth_data.get('tier') == 'vip'
+        and auth_data.get('tier') in ['pro', 'b2b']
     )
 
 
-def require_entitlement(auth_data: dict | None, tier: str = "vip") -> bool:
+def require_entitlement(auth_data: dict | None, allowed_tiers: list | tuple = ("pro", "b2b")) -> bool:
+    """
+    Kiểm tra server-side xem user có thuộc một trong các tier được phép không.
+    Mặc định cho phép 'pro' và 'b2b'.
+    """
     """
     AUDIT FIX (mục 4 - Authentication, Major Issue): hàm bảo vệ endpoint
     premium DÙNG CHUNG, thay cho việc mỗi callback (screener_callbacks.py,
@@ -70,7 +75,7 @@ def require_entitlement(auth_data: dict | None, tier: str = "vip") -> bool:
         logger.warning(f"[require_entitlement] Không đọc được users.json: {e}")
         return False
     server_tier = server_users.get(username, {}).get("tier", "free")
-    return server_tier == tier
+    return server_tier in allowed_tiers
 
 
 def _verify_password(username: str, password: str, users: dict) -> bool:
@@ -147,6 +152,15 @@ def toggle_login_modal(open_n, close_n, submit_n, overlay_clicks, is_open, auth_
 
     return is_open
 
+@app.callback(
+    Output("contact-demo-modal", "is_open"),
+    Input("btn-open-contact-demo", "n_clicks"),
+    Input("btn-close-contact-demo", "n_clicks"),
+    State("contact-demo-modal", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_contact_demo_modal(n_open, n_close, is_open):
+    return not is_open
 
 # =============================================================================
 # 2. XỬ LÝ ĐĂNG NHẬP (validate + cập nhật auth-store)
@@ -234,6 +248,42 @@ def handle_logout(n_clicks):
     return {"logged_in": False}
 
 
+# -----------------------------------------------------------------------------
+# [FIX] Force reload toàn trang khi vừa đăng xuất.
+#
+# NGUYÊN NHÂN LỖI ĐƠ SAU LOGOUT:
+#   `update_premium_gates` (mục 5 bên dưới) Output tới 1 DANH SÁCH ID CỐ ĐỊNH
+#   (_PREMIUM_WRAPPERS). Nếu bất kỳ ID nào trong đó không tồn tại trong DOM
+#   tại thời điểm auth-store đổi (ví dụ component chưa mount / đang ở
+#   view khác), dash-renderer bắn lỗi "non-existent Output" phía client và
+#   có thể treo cứng app React (mất scroll, mất tương tác) — đúng triệu chứng
+#   đang gặp. Đây là lớp lỗi khó soát triệt để vì phụ thuộc nhiều file layout
+#   khác không kiểm soát hết trong 1 lần sửa.
+#
+# CÁCH NÉ (đơn giản, dễ debug hơn multi-case patch):
+#   Reload cứng toàn trang ngay sau khi auth-store thực sự chuyển sang
+#   logged_in=False. Gắn Input vào auth-store.data (KHÔNG gắn thẳng vào
+#   btn-logout.n_clicks) để tránh race: callback Python handle_logout()
+#   phải chạy xong, Dash Store ghi xong localStorage, RỒI clientside này
+#   mới thấy auth-store.data đổi và mới reload — đảm bảo đúng thứ tự.
+# -----------------------------------------------------------------------------
+from dash import clientside_callback
+
+clientside_callback(
+    """
+    function(auth_data) {
+        if (auth_data && auth_data.logged_in === false) {
+            window.location.reload();
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('btn-logout', 'style'),   # dummy — không dùng, chỉ cần 1 Output hợp lệ chưa ai chiếm
+    Input('auth-store', 'data'),
+    prevent_initial_call=True,       # không reload ngay lần đầu load trang (lúc đó cũng logged_in:false)
+)
+
+
 # =============================================================================
 # 4. CẬP NHẬT NÚT TRÊN NAVBAR (Đăng nhập ↔ Tên user)
 # =============================================================================
@@ -280,7 +330,7 @@ def update_navbar_auth(auth_data):
             )
             circle_style = {"backgroundColor": "transparent"}
 
-        vip_style = {"display": "inline-block"} if tier == 'vip' else _hidden
+        vip_style = {"display": "inline-block"} if tier in ('pro', 'b2b') else _hidden
 
         return (
             _hidden,                          # ẩn btn-login
@@ -307,6 +357,7 @@ def update_navbar_auth(auth_data):
 #      pw-momentum  → Nhóm "Hành vi thị trường" trong wizard
 # =============================================================================
 _PREMIUM_WRAPPERS = [
+    "pw-detail-pdf",    # [MỚI] Nút PDF nhỏ trong header modal "Phân tích chi tiết"
     "pw-screener-pdf",  # Báo cáo PDF trong screener
     "pw-watchlist",  # Watchlist — PREMIUM
     'pw-compare',
@@ -316,6 +367,9 @@ _PREMIUM_WRAPPERS = [
     'pw-strategies',
     'pw-momentum',
 ]
+# [FIX] pw-export-excel TÁCH RIÊNG khỏi list trên: B2B-only theo đề xuất CFO
+# (Export data thô cho Broker/Môi giới) — Premium 'pro' 199k KHÔNG dùng được,
+# khác với 9 wrapper còn lại vẫn mở cho cả pro lẫn b2b.
 
 @app.callback(
     [Output(pw_id, 'className') for pw_id in _PREMIUM_WRAPPERS],
@@ -324,8 +378,24 @@ _PREMIUM_WRAPPERS = [
 def update_premium_gates(auth_data):
     unlocked = 'premium-wrapper premium-unlocked'
     locked   = 'premium-wrapper premium-locked'
-    state    = unlocked if _is_vip(auth_data) else locked
+    state    = unlocked if _has_premium_ui(auth_data) else locked
     return [state] * len(_PREMIUM_WRAPPERS)
+
+
+@app.callback(
+    Output('pw-export-excel', 'className'),
+    Input('auth-store', 'data'),
+)
+def update_excel_gate(auth_data):
+    # [FIX] B2B-only — dùng require_entitlement(["b2b"]) thay vì
+    # _has_premium_ui() (vốn cho cả pro lẫn b2b) để khớp đúng với gate
+    # phía server trong export_excel() (screener_callbacks.py).
+    is_b2b = bool(
+        auth_data
+        and auth_data.get('logged_in')
+        and auth_data.get('tier') == 'b2b'
+    )
+    return 'premium-wrapper premium-unlocked' if is_b2b else 'premium-wrapper premium-locked'
 
 
 # =============================================================================
@@ -636,12 +706,14 @@ def save_profile(n_clicks, bio, avatar_src, auth_data):
     State("ips-goal-store",            "data"),
     State("ips-will-store",            "data"),
     State("ips-time-store",            "data"),
+    State("auth-store",                "data"),           # ← THÊM
     prevent_initial_call=True,
 )
-def download_ips_pdf_from_profile(n_clicks, profile, goal, will, time_h):
+def download_ips_pdf_from_profile(n_clicks, profile, goal, will, time_h, auth_data):  # ← THÊM auth_data
     if not n_clicks or not profile:
         raise PreventUpdate
     from src.callbacks.ips_pdf_callback import generate_ips_pdf
     quiz_answers = {"goal": goal, "will": will, "time_h": time_h}
-    pdf_bytes = generate_ips_pdf(profile, quiz_answers)
-    return dcc.send_bytes(pdf_bytes, filename="bao_cao_ho_so_ndt.pdf")
+    display_name = (auth_data or {}).get("display_name")       # ← THÊM
+    pdf_bytes = generate_ips_pdf(profile, quiz_answers, display_name=display_name)  # ← SỬA
+    return dcc.send_bytes(pdf_bytes, filename=f"Vietcap_HoSoNhaDauTu_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf")

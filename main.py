@@ -29,6 +29,9 @@ if os.environ.get("FSS_ENV", "development").lower() != "production":
 if os.environ.get("FSS_ENV", "development").lower() != "test":
     from src.backend.alert_scheduler import start_alert_scheduler
     start_alert_scheduler(interval_minutes=5)
+    # Wifeed realtime price scheduler
+    from src.backend.wifeed_updater import start_wifeed_scheduler
+    start_wifeed_scheduler()
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -126,6 +129,7 @@ import src.callbacks.detail_tabs_callbacks
 import src.callbacks.mode_callbacks
 import src.callbacks.home_callbacks
 import src.utils.chart_callbacks
+import src.callbacks.realtime_price_callbacks
 import src.callbacks.chatbot_callbacks
 import src.callbacks.strategy_callbacks
 import src.callbacks.ticker_search_callbacks
@@ -151,14 +155,14 @@ import src.callbacks.psychology_callbacks
 # ─────────────────────────────────────────────────────────────────────────────
 from dash import Dash, html, dcc, Input, Output, State
 from src.pages import screener, onboarding
-from src.components.header import create_header, create_topbar, create_banner, create_market_overview, create_picks_and_pulse_section
+from src.components.header import create_header, create_topbar, create_banner, create_market_overview, create_picks_and_pulse_section, create_header_content
 from src.callbacks.chatbot_callbacks import create_chatbot_layout
 from src.callbacks.portfolio_callbacks import portfolio_modal, portfolio_help_modal
 from src.callbacks.margin_crisis_callbacks import crisis_modal, crisis_help_modal
 from src.callbacks.compare_callbacks import compare_modal, compare_help_modal
 
 app.layout = html.Div(
-    style={"margin": "0", "padding": "0"},
+    style={"margin": "0", "padding": "0", "overflowX": "hidden"},
     children=[
         # ── 0. THANH TOPBAR LUÔN HIỂN THỊ Ở MỌI TRANG ─────────────────────
         # Bọc topbar vào một Div để dính chặt lên top
@@ -219,9 +223,11 @@ app.layout = html.Div(
             style={"opacity": "0", "transition": "opacity 0.15s ease"},
             children=[
                 # THAY create_header() BẰNG create_banner() ĐỂ KHÔNG BỊ TRÙNG TOPBAR
-                create_banner(), 
-                create_market_overview(),  # <--- MÁ THÊM ĐÚNG DÒNG NÀY VÀO ĐÂY NÈ
-                create_picks_and_pulse_section(),  # [BƯỚC 3] Top Fin Picks + Market Pulse
+                #create_banner(), 
+                #create_market_overview(),  # <--- MÁ THÊM ĐÚNG DÒNG NÀY VÀO ĐÂY NÈ
+                #create_picks_and_pulse_section(),  # [BƯỚC 3] Top Fin Picks + Market Pulse
+
+                create_header_content(),  # nội dung Hero + Market Overview + Picks/Pulse + nền GIF
                 
                 # Tour Guide Overlay
                 html.Div(id="tour-overlay-container", children=[
@@ -375,27 +381,26 @@ for i in range(1, 8):
         function(n_clicks) {{
             if (!n_clicks) return window.dash_clientside.no_update;
             
-            // Nhờ Python f-string, biến {i} sẽ được hardcode thẳng vào JS cho từng câu hỏi
-            var content = document.getElementById('faq-content-{i}');
-            var icon = document.getElementById('faq-icon-{i}');
+            var content = document.getElementById('onb-faq-content-{i}');   
+            var icon = document.getElementById('onb-faq-icon-{i}');         
             
             if (content && icon) {{
                 if (content.style.display === 'none' || content.style.display === '') {{
                     content.style.display = 'block';
                     icon.innerText = '×';
-                    icon.style.color = '#3b82f6'; // Màu xanh _BLUE
+                    icon.style.color = '#3b82f6';
                 }} else {{
                     content.style.display = 'none';
                     icon.innerText = '+';
-                    icon.style.color = '#6b7280'; // Màu xám _TEXT_MUT
+                    icon.style.color = '#6b7280';
                 }}
             }}
             
             return window.dash_clientside.no_update;
         }}
         """,
-        Output(f"faq-content-{i}", "id"), # Output giả để lừa Dash
-        Input(f"faq-btn-{i}", "n_clicks"),
+        Output(f"onb-faq-content-{i}", "id"),  
+        Input(f"onb-faq-btn-{i}", "n_clicks"), 
         prevent_initial_call=True
     )
 

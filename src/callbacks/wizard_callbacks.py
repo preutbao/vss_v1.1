@@ -362,76 +362,89 @@ def highlight_active_group(n_clicks_list):
 # CALLBACK 4: IDX INDEX CHART + STATS PANEL
 # ============================================================================
 
+_IDX_COL_MAP = {
+    "VNINDEX": "VNINDEX_Close",
+    "VN30":    "VN30_Close",
+    "HNXINDEX":   "HNXINDEX_Close",
+}
+_IDX_VOL_COL_MAP = {
+    "VNINDEX": "VNINDEX_Volume",
+    "VN30":    "VN30_Volume",
+    "HNXINDEX":   "HNXINDEX_Volume",
+}
+
 @app.callback(
     Output("idx-mini-chart",    "figure"),
     Output("idx-chart-change",  "children"),
     Output("idx-chart-change",  "style"),
     Output("idx-stats-panel",   "children"),
-    Input("filter-offcanvas",   "is_open"),
+    Input("filter-offcanvas",        "is_open"),
+    Input("realtime-price-interval", "n_intervals"),
+    Input("idx-symbol-selector",     "value"),   # ← thêm Input này
     prevent_initial_call=True,
 )
-def render_idx_mini_chart(is_open):
+def render_idx_mini_chart(is_open, n_intervals, symbol):
     if not is_open:
-        return go.Figure(), "", {}, []
+        return no_update, no_update, no_update, no_update
+
+    symbol = symbol or "VNINDEX"
+    close_col = _IDX_COL_MAP.get(symbol, "VNINDEX_Close")
+    vol_col_name = _IDX_VOL_COL_MAP.get(symbol, "VNINDEX_Volume")
 
     try:
         from src.backend.data_loader import load_index_data
-
         df_full = load_index_data()
 
-        # ── Fallback: nếu parquet rỗng → tải thẳng từ yfinance ──
         if df_full is None or df_full.empty:
-            logger.warning("[IDX Chart] index.parquet rỗng → thử tải trực tiếp từ yfinance ^JKSE")
-            try:
-                import yfinance as yf
-                df_yf = yf.download("^JKSE", period="2y", auto_adjust=True, progress=False)
-                if not df_yf.empty:
-                    df_yf = df_yf.reset_index()
-                    df_yf.columns = [str(c[0]) if isinstance(c, tuple) else str(c)
-                                     for c in df_yf.columns]
-                    df_yf['Date']      = pd.to_datetime(df_yf['Date']).dt.tz_localize(None)
-                    df_yf['VNINDEX_Close'] = pd.to_numeric(df_yf.get('Close', df_yf.iloc[:, 1]),
-                                                        errors='coerce')
-                    df_yf['VNINDEX_Volume'] = pd.to_numeric(df_yf.get('Volume', 0), errors='coerce')
-                    df_full = df_yf[['Date','VNINDEX_Close','VNINDEX_Volume']].dropna(subset=['VNINDEX_Close'])
-            except Exception as e2:
-                logger.error(f"[IDX Chart] yfinance fallback lỗi: {e2}")
-
-        if df_full is None or df_full.empty:
-            raise ValueError("Không có dữ liệu index từ cả parquet lẫn yfinance")
+            raise ValueError("Không có dữ liệu index")
 
         df_full = df_full.sort_values("Date").copy()
         df      = df_full.tail(90)
-        prices  = df["VNINDEX_Close"]
+        prices  = df[close_col]
         latest  = float(prices.iloc[-1])
         prev    = float(prices.iloc[-2]) if len(prices) >= 2 else latest
-
-        # ── Tính các chỉ số ──
         chg_1d  = (latest - prev) / prev * 100
-        p_1w    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=7)]["VNINDEX_Close"]
-        p_1m    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=30)]["VNINDEX_Close"]
-        p_1y    = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=365)]["VNINDEX_Close"]
-        chg_1w  = (latest - p_1w.iloc[-1]) / p_1w.iloc[-1] * 100 if not p_1w.empty else None
-        chg_1m  = (latest - p_1m.iloc[-1]) / p_1m.iloc[-1] * 100 if not p_1m.empty else None
-        chg_1y  = (latest - p_1y.iloc[-1]) / p_1y.iloc[-1] * 100 if not p_1y.empty else None
 
-        hi52 = float(df_full.tail(252)["VNINDEX_Close"].max())
-        lo52 = float(df_full.tail(252)["VNINDEX_Close"].min())
+        # ── Override bằng giá realtime nếu có ─────────────────────────────
+        is_live = False
+        try:
+            from src.backend.wifeed_updater import get_realtime_index
+            rt_idx = get_realtime_index()
+            if rt_idx and symbol in rt_idx:
+                rt_close = rt_idx[symbol]
+                if rt_close and rt_close > 0:
+                    chg_1d  = (rt_close - prev) / prev * 100 if prev else 0
+                    latest  = rt_close
+                    is_live = True
+        except Exception:
+            pass
+        # ────────────────────────────────────────────────────────────────
+
+        p_1w = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=7)][close_col]
+        p_1m = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=30)][close_col]
+        p_1y = df_full[df_full["Date"] <= df_full["Date"].max() - pd.Timedelta(days=365)][close_col]
+        chg_1w = (latest - p_1w.iloc[-1]) / p_1w.iloc[-1] * 100 if not p_1w.empty else None
+        chg_1m = (latest - p_1m.iloc[-1]) / p_1m.iloc[-1] * 100 if not p_1m.empty else None
+        chg_1y = (latest - p_1y.iloc[-1]) / p_1y.iloc[-1] * 100 if not p_1y.empty else None
+        hi52 = float(df_full.tail(252)[close_col].max())
+        lo52 = float(df_full.tail(252)[close_col].min())
         pct_from_hi = (latest - hi52) / hi52 * 100
-
-        vol_col = "VNINDEX_Volume" if "VNINDEX_Volume" in df_full.columns else None
+        vol_col = vol_col_name if vol_col_name in df_full.columns else None
         vol_avg = float(df_full.tail(20)[vol_col].mean()) if vol_col else None
 
-        last_date = df_full["Date"].max()
+        import pytz
+        from datetime import datetime as _dt
+        if is_live:
+            last_date_str = _dt.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%d/%m/%y %H:%M")
+        else:
+            last_date_str = df_full["Date"].max().strftime("%d/%m/%y")
 
-        # ── Màu sắc title bar ──
-        is_up_1d   = chg_1d >= 0
-        color_1d   = "#10b981" if is_up_1d else "#ef4444"
-        sign_1d    = "+" if is_up_1d else ""
+        is_up_1d = chg_1d >= 0
+        color_1d = "#10b981" if is_up_1d else "#ef4444"
+        sign_1d  = "+" if is_up_1d else ""
         change_text  = f"{sign_1d}{chg_1d:.2f}%  ·  {int(latest):,}"
         change_style = {"fontSize": "11px", "fontWeight": "700", "color": color_1d}
 
-        # ── Helper render 1 stat row ──
         def stat_row(label, value, color="#c9d1d9"):
             return html.Div([
                 html.Span(label, style={
@@ -460,50 +473,38 @@ def render_idx_mini_chart(is_open):
         p1y_txt, p1y_col = fmt_pct(chg_1y)
 
         stats = html.Div([
-            stat_row("Giá",          f"{int(latest):,}",                "#e6edf3"),
-            stat_row("Hôm nay",      f"{sign_1d}{chg_1d:.2f}%",         color_1d),
-            stat_row("1 tuần",       p1w_txt,                            p1w_col),
-            stat_row("1 tháng",      p1m_txt,                            p1m_col),
-            stat_row("1 năm",        p1y_txt,                            p1y_col),
-            stat_row("52W Cao",      f"{int(hi52):,}",                   "#f59e0b"),
-            stat_row("52W Thấp",     f"{int(lo52):,}",                   "#f59e0b"),
-            stat_row("Cách đỉnh",    f"{pct_from_hi:.1f}%",
-                     "#ef4444" if pct_from_hi < -5 else "#10b981"),
-            stat_row("KL TB 20P",    f"{int(vol_avg/1e6):.0f}M"
-                     if vol_avg else "–",                                "#7fa8cc"),
-            stat_row("Cập nhật",     last_date.strftime("%d/%m/%y"),     "#484f58"),
-        ], style={
-            "display": "grid",
-            "gridTemplateColumns": "1fr 1fr",
-            "alignContent": "start",
-        })
+            stat_row("Giá",       f"{int(latest):,}", "#e6edf3"),
+            stat_row("Hôm nay",   f"{sign_1d}{chg_1d:.2f}%", color_1d),
+            stat_row("1 tuần",    p1w_txt, p1w_col),
+            stat_row("1 tháng",   p1m_txt, p1m_col),
+            stat_row("1 năm",     p1y_txt, p1y_col),
+            stat_row("52W Cao",   f"{int(hi52):,}", "#f59e0b"),
+            stat_row("52W Thấp",  f"{int(lo52):,}", "#f59e0b"),
+            stat_row("Cách đỉnh", f"{pct_from_hi:.1f}%", "#ef4444" if pct_from_hi < -5 else "#10b981"),
+            stat_row("KL TB 20P", f"{int(vol_avg/1e6):.0f}M" if vol_avg else "–", "#7fa8cc"),
+            stat_row("Cập nhật",  last_date_str, "#484f58"),
+        ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr", "alignContent": "start"})
 
-        # ── Tính toán trục Y ──
         y_min = prices.min()
         y_max = prices.max()
-        # Mở rộng trục Y: dưới min 150 điểm và trên max một chút để chart thoáng hơn
-        y_range = [y_min - 150, y_max + (y_max - y_min) * 0.1]
+        padding = (y_max - y_min) * 0.15 if y_max > y_min else max(y_max * 0.02, 1)
+        y_range = [y_min - padding, y_max + padding]
 
-        # ── Vẽ chart ──
         fig = go.Figure()
         fig.add_trace(go.Scatter(
-            x=df["Date"], 
-            y=prices,
-            # Nếu DataFrame của bạn có cột Volume, ta có thể truyền nó vào customdata để dùng trong hover
-            customdata=df["VNINDEX_Volume"] if "VNINDEX_Volume" in df.columns else [None]*len(df),
+            x=df["Date"], y=prices,
+            customdata=df[vol_col_name] if vol_col_name in df.columns else [None]*len(df),
             mode="lines",
             line=dict(color=color_1d, width=1.8),
             fill="tozeroy",
             fillcolor=f"rgba({'16,185,129' if is_up_1d else '239,68,68'},0.08)",
-            # 🟢 Mở rộng Hovertemplate
-            # %{x} là Date, %{y} là Giá, %{customdata} là Volume
             hovertemplate=(
                 "<b>Ngày:</b> %{x|%d/%m/%Y}<br>"
                 "<b>Chỉ số:</b> %{y:,.2f} điểm<br>"
-                "<b>KLGD:</b> %{customdata:,.0f}<extra></extra>" 
-                # <extra></extra> dùng để giấu cái hộp tên trace dư thừa bên cạnh
+                "<b>KLGD:</b> %{customdata:,.0f}<extra></extra>"
             ),
         ))
+
         
         fig.update_layout(
             paper_bgcolor="#0d1117",
@@ -528,7 +529,7 @@ def render_idx_mini_chart(is_open):
         return fig, change_text, change_style, stats
 
     except Exception as e:
-        logger.error(f"[IDX Chart] Lỗi render: {e}")
+        logger.error(f"[IDX Chart] Lỗi render ({symbol}): {e}")
         empty_fig = go.Figure(layout=dict(
             paper_bgcolor="#0d1117", plot_bgcolor="#0d1117",
             margin=dict(l=0, r=0, t=0, b=0),
@@ -539,3 +540,6 @@ def render_idx_mini_chart(is_open):
             )],
         ))
         return empty_fig, "–", {"color": "#484f58", "fontSize": "11px"}, []
+
+    
+    

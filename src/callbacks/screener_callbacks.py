@@ -1106,20 +1106,20 @@ def update_screener_table(
         # re-check server-side ở đây — tránh 2 bản sao có thể lệch nhau.
         try:
             from src.callbacks.auth_callbacks import require_entitlement
-            is_vip = require_entitlement(auth_data, tier="vip")
+            is_vip = require_entitlement(auth_data, allowed_tiers=["pro", "b2b"])
         except Exception:
             is_vip = False
         total_rows = len(df_filtered)
 
-        if not is_vip and total_rows > 3:
-            visible   = df_filtered.head(3).to_dict("records")
+        if not is_vip and total_rows > 5:
+            visible   = df_filtered.head(5).to_dict("records")
             locked_template = {col: None for col in df_filtered.columns}
             locked_template.update({
                 "Ticker": "🔒 VIP",
                 "Sector": "Đăng nhập để xem",
                 "_locked": True,
             })
-            n_locked = min(total_rows - 3, 17)   # hiện tối đa 17 dòng mờ
+            n_locked = min(total_rows - 5, 17)   # hiện tối đa 17 dòng mờ
             locked_rows = [dict(locked_template) for _ in range(n_locked)]
             final_rows = visible + locked_rows
         else:
@@ -1540,7 +1540,7 @@ def load_detail_content(stock, theme="dark"):
     _KPI_TONE_CYCLE = ["sky", "green", "purple", "amber", "rose", "sky", "green", "purple"]
     _KPI_ICON_CYCLE = ["fas fa-building-columns", "fas fa-layer-group", "fas fa-percent",
                        "fas fa-chart-line", "fas fa-coins", "fas fa-scale-balanced",
-                       "fas fa-sack-dollar", "fas fa-arrow-trend-up"]
+                       "fas fa-dollar", "fas fa-arrow-trend-up"]
     _kpi_counter = {"i": 0}
 
     def kpi_card(title, value):
@@ -1629,8 +1629,16 @@ def load_detail_content(stock, theme="dark"):
             dbc.Col([
                 html.Div([
                     html.Div("Giá Hiện Tại", style={"color": T["page_text_dim"], "textAlign": "right", "fontSize": "0.9rem"}),
-                    html.Div(f"{price_close:,.0f} VND",
-                             style={"textAlign": "right", "fontSize": "28px", "color": T["page_text"], "fontWeight": "bold"})
+                    html.Div(
+                        id="realtime-overview-price",          # ← thêm id này
+                        children=f"{price_close:,.0f} VND",
+                        style={
+                            "textAlign": "right", "fontSize": "28px",
+                            "color": "#e6edf3", "fontWeight": "bold",
+                            "fontFamily": "'JetBrains Mono', monospace",
+                            "transition": "color 0.3s ease",   # ← thêm transition
+                        }
+                    ),
                 ])
             ], width=4)
         ], className="mb-4", style={"borderBottom": f"1px solid {T['card_border']}", "paddingBottom": "15px"}),
@@ -2339,7 +2347,7 @@ def load_financial_tab(active_tab, period_toggle, stock, theme="dark"):
             equity = _raw('Common Equity - Total')
             kpi_specs = [
                 ("DOANH THU KỲ GẦN NHẤT", revenue, "sky", "fas fa-coins"),
-                ("LỢI NHUẬN SAU THUẾ", net_income, "green" if (net_income or 0) >= 0 else "rose", "fas fa-sack-dollar"),
+                ("LỢI NHUẬN SAU THUẾ", net_income, "green" if (net_income or 0) >= 0 else "rose", "fas fa-dollar"),
                 ("TỔNG TÀI SẢN", total_assets, "purple", "fas fa-building-columns"),
                 ("VỐN CHỦ SỞ HỮU", equity, "amber", "fas fa-scale-balanced"),
             ]
@@ -3468,11 +3476,19 @@ def toggle_strategy_info(n_clicks, current_strategy, is_open):
     Output("download-csv", "data"),
     Input("btn-export-csv", "n_clicks"),
     State("screener-table", "rowData"),
+    State("auth-store", "data"),          # ← thêm dòng này
     prevent_initial_call=True
 )
-def export_csv(n_clicks, row_data):
+def export_csv(n_clicks, row_data, auth_data):   # ← thêm auth_data
     if not row_data:
         return no_update
+
+    # CHẶN SERVER-SIDE: chỉ B2B được export
+    from src.callbacks.auth_callbacks import require_entitlement
+    if not require_entitlement(auth_data, allowed_tiers=["b2b"]):
+        logger.warning(f"[export_csv] Bị chặn — user '{(auth_data or {}).get('username')}' không phải B2B")
+        return no_update
+
     df = pd.DataFrame(row_data)
     export_cols = [c for c in [
         'Ticker', 'Company Common Name', 'Sector', 'Price Close',
@@ -3496,9 +3512,17 @@ def export_csv(n_clicks, row_data):
     Output("download-excel", "data"),
     Input("btn-export-excel", "n_clicks"),
     State("screener-table", "rowData"),
+    State("auth-store", "data"),      # [FIX] thêm — trước đây không hề kiểm tra quyền
     prevent_initial_call=True
 )
-def export_excel(n_clicks, row_data):
+def export_excel(n_clicks, row_data, auth_data):
+    # [FIX] BẢO VỆ SERVER-SIDE — B2B-ONLY theo đề xuất CFO: Export Excel là
+    # tính năng cho Broker/Môi giới tải data thô, không mở cho Premium 199k
+    # (khác export_excel bản trước dùng chung ["pro","b2b"]).
+    from src.callbacks.auth_callbacks import require_entitlement
+    if not require_entitlement(auth_data, allowed_tiers=["b2b"]):
+        return no_update
+
     if not row_data:
         return no_update
     try:
@@ -3522,11 +3546,11 @@ def export_excel(n_clicks, row_data):
         # Viết Excel vào buffer
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine='openpyxl') as writer:
-            df_export.to_excel(writer, index=False, sheet_name='FSS Screener')
+            df_export.to_excel(writer, index=False, sheet_name='VSS Screener')
 
             # Style cơ bản
             wb = writer.book
-            ws = writer.sheets['FSS Screener']
+            ws = writer.sheets['VSS Screener']
 
             from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
             from openpyxl.utils import get_column_letter
@@ -3572,7 +3596,7 @@ def export_excel(n_clicks, row_data):
             ws.sheet_properties.tabColor = "00D4FF"
 
         buf.seek(0)
-        filename = f"FSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        filename = f"VSS_Screener_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
         return dcc.send_bytes(buf.read(), filename)
 
     except Exception as e:
@@ -3919,29 +3943,67 @@ def auto_update_dropdowns(_):
         logger.error(f"Lỗi auto load dropdowns: {e}")
         return [{"label": "Tất cả ngành", "value": "all"}]
 
+# SAU:
 @app.callback(
     Output("data-cutoff-label", "children"),
-    Input("screener-table", "rowData"),
+    Input("screener-table",          "rowData"),
+    Input("realtime-fetch-ts",       "data"),       # ← trigger thêm khi fetch xong
     prevent_initial_call=False,
 )
-def update_cutoff_label(row_data):
+def update_cutoff_label(row_data, fetch_ts):
+    import os, pandas as pd
+    from datetime import datetime
+    import pytz
+
+    _TZ_VN = pytz.timezone("Asia/Ho_Chi_Minh")
+
     try:
+        # Ưu tiên 1: Nếu vừa có fetch realtime thì hiện giờ VN hiện tại
+        if fetch_ts and float(fetch_ts) > 0:
+            try:
+                from src.backend.wifeed_updater import get_snapshot_timestamp
+                ts = get_snapshot_timestamp()
+                if ts > 0:
+                    dt_vn  = datetime.fromtimestamp(ts, tz=_TZ_VN)
+                    return [
+                        html.Span("● LIVE", style={
+                            "color":       "#00e676",
+                            "fontWeight":  "700",
+                            "fontSize":    "9px",
+                            "marginRight": "5px",
+                            "letterSpacing": "0.1em",
+                            "animation":   "realtime-pulse 2s ease-in-out infinite",
+                        }),
+                        html.Span(
+                            f"{dt_vn.strftime('%H:%M')} · {dt_vn.strftime('%d/%m/%Y')}",
+                            style={"color": "#5a8ab0", "fontSize": "11px"},
+                        ),
+                    ]
+            except Exception:
+                pass
+
+        # Ưu tiên 2: Ngày từ global var data_loader
         from src.backend.data_loader import get_data_cutoff_date
         d = get_data_cutoff_date()
         if d:
-            return f"(Cập nhật {d})"
-        # Fallback: đọc thẳng từ parquet nếu global var chưa set
-        import os, pandas as pd
+            # d có dạng "dd/mm/yyyy" — thêm giờ load nếu có
+            now_vn = datetime.now(_TZ_VN)
+            return f"EOD {d} · tải {now_vn.strftime('%H:%M')}"
+
+        # Fallback 3: Đọc từ parquet
         parquet = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
             "data", "processed", "market_prices.parquet"
         )
         if os.path.exists(parquet):
-            df_tmp = pd.read_parquet(parquet, columns=["Date"])
+            df_tmp   = pd.read_parquet(parquet, columns=["Date"])
             max_date = pd.to_datetime(df_tmp["Date"]).max()
             if pd.notna(max_date):
-                return f"(Cập nhật {max_date.strftime('%d/%m/%Y')})"
+                now_vn = datetime.now(_TZ_VN)
+                return f"EOD {max_date.strftime('%d/%m/%Y')} · tải {now_vn.strftime('%H:%M')}"
+
         return ""
+
     except Exception:
         return ""
 

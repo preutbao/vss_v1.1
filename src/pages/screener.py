@@ -7,6 +7,10 @@ import dash_ag_grid as dag
 from src.components.psychology_modal import psychology_tab_content
 from src.components import sidebar as sidebar
 from src.utils.chart_controls import create_chart_container
+from src.callbacks.realtime_price_callbacks import (
+    create_realtime_components,
+    create_screener_overlay,
+)
 from src.components.header import create_banner, create_topbar, create_market_overview
 
 # === AG GRID COLUMN DEFINITIONS ===
@@ -728,18 +732,98 @@ detail_modal = dbc.Modal(
     [
         dbc.ModalHeader(
             children=html.Div([
-                html.Button("PDF", id="btn-export-pdf", n_clicks=0,
-                            title="Xuất báo cáo PDF kỹ thuật",
+                # ── BẮT ĐẦU ĐOẠN ĐÃ ĐƯỢC BỌC VIP CHO NÚT PDF ĐỎ ──
+                html.Div(
+                    id="pw-detail-pdf",
+                    className="premium-wrapper premium-locked", 
+                    style={
+                        "position": "relative",
+                        "display": "inline-block", 
+                        "marginRight": "10px", 
+                        "verticalAlign": "middle",
+                        "width": "30px",         # Ép chuẩn 30px (bằng đúng nút)
+                        "height": "30px",        # Ép chuẩn 30px 
+                        "minWidth": "30px",      
+                        "padding": "0",          # Chặn CSS thừa
+                    }, 
+                    children=[
+                        # 1. Nội dung thật (Nút PDF cũ)
+                        html.Div(
+                            className="premium-content",
                             style={
-                                "width": "30px", "height": "30px",
-                                "backgroundColor": "#D32F2F", "color": "#fff",
-                                "border": "none", "borderRadius": "4px",
-                                "fontSize": "13px", "fontWeight": "700",
-                                "cursor": "pointer", "flexShrink": "0", "marginRight": "10px",
-                                "boxShadow": "0 2px 8px rgba(211,47,47,0.45)",
-                                "display": "inline-flex", "alignItems": "center",
-                                "justifyContent": "center", "verticalAlign": "middle",
-                            }),
+                                "width": "100%", 
+                                "height": "100%", 
+                                "margin": "0", 
+                                "padding": "0"
+                            },
+                            children=[
+                                html.Button(
+                                    "PDF", 
+                                    id="btn-export-pdf", 
+                                    n_clicks=0,
+                                    title="Xuất báo cáo PDF kỹ thuật",
+                                    style={
+                                        "width": "30px", "height": "30px",
+                                        "backgroundColor": "#D32F2F", "color": "#fff",
+                                        "border": "none", "borderRadius": "4px",
+                                        "fontSize": "13px", "fontWeight": "700",
+                                        "cursor": "pointer",
+                                        "boxShadow": "0 2px 8px rgba(211,47,47,0.45)",
+                                        "display": "inline-flex", "alignItems": "center",
+                                        "justifyContent": "center", "verticalAlign": "middle",
+                                        "padding": "0",
+                                        "margin": "0" 
+                                    }
+                                ),
+                            ]
+                        ),
+                        # 2. Overlay khóa VIP 
+                        html.Div(
+                            id={"type": "premium-overlay-btn", "section": "export-pdf-modal"},
+                            n_clicks=0,
+                            className="premium-overlay",
+                            style={
+                                "borderRadius": "4px",
+                                "border": "1px dashed #10b981", 
+                                "backgroundColor": "rgba(13, 17, 23, 0.7)", 
+                                "display": "flex",              
+                                "flexDirection": "column",      
+                                "justifyContent": "center",     
+                                "alignItems": "center",         
+                                "boxSizing": "border-box",      
+                                "position": "absolute",
+                                "top": "0", "left": "0",        # Trả về 0 để khớp góc
+                                "width": "100%", "height": "100%", # Tự động phủ kín 30x30
+                                "transform": "none",            # BỘ LỌC QUAN TRỌNG: Xóa hiệu ứng lệch từ CSS cũ
+                                "margin": "0",                  # BỘ LỌC QUAN TRỌNG
+                                "cursor": "pointer",
+                                "zIndex": "10"
+                            },
+                            children=[
+                                html.I(
+                                    className="fas fa-lock",
+                                    style={
+                                        "fontSize": "11px",
+                                        "color": "#0057D9",
+                                        "marginBottom": "2px",
+                                    },
+                                ),
+                                html.Span(
+                                    "VIP",
+                                    style={
+                                        "fontSize": "7px", 
+                                        "fontWeight": "800",
+                                        "color": "#f0f6fc",
+                                        "lineHeight": "1",
+                                    },
+                                ),
+                            ],
+                        ),
+                    ]
+                ),
+                # ── KẾT THÚC ĐOẠN BỌC VIP ──
+
+                # ... (Các thành phần khác trong ModalHeader của bạn giữ nguyên) ...
                 html.Span("Phân tích chi tiết", id="modal-title",
                           style={"fontWeight": "600", "fontSize": "0.95rem",
                                  "color": "var(--text-primary)", "verticalAlign": "middle"}),
@@ -783,6 +867,15 @@ layout = html.Div([
     alert_interval,
     dcc.Store(id="fin-chart-period-store", data="quarterly"),  # ← period store cho biểu đồ TC
     dcc.Store(id="fin-chart-selection-store", data=[]),  # ← template store (persist across tabs)
+
+        # ── Realtime Wifeed price components ──────────────────────────
+    dcc.Interval(
+        id="realtime-price-interval",
+        interval=60_000,   # 60 giây
+        n_intervals=0,
+        disabled=False,
+    ),
+    dcc.Store(id="realtime-fetch-ts", data=0),
 
     # ── SCREENER PDF MODAL ─────────────────────────────────
     dbc.Modal(
@@ -988,7 +1081,7 @@ layout = html.Div([
                             target="btn-about-fss",
                             placement="right",
                             className="custom-fss-tooltip", # <--- Thêm class name này
-                            style={"zIndex": "10001"}       # <--- Ép z-index cao hơn header (9000)
+                            style={"zIndex": "10000"}       # <--- Ép z-index cao hơn header (9000)
                         ),
                         html.B("FIN SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
                         
@@ -1066,10 +1159,10 @@ layout = html.Div([
                 html.Div([
                     dbc.Button(
                         [html.I(className="fas fa-play-circle fss-tbtn-icon"),
-                         html.Span("Hướng dẫn dùng hệ thống", id="label-start-tour-btn")],
+                         html.Span("Hướng dẫn sử dụng hệ thống", id="label-start-tour-btn")],
                         id="btn-start-tour",
-                        size="sm",
-                        className="fss-tbtn",
+                        size="md",
+                        className="fss-tour-pulse",
                     ),
                 ], style={"display": "flex", "justifyContent": "flex-end", "marginBottom": "4px"}),
 
@@ -1080,21 +1173,62 @@ layout = html.Div([
                     id="action-buttons-container",
                     style={"display": "none", "gap": "8px", "alignItems": "center"},
                     children=[
-                        # Export Excel
-                        dbc.Button(
-                            [html.I(className="fas fa-file-excel fss-tbtn-icon"),
-                             "Excel"],
-                            id="btn-export-excel",
-                            size="sm",
-                            className="fss-tbtn fss-tbtn--green",
-                        ),
+                        
                         # Heatmap
                         dbc.Button([
                             html.I(className="fas fa-dollar-sign fss-tbtn-icon"),
                             "Dòng tiền ngành",
                         ], id="btn-heatmap", size="sm", className="fss-tbtn fss-tbtn--cyan"),
 
-                        html.Div(className="fss-toolbar-divider"),
+                        html.Div(
+                            id="pw-export-excel",
+                            className="premium-wrapper premium-locked",   # ← bỏ "premium-locked" nếu user đã VIP
+                            children=[
+                                # ── Nội dung thật (bị overlay che khi chưa VIP) ──
+                                html.Div(
+                                    children=[
+                                        dbc.Button(
+                                            [
+                                                html.I(className="fas fa-file-excel fss-tbtn-icon"),
+                                                "Excel",
+                                            ],
+                                            id="btn-export-excel",
+                                            size="sm",
+                                            className="fss-tbtn fss-tbtn--green",
+                                        ),
+                                        # Thêm dcc.Download cho Excel (tương tự PDF)
+                                        dcc.Download(id="export-excel-download"), 
+                                    ],
+                                    className="premium-content",
+                                ),
+                                # ── Overlay khóa VIP (hiện khi chưa đăng ký) ──
+                                html.Div(
+                                    id={"type": "premium-overlay-btn", "section": "export-excel"}, # Đổi section thành export-excel
+                                    n_clicks=0,
+                                    className="premium-overlay",
+                                    children=[
+                                        html.I(
+                                            className="fas fa-lock",
+                                            style={
+                                                "fontSize": "10px",
+                                                "color": "#0057D9",
+                                                "marginBottom": "2px",
+                                            },
+                                        ),
+                                        html.Span(
+                                            "VIP",
+                                            style={
+                                                "fontSize": "9px",
+                                                "fontWeight": "700",
+                                                "color": "#6e7681",
+                                            },
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+
+
                         
                         # ============================================================
                         # SNIPPET: Premium Wrapper cho nút "Xuất PDF Danh mục"
@@ -1114,7 +1248,7 @@ layout = html.Div([
                         #
                         # SAU (code mới - CÓ premium wrapper, y hệt pattern Watchlist):
                         # ─────────────────────────────────────────────────────────────
-                        html.Div(className="fss-toolbar-divider"),
+
                         html.Div(
                             id="pw-screener-pdf",
                             className="premium-wrapper premium-locked",   # ← bỏ "premium-locked" nếu user đã VIP
@@ -1196,7 +1330,7 @@ layout = html.Div([
                             ],
                         ),
 
-                        html.Div(className="fss-toolbar-divider"),
+
                         # Danh mục — PREMIUM (giữ nguyên)
                         html.Div(
                             id="pw-portfolio",
@@ -1248,7 +1382,7 @@ layout = html.Div([
                             ],
                         ),
 
-                        html.Div(className="fss-toolbar-divider"),
+
                         # Watchlist — PREMIUM
                         html.Div(
                             id="pw-watchlist",
@@ -1393,6 +1527,9 @@ layout = html.Div([
         # KHU VỰC BẢNG SCREENER — spinner ở result-count, không bọc AG Grid
         html.Div([
             html.Div([
+                # ── Realtime overlay blur (thêm mới) ──────────────────
+                create_screener_overlay(),
+                # ──────────────────────────────────────────────────────
                 dag.AgGrid(
                     id="screener-table",
                     rowData=[],
@@ -1444,7 +1581,7 @@ layout = html.Div([
                             html.Div(id="fss-grid-lock-text",
                                     style={"fontWeight": "700", "color": "#e5e7eb",
                                             "fontSize": "14px", "marginBottom": "4px"}),
-                            html.Div("Khách thường chỉ xem 3 mã đầu tiên.",
+                            html.Div("Khách thường chỉ xem 5 mã đầu tiên.",
                                     style={"fontSize": "12px", "color": "#4d7a9a",
                                             "marginBottom": "12px"}),
                             dbc.Button("Đăng nhập VIP ngay",
@@ -1464,7 +1601,8 @@ layout = html.Div([
                     className="fss-grid-lock-banner-wrap",
                 ),
                 html.Div(id="filter-null-alert", style={"padding": "0 16px 8px 16px"})
-            ], className="info-card mb-3")
+            ], className="info-card mb-3",
+               style={"position": "relative"})   # ← THÊM style này để overlay định vị đúng
         ]),
 
     # ── FAQ SECTION (theme-aware — dùng biến CSS thay vì màu hard-code) ───
@@ -1841,7 +1979,7 @@ html.Div([
                     "fontSize": "10px", "color": "#8b949e", "marginBottom": "4px"}),
                 html.Div(
                     "Xin chào! 👋 Tôi là trợ lý liên lạc tự động của FinSmartScreener. "
-                    "Hãy để lại tin nhắn, tôi sẽ forward tin nhắn trực tiếp vào tin nhắn chờ Zalo của team tư vấn đầu tư. Đội ngũ tư vấn đầu tư của chúng tôi sẽ liên hệ lại qua Zalo sớm nhất!\nTeam tư vấn gồm:\n1. Ngô Cao Nguyên\n2. Phan Đặng Anh Kiệt\n3. Cao Huỳnh Tuyết Trân",
+                    "Hãy để lại tin nhắn, tôi sẽ forward tin nhắn trực tiếp vào hộp thoại tin nhắn chờ Zalo của team tư vấn đầu tư. Đội ngũ tư vấn đầu tư của chúng tôi sẽ liên hệ lại qua Zalo sớm nhất!",
                     style={
                         "backgroundColor": "#1e2d3d",
                         "border": "1px solid #30363d",

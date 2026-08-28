@@ -665,12 +665,12 @@
 }
 
 /* 2. Đổi màu Đen cho các câu hỏi (01, 02...) */
-[data-theme="light"] [id^="faq-btn-"] {
+[data-theme="light"] [id^="onb-faq-btn-"] {
     color: #0f172a !important;
     border: none !important;
 }
-[data-theme="light"] [id^="faq-btn-"] div,
-[data-theme="light"] [id^="faq-btn-"] span {
+[data-theme="light"] [id^="onb-faq-btn-"] div,
+[data-theme="light"] [id^="onb-faq-btn-"] span {
     color: #0f172a !important;
 }
 

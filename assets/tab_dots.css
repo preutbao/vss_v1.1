@@ -6,7 +6,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background-color: #8b949e;   /* xám trung tính */
+    background-color: var(--text-muted);   /* xám trung tính, tự đổi theo theme */
     pointer-events: none;
 }
 

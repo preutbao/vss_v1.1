@@ -988,7 +988,7 @@ layout = html.Div(
                         options=[
                             {"label": "Toàn thị trường", "value": "all"},
                             {"label": "VN30", "value": "VN30"},
-                            {"label": "VN100", "value": "VN100"},
+                            {"label": "HNXINDEX", "value": "HNXINDEX"},
                             {"label": "HNX30", "value": "HNX30"},
                         ],
                         value="all", # Mặc định là Toàn thị trường
@@ -1070,10 +1070,29 @@ layout = html.Div(
 
                     html.Div([
                         html.Div([
-                            html.Span("Chỉ số thị trường  ·  ^VNINDEX", style={
+                            html.Span("Chỉ số thị trường  ·  ", style={
                                 "fontSize": "11px", "fontWeight": "700",
-                                "color": "#c9d1d9", "flex": "1",
+                                "color": "#c9d1d9",
                             }),
+                            dcc.Dropdown(
+                                id="idx-symbol-selector",
+                                options=[
+                                    {"label": "^VNINDEX",  "value": "VNINDEX"},
+                                    {"label": "^VN30",     "value": "VN30"},
+                                    {"label": "^VN100",   "value": "VN100"},
+                                ],
+                                value="VNINDEX",
+                                clearable=False,
+                                searchable=False,
+                                style={
+                                    "width": "130px",
+                                    "fontSize": "11px",
+                                    "backgroundColor": "#0d1117",
+                                    "border": "none",
+                                },
+                                className="idx-symbol-dropdown",
+                            ),
+                            html.Div(style={"flex": "1"}),  # spacer đẩy phần % qua phải
                             html.Span(id="idx-chart-change", style={
                                 "fontSize": "11px", "fontWeight": "700",
                                 "color": "#10b981",

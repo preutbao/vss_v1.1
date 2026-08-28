@@ -1,4 +1,6 @@
-/* --- THAY THẾ CHO ZOOM LOCK --- */
+/* --- THAY THẾ CHO ZOOM LOCK ---
+   Rà soát sáng/tối: file này chỉ chỉnh font-size và layout (không có
+   màu sắc), nên không cần điều chỉnh gì thêm cho light/dark mode. */
 html, body {
     /* Mặc định là 16px. Chỉnh xuống 14.4px (tương đương 90%) hoặc 14px */
     font-size: 14.4px; 

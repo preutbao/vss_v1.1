@@ -1,6 +1,6 @@
 # src/callbacks/ips_pdf_callback.py
 # ══════════════════════════════════════════════════════════════
-# IPS PROFILE PDF  —  FinSmartScreener
+# IPS PROFILE PDF  —  Vietcap Smart Screener
 # Xuất báo cáo hồ sơ nhà đầu tư 1 trang A4 sau onboarding.
 #
 # Reuse toàn bộ primitives từ screener_pdf_callback.py:
@@ -151,7 +151,7 @@ if not _SHARED_OK:
         c.setFillColor(C_ACCENT2)
         c.rect(PW * 0.6, 0, PW * 0.4, 4, fill=1, stroke=0)
         c.setFont("VnFont", 6.5); c.setFillColor(colors.HexColor("#9CA3AF"))
-        c.drawString(MARGIN, 8, "FinSmartScreener – Báo cáo Hồ sơ Nhà đầu tư")
+        c.drawString(MARGIN, 8, "Vietcap Smart Screener – Báo cáo Hồ sơ Nhà đầu tư")
         c.drawRightString(PW - MARGIN, 8,
             f"Trang {page_num}/{total}  ·  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
@@ -359,10 +359,60 @@ def _wrap_text(text: str, max_width: float, font: str, font_size: float) -> list
 # ══════════════════════════════════════════════════════════════
 # HELPER: Lấy top 3 mã phù hợp với profile
 # ══════════════════════════════════════════════════════════════
+def _ips_footer(c, now, page_num=1, total=1):
+    """
+    Footer riêng cho IPS PDF — KHÔNG dùng chung _footer() của Screener vì:
+      1. Định vị sản phẩm khác nhau: IPS là tính năng Free/mồi câu viral,
+         không phải "VIP NAV Edition".
+      2. Cần đảm bảo giờ hiển thị khớp 100% với header (dùng chung biến `now`
+         thay vì gọi datetime.now() lần thứ 2 tại thời điểm khác).
+    """
+    c.setFillColor(C_ACCENT)
+    c.rect(0, 0, PW * 0.6, 4, fill=1, stroke=0)
+    c.setFillColor(C_ACCENT2)
+    c.rect(PW * 0.6, 0, PW * 0.4, 4, fill=1, stroke=0)
+    c.setFont("VnFont", 6.5); c.setFillColor(colors.HexColor("#9CA3AF"))
+    c.drawString(MARGIN, 8, "Báo cáo Cá nhân hóa - FinSmartScreener")
+    c.drawRightString(PW - MARGIN, 8,
+        f"Trang {page_num}/{total}  ·  {now.strftime('%d/%m/%Y %H:%M')}")
+
+
+def _sec_title_num(c, num, text, x, y, width=None, color=None, size=9.0):
+    """
+    Tiêu đề section có số thứ tự vẽ bằng hình tròn — KHÔNG dùng ký tự
+    unicode "circled digit" (①②③④) vì VnFont không có glyph này →
+    hiển thị thành ô rỗng/tofu trên PDF viewer.
+    """
+    width = width or CW
+    color = color or C_HEADER_DARK
+    d = 12  # đường kính vòng tròn số thứ tự
+
+    c.setFillColor(color)
+    c.circle(x + d/2, y + 3.0, d/2, fill=1, stroke=0)
+    c.setFont("VnFont-Bold", 7); c.setFillColor(colors.white)
+    c.drawCentredString(x + d/2, y + 0.4, str(num))
+
+    tx = x + d + 6
+    c.setFont("VnFont-Bold", size); c.setFillColor(color)
+    c.drawString(tx, y, text)
+
+    c.setStrokeColor(C_ACCENT); c.setLineWidth(2.0)
+    c.line(x, y - 4, x + 24, y - 4)
+    c.setStrokeColor(C_LIGHT_GREY); c.setLineWidth(0.5)
+    c.line(x + 24, y - 4, x + width, y - 4)
+
+
 def _get_top3(profile: dict) -> list:
     """
-    Lọc snapshot theo auto_filters của profile,
-    sort VGM_Score_Num giảm dần, lấy top 3.
+    Lọc snapshot theo auto_filters của profile + ràng buộc rủi ro tương ứng
+    risk_profile, sort theo VGM giảm dần, lấy top 3.
+
+    QUAN TRỌNG: chỉ lọc theo auto_filters (volume/cap/price) là CHƯA ĐỦ để
+    đảm bảo phù hợp khẩu vị — một mã có VGM cao vẫn có thể là doanh nghiệp
+    rủi ro cao (âm vốn chủ, đòn bẩy lớn, thanh khoản UPCoM mỏng). Với hồ sơ
+    "Thận trọng"/"Cân bằng", cần loại các mã không đạt chuẩn phòng thủ
+    (ROE âm, sàn UPCoM, D/E quá cao) trước khi xếp hạng theo VGM.
+
     Trả về list[dict] với các key: Ticker, name, Sector,
     Price Close, VGM Score, P/E, ROE (%), Perf_1M.
     """
@@ -372,29 +422,69 @@ def _get_top3(profile: dict) -> list:
         if df is None or df.empty:
             return []
 
-        af = profile.get("auto_filters", {})
-        min_vol   = af.get("min_vol",   30_000)
-        min_cap   = af.get("min_cap",   200_000_000_000)
-        min_price = af.get("min_price", 3_000)
+        risk = profile.get("risk_profile") or "moderate"
+
+        af = profile.get("auto_filters") or {}
+        min_vol   = af.get("min_vol")   if af.get("min_vol")   is not None else 30_000
+        min_cap   = af.get("min_cap")   if af.get("min_cap")   is not None else 200_000_000_000
+        min_price = af.get("min_price") if af.get("min_price") is not None else 3_000
 
         import pandas as _pd
-        import math as _m
 
         def _safe(col, default=0.0):
             if col not in df.columns:
                 return _pd.Series(default, index=df.index)
             return _pd.to_numeric(df[col], errors="coerce").fillna(default)
 
+        def _safe_str(col):
+            if col not in df.columns:
+                return _pd.Series("", index=df.index)
+            return df[col].astype(str).str.strip().str.upper()
+
         mask = (
             (_safe("Avg_Vol_20D") >= min_vol) &
             (_safe("Market Cap")  >= min_cap) &
             (_safe("Price Close") >= min_price)
         )
+
+        # Luôn loại doanh nghiệp đang lỗ/âm vốn chủ (ROE âm), bất kể khẩu vị.
+        if "ROE (%)" in df.columns:
+            mask &= _safe("ROE (%)", -999) > 0
+
+        if risk == "conservative":
+            # Thận trọng/Bảo toàn vốn: loại sàn UPCoM (thanh khoản/minh bạch
+            # thấp hơn), giới hạn đòn bẩy, ưu tiên vốn hóa lớn (Bluechip).
+            exch_col = "Exchange" if "Exchange" in df.columns else (
+                       "Exchange Name" if "Exchange Name" in df.columns else None)
+            if exch_col:
+                mask &= _safe_str(exch_col).isin(["HOSE", "HNX", "HSX"])
+            if "D/E" in df.columns:
+                mask &= _safe("D/E", 0) <= 2.0
+            mask &= _safe("Market Cap") >= max(min_cap, 10_000_000_000_000)  # ≥10,000 tỷ
+
+        elif risk == "moderate":
+            if "D/E" in df.columns:
+                mask &= _safe("D/E", 0) <= 3.0
+
         df2 = df[mask].copy()
+
+        # Fallback: nếu bộ lọc rủi ro làm rỗng kết quả, nới lỏng dần nhưng
+        # vẫn giữ ràng buộc ROE dương để tránh báo cáo trống.
+        if df2.empty and risk == "conservative":
+            mask_relaxed = (
+                (_safe("Avg_Vol_20D") >= min_vol) &
+                (_safe("Market Cap")  >= min_cap) &
+                (_safe("Price Close") >= min_price)
+            )
+            if "ROE (%)" in df.columns:
+                mask_relaxed &= _safe("ROE (%)", -999) > 0
+            df2 = df[mask_relaxed].copy()
 
         # Ưu tiên VGM A/B
         if "VGM Score" in df2.columns:
-            df2 = df2[df2["VGM Score"].isin(["A", "B"])]
+            df_ab = df2[df2["VGM Score"].isin(["A", "B"])]
+            if not df_ab.empty:
+                df2 = df_ab
 
         # Sort theo VGM_Score_Num nếu có, else theo VGM Score string
         if "VGM_Score_Num" in df2.columns:
@@ -429,11 +519,27 @@ def _get_top3(profile: dict) -> list:
         logger.warning(f"[IPS PDF] _get_top3 error: {e}")
         return []
 
+def _load_display_name(username: str):
+    """Fallback: đọc display_name từ users.json theo username (khi không ai truyền display_name trực tiếp)."""
+    if not username:
+        return None
+    import json
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "users.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            users = json.load(f)
+        return (users.get(username) or {}).get("display_name") or None
+    except Exception as e:
+        logger.debug(f"[IPS PDF] Không đọc được users.json: {e}")
+        return None
+
+
 
 # ══════════════════════════════════════════════════════════════
 # CORE: Sinh PDF bytes
 # ══════════════════════════════════════════════════════════════
-def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
+def generate_ips_pdf(profile: dict, quiz_answers: dict,
+                      display_name: str = None, username: str = None) -> bytes:
     """
     Sinh PDF 1 trang A4 báo cáo hồ sơ nhà đầu tư.
     profile    : dict từ investor-profile-store
@@ -441,6 +547,12 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     """
     profile       = profile or {}
     quiz_answers  = quiz_answers or {}
+    now           = datetime.now()
+
+    # display_name truyền thẳng từ auth-store (ưu tiên) — chỉ fallback
+    # đọc users.json khi không ai truyền display_name lẫn username vào.
+    if not display_name:
+        display_name = _load_display_name(username)
 
     buf = io.BytesIO()
     c   = rl_canvas.Canvas(buf, pagesize=A4)
@@ -467,18 +579,18 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     top3 = _get_top3(profile)
 
     # ── Metadata PDF (đồng bộ Screener) ──
-    c.setTitle("FinSmartScreener - Báo Cáo Hồ Sơ Nhà Đầu Tư")
-    c.setAuthor("FinSmartScreener")
-    c.setSubject(f"Hồ sơ {risk_lbl} - {datetime.now().strftime('%d/%m/%Y')}")
+    c.setTitle("Vietcap Smart Screener - Báo Cáo Hồ Sơ Nhà Đầu Tư")
+    c.setAuthor("Vietcap Smart Screener")
+    c.setSubject(f"Hồ sơ {risk_lbl} - {now.strftime('%d/%m/%Y')}")
 
     # ── Nền trắng ───────────────────────────────────────────────────────────
     _bg(c)
 
     # ══════════════════════════════════════════════════════════════
     # HEADER — Light professional style (đồng bộ Screener PDF trang 1)
-    # Nền trắng xanh nhạt, chữ tối rõ ràng, 3 dòng tách biệt
+    # Nền trắng xanh nhạt, chữ tối rõ ràng, 3-4 dòng tách biệt
     # ══════════════════════════════════════════════════════════════
-    HDR_BAND_H = 60
+    HDR_BAND_H = 72 if display_name else 60
 
     # Nền header xanh nhạt gradient-ish (2 rect để tạo hiệu ứng)
     c.setFillColor(colors.HexColor("#EBF4FF"))
@@ -494,22 +606,22 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.0)
     c.line(0, PH - HDR_BAND_H, PW, PH - HDR_BAND_H)
 
-    # ── DÒNG 1: Logo FSS | Smart Screener | tagline  ···  "BÁO CÁO..." ──
+    # ── DÒNG 1: Logo VSS | Smart Screener | tagline  ···  "BÁO CÁO..." ──
     y1 = PH - 19
 
     c.setFont("VnFont-Bold", 13); c.setFillColor(colors.HexColor("#0057B8"))
-    c.drawString(MARGIN, y1, "FSS")
-    lw_fss = pdfmetrics.stringWidth("FSS", "VnFont-Bold", 13)
+    c.drawString(MARGIN, y1, "VSS")
+    lw_vss = pdfmetrics.stringWidth("VSS", "VnFont-Bold", 13)
 
     c.setStrokeColor(colors.HexColor("#BDD6F0")); c.setLineWidth(1.2)
-    c.line(MARGIN + lw_fss + 6, y1 - 2, MARGIN + lw_fss + 6, y1 + 11)
+    c.line(MARGIN + lw_vss + 6, y1 - 2, MARGIN + lw_vss + 6, y1 + 11)
 
     c.setFont("VnFont", 10); c.setFillColor(colors.HexColor("#1A3A5C"))
-    c.drawString(MARGIN + lw_fss + 12, y1, "Smart Screener")
+    c.drawString(MARGIN + lw_vss + 12, y1, "Smart Screener")
     sw_ss = pdfmetrics.stringWidth("Smart Screener", "VnFont", 10)
 
     c.setFont("VnFont", 7); c.setFillColor(colors.HexColor("#5A80A0"))
-    c.drawString(MARGIN + lw_fss + sw_ss + 18, y1 + 1,
+    c.drawString(MARGIN + lw_vss + sw_ss + 18, y1 + 1,
                  "Vietcap Securities · IPS Report")
 
     c.setFont("VnFont-Bold", 8); c.setFillColor(colors.HexColor("#0057B8"))
@@ -522,12 +634,19 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     c.drawString(MARGIN, y2, "Hồ Sơ Nhà Đầu Tư Cá Nhân")
 
     c.setFont("VnFont", 7); c.setFillColor(colors.HexColor("#4A7090"))
-    c.drawRightString(PW - MARGIN, y2,
-                      datetime.now().strftime("%d/%m/%Y  %H:%M"))
+    c.drawRightString(PW - MARGIN, y2, now.strftime("%d/%m/%Y  %H:%M"))
+
+    # ── DÒNG 2b (nếu có): "Nhà đầu tư: {display_name}" — cá nhân hóa/Ego-bait ──
+    # Chỉ dùng display_name — KHÔNG dùng email/SĐT để tránh lộ thông tin khi share MXH.
+    if display_name:
+        y_name = PH - 47
+        c.setFont("VnFont-Bold", 9.5); c.setFillColor(colors.HexColor("#0057B8"))
+        c.drawString(MARGIN, y_name, f"Nhà đầu tư: {display_name}")
+        y3 = PH - 61
+    else:
+        y3 = PH - 49
 
     # ── DÒNG 3: Khẩu vị rủi ro + Mục tiêu   ···   badges bên phải ──
-    y3 = PH - 49
-
     c.setFont("VnFont", 7); c.setFillColor(colors.HexColor("#3A6080"))
     c.drawString(MARGIN, y3,
                  f"Khẩu vị rủi ro: {risk_lbl}  ·  Mục tiêu: {_GOAL_LABEL.get(goal, goal)}")
@@ -551,7 +670,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     # ══════════════════════════════════════════════════════════════
     # SECTION 1 — KẾT QUẢ TRẮC NGHIỆM
     # ══════════════════════════════════════════════════════════════
-    _sec_title(c, "① KẾT QUẢ TRẮC NGHIỆM  IPS", MARGIN, y, CW)
+    _sec_title_num(c, 1, "KẾT QUẢ TRẮC NGHIỆM IPS", MARGIN, y, CW)
     y -= 18
 
     # 4 KPI cards (cao hơn cho cân đối với screener)
@@ -672,7 +791,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     # ══════════════════════════════════════════════════════════════
     # SECTION 2 — KHUYẾN NGHỊ HỆ THỐNG
     # ══════════════════════════════════════════════════════════════
-    _sec_title(c, "② KHUYẾN NGHỊ CHIẾN LƯỢC", MARGIN, y, CW)
+    _sec_title_num(c, 2, "KHUYẾN NGHỊ CHIẾN LƯỢC", MARGIN, y, CW)
     y -= 18
 
     # Text box chiến lược — nền xanh nhạt, viền
@@ -738,7 +857,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     # ══════════════════════════════════════════════════════════════
     # SECTION 3 — TOP 3 CỔ PHIẾU PHÙ HỢP
     # ══════════════════════════════════════════════════════════════
-    _sec_title(c, "③ TOP 3 CỔ PHIẾU PHÙ HỢP KHẨU VỊ", MARGIN, y, CW)
+    _sec_title_num(c, 3, "TOP 3 CỔ PHIẾU PHÙ HỢP KHẨU VỊ", MARGIN, y, CW)
     y -= 18
 
     tbl_row_h, tbl_hdr_h = 20, 19
@@ -782,7 +901,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     # SECTION 4 — GHI CHÚ VẬN HÀNH  (AI-style note, đồng bộ Screener)
     # ══════════════════════════════════════════════════════════════
     if y - 60 > Y_MIN + 8:
-        _sec_title(c, "④ GHI CHÚ VẬN HÀNH & KỶ LUẬT ĐẦU TƯ", MARGIN, y, CW,
+        _sec_title_num(c, 4, "GHI CHÚ VẬN HÀNH & KỶ LUẬT ĐẦU TƯ", MARGIN, y, CW,
                    color=C_PURPLE)
         y -= 15
 
@@ -812,7 +931,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
                         box_color=C_PURPLE_SOFT,
                         border_color=C_PURPLE_BORDER,
                         accent_color=C_PURPLE,
-                        badge_label="FSS Advisory",
+                        badge_label="VSS Advisory",
                         badge_color=C_PURPLE)
         except Exception as _ae:
             logger.warning(f"[IPS PDF] AI box error: {_ae}")
@@ -820,7 +939,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     # ══════════════════════════════════════════════════════════════
     # FOOTER
     # ══════════════════════════════════════════════════════════════
-    _footer(c, 1, 1)
+    _ips_footer(c, now, 1, 1)
 
     c.save()
     buf.seek(0)
@@ -837,20 +956,16 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict) -> bytes:
     State("ips-goal-store",           "data"),
     State("ips-will-store",           "data"),
     State("ips-time-store",           "data"),
+    State("auth-store",               "data"),          # ← THÊM
     prevent_initial_call=True,
 )
-def download_ips_pdf(n_clicks, profile, goal, will, time_h):
+def download_ips_pdf(n_clicks, profile, goal, will, time_h, auth_data):   # ← THÊM auth_data
     if not n_clicks or not profile:
         return no_update
-
-    quiz = {
-        "goal":   goal   or "growth",
-        "will":   will   or "hold",
-        "time_h": time_h or "long",
-    }
-
+    quiz = {"goal": goal or "growth", "will": will or "hold", "time_h": time_h or "long"}
     try:
-        pdf_bytes = generate_ips_pdf(profile, quiz)
+        display_name = (auth_data or {}).get("display_name")     # ← THÊM
+        pdf_bytes = generate_ips_pdf(profile, quiz, display_name=display_name)  # ← SỬA
         fname = f"Vietcap_HoSoNhaDauTu_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
         return dcc.send_bytes(pdf_bytes, fname)
     except Exception as e:
