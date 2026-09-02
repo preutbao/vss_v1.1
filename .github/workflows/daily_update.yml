@@ -52,6 +52,16 @@ jobs:
           } else {
             Write-Host "No changes to commit"
           }
+            
+      - name: Đảm bảo git-xet đã cài (tự cài nếu thiếu)
+        run: |
+          if (-not (Get-Command git-xet -ErrorAction SilentlyContinue)) {
+            Write-Host "git-xet chưa có, đang cài qua winget..."
+            winget install --id huggingface.git-xet -e --accept-source-agreements --accept-package-agreements
+            git xet install
+          } else {
+            Write-Host "git-xet đã sẵn sàng."
+          }
 
       - name: Đồng bộ sang Hugging Face Space
         env:
