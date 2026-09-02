@@ -46,7 +46,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     # Tăng lên 2-4 nếu dùng paid tier hoặc RAM >= 16GB
     GUNICORN_WORKERS=1 \
     GUNICORN_THREADS=4 \
-    GUNICORN_TIMEOUT=120
+    GUNICORN_TIMEOUT=300
 
 WORKDIR /app
 
@@ -87,5 +87,4 @@ CMD gunicorn \
     --access-logfile - \
     --error-logfile - \
     --log-level info \
-    --preload \
     "main:server"

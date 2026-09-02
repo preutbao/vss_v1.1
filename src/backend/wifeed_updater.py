@@ -35,8 +35,20 @@ _TRADING_END   = dtime(14, 45)
 _EOD_CONFIRM   = dtime(15, 30)   # 1 lần cuối xác nhận EOD # dời trễ 30 phút, đảm bảo Wifeed đã settle GD thỏa thuận
 _EOD_CUTOFF    = dtime(17, 0)   # Cho phép fetch EOD đến 17:00
                                  # (Wifeed giữ data cuối ngày đến tối)
-# Khoảng cách tối thiểu giữa 2 request (giây) — Wifeed rate limit
-_MIN_INTERVAL  = 60
+# Khoảng cách tối thiểu giữa 2 request (giây) — Wifeed rate limit.
+# Đọc từ biến môi trường WIFEED_FETCH_INTERVAL_SECONDS để mỗi môi trường tự
+# chỉnh riêng (vd: local test 60s cho nhanh, HF Space đặt 3600s để tiết kiệm
+# quota/tránh rate-limit) mà KHÔNG cần sửa code — chỉ set env var tương ứng.
+# Áp dụng cho CẢ giá lẫn index vì 2 loại dữ liệu này lấy chung 1 lần gọi API
+# trong _fetch_wifeed() → dùng chung 1 interval là đủ, không cần tách riêng.
+try:
+    _MIN_INTERVAL = int(os.environ.get("WIFEED_FETCH_INTERVAL_SECONDS", "60"))
+except ValueError:
+    logger.warning(
+        "[Wifeed] WIFEED_FETCH_INTERVAL_SECONDS không phải số hợp lệ — "
+        "dùng mặc định 60s."
+    )
+    _MIN_INTERVAL = 60
 
 # ── Ngày nghỉ giao dịch (HOSE/HNX) — KHÔNG tự tính được bằng weekday(),
 # vì phụ thuộc lịch âm (Tết) và thông báo riêng từng năm của Sở GDCK.

@@ -1,10 +1,7 @@
 name: CI - Test & Lint
 
 on:
-  push:
-    branches: [main, master, develop]
-  pull_request:
-    branches: [main, master, develop]
+  workflow_dispatch:   # chỉ chạy khi bấm "Run workflow" thủ công
 
 jobs:
   test:
