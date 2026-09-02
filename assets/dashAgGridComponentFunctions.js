@@ -2,18 +2,42 @@ var dagcomponentfuncs = window.dashAgGridComponentFunctions = window.dashAgGridC
 
 // Tạo một component tên là CustomStarRating
 dagcomponentfuncs.CustomStarRating = function (props) {
-    if (!props.value) {
+    if (!props.value && !props.data) {
         return "–";
     }
     
-    var score = parseInt(props.value);
+    var score = parseInt(props.value) || 0;
+    var fssRank = (props.data && props.data.FSS_Smart_Rank !== undefined && props.data.FSS_Smart_Rank !== null) 
+                  ? parseFloat(props.data.FSS_Smart_Rank) 
+                  : 0;
+    var scoreNum = Math.round(fssRank * 100); // Scale 0.0-1.0 to 0-100
     var emptyScore = 5 - score;
+    
+    // Determine score color based on 0-100 scale
+    var scoreColor = scoreNum >= 70 ? '#10b981' : scoreNum >= 50 ? '#f59e0b' : '#ef4444';
+    var scoreBg = scoreNum >= 70 ? '#10b98120' : scoreNum >= 50 ? '#f59e0b20' : '#ef444420';
     
     return React.createElement(
         'div',
-        { style: { letterSpacing: '2px' } },
-        React.createElement('span', { style: { color: '#FFC107' } }, '★'.repeat(score)),
-        React.createElement('span', { style: { color: '#424242' } }, '★'.repeat(emptyScore))
+        { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } },
+        // Stars
+        React.createElement('span', { style: { letterSpacing: '1px' } },
+            React.createElement('span', { style: { color: '#FFC107' } }, '★'.repeat(score)),
+            React.createElement('span', { style: { color: '#424242' } }, '★'.repeat(emptyScore))
+        ),
+        // Smart Rank score with background badge
+        React.createElement('span', { 
+            style: { 
+                fontSize: '12px', 
+                fontWeight: '700',
+                color: scoreColor,
+                backgroundColor: scoreBg,
+                padding: '3px 6px',
+                borderRadius: '4px',
+                minWidth: '32px',
+                textAlign: 'center'
+            } 
+        }, scoreNum)
     );
 };
 

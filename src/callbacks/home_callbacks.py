@@ -510,7 +510,7 @@ def _build_tour_step(step: int):
                                 "#10b981"
                             ), "value": "investing"},
                         ],
-                        value="all_market",  # Đổi default thành all_market
+                        value="investing",  # Đổi default thành investing để phù hợp với hướng dẫn
                         style={"display": "flex", "flexDirection": "column", "gap": "16px"},
                         labelClassName="persona-card-label",
                         inputClassName="persona-card-input",
@@ -918,6 +918,9 @@ def _get_top_fin_picks(n: int = 3) -> list:
             "price": price,
             "pct": pct,
             "stars": stars_filled,
+            "value_score": row.get("Value_Score_Pct"),       # ← THÊM
+            "growth_score": row.get("Growth_Score_Pct"),     # ← THÊM
+            "momentum_score": row.get("Momentum_Score_Pct"), # ← THÊM
             "insight": company_name,  # hiển thị tên doanh nghiệp thay cho câu nhận xét
         })
 
@@ -1116,6 +1119,9 @@ def update_header_picks(n_intervals):
             change_str=f"{'+' if p['pct'] >= 0 else ''}{p['pct']:.2f}%",
             is_positive=p["pct"] >= 0,
             stars_filled=p["stars"],
+            value_score=p["value_score"],       # ← THÊM
+            growth_score=p["growth_score"],     # ← THÊM
+            momentum_score=p["momentum_score"], # ← THÊM
             insight_text=p["insight"],
         ))
     return cards

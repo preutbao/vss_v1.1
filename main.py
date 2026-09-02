@@ -5,16 +5,31 @@
 #   Production :  gunicorn --bind 0.0.0.0:7860 --workers 1 --worker-class sync
 #                          --timeout 300 main:server
 # ─────────────────────────────────────────────────────────────────────────────
-
 import sys
 import os
-import dash
 import logging
+
+# [FIX] logging.basicConfig() PHẢI chạy ĐẦU TIÊN, trước bất kỳ import/lời gọi
+# nào có thể tự log (init_db, seed_demo_codes, start_alert_scheduler,
+# start_wifeed_scheduler...). Nếu chưa có handler nào được cấu hình, Python
+# dùng "handler of last resort" — ngưỡng mặc định là WARNING — nên mọi
+# logger.info(...) gọi TRƯỚC khi basicConfig() chạy sẽ bị nuốt hoàn toàn,
+# không in ra đâu cả, dù sau đó basicConfig() có set level=INFO đi nữa.
+# Đây chính là lý do log "[Wifeed] ..." lúc khởi động (chạy đồng bộ bên
+# trong start_wifeed_scheduler()) không hề xuất hiện — không phải do
+# wifeed_updater.py sai logic.
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, no_update
 from dotenv import load_dotenv
 load_dotenv()
-# THÊM VÀO SAU DÒNG load_dotenv()
+
 from src.backend.database import init_db, seed_demo_codes
 init_db()
 # Chỉ seed demo code khi KHÔNG phải production — đặt FSS_ENV=production
@@ -35,11 +50,6 @@ if os.environ.get("FSS_ENV", "development").lower() != "test":
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BƯỚC 0: KIỂM TRA & TỰ ĐỘNG CHUYỂN ĐỔI PARQUET NẾU CẦN
@@ -130,6 +140,7 @@ import src.callbacks.mode_callbacks
 import src.callbacks.home_callbacks
 import src.utils.chart_callbacks
 import src.callbacks.realtime_price_callbacks
+import src.callbacks.hero_callbacks
 import src.callbacks.chatbot_callbacks
 import src.callbacks.strategy_callbacks
 import src.callbacks.ticker_search_callbacks
@@ -176,7 +187,7 @@ app.layout = html.Div(
         ),
 
         # ── 1. GLOBAL STORES ──────────────────────────────────────────────
-        dcc.Store(id="trading-mode-store",   storage_type="session",  data="all_market"),
+        dcc.Store(id="trading-mode-store",   storage_type="session",  data="investing"),
         dcc.Store(id="tour-selected-mode",   storage_type="memory",   data="investing"),
         dcc.Store(id="hint-shown-store",     storage_type="memory",   data=False),
         dcc.Store(id="tour-step-store",      data=1),
@@ -185,7 +196,8 @@ app.layout = html.Div(
         # LƯU Ý QUAN TRỌNG: Nếu bạn đã khai báo 2 Store này ở file sidebar.py, 
         # thì bạn PHẢI XÓA CHÚNG Ở ĐÂY (hoặc xóa ở sidebar.py). Chỉ giữ lại 1 nơi duy nhất!
         dcc.Store(id="investor-profile-store", storage_type="local",  data=None),
-        dcc.Store(id="profile-setup-done",     storage_type="local",  data=False),
+        dcc.Store(id="profile-setup-done",     storage_type="local",  data=True),
+
         dcc.Store(id="has-seen-tour", storage_type="local", data=False),
         dcc.Store(id="tour-active-step", storage_type="memory", data=None),
 
@@ -507,6 +519,22 @@ app.clientside_callback(
     """,
     Output("btn-start-tour", "children"), # Output giả để Dash chấp nhận
     Input("btn-start-tour", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (n_clicks && window.FssTour) {
+            window.FssTour.start();
+            var panel = document.getElementById('fss-notif-panel');
+            if (panel) panel.style.display = 'none';   // đóng panel sau khi mở tour
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("notif-welcome-tour", "title"),   # output giả
+    Input("notif-welcome-tour", "n_clicks"),
     prevent_initial_call=True,
 )
 

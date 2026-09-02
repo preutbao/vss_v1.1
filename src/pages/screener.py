@@ -1073,7 +1073,7 @@ layout = html.Div([
                                 "marginRight": "10px", "cursor": "pointer",
                                 "verticalAlign": "middle",
                                 "transition": "color 0.15s",
-                                "zIndex": "10001",
+                                "zIndex": "1029", 
                             },
                         ),
                         dbc.Tooltip(
@@ -1088,8 +1088,9 @@ layout = html.Div([
                         dbc.Button(
                             id="mode-toggle-btn",
                             children=[
-                                html.I(className="fas fa-globe", style={"marginRight": "5px"}),
-                                html.Span("Toàn TT", id="mode-toggle-label"),
+                                # moi mo app la mode tich san mac dinh de demo cho bgk
+                                html.I(className="fas fa-seedling", style={"marginRight": "5px"}),
+                                html.Span("Tích sản", id="mode-toggle-label"),
                             ],
                             n_clicks=0,
                             size="sm",
@@ -1851,7 +1852,8 @@ dbc.Modal([
                 html.Span("Những người xây dựng FSS",
                           style={"fontSize": "13px", "fontWeight": "700", "color": "#ffb300", "letterSpacing": "0.05em"}),
             ], style={"marginBottom": "12px"}),
-            
+         
+
             dbc.Row([
                 # Member 1: Nguyên
                 dbc.Col(
@@ -1859,31 +1861,64 @@ dbc.Modal([
                         html.Div("N", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
                         html.Div("Ngô Cao Nguyên", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("Quant & Data Dev", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
-                        html.A(html.I(className="fas fa-envelope"), href="nguyennc23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
-                    width=4, style={"padding": "0 4px"}
+                        # Đã thêm mailto: để link hoạt động đúng
+                        html.A(html.I(className="fas fa-envelope"), href="mailto:nguyennc23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"} # Tăng padding nhẹ để các khung không dính nhau khi xuống hàng
                 ),
+                
                 # Member 2: Kiệt
                 dbc.Col(
                     html.Div([
                         html.Div("K", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
                         html.Div("Phan Đặng Anh Kiệt", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("Backend Engineer", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
-                        html.A(html.I(className="fas fa-envelope"), href="kietpda23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
-                    width=4, style={"padding": "0 4px"}
+                        html.A(html.I(className="fas fa-envelope"), href="mailto:kietpda23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
                 ),
+                
                 # Member 3: Trân
                 dbc.Col(
                     html.Div([
                         html.Div("T", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
                         html.Div("Cao Huỳnh Tuyết Trân", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
                         html.Div("UI/UX & BA", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
-                        html.A(html.I(className="fas fa-envelope"), href="trancht23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
-                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b"}),
-                    width=4, style={"padding": "0 4px"}
-                )
-            ], className="g-0"), # g-0 để xóa margin thừa giữa các cột
+                        html.A(html.I(className="fas fa-envelope"), href="mailto:trancht23414a@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
+                ),
+
+                # === THÊM MỚI ===
+                
+                # Member 4: Nhi
+                dbc.Col(
+                    html.Div([
+                        # Sử dụng chữ cái B (Bảo) hoặc N (Nhi) tùy bạn, ở đây dùng B để tránh trùng màu/chữ với Nguyên
+                        html.Div("N", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
+                        html.Div("Huỳnh Bảo Nhi", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
+                        # Title súc tích cho CFO (Dự phóng doanh thu, chi phí)
+                        html.Div("CFO - Financial Planner", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
+                        # Thay email placeholder bằng email thật nếu có
+                        html.A(html.I(className="fas fa-envelope"), href="mailto:nhihb@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
+                ),
+                
+                # Member 5: Nhân
+                dbc.Col(
+                    html.Div([
+                        html.Div("N", style={"width": "40px", "height": "40px", "borderRadius": "50%", "backgroundColor": "#1e3a8a", "color": "#60a5fa", "display": "flex", "alignItems": "center", "justifyContent": "center", "fontWeight": "bold", "fontSize": "16px", "margin": "0 auto 8px auto"}),
+                        html.Div("Trần Thị Hoài Nhân", style={"fontSize": "12px", "fontWeight": "700", "color": "#e8f4ff", "textAlign": "center"}),
+                        # Title súc tích cho người lên chiến dịch B2B, B2C
+                        html.Div("Marketing Strategy (B2B/B2C)", style={"fontSize": "11px", "color": "#7aafcc", "textAlign": "center", "marginBottom": "8px"}),
+                        # Thay email placeholder bằng email thật nếu có
+                        html.A(html.I(className="fas fa-envelope"), href="mailto:nhantth@st.uel.edu.vn", style={"color": "#60a5fa", "fontSize": "14px", "display": "block", "textAlign": "center"})
+                    ], style={"backgroundColor": "#091526", "padding": "12px 8px", "borderRadius": "6px", "border": "1px solid #1e293b", "height": "100%"}),
+                    width=4, style={"padding": "4px"}
+                ),
+
+            ], className="g-0") # g-0 giữ nguyên theo code gốc
             
         ], style={
             "padding": "14px 16px",

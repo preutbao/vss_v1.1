@@ -581,6 +581,7 @@ def calculate_value_score(df):
 
         df['Value_Score_Num'] = score_num
         pct_rank = score_num.rank(pct=True, na_option='bottom')
+        df['Value_Score_Pct'] = (pct_rank * 100).round(0)   # ← THÊM DÒNG NÀY: thang 0–100
         
         # Áp dụng Bell Curve để phân loại
         df['Value Score'] = pd.cut(pct_rank, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
@@ -676,6 +677,7 @@ def calculate_growth_score(df):
 
         df['Growth_Score_Num'] = score_num
         pct_rank = score_num.rank(pct=True, na_option='bottom')
+        df['Growth_Score_Pct'] = (pct_rank * 100).round(0)   # ← THÊM DÒNG NÀY
         
         # Áp dụng Bell Curve
         df['Growth Score'] = pd.cut(pct_rank, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
@@ -747,6 +749,7 @@ def calculate_momentum_score(df):
 
         df['Momentum_Score_Num'] = score_num
         pct_rank = score_num.rank(pct=True, na_option='bottom')
+        df['Momentum_Score_Pct'] = (pct_rank * 100).round(0)   # ← THÊM DÒNG NÀY
         
         # Áp dụng Bell Curve
         df['Momentum Score'] = pd.cut(pct_rank, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
@@ -761,10 +764,18 @@ def calculate_momentum_score(df):
         return df
 
 
-def calculate_vgm_score(df):
+def calculate_vgm_score(df, as_of_date=None):
     """
     VGM SCORE: Tổng hợp Value + Growth + Momentum.
     Giữ nguyên logic Staleness adjustment, áp dụng Bell Curve cho kết quả cuối.
+
+    as_of_date : Timestamp | None
+        Mốc thời gian dùng để tính "độ cũ" (staleness) của BCTC.
+        - None (mặc định) -> dùng pd.Timestamp.now() như cũ, GIỮ NGUYÊN hành vi
+          hiện tại của ứng dụng live (KHÔNG đổi gì cho production).
+        - Khi được truyền (vd từ backtest, = ngày đang mô phỏng), staleness
+          được tính so với đúng ngày lịch sử đó thay vì "hôm nay" thật —
+          tránh việc BCTC 2023 bị chấm bằng độ cũ của năm 2026.
     """
     logger.info("📊 Đang tính VGM Score...")
     try:
@@ -780,7 +791,7 @@ def calculate_vgm_score(df):
         if 'Date' in df.columns:
             try:
                 fin_date = pd.to_datetime(df['Date'], errors='coerce')
-                now = pd.Timestamp.now()
+                now = pd.Timestamp(as_of_date) if as_of_date is not None else pd.Timestamp.now()
                 months_stale = ((now - fin_date).dt.days / 30).fillna(12)
                 stale_mask = months_stale > 9
                 
@@ -799,6 +810,7 @@ def calculate_vgm_score(df):
             df['VGM_Score_Num'] = v_points * w_v + g_points * w_g + m_points * w_m
 
         pct_rank_vgm = df['VGM_Score_Num'].rank(pct=True, na_option='bottom')
+        df['VGM_Score_Pct'] = (pct_rank_vgm * 100).round(0)   # ← THÊM DÒNG NÀY
         
         # Áp dụng Bell Curve cho Final Score
         df['VGM Score'] = pd.cut(pct_rank_vgm, bins=BELL_CURVE_BINS, labels=BELL_CURVE_LABELS).astype(str)
@@ -941,7 +953,8 @@ def calculate_tplus_score(df):
 # 4. HÀM CHÍNH (ORCHESTRATOR) - ENHANCED VERSION
 # ==============================================================================
 
-def calculate_all_scores(df_price, df_financial):
+def calculate_all_scores(df_price, df_financial, as_of_date=None,
+                          df_price_full_override=None, df_index_override=None):
     """
     Hàm chính điều phối toàn bộ quy trình tính toán - ENHANCED VERSION.
     Được gọi từ data_loader.py.
@@ -952,6 +965,21 @@ def calculate_all_scores(df_price, df_financial):
     - Tính BVPS (Book Value Per Share)
     - Thêm Revenue_TTM, Net_Income_TTM, EBIT_Margin
     - Bao gồm Price Open, High, Low cho technical analysis
+
+    POINT-IN-TIME PARAMS (mặc định None -> hành vi live app GIỮ NGUYÊN 100%):
+    as_of_date : Timestamp | None
+        Ngày đang mô phỏng (backtest). Truyền xuống calculate_vgm_score() để
+        staleness của BCTC được tính theo đúng ngày lịch sử, không phải
+        pd.Timestamp.now() thật.
+    df_price_full_override / df_index_override : DataFrame | None
+        Khi được truyền (từ backtest), thay thế HOÀN TOÀN việc tự gọi
+        load_market_data()/load_index_data() bên trong hàm này (kể cả ở khối
+        Technical Indicators và khối ADX/Lifecycle) — đây chính là điểm rò rỉ
+        look-ahead bias gốc: 2 khối đó tự load TOÀN BỘ dữ liệu hiện có trên
+        đĩa bất kể df_price truyền vào ở tham số đầu tiên đã được cắt tới
+        as_of_date hay chưa. Khi override được cung cấp, dữ liệu ĐÃ được cắt
+        point-in-time bởi caller (backtest.py) sẽ được dùng thay thế, đảm bảo
+        không có ngày nào > as_of_date lọt vào tính toán kỹ thuật.
     """
     logger.info("🚀 Bắt đầu quy trình chấm điểm toàn diện (Full Scoring - Enhanced)...")
 
@@ -1148,10 +1176,21 @@ def calculate_all_scores(df_price, df_financial):
         # ===================================================================
         try:
             from src.backend.technical_indicators import calculate_technical_indicators
-            from src.backend.data_loader import load_market_data, load_index_data
 
-            df_price_full = load_market_data()
-            df_index      = load_index_data()
+            if df_price_full_override is not None:
+                df_price_full = df_price_full_override
+                df_index      = df_index_override
+            else:
+                from src.backend.data_loader import load_market_data, load_index_data
+                df_price_full = load_market_data()
+                df_index      = load_index_data()
+
+            if as_of_date is not None and df_price_full is not None and not df_price_full.empty:
+                _max_px_date = pd.to_datetime(df_price_full["Date"], errors="coerce").max()
+                assert _max_px_date <= pd.Timestamp(as_of_date), (
+                    f"[PIT VIOLATION] Technical indicators nhìn thấy giá tới "
+                    f"{_max_px_date.date()} > as_of_date {pd.Timestamp(as_of_date).date()}"
+                )
 
             df_tech = calculate_technical_indicators(df_price_full, df_index)
             if not df_tech.empty:
@@ -1270,8 +1309,17 @@ def calculate_all_scores(df_price, df_financial):
         _LIFECYCLE_CROSS_LB      = 5   # lookback crossover RSI/ADX cho Mức 1, 2
         _LIFECYCLE_PEAK_LB       = 10  # lookback tìm đỉnh giá/RSI cho Mức 4
         try:
-            from src.backend.data_loader import load_market_data as _load_px
-            _df_px_adx = _load_px()
+            if df_price_full_override is not None:
+                _df_px_adx = df_price_full_override
+            else:
+                from src.backend.data_loader import load_market_data as _load_px
+                _df_px_adx = _load_px()
+            if as_of_date is not None and _df_px_adx is not None and not _df_px_adx.empty:
+                _max_adx_date = pd.to_datetime(_df_px_adx["Date"], errors="coerce").max()
+                assert _max_adx_date <= pd.Timestamp(as_of_date), (
+                    f"[PIT VIOLATION] ADX nhìn thấy giá tới {_max_adx_date.date()} "
+                    f"> as_of_date {pd.Timestamp(as_of_date).date()}"
+                )
             if not _df_px_adx.empty:
                 _adx_records = []
                 for _ticker, _grp in _df_px_adx.groupby("Ticker", sort=False):
@@ -1496,7 +1544,7 @@ def calculate_all_scores(df_price, df_financial):
         df = calculate_value_score(df)
         df = calculate_growth_score(df)
         df = calculate_momentum_score(df)
-        df = calculate_vgm_score(df)
+        df = calculate_vgm_score(df, as_of_date=as_of_date)
         df = calculate_canslim_score(df)
         df = calculate_star_rating(df)      # ← THÊM
         df = calculate_fss_smart_rank(df)   # ← THÊM

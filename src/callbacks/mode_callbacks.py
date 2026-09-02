@@ -20,8 +20,8 @@ def sync_trading_mode(btn_clicks, tour_val, current_mode):
     
     # 1. NẾU MỚI LOAD TRANG (Chưa ai bấm gì)
     if not ctx.triggered:
-        # Lấy giá trị đang lưu trong Local Storage, nếu không có thì mặc định Toan thị trường
-        new_mode = current_mode if current_mode else "all_market"
+        # Lấy giá trị đang lưu trong Local Storage, nếu không có thì mặc định Tích sản
+        new_mode = current_mode if current_mode else "investing"
         
     # 2. NẾU CÓ NGƯỜI TƯƠNG TÁC
     else:

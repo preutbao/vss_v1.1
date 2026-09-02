@@ -1606,6 +1606,239 @@ def load_detail_content(stock, theme="dark"):
             "borderLeft": f"2px solid {accent}44",
         })
 
+    # Helper to recalculate component scores (same logic as quant_engine.py)
+    def _calc_fss_components(stock_row, all_df):
+        """
+        Percentile 4 thành phần Size/Liquidity/Valuation/Quality.
+
+        ĐÃ SỬA (đối chiếu trực tiếp với quant_engine.calculate_fss_smart_rank):
+        bản cũ dùng "(giá trị <= x).count()/len(...)" và loại hẳn cổ phiếu P/E<=0
+        ra khỏi mẫu số — khác cách backend tính thật (dùng pandas .rank(pct=True),
+        KHÔNG loại P/E<=0 mà xếp chúng ở đáy bằng na_option='bottom'). Đây chính là
+        nguyên nhân Level 2 (95.6) lệch với Level 1/FSS_Smart_Rank thật (87). Giờ
+        tính lại Y HỆT công thức backend nên 2 số sẽ khớp nhau (chỉ lệch do làm tròn).
+        """
+        try:
+            if all_df is None or len(all_df) == 0 or 'Ticker' not in all_df.columns:
+                return None, None, None, None
+
+            ticker = str(stock_row.get('Ticker', '')).strip().upper()
+            mask = all_df['Ticker'].astype(str).str.strip().str.upper() == ticker
+            if not mask.any():
+                return None, None, None, None
+            row_idx = all_df.index[mask][0]
+
+            # Size — Market Cap, fillna(0), rank(pct=True) — giống hệt quant_engine
+            size_rank = pd.to_numeric(all_df.get('Market Cap', 0), errors='coerce').fillna(0).rank(pct=True)
+
+            # Liquidity — ưu tiên GTGD_20D, fallback Avg_Vol_20D, fillna(0), rank(pct=True)
+            liq_col = 'GTGD_20D' if 'GTGD_20D' in all_df.columns else 'Avg_Vol_20D'
+            liq_rank = pd.to_numeric(all_df.get(liq_col, 0), errors='coerce').fillna(0).rank(pct=True)
+
+            # Valuation — 1/P/E (P/E>0), na_option='bottom': P/E âm/lỗ KHÔNG bị loại
+            # khỏi mẫu số như bản cũ, mà bị xếp hạng thấp nhất — đúng cách backend làm
+            pe_series = pd.to_numeric(all_df.get('P/E', np.nan), errors='coerce')
+            val_rank = (1 / pe_series.where(pe_series > 0)).rank(pct=True, na_option='bottom')
+
+            # Quality — Star_Rating/5, fillna(1) — giống hệt quant_engine
+            qual_rank = pd.to_numeric(all_df.get('Star_Rating', 1), errors='coerce').fillna(1) / 5
+
+            size_pct      = round(size_rank.loc[row_idx] * 100, 1)
+            liquidity_pct = round(liq_rank.loc[row_idx] * 100, 1)
+            valuation_pct = round(val_rank.loc[row_idx] * 100, 1)
+            quality_pct   = round(qual_rank.loc[row_idx] * 100, 1)
+
+            return size_pct, liquidity_pct, valuation_pct, quality_pct
+        except Exception as e:
+            logger.warning(f"Failed to calc FSS components: {e}")
+            return None, None, None, None
+
+    # Add these helper functions before the overview_content assignment:
+
+    def _fss_grade(score_pct):
+        """Grade mapping for FSS Smart Rank (0-100 scale)."""
+        if score_pct >= 90: return "A+"
+        if score_pct >= 80: return "A"
+        if score_pct >= 65: return "B"
+        if score_pct >= 50: return "C"
+        if score_pct >= 35: return "D"
+        return "F"
+
+    def _fss_component_bar(label, pct, weight_pct, desc):
+        """Render a progress bar + label for one FSS component."""
+        if pct is None or (isinstance(pct, float) and pd.isna(pct)):
+            # Fallback for missing data
+            return make_progress_bar(label, "N/A", 0, f"{weight_pct}%", "warning",
+                                    desc + " (chưa có dữ liệu)")
+        color = "success" if pct >= 65 else ("warning" if pct >= 40 else "danger")
+        return make_progress_bar(label, f"{int(pct)}/100", int(pct),
+                                f"{weight_pct}% · {_fss_grade(pct)}", color, desc)
+
+    def _fss_signal_chip(label, value):
+        """Chip cho Level 3 (VGM/Value/Growth/Momentum) — tăng cỡ đáng kể + thêm khung
+        nhẹ để có trọng lượng thị giác tương xứng với Level 1/2 (trước quá nhỏ)."""
+        return html.Div([
+            html.Div(label, style={"fontSize": "0.8rem", "color": T["page_text_dim"],
+                                    "letterSpacing": "0.08em", "fontWeight": "700"}),
+            html.Div(str(value), style={"fontSize": "1.5rem", "color": T["page_text"],
+                                        "fontWeight": "800", "marginTop": "4px",
+                                        "fontFamily": "JetBrains Mono, monospace"}),
+        ], style={"textAlign": "center", "padding": "12px 8px", "borderRadius": "8px",
+                  "background": "rgba(255,255,255,0.025)" if theme != "light" else "rgba(0,0,0,0.02)",
+                  "border": f"1px solid {T['card_border']}"})
+
+    # Style dùng chung cho toàn bộ tooltip trong section FSS — trước dùng mặc định
+    # của dbc.Tooltip (bong bóng đen nhỏ, không khớp theme) nên nhìn "cụt" và xấu.
+    _fss_tooltip_style = {
+        "backgroundColor": T["pastel"]["sky"]["bg"],
+        "color": T["page_text"],
+        "border": f"1px solid {T['card_border']}",
+        "borderRadius": "8px",
+        "padding": "10px 12px",
+        "fontSize": "0.78rem",
+        "lineHeight": "1.5",
+        "maxWidth": "260px",
+        "textAlign": "left",
+        "boxShadow": T["card_shadow"],
+        "opacity": "1",
+    }
+
+    def _fss_factor_compact(label, pct, weight_pct, tooltip_desc, comp_id):
+        """Compact factor card cho lưới 2x2 (theo góp ý UI/UX):
+        - chỉ giữ name + percentile + weight + bar trên mặt card
+        - "97/100" đổi thành "Phân vị 97 · Top X%" — đây LÀ percentile rank trong
+          universe (backend/on-the-fly đều tính theo percentile), không phải "điểm
+          chất lượng tuyệt đối", tránh người xem hiểu nhầm 97 = 97 điểm chất lượng.
+        - card nền trung tính, màu chỉ dùng cho badge/bar theo status (không xanh toàn bộ)
+        - mô tả dài chuyển vào tooltip (ⓘ hover), không hiện thường trực trên card
+        """
+        if pct is None or (isinstance(pct, float) and pd.isna(pct)):
+            pct_display, top_display, bar_pct, color = "N/A", "Chưa có dữ liệu", 0, "warning"
+        else:
+            pct_int = int(pct)
+            pct_display, bar_pct = f"Phân vị {pct_int}", pct_int
+            top_display = f"Top {max(1, 100 - pct_int)}% toàn universe"
+            color = "success" if pct >= 65 else ("warning" if pct >= 40 else "danger")
+        accent = {"success": T["positive"], "warning": ("#b45309" if theme == "light" else "#ffb703"),
+                  "danger": T["negative"]}.get(color, T["line_accent"])
+        neutral_bg = "rgba(255,255,255,0.025)" if theme != "light" else "rgba(0,0,0,0.02)"
+
+        return html.Div([
+            html.Div([
+                html.Span([
+                    html.Span(label, style={"color": T["page_text"], "fontSize": "0.85rem",
+                                             "fontWeight": "700", "letterSpacing": "0.03em"}),
+                    html.I(className="fas fa-circle-info", id=comp_id,
+                           style={"marginLeft": "6px", "fontSize": "0.72rem",
+                                  "color": T["page_text_dim"], "cursor": "help"}),
+                ]),
+                html.Span([
+                    html.Span(pct_display, style={"fontWeight": "700", "marginRight": "6px",
+                              "color": accent, "fontFamily": "JetBrains Mono, monospace", "fontSize": "0.95rem"}),
+                    html.Span(f"{weight_pct}%", style={
+                        "fontSize": "0.72rem", "padding": "1px 6px", "borderRadius": "4px",
+                        "backgroundColor": T["card_border"], "color": T["page_text_dim"], "fontWeight": "600",
+                    }),
+                ]),
+            ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between",
+                       "marginBottom": "3px"}),
+            html.Div(top_display, style={
+                "fontSize": "0.7rem", "color": T["page_text_dim"], "marginBottom": "7px",
+            }),
+            html.Div([
+                html.Div(style={
+                    "width": f"{bar_pct}%", "height": "100%",
+                    "background": f"linear-gradient(90deg, {accent}88, {accent})",
+                    "borderRadius": "3px",
+                })
+            ], style={
+                "height": "7px",
+                "backgroundColor": "rgba(255,255,255,0.06)" if theme != "light" else "rgba(15,118,110,0.10)",
+                "borderRadius": "3px", "overflow": "hidden", "border": f"1px solid {T['card_border']}",
+            }),
+            dbc.Tooltip(tooltip_desc, target=comp_id, placement="top", style=_fss_tooltip_style),
+        ], style={
+            "padding": "12px 14px", "borderRadius": "8px", "background": neutral_bg,
+            "border": f"1px solid {T['card_border']}", "borderLeft": f"2px solid {accent}55",
+            "height": "100%",
+        })
+
+
+
+    # --- Dữ liệu & helper cho HỆ THỐNG CHẤM ĐIỂM FSS SMART RANK (8 KPI CARDS) ---
+    # Lưu ý: các def/gán biến phải nằm TRƯỚC statement "overview_content = html.Div([...])"
+    # vì bên trong đó là MỘT list literal duy nhất (một biểu thức) — không thể chèn
+    # statement (gán biến, def hàm) vào giữa list literal, chỉ có thể chèn expression.
+    fss_smart_rank = stock.get('FSS_Smart_Rank', 0)
+    fss_smart_rank_pct = int(fss_smart_rank * 100) if pd.notna(fss_smart_rank) else 0
+    vgm_score_pct = stock.get('VGM_Score_Pct', 0)
+    vgm_score = stock.get('VGM Score', 'N/A')
+    value_score = stock.get('Value Score', 'N/A')
+    growth_score = stock.get('Growth Score', 'N/A')
+    momentum_score = stock.get('Momentum Score', 'N/A')
+    star_rating = stock.get('Star_Rating', 0)
+
+    _FSS_TONE_CYCLE = ["sky", "green", "amber", "rose"]
+    _FSS_ICON_CYCLE = ["fas fa-chart-pie", "fas fa-arrow-trend-up", "fas fa-coins", "fas fa-star"]
+    _fss_counter = {"i": 0}
+
+    def kpi_fss(title, value):
+        idx = _fss_counter["i"] % len(_FSS_TONE_CYCLE)
+        _fss_counter["i"] += 1
+        return kpi_card_pastel(
+            theme, title, value,
+            tone=_FSS_TONE_CYCLE[idx],
+            icon_class=_FSS_ICON_CYCLE[idx],
+        )
+
+    # Danh sách 8 card được build TRƯỚC (là list các expression đã hoàn chỉnh),
+    # để bên trong list literal chỉ cần tham chiếu lại qua list comprehension.
+    _fss_kpi_cards = [
+        kpi_fss("ĐIỂM XẾP HẠNG FSS", f"{fss_smart_rank_pct}/100"),
+        kpi_fss("ĐÁNH GIÁ CHẤT LƯỢNG", f"{star_rating}/5 ⭐"),
+        kpi_fss("VGM PHÂN VỊ", f"{vgm_score_pct}/100"),
+        kpi_fss("VGM XẾP HẠNG", f"{vgm_score}"),
+        kpi_fss("ĐỊNH GIÁ", f"{value_score}"),
+        kpi_fss("TĂNG TRƯỞNG", f"{growth_score}"),
+        kpi_fss("ĐỘNG LỰC", f"{momentum_score}"),
+        kpi_fss("ĐỊNH GIÁ P/E", f"{pe:,.1f}x" if pd.notna(pe) else "N/A"),
+    ]
+
+    # Get all data to calculate percentiles
+    df_all = get_snapshot_df()  # Your existing data loader
+    size_pct, liquidity_pct, valuation_pct, quality_pct = _calc_fss_components(stock, df_all)
+
+    # Weighted total để nối 87 (Level 1) với 4 factor (Level 2) — theo góp ý:
+    # BGK cần thấy rõ 87 đến từ đâu thay vì phải tự suy luận.
+    _fss_parts = [(size_pct, 30), (liquidity_pct, 20), (valuation_pct, 20), (quality_pct, 30)]
+    if all(p is not None and not (isinstance(p, float) and pd.isna(p)) for p, _ in _fss_parts):
+        _fss_weighted_total = sum(p * w for p, w in _fss_parts) / 100
+    else:
+        _fss_weighted_total = None
+
+    # Arc gauge cho Level 1 (thay số thuần "87/100") — dùng đúng bảng màu FSS hiện
+    # tại (T["pastel"]["sky"]["fg"]), KHÔNG dùng skin neon/glow như bản tham khảo,
+    # để giữ tông "institutional/terminal" đã có thay vì "AI app" màu mè.
+    _fss_gauge_fig = go.Figure(go.Indicator(
+        mode="gauge",
+        value=fss_smart_rank_pct,
+        gauge={
+            "axis": {"range": [0, 100], "visible": False},
+            "bar": {"color": T["pastel"]["sky"]["fg"], "thickness": 0.30},
+            "bgcolor": "rgba(0,0,0,0)",
+            "borderwidth": 0,
+            "steps": [{"range": [0, 100], "color": T["card_border"]}],
+            "shape": "angular",
+        },
+        domain={"x": [0, 1], "y": [0, 1]},
+    ))
+    _fss_gauge_fig.update_layout(
+        height=150,
+        margin=dict(l=16, r=16, t=8, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+    )
+
     overview_content = html.Div([
 
         # --- HEADER ---
@@ -1737,6 +1970,235 @@ def load_detail_content(stock, theme="dark"):
             dbc.Col(kpi_card("EPS", f"{eps:,.0f} VND"), width=3),
             dbc.Col(kpi_card("ROE", f"{roe:,.1f}%" if pd.notna(roe) else "N/A"), width=3),
         ], className="mb-5"),
+
+        # --- HỆ THỐNG CHẤM ĐIỂM XẾP HẠNG (FSS SMART RANK) — 3 tầng ---
+        html.Div([
+            html.Div([
+                html.I(className="fas fa-ranking-star", style={"marginRight": "10px", "color": T["pastel"]["sky"]["fg"], "fontSize": "14px"}),
+                html.Span("HỆ THỐNG CHẤM ĐIỂM XẾP HẠNG (FSS SMART RANK)", style={
+                    "fontSize": "0.78rem", "letterSpacing": "0.12em", "color": T["pastel"]["sky"]["fg"],
+                    "fontWeight": "700",
+                }),
+            ], style={"display": "flex", "alignItems": "center"}),
+            html.Button(
+                html.I(className="fas fa-circle-info"),
+                id="btn-fss-methodology", n_clicks=0,
+                title="Xem phương pháp luận chấm điểm FSS Smart Rank",
+                style={"background": "none", "border": "none", "cursor": "pointer",
+                       "color": T["page_text_dim"], "fontSize": "14px", "padding": "0"},
+            ),
+        ], className="mb-3", style={"display": "flex", "alignItems": "center", "justifyContent": "space-between"}),
+
+        # LEVEL 1 — Overall score, dạng arc gauge (tham khảo layout bạn gửi, reskin
+        # theo màu FSS hiện tại — bỏ glow/neon/animation để giữ tông institutional)
+        html.Div([
+            html.Div("FSS SMART RANK", style={
+                "fontSize": "0.78rem", "letterSpacing": "0.14em", "color": T["page_text_dim"],
+                "fontWeight": "700", "textTransform": "uppercase", "textAlign": "center",
+            }),
+            dcc.Graph(figure=_fss_gauge_fig, config={"displayModeBar": False},
+                      style={"height": "150px", "marginTop": "2px", "marginBottom": "-36px"}),
+            html.Div([
+                html.Span(f"{fss_smart_rank_pct}", style={"fontSize": "2.6rem", "fontWeight": "800", "color": T["page_text"]}),
+                html.Span("/100", style={"fontSize": "1.15rem", "color": T["page_text_dim"], "marginLeft": "4px"}),
+                html.Span(f" — {_fss_grade(fss_smart_rank_pct)}", style={"fontSize": "1.15rem", "fontWeight": "700",
+                          "color": T["pastel"]["sky"]["fg"], "marginLeft": "10px"}),
+            ], style={"textAlign": "center"}),
+            html.Div(
+                "Xếp hạng tương đối trong universe hiện tại — không phải dự báo lợi nhuận hoặc khuyến nghị mua/bán.",
+                style={"fontSize": "0.85rem", "color": T["page_text_dim"], "marginTop": "6px",
+                       "fontStyle": "italic", "textAlign": "center"}
+            ),
+        ], style={
+            "padding": "18px 20px 20px", "borderRadius": "10px",
+            "background": "rgba(30,136,229,0.06)" if theme != "light" else "rgba(15,118,110,0.05)",
+            "border": f"1px solid {T['card_border']}", "marginBottom": "16px",
+        }),
+
+        # LEVEL 2 — Component scores, lưới 2 cột x 2 hàng (gọn hơn, card trung tính,
+        # mô tả dài chuyển sang tooltip ⓘ thay vì luôn hiện trên card)
+        dbc.Row([
+            dbc.Col(_fss_factor_compact(
+                "SIZE (Market Presence)", size_pct, 30,
+                "Quy mô/vốn hóa — khả năng tiếp cận vốn & mức phù hợp với nhà đầu tư; KHÔNG đồng nghĩa tốt hơn.",
+                f"fss-tip-size-{ticker}"), md=6, className="mb-2"),
+            dbc.Col(_fss_factor_compact(
+                "LIQUIDITY", liquidity_pct, 20,
+                "Khả năng giao dịch/khối lượng — hỗ trợ execution, không phản ánh kỳ vọng lợi nhuận.",
+                f"fss-tip-liquidity-{ticker}"), md=6, className="mb-2"),
+            dbc.Col(_fss_factor_compact(
+                "VALUATION", valuation_pct, 20,
+                "Hiện tính từ P/E percentile. Roadmap: kết hợp P/B, EV/EBITDA, P/S theo ngành.",
+                f"fss-tip-valuation-{ticker}"), md=6, className="mb-2"),
+            dbc.Col(_fss_factor_compact(
+                "QUALITY", quality_pct, 30,
+                "Hiện tạm dùng Star_Rating × 20. Roadmap: composite độc lập ROE/ROIC, biên lợi nhuận, CFO/NI, đòn bẩy.",
+                f"fss-tip-quality-{ticker}"), md=6, className="mb-2"),
+        ], className="g-2"),
+
+        # Weighted total — giờ TÍNH Y HỆT công thức backend (xem _calc_fss_components),
+        # nên số này sẽ khớp sát FSS Smart Rank ở Level 1 (chỉ lệch nhẹ do làm tròn
+        # từng thành phần trước khi cộng), không còn là "minh họa lệch số" như trước.
+        html.Div([
+            html.Span("Kiểm tra công thức (30/20/20/30): ", style={
+                "fontSize": "0.72rem", "color": T["page_text_dim"]}),
+            html.Span(
+                (f"{_fss_weighted_total:.1f}/100"
+                 if _fss_weighted_total is not None else "— (thiếu dữ liệu một số factor)"),
+                style={"fontSize": "0.72rem", "color": T["page_text_dim"], "fontWeight": "700",
+                       "fontFamily": "JetBrains Mono, monospace"}
+            ),
+            html.I(className="fas fa-circle-info", id=f"fss-tip-weighted-{ticker}", style={
+                "marginLeft": "5px", "fontSize": "0.68rem", "color": T["page_text_dim"], "cursor": "help"}),
+            dbc.Tooltip(
+                "Cộng lại 4 phân vị bên trên theo đúng trọng số 30% Size + 20% Liquidity + 20% "
+                "Valuation + 30% Quality — dùng công thức percentile giống hệt FSS Smart Rank ở "
+                "trên, nên hai số sẽ khớp sát nhau (chênh lệch nhỏ nếu có là do làm tròn).",
+                target=f"fss-tip-weighted-{ticker}", placement="top", style=_fss_tooltip_style),
+        ], style={"textAlign": "right", "marginTop": "6px", "marginBottom": "12px"}),
+
+        # LEVEL 3 — Additional signals (CHIPS, not overall scores)
+        html.Div([
+            html.Div("TÍN HIỆU PHÂN TÍCH BỔ SUNG — KHÔNG PHẢI ĐIỂM TỔNG", style={
+                "fontSize": "0.7rem", "letterSpacing": "0.1em", "color": T["page_text_dim"],
+                "fontWeight": "700", "marginBottom": "10px", "textTransform": "uppercase",
+            }),
+            dbc.Row([
+                dbc.Col(_fss_signal_chip("VGM", f"{vgm_score_pct}/100 · {vgm_score}"), width=3),
+                dbc.Col(_fss_signal_chip("VALUE", value_score), width=3),
+                dbc.Col(_fss_signal_chip("GROWTH", growth_score), width=3),
+                dbc.Col(_fss_signal_chip("MOMENTUM", momentum_score), width=3),
+            ], className="g-2"),
+        ], style={
+            "padding": "12px 14px", "borderRadius": "8px",
+            "backgroundColor": "rgba(255,255,255,0.02)" if theme != "light" else "rgba(0,0,0,0.02)",
+            "border": f"1px dashed {T['card_border']}", "marginBottom": "16px",
+        }),
+
+        # --- MODAL: Phương pháp luận FSS Smart Rank ─────────────────────
+        dbc.Modal([
+            dbc.ModalHeader(
+                html.Span([
+                    html.I(className="fas fa-ranking-star", style={"color": T["pastel"]["sky"]["fg"], "marginRight": "10px"}),
+                    "Phương pháp luận — Hệ Thống Chấm Điểm FSS SMART RANK",
+                ], style={"fontFamily": "JetBrains Mono, monospace", "fontSize": "13px",
+                           "color": T["page_text"], "fontWeight": "700"}),
+                close_button=True,
+                style={"backgroundColor": "var(--bg-secondary)", "borderBottom": f"1px solid {T['card_border']}"},
+            ),
+            dbc.ModalBody([
+                html.P(
+                    "FSS Smart Rank là điểm xếp hạng tổng hợp kết hợp bốn thành phần quan trọng nhất: "
+                    "quy mô doanh nghiệp (Size), khả năng thanh khoản (Liquidity), mức định giá hấp dẫn (Valuation), "
+                    "và chất lượng cơ bản (Quality). Mỗi thành phần được tính toán độc lập dựa trên dữ liệu thị trường "
+                    "và báo cáo tài chính, sau đó kết hợp theo trọng số đã định để tạo ra một điểm duy nhất từ 0.0 đến 1.0 "
+                    "(hoặc 0-100 khi hiển thị dưới dạng phần trăm).",
+                    style={"fontSize": "12px", "color": T["page_text_dim"], "lineHeight": "1.7",
+                           "marginBottom": "20px"}
+                ),
+                html.Div([
+                    html.H6("Bốn Thành Phần Chính", style={"color": T["pastel"]["sky"]["fg"],
+                            "fontWeight": "700", "marginBottom": "12px", "fontSize": "13px", "letterSpacing": "0.05em"}),
+                    html.Div([
+                        html.Div([
+                            html.Span("🏢 Size (Quy Mô) — Trọng Số 30%", style={
+                                "fontWeight": "700", "color": T["pastel"]["sky"]["fg"], "fontSize": "11px",
+                                "textTransform": "uppercase", "letterSpacing": "0.05em"
+                            }),
+                        ], style={"marginBottom": "6px"}),
+                        html.P(
+                            "Đo lường quy mô doanh nghiệp qua vốn hóa thị trường (Market Cap). "
+                            "Doanh nghiệp lớn hơn thường có ưu thế cạnh tranh, sức mạnh tài chính, "
+                            "và khả năng tồn tại lâu dài cao hơn. Được xếp hạng theo phần vị so với toàn bộ mẫu.",
+                            style={"fontSize": "11px", "color": T["page_text_dim"], "lineHeight": "1.6", "marginBottom": "10px"}
+                        ),
+                    ], style={"backgroundColor": "rgba(88,166,255,0.06)", "padding": "12px", "borderRadius": "6px",
+                             "borderLeft": f"3px solid {T['pastel']['sky']['fg']}", "marginBottom": "12px"}),
+                    html.Div([
+                        html.Div([
+                            html.Span("💧 Liquidity (Thanh Khoản) — Trọng Số 20%", style={
+                                "fontWeight": "700", "color": "#10b981", "fontSize": "11px",
+                                "textTransform": "uppercase", "letterSpacing": "0.05em"
+                            }),
+                        ], style={"marginBottom": "6px"}),
+                        html.P(
+                            "Đo lường khả năng giao dịch của cổ phiếu thông qua khối lượng giao dịch trung bình "
+                            "(Avg Volume 20D hoặc GTGD_20D). Thanh khoản cao cho phép nhà đầu tư vào/ra dễ dàng "
+                            "mà không gây tác động lớn đến giá.",
+                            style={"fontSize": "11px", "color": T["page_text_dim"], "lineHeight": "1.6", "marginBottom": "10px"}
+                        ),
+                    ], style={"backgroundColor": "rgba(16,185,129,0.06)", "padding": "12px", "borderRadius": "6px",
+                             "borderLeft": "3px solid #10b981", "marginBottom": "12px"}),
+                    html.Div([
+                        html.Div([
+                            html.Span("💰 Valuation (Định Giá) — Trọng Số 20%", style={
+                                "fontWeight": "700", "color": "#f59e0b", "fontSize": "11px",
+                                "textTransform": "uppercase", "letterSpacing": "0.05em"
+                            }),
+                        ], style={"marginBottom": "6px"}),
+                        html.P(
+                            "Đo lường mức định giá hấp dẫn của cổ phiếu qua tỷ số P/E (Price-to-Earnings). "
+                            "P/E thấp hơn là một dấu hiệu tích cực cho nhà đầu tư Value, cho thấy cổ phiếu "
+                            "có thể bị định giá thấp so với lợi nhuận thực tế.",
+                            style={"fontSize": "11px", "color": T["page_text_dim"], "lineHeight": "1.6", "marginBottom": "10px"}
+                        ),
+                    ], style={"backgroundColor": "rgba(245,158,11,0.06)", "padding": "12px", "borderRadius": "6px",
+                             "borderLeft": "3px solid #f59e0b", "marginBottom": "12px"}),
+                    html.Div([
+                        html.Div([
+                            html.Span("⭐ Quality (Chất Lượng) — Trọng Số 30%", style={
+                                "fontWeight": "700", "color": "#ef4444", "fontSize": "11px",
+                                "textTransform": "uppercase", "letterSpacing": "0.05em"
+                            }),
+                        ], style={"marginBottom": "6px"}),
+                        html.P(
+                            "Đo lường chất lượng cơ bản của doanh nghiệp qua Star_Rating (1-5 sao). "
+                            "Star_Rating là tổng hợp của VGM Score (Value + Growth + Momentum) "
+                            "với các điều chỉnh phạt lỗi (CFO âm, thanh khoản thấp). Trọng số cao nhất (30%) "
+                            "nhấn mạnh tầm quan trọng của chất lượng cơ bản.",
+                            style={"fontSize": "11px", "color": T["page_text_dim"], "lineHeight": "1.6", "marginBottom": "10px"}
+                        ),
+                    ], style={"backgroundColor": "rgba(239,68,68,0.06)", "padding": "12px", "borderRadius": "6px",
+                             "borderLeft": "3px solid #ef4444", "marginBottom": "12px"}),
+                ], style={"marginBottom": "20px"}),
+
+                html.Hr(style={"borderColor": T["card_border"], "margin": "16px 0"}),
+
+                html.Div([
+                    html.H6("Công Thức Tính", style={"color": T["pastel"]["sky"]["fg"],
+                            "fontWeight": "700", "marginBottom": "10px", "fontSize": "13px", "letterSpacing": "0.05em"}),
+                    html.P(
+                        "FSS Smart Rank = Rank(Size) × 0.30 + Rank(Liquidity) × 0.20 + Rank(Valuation) × 0.20 + Rank(Quality) × 0.30",
+                        style={"fontFamily": "JetBrains Mono, monospace", "fontSize": "11px", "color": T["positive"],
+                               "backgroundColor": "rgba(16,185,129,0.08)", "padding": "10px", "borderRadius": "4px",
+                               "lineHeight": "1.6", "marginBottom": "10px"}
+                    ),
+                    html.P(
+                        "Kết quả là một con số từ 0.0 đến 1.0 (được hiển thị dưới dạng 0-100 để dễ hiểu). "
+                        "Điểm càng cao, mã cổ phiếu càng đạt tiêu chí toàn diện.",
+                        style={"fontSize": "11px", "color": T["page_text_dim"], "lineHeight": "1.6"}
+                    ),
+                ], style={"marginBottom": "16px"}),
+
+                html.Hr(style={"borderColor": T["card_border"], "margin": "16px 0"}),
+
+                html.Div([
+                    html.H6("Tại Sao FSS Smart Rank Quan Trọng?", style={"color": T["pastel"]["sky"]["fg"],
+                            "fontWeight": "700", "marginBottom": "10px", "fontSize": "13px", "letterSpacing": "0.05em"}),
+                    html.Ul([
+                        html.Li("📊 Tổng hợp đa chiều: Không chỉ nhìn một chỉ số, mà kết hợp 4 khía cạnh quan trọng",
+                               style={"fontSize": "11px", "color": T["page_text_dim"], "marginBottom": "6px"}),
+                        html.Li("⚖️ Cân bằng rủi ro: Trọng số được thiết kế để cân bằng tầm quan trọng của từng yếu tố",
+                               style={"fontSize": "11px", "color": T["page_text_dim"], "marginBottom": "6px"}),
+                        html.Li("🎯 Giải quyết vấn đề phân biệt: Tránh được tình trạng \"quá nhiều mã 5 sao mất khả năng phân biệt\"",
+                               style={"fontSize": "11px", "color": T["page_text_dim"], "marginBottom": "6px"}),
+                        html.Li("📈 Dễ sắp xếp: Được dùng làm cơ sở xếp hạng chính trong bảng dữ liệu",
+                               style={"fontSize": "11px", "color": T["page_text_dim"]}),
+                    ], style={"marginLeft": "20px", "marginBottom": "10px"}),
+                ], style={"marginBottom": "16px"}),
+
+            ], style={"maxHeight": "600px", "overflowY": "auto"}),
+        ], id="modal-fss-methodology", size="lg", is_open=False, centered=True, backdrop=True),
 
         # --- KHỐI ĐÁNH GIÁ SỨC KHỎE CHI TIẾT VÀ BIỂU ĐỒ ---
         html.Div([
@@ -2069,7 +2531,10 @@ def load_technical_tab(active_tab, stock, theme="dark"):
                    ],
                    'threshold': {'line': {'color': arc_color, 'width': 3}, 'thickness': 0.85, 'value': meter_score}},
         ))
-        fig_gauge.update_layout(height=200, margin=dict(l=20, r=20, t=20, b=5),
+        # FIX: trước không set "width" nên Plotly mặc định render figure rộng hơn
+        # nhiều so với cột chứa nó (300px) → gauge tràn ra ngoài viền khung. Giờ khoá
+        # cứng width=230 để vừa khít cột (300px - 2*24px padding trái/phải ≈ 252px).
+        fig_gauge.update_layout(height=200, width=230, margin=dict(l=10, r=10, t=20, b=5),
                                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                                 font={'color': gauge_tick_color})
 
@@ -2109,22 +2574,51 @@ def load_technical_tab(active_tab, stock, theme="dark"):
 
         technical_content = html.Div([
             html.Div([
+                # top accent line — dùng meter_color động (đổi màu theo tín hiệu MUA/BÁN/TRUNG TÍNH)
+                # thay vì cyan cố định như bản tham khảo, để không vỡ theme sáng/tối
+                html.Div(style={
+                    "position": "absolute", "top": "0", "left": "8%", "right": "8%", "height": "2px",
+                    "background": f"linear-gradient(90deg,transparent,{meter_color},transparent)",
+                    "boxShadow": f"0 0 12px {meter_color}90",
+                }),
                 html.Div([
-                    dcc.Graph(figure=fig_gauge, config={"displayModeBar": False}, style={"height":"200px","marginBottom":"-20px"}),
-                    html.Div(f"{meter_score:+.0f}", style={"fontSize":"5.5rem","fontWeight":"800","color":meter_color,
-                                                            "letterSpacing":"-4px","lineHeight":"1","textAlign":"center"}),
                     html.Div([
-                        html.Div(style={"width":"6px","height":"6px","borderRadius":"50%","background":meter_color,"marginRight":"8px"}),
-                        html.Span(f"{meter_text}", style={"fontSize":"10px","fontWeight":"700","letterSpacing":"0.18em","color":meter_color}),
-                    ], style={"display":"inline-flex","alignItems":"center","marginTop":"12px",
-                              "background":f"{meter_color}1a","border":f"1px solid {meter_color}66",
-                              "borderRadius":"100px","padding":"5px 14px"}),
-                ], style={"display":"flex","flexDirection":"column","alignItems":"center","width":"300px",
-                          "flexShrink":"0","paddingRight":"24px","borderRight":f"1px solid {T['card_border']}"}),
+                        html.Div(style={"flex": "1", "height": "1px",
+                                        "background": f"linear-gradient(90deg,{meter_color}4d,transparent)"}),
+                        html.Span("SIGNAL METER", style={"fontSize": "8px", "letterSpacing": "0.3em",
+                                   "color": T["page_text_dim"], "fontWeight": "700", "padding": "0 10px"}),
+                        html.Div(style={"flex": "1", "height": "1px",
+                                        "background": f"linear-gradient(90deg,transparent,{meter_color}4d)"}),
+                    ], style={"display": "flex", "alignItems": "center", "marginBottom": "10px", "width": "100%"}),
+                    dcc.Graph(figure=fig_gauge, config={"displayModeBar": False},
+                              style={"height": "200px", "width": "230px", "marginBottom": "-20px"}),
+                    html.Div(f"{meter_score:+.0f}", style={"fontSize": "5.5rem", "fontWeight": "800", "color": meter_color,
+                                                            "letterSpacing": "-4px", "lineHeight": "1", "textAlign": "center",
+                                                            "textShadow": f"0 0 18px {meter_color}80, 0 0 42px {meter_color}30"}),
+                    html.Div([
+                        html.Div(style={"width": "6px", "height": "6px", "borderRadius": "50%", "background": meter_color,
+                                        "marginRight": "8px", "boxShadow": f"0 0 6px {meter_color}"}),
+                        html.Span(f"{meter_text}", style={"fontSize": "10px", "fontWeight": "700", "letterSpacing": "0.18em", "color": meter_color}),
+                    ], style={"display": "inline-flex", "alignItems": "center", "marginTop": "12px",
+                              "background": f"{meter_color}1a", "border": f"1px solid {meter_color}66",
+                              "borderRadius": "100px", "padding": "5px 14px"}),
+                ], style={"display": "flex", "flexDirection": "column", "alignItems": "center", "width": "300px",
+                          "flexShrink": "0", "paddingRight": "24px", "borderRight": f"1px solid {T['card_border']}"}),
                 html.Div([
-                    html.Div(meter_text, style={"fontSize":"3.2rem","fontWeight":"800","color":meter_color,
-                                                "letterSpacing":"0.04em","lineHeight":"1",
-                                                "marginBottom":"22px"}),
+                    html.Div([
+                        html.Div(style={"width": "7px", "height": "7px", "borderRadius": "50%", "background": meter_color,
+                                        "boxShadow": f"0 0 8px {meter_color}, 0 0 16px {meter_color}80",
+                                        "marginRight": "8px", "flexShrink": "0",
+                                        "animation": "realtime-pulse 2s ease-in-out infinite"}),
+                        html.Span("PHÂN TÍCH KỸ THUẬT · REAL-TIME", style={"fontSize": "8px", "letterSpacing": "0.22em",
+                                   "color": T["page_text_dim"], "fontWeight": "700"}),
+                    ], style={"display": "flex", "alignItems": "center", "marginBottom": "16px"}),
+                    html.Div("10 CHỈ BÁO · MA + OSCILLATORS", style={"fontSize": "9px", "letterSpacing": "0.15em",
+                                                                     "color": T["page_text_dim"], "marginBottom": "8px"}),
+                    html.Div(meter_text, style={"fontSize": "3.2rem", "fontWeight": "800", "color": meter_color,
+                                                "letterSpacing": "0.04em", "lineHeight": "1",
+                                                "marginBottom": "22px",
+                                                "textShadow": f"0 0 14px {meter_color}70, 0 0 34px {meter_color}25"}),
                     *[html.Div([
                         html.Span(lbl, style={"fontSize":"9px","color":neutral_text_color,"width":"70px","flexShrink":"0"}),
                         html.Div(html.Div(style={"height":"100%","borderRadius":"3px","width":f"{pct}%",
@@ -2164,7 +2658,7 @@ def load_technical_tab(active_tab, stock, theme="dark"):
                 ], style={"flex":"1","display":"flex","flexDirection":"column","justifyContent":"center"}),
 
             ], style={"display":"flex","alignItems":"center","gap":"28px", "background":T["pastel"]["sky"]["bg"],
-                      "borderRadius":"16px","border":f"1px solid {T['card_border']}",
+                      "borderRadius":"16px","border":f"1px solid {T['card_border']}", "position": "relative", "overflow": "hidden",
                       "padding":"24px 28px","marginBottom":"16px","boxShadow":T["card_shadow"]}),
 
             dbc.Row([
@@ -3796,6 +4290,20 @@ def clear_watchlist(n_clicks):
     prevent_initial_call=True,
 )
 def toggle_health_methodology_modal(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+# ============================================================================
+# CALLBACK: TOGGLE FSS SMART RANK METHODOLOGY MODAL
+# ============================================================================
+@app.callback(
+    Output("modal-fss-methodology", "is_open"),
+    Input("btn-fss-methodology", "n_clicks"),
+    State("modal-fss-methodology", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_fss_methodology_modal(n, is_open):
     if n:
         return not is_open
     return is_open

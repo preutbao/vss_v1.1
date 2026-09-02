@@ -5,6 +5,7 @@ from src.app_instance import app
 from src.backend.data_loader import get_latest_snapshot, load_financial_data
 from src.backend.quant_engine_strategies import run_strategy, STRATEGY_META
 import logging
+from dash.exceptions import PreventUpdate
 import json
 from dash import ALL
 
@@ -170,3 +171,110 @@ def sync_strategy_display_label(value):
     if not value:
         return "Chọn chiến lược đầu tư..."
     return _STRATEGY_LABEL_MAP.get(value, value)
+
+
+# =============================================================================
+# NOTIFICATION: Strategy Match — cập nhật card top-1 khi chọn trường phái
+# =============================================================================
+from src.app_instance import app as _app  # đã import app ở đầu file, dòng này để rõ nghĩa
+
+@app.callback(
+    Output("strategy-match-title",         "children"),
+    Output("strategy-match-detail",        "children"),
+    Output("strategy-match-date",          "children"),
+    Output("strategy-match-note",          "children"),
+    Output("strategy-match-ticker-store",  "data"),
+    Output("notif-dot",                    "style", allow_duplicate=True),
+    Output("strategy-match",               "style"),          # ← THÊM
+    Output("strategy-match",               "data-dismissed"), # ← THÊM
+    Input("strategy-preset-dropdown", "value"),
+    State("trading-mode-store",       "data"),
+    prevent_initial_call=True,
+)
+def update_strategy_match_notification(strategy_id, trading_mode):
+    import datetime
+    if not strategy_id:
+        return no_update, no_update, no_update, no_update, no_update, no_update, {}, "0"
+
+    _mode_label_map = {
+        "all_market": "Toàn TT", "tich_san": "Tích sản",
+    }
+    mode_label = _mode_label_map.get(trading_mode, trading_mode or "Toàn TT")
+    note = (f"Kết quả tính trên TOÀN BỘ thị trường, không phụ thuộc chế độ đang chọn "
+            f"(hiện tại: {mode_label}).")
+
+    try:
+        records = get_latest_snapshot()
+        if not records:
+            raise ValueError("Không có snapshot")
+
+        df = pd.DataFrame(records)
+        try:
+            df_fin = load_financial_data('yearly')
+        except Exception:
+            df_fin = None
+
+        df_result = run_strategy(df, strategy_id, df_fin=df_fin)
+        now_str = datetime.datetime.now().strftime("%d/%m/%Y · %H:%M")
+
+        if df_result is None or df_result.empty:
+            meta = STRATEGY_META.get(strategy_id, {})
+            name = meta.get("name", strategy_id)
+            return (f"Chưa có mã nào thỏa chiến lược {name}",
+                    "Thử điều chỉnh lại bộ lọc hoặc chọn chiến lược khác.",
+                    now_str, note, None, {"display": "block"}, {}, "0")
+
+        if 'FSS_Smart_Rank' in df_result.columns:
+            df_result = df_result.sort_values('FSS_Smart_Rank', ascending=False)
+
+        top1 = df_result.iloc[0]
+        ticker = str(top1.get('Ticker', '')).strip()
+        vgm    = top1.get('VGM_Score_Pct', top1.get('FSS_Smart_Rank', 0))
+        roe    = top1.get('ROE', None)
+        growth = top1.get('Growth Score', '')
+
+        meta = STRATEGY_META.get(strategy_id, {})
+        strat_name = meta.get("name", strategy_id)
+
+        title = f"{ticker} vừa thỏa chiến lược {strat_name}"
+        detail_parts = [f"FSS Score {int(vgm)}" if vgm else None]
+        if roe is not None:
+            detail_parts.append(f"ROE {roe:.1f}%")
+        if growth:
+            detail_parts.append(f"Growth Score {growth}")
+        detail = " · ".join(p for p in detail_parts if p)
+
+        return title, detail, now_str, note, ticker, {"display": "block"}, {}, "0"
+
+    except Exception as e:
+        logger.error(f"❌ Lỗi update_strategy_match_notification: {e}")
+        return no_update, no_update, no_update, no_update, no_update, no_update, {}, "0"
+
+
+@app.callback(
+    Output("detail-modal",           "is_open", allow_duplicate=True),
+    Output("modal-title",            "children", allow_duplicate=True),
+    Output("selected-stock-store",   "data",     allow_duplicate=True),
+    Output("selected-ticker-store",  "data",     allow_duplicate=True),
+    Input("strategy-match",  "n_clicks"),
+    State("strategy-match-ticker-store", "data"),
+    prevent_initial_call=True,
+)
+def open_ticker_from_strategy_match(n_clicks, ticker):
+    if not n_clicks or not ticker:
+        raise PreventUpdate
+
+    records = get_latest_snapshot()
+    if not records:
+        raise PreventUpdate
+
+    df = pd.DataFrame(records)
+    match = df[df['Ticker'] == ticker]
+    if match.empty:
+        raise PreventUpdate
+
+    stock = match.iloc[0].to_dict()
+    company_name = stock.get('Company Common Name', '') or ticker
+    title_text = f"Cổ phiếu {ticker} – {company_name}"
+
+    return True, title_text, stock, ticker

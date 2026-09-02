@@ -1,0 +1,41 @@
+FSS BACKTEST — MODEL VALIDATION MANIFEST
+============================================================
+Generated at        : 2026-08-29T07:12:44.299548
+Git commit           : 013a22a218a4ea2386d12d74aebcb48002ca8b49
+Strategies run        : VGM, STRAT_VALUE, STRAT_TURNAROUND, STRAT_QUALITY, STRAT_GARP, STRAT_DIVIDEND, STRAT_PIOTROSKI, STRAT_CANSLIM, STRAT_GROWTH, STRAT_MAGIC, STRAT_NCN, STRAT_ADX_MOMENTUM
+
+-- DATA SNAPSHOT --
+Price rows            : 1,370,566
+Tickers                : 1,544
+Price date range       : 2023-01-03 -> 2026-08-28
+Price data fingerprint (sha256[:16]) : 405e68a1a586d2fc
+VNINDEX sessions used  : 909 (2023-01-03 -> 2026-08-27)
+Price anomalies (>±40%/phiên) : 81
+
+-- BACKTEST CONFIG --
+Initial capital        : 1,000,000,000 VNĐ
+Top N                  : 20
+Brokerage (buy)         : 0.05%
+Brokerage+tax (sell)    : 0.15%
+Annual report lag       : 90 ngày (giả định)
+Quarterly report lag    : 45 ngày (giả định)
+Risk-free rate          : 5.0%/năm
+Max participation (ADV20): 8%
+Min liquidity floor     : 50,000,000 VNĐ
+Fallback fill           : TẮT (mặc định)
+Max stale days          : 20 ngày
+Execution rule          : Signal D (đóng cửa) -> Execution D+1 (đóng cửa)
+
+-- PIT ASSERTIONS --
+Technical/ADX max date <= as_of_date : enforced trong quant_engine.calculate_all_scores() (AssertionError nếu vi phạm -> backtest DỪNG, không âm thầm cho qua)
+VGM staleness dùng as_of_date thay vì pd.Timestamp.now() : enforced
+
+-- GIỚI HẠN ĐÃ BIẾT (KHÔNG được xử lý tự động bởi manifest này) --
+- Raw/adjusted price: có thể lẫn lộn; diagnostic chỉ bắt jump >ngưỡng ở trên,
+  KHÔNG bắt được cổ tức tiền mặt nhỏ (5-10%) không tạo jump đủ lớn.
+- Survivorship bias: universe = mã còn trong parquet giá hiện có; chưa xác nhận
+  có bao gồm mã đã hủy niêm yết trong quá khứ hay không.
+- Publish lag là giả định cố định, không phải Publish Date thật.
+- Execution price = D+1 Close (chưa mô phỏng D+1 Open/VWAP hay slippage).
+- N Closed Positions KHÔNG tương đương số quan sát thống kê độc lập
+  (nhiều mã cùng kỳ rebalance chịu chung 1 market regime).

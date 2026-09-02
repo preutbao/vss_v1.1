@@ -278,11 +278,9 @@ def _render_messages(history: list) -> list:
         else:
             bubbles.append(
                 html.Div([
-                    html.Div("V", style={
+                    html.Img(src="/assets/VinanceAI.png", style={
                         "width": "32px", "height": "32px", "borderRadius": "50%",
-                        "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                        "display": "flex", "alignItems": "center", "justifyContent": "center",
-                        "fontSize": "14px", "fontWeight": "900", "color": "#fff",
+                        "objectFit": "cover",
                         "flexShrink": "0",
                         "boxShadow": "0 2px 8px rgba(14,165,233,0.4)",
                     }),
@@ -365,16 +363,15 @@ def create_chatbot_layout():
                 "animation": "vinance-pulse 2.5s ease-in-out infinite",
             }),
             html.Div([
-                html.Div("V", style={
-                    "fontSize": "22px", "fontWeight": "900", "color": "#fff",
-                    "letterSpacing": "-1px",
-                    "fontFamily": "'Inter', 'Segoe UI', sans-serif",
+                html.Img(src="/assets/VinanceAI.png", style={
+                    "width": "100%", "height": "100%",
+                    "borderRadius": "50%", "objectFit": "cover",
                 }),
             ], className="vinance-fab-inner", style={
                 "width": "56px", "height": "56px", "borderRadius": "50%",
                 "background": "linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)",
                 "display": "flex", "alignItems": "center", "justifyContent": "center",
-                "cursor": "pointer",
+                "cursor": "pointer", "overflow": "hidden",
                 "boxShadow": "0 4px 20px rgba(14,165,233,0.5), 0 2px 8px rgba(0,0,0,0.3)",
                 "position": "relative", "zIndex": "1",
                 "transition": "transform 0.2s ease, box-shadow 0.2s ease",
@@ -402,22 +399,20 @@ def create_chatbot_layout():
                     # Header
                     html.Div([
                         html.Div([
-                            html.Div("V", style={
+                            html.Img(src="/assets/VinanceAI.png", style={
                                 "width": "38px", "height": "38px", "borderRadius": "50%",
-                                "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                                "display": "flex", "alignItems": "center", "justifyContent": "center",
-                                "fontSize": "18px", "fontWeight": "900", "color": "#fff",
+                                "objectFit": "cover",
                                 "boxShadow": "0 2px 8px rgba(14,165,233,0.4)", "flexShrink": "0",
                             }),
                             html.Div([
-                                html.Div("VinanceAI - Chuyên gia đầu tư tự động", style={
+                                html.Div("VinanceAI - Trợ lý phân tích đầu tư", style={
                                     "fontSize": "12px", "fontWeight": "700", "color": "#f1f5f9",
                                     "fontFamily": "'Inter', 'Segoe UI', sans-serif",
                                     "letterSpacing": "-0.3px",
                                 }),
                                 html.Div([
                                     html.Span(className="vinance-status-dot"),
-                                    html.Span("Mọi thông tin chỉ mang tính tham khảo!", style={
+                                    html.Span("Không phải khuyến nghị mua/bán.", style={
                                         "fontSize": "10px", "color": "#64748b",
                                         "fontFamily": "'Inter', sans-serif",
                                     }),
@@ -449,11 +444,9 @@ def create_chatbot_layout():
                         id="chat-messages-area",
                         children=[
                             html.Div([
-                                html.Div("V", style={
+                                html.Img(src="/assets/VinanceAI.png", style={
                                     "width": "32px", "height": "32px", "borderRadius": "50%",
-                                    "background": "linear-gradient(135deg, #0ea5e9, #6366f1)",
-                                    "display": "flex", "alignItems": "center", "justifyContent": "center",
-                                    "fontSize": "14px", "fontWeight": "900", "color": "#fff",
+                                    "objectFit": "cover",
                                     "flexShrink": "0",
                                 }),
                                 html.Div([
@@ -462,16 +455,17 @@ def create_chatbot_layout():
                                             "fontSize": "13px", "fontWeight": "600",
                                             "color": "#e2e8f0", "marginBottom": "8px",
                                         }),
-                                        html.Div("Tôi có thể giúp:", style={
+                                        html.Div("Tôi là trợ lý phân tích theo ngữ cảnh của FSS, giúp bạn:", style={
                                             "fontSize": "12px", "color": "#94a3b8",
                                             "marginBottom": "10px", "lineHeight": "1.6",
                                         }),
                                         html.Div([
-                                            html.Div("📊 Sàng lọc cổ phiếu theo 6 chiến lược",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
-                                            html.Div("⚖️ Tính toán quản lý rủi ro & định giá",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
-                                            html.Div("🎯 Tư vấn cá nhân hóa theo trình độ F0/F1/Pro", style={"fontSize": "12px", "color": "#cbd5e1"}),
+                                            html.Div("📊 Giải thích FSS Score, chỉ số định lượng",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
+                                            html.Div("⚖️ Tóm tắt tăng trưởng, chất lượng và động lượng",       style={"fontSize": "12px", "color": "#cbd5e1", "marginBottom": "4px"}),
+                                            html.Div("🎯 Phân tích theo 10 chiến lược đầu tư", style={"fontSize": "12px", "color": "#cbd5e1"}),
+                                            html.Div("⚠️ Làm rõ các lưu ý từ dữ liệu doanh nghiệp", style={"fontSize": "12px", "color": "#cbd5e1"}),
                                         ], style={"paddingLeft": "4px"}),
-                                        html.Div("Hãy click vào 1 mã ở bảng lọc bên trái để nhận được ngay tư vấn về cổ phiếu đó!", style={
+                                        html.Div("Chọn một mã cổ phiếu trong bảng, tôi phân tích theo đúng ngữ cảnh bạn đang xem!", style={
                                             "fontSize": "12px", "color": "#7dd3fc",
                                             "marginTop": "10px", "fontStyle": "italic",
                                         }),
@@ -521,7 +515,7 @@ def create_chatbot_layout():
                     html.Div([
                         dcc.Input(
                             id="chat-input",
-                            placeholder="Hỏi VinanceAI về đầu tư chứng khoán...",
+                            placeholder="Trò chuyện với VinanceAI...",
                             debounce=False, type="text",
                             style={
                                 "flex": "1", "background": "#1e293b",
@@ -860,11 +854,9 @@ def update_stock_context_bar(selected_rows):
         (
             Output("chat-typing-indicator", "children"),
             html.Div([
-                html.Div("V", style={
+                html.Img(src="/assets/VinanceAI.png", style={
                     "width": "32px", "height": "32px", "borderRadius": "50%",
-                    "background": "linear-gradient(135deg, #475569, #334155)",
-                    "display": "flex", "alignItems": "center", "justifyContent": "center",
-                    "fontSize": "14px", "fontWeight": "900", "color": "#fff",
+                    "objectFit": "cover", "opacity": "0.6",
                     "flexShrink": "0",
                 }),
                 html.Div(

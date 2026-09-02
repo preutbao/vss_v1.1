@@ -135,6 +135,26 @@ def _pct(field, header, width=110):
     }
 
 
+def _pct2(field, header, width=110):
+    """Cột % có màu xanh/đỏ + icon mũi tên ▲▼ tăng/giảm."""
+    return {
+        "field": field,
+        "headerName": header,
+        "type": "rightAligned",
+        "sortable": True,
+        "width": width,
+        "valueFormatter": {
+            "function": "params.value != null ? (Number(params.value) > 0 ? '▲ ' : Number(params.value) < 0 ? '▼ ' : '') + d3.format(',.2f')(params.value) + '%' : '-'"
+        },
+        "cellStyle": _PCT_CELL_STYLE,
+        "cellClassRules": {
+            "cell-pct-positive": "params.value != null && Number(params.value) > 0",
+            "cell-pct-negative": "params.value != null && Number(params.value) < 0",
+            "cell-pct-zero": "params.value != null && Number(params.value) === 0",
+        },
+    }
+
+
 def _grade(field, header, width=100):
     return {"field": field, "headerName": header,
             "width": width, "sortable": True, "cellStyle": _GRADE_CELL_STYLE}
@@ -190,7 +210,7 @@ FIXED_COLS = [
         "field": "Ticker",
         "headerName": "MÃ CK",
         "pinned": "left",
-        "width": 96,
+        "width": 92,
         "sortable": True,
         "filter": True,
         "cellStyle": _ssi_ticker_style(),
@@ -199,7 +219,7 @@ FIXED_COLS = [
         "field": "Sector",
         "headerName": "NGÀNH",
         "headerTooltip": "Phân loại ngành theo chuẩn GICS.",
-        "width": 220,
+        "width": 200,
         "sortable": True,
         "filter": True,
         "cellStyle": {
@@ -212,7 +232,7 @@ FIXED_COLS = [
         "field": "Price Close",
         "headerName": "GIÁ",
         "sortable": True,
-        "width": 80,
+        "width": 73,
         "valueFormatter": {"function": "d3.format(',.0f')(params.value)"},
         "cellStyle": _ssi_price_style(),
     },
@@ -229,14 +249,26 @@ FIXED_COLS = [
     },
     
     {
-    "field": "Star_Rating",
-    "headerName": "XẾP HẠNG",
-    "type": "rightAligned",
-    "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
-    "width": 110, # Chỉnh rộng ra chút xíu để chứa đủ 5 sao
-    "sortable": True,
-    "cellRenderer": "CustomStarRating", # <--- Gọi tên Component đã đăng ký ở file JS
-    "cellStyle": {"textAlign": "center", "fontSize": "16px"},
+        "field": "Star_Rating",
+        "headerName": "FSS SCORE",
+        "type": "leftAligned",
+        "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
+        "width": 120,
+        "sortable": True,
+        "sort": "desc",
+        "cellRenderer": "CustomStarRating",
+        "cellStyle": {"textAlign": "center", "fontSize": "16px"},
+        "comparator": {
+            "function": """
+                var scoreA = (nodeA && nodeA.data && nodeA.data.FSS_Smart_Rank !== undefined && nodeA.data.FSS_Smart_Rank !== null) 
+                            ? parseFloat(nodeA.data.FSS_Smart_Rank) 
+                            : 0;
+                var scoreB = (nodeB && nodeB.data && nodeB.data.FSS_Smart_Rank !== undefined && nodeB.data.FSS_Smart_Rank !== null) 
+                            ? parseFloat(nodeB.data.FSS_Smart_Rank) 
+                            : 0;
+                return scoreA - scoreB;
+            """
+        }
     },
     {
         "field": "Price_Change_Pct",
@@ -244,7 +276,7 @@ FIXED_COLS = [
         "headerTooltip": "% thay đổi so với giá đóng cửa ngày hôm trước",
         "type": "rightAligned",
         "sortable": True,
-        "width": 90,
+        "width": 85,
         "valueFormatter": {
             "function": "params.value != null ? (Number(params.value) > 0.1 ? '▲ ' : Number(params.value) < -0.1 ? '▼ ' : '') + (params.value > 0 ? '+' : '') + d3.format('.2f')(params.value) + '%' : '–'"
         },
@@ -261,7 +293,7 @@ FIXED_COLS = [
         "headerName": "%1W",
         "type": "rightAligned",
         "sortable": True,
-        "width": 88,
+        "width": 85,
         "valueFormatter": {
             "function": "params.value != null ? (Number(params.value) > 0 ? '▲ ' : Number(params.value) < 0 ? '▼ ' : '') + (params.value > 0 ? '+' : '') + d3.format('.1f')(params.value) + '%' : '–'"},
         "cellStyle": _PCT_CELL_STYLE,
@@ -291,14 +323,15 @@ FIXED_COLS = [
         "headerName": "KHỐI LƯỢNG",
         "type": "rightAligned",
         "sortable": True,
-        "headerTooltip": "Khối lượng cổ phiếu khớp lệnh trong phiên giao dịch gần nhất.",
-        "width": 120,
-        "valueFormatter": {"function": "d3.format(',.0f')(params.value)"},
+        "headerTooltip": "Tổng khối lượng cổ phiếu khớp lệnh và giao dịch thỏa thuận trong phiên gần nhất.",
+        "width": 100,
+        "valueFormatter": {
+            "function": "params.value == null ? '-' : (params.value >= 1000000 ? (params.value / 1000000).toFixed(2) + 'M' : (params.value >= 1000 ? (params.value / 1000).toFixed(2) + 'K' : params.value))"
+        },
         "cellStyle": {
             "fontFamily": "'Roboto Mono', monospace",
             "fontSize": "12px",
             "fontVariantNumeric": "tabular-nums",
-            "color": "#94a3b8",
         },
     },
 
@@ -397,6 +430,26 @@ STRATEGY_DIRECT_COLS = {
 # ÁNH XẠ filter_id → column definition
 # ============================================================================
 FILTER_TO_COLDEF = {
+    "filter-pe-forward": {
+        "field": "Forward P/E *",
+        "headerName": "FWD P/E*",
+        "type": "rightAligned",
+        "sortable": True,
+        "width": 100,
+        "valueFormatter": {"function": "params.value != null ? d3.format('.2f')(params.value) : '–'"},
+        "cellStyle": {"function": """
+            var base = {
+                fontFamily: "'Roboto Mono', monospace",
+                fontSize: '12px',
+                fontVariantNumeric: 'tabular-nums',
+            };
+            if (!params.value) return Object.assign({}, base, {color: '#484f58'});
+            if (params.value < 10) return Object.assign({}, base, {color: '#4ade80', fontWeight: '600'});
+            if (params.value > 30) return Object.assign({}, base, {color: '#f87171'});
+            return Object.assign({}, base, {color: '#cbd5e1'});
+        """},
+        "headerTooltip": "Forward P/E ước tính = Giá / (EPS × (1 + EPS Growth)). Chỉ mang tính tham khảo.",
+    },
     # ── Tổng quan ──
     "filter-market-cap": {
         "field": "Market Cap", "headerName": "VỐN HÓA",
@@ -409,8 +462,8 @@ FILTER_TO_COLDEF = {
 
     # ── Định giá ──
     "filter-pe": {
-        "field": "P/E", "headerName": "P/E",
-        "type": "rightAligned", "sortable": True, "width": 90,
+        "field": "P/E", "headerName": "P/E (x)",
+        "type": "rightAligned", "sortable": True, "width": 70,
         "valueFormatter": {"function": "params.value ? d3.format('.2f')(params.value) : '-'"},
         "cellStyle": {"function": """
             if (!params.value) return {};
@@ -419,15 +472,45 @@ FILTER_TO_COLDEF = {
             return {};
         """}
     },
-    "filter-pb": _num("P/B", "P/B", 85, 2),
+    "filter-pb": {
+        "field": "P/B", "headerName": "P/B (x)",
+        "type": "rightAligned", "sortable": True, "width": 70,
+        "valueFormatter": {"function": "params.value ? d3.format('.2f')(params.value) : '-'"},
+        "cellStyle": {"function": """
+            if (!params.value) return {};
+            if (params.value < 1.5) return {'color': '#10b981', 'fontWeight': '600'};
+            if (params.value > 3) return {'color': '#ef4444'};
+            return {};
+        """}
+    },
+    "filter-pe-forward": {
+        "field": "Forward P/E *",
+        "headerName": "FWD P/E (x)",
+        "type": "rightAligned",
+        "sortable": True,
+        "width": 100,
+        "valueFormatter": {"function": "params.value != null ? d3.format('.2f')(params.value) : '–'"},
+        "cellStyle": {"function": """
+            var base = {
+                fontFamily: "'Roboto Mono', monospace",
+                fontSize: '12px',
+                fontVariantNumeric: 'tabular-nums',
+            };
+            if (!params.value) return Object.assign({}, base, {color: '#484f58'});
+            if (params.value < 10) return Object.assign({}, base, {color: '#4ade80', fontWeight: '600'});
+            if (params.value > 30) return Object.assign({}, base, {color: '#f87171'});
+            return Object.assign({}, base, {color: '#cbd5e1'});
+        """},
+        "headerTooltip": "P/E dự phóng ước tính = Giá hiện tại / EPS dự phóng, với EPS dự phóng = EPS hiện tại × (1 + EPS Growth). Chỉ mang tính tham khảo.",
+    },
     "filter-ps": _num("P/S", "P/S", 85, 2),
     "filter-ev-ebitda": _num("EV/EBITDA", "EV/EBITDA", 110, 2),
-    "filter-div-yield": _pct("Dividend Yield (%)", "CỔ TỨC %", 105),
+    "filter-div-yield": _pct2("Dividend Yield (%)", "CỔ TỨC %", 105),
 
     # ── Sinh lời ──
     "filter-roe": {
         "field": "ROE (%)", "headerName": "ROE",
-        "type": "rightAligned", "sortable": True, "width": 95,
+        "type": "rightAligned", "sortable": True, "width": 70,
         "valueFormatter": {"function": "params.value != null ? d3.format('.2f')(params.value) + '%' : '-'"},
         "cellStyle": {"function": """
             if (!params.value) return {};
@@ -442,7 +525,21 @@ FILTER_TO_COLDEF = {
     "filter-ebit-margin": _pct("EBIT Margin (%)", "BIÊN EBIT", 110),
 
     # ── Tăng trưởng ──
-    "filter-rev-growth-yoy": _pct("Revenue Growth YoY (%)", "DT 1Y%", 105),
+    "filter-rev-growth-yoy": {
+        "field": "Revenue Growth YoY (%)", 
+        "headerName": "DT 1Y%",
+        "type": "rightAligned", 
+        "sortable": True, 
+        "width": 80,
+        "valueFormatter": {"function": "params.value ? d3.format('.2f')(params.value) + '%' : '-'"},
+        "cellStyle": {"function": """
+            if (params.value === null || params.value === undefined) return {};
+            if (params.value < 0) return {'color': '#ef4444'}; // Tăng trưởng âm -> Màu đỏ
+            if (params.value > 15) return {'color': '#10b981', 'fontWeight': '600'}; // Tăng trưởng mạnh (>15%) -> Xanh lá, in đậm
+            if (params.value > 0) return {'color': '#10b981'}; // Tăng trưởng dương -> Xanh lá bình thường
+            return {};
+        """}
+    },
     "filter-rev-cagr-5y": _pct("Revenue CAGR 5Y (%)", "DT 5Y%", 100),
     "filter-eps-growth-yoy": _pct("EPS Growth YoY (%)", "EPS 1Y%", 105),
     "filter-eps-cagr-5y": _pct("EPS CAGR 5Y (%)", "EPS 5Y%", 100),
@@ -450,7 +547,7 @@ FILTER_TO_COLDEF = {
     # ── Sức khỏe TC ──
     "filter-de": {
         "field": "D/E", "headerName": "D/E",
-        "type": "rightAligned", "sortable": True, "width": 90,
+        "type": "rightAligned", "sortable": True, "width": 50,
         "valueFormatter": {"function": "params.value != null ? d3.format('.2f')(params.value) : '-'"},
         "cellStyle": _DE_CELL_STYLE
     },
@@ -705,8 +802,9 @@ FILTER_TO_COLDEF = {
 
 # ── Bộ cột mặc định cho chế độ TÍCH SẢN ──────────────────────────────────
 INVESTING_MODE_COLS = [
-    FILTER_TO_COLDEF["filter-pe"],
     FILTER_TO_COLDEF["filter-pb"],
+    FILTER_TO_COLDEF["filter-pe"],
+    FILTER_TO_COLDEF["filter-pe-forward"],  # ← ADD THIS
     FILTER_TO_COLDEF["filter-roe"],
     FILTER_TO_COLDEF["filter-net-margin"],
     FILTER_TO_COLDEF["filter-rev-growth-yoy"],

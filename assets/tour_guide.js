@@ -35,6 +35,8 @@ window.FssTour = (function () {
       body: "Tôi là trợ lý VinanceAI. Chỉ mất 30 giây để tôi hướng dẫn bạn cách tìm ra cổ phiếu \"vàng\" và né bẫy rủi ro trên thị trường. Bắt đầu chứ?",
       skipBtn: "Bỏ qua",
       nextBtn: "Khám phá ngay",
+      // 🛠 THÊM DÒNG NÀY ĐỂ CUỘN MÀN HÌNH XUỐNG 700px
+      scrollToY: 500
     },
     
     // BƯỚC 1: Bắt click mở Tab Chiến lược
@@ -43,7 +45,7 @@ window.FssTour = (function () {
       target: "#toolbar-tab-strategy", 
       position: "bottom", 
       title: "Mở menu Chiến lược",
-      body: "Hãy click vào vùng đang nhấp nháy đỏ để mở danh sách các công cụ. (Nút Tiếp theo sẽ mở khóa sau khi bạn click).",
+      body: "Hãy click vào vùng đang nhấp nháy để mở danh sách các công cụ. (Nút Tiếp theo sẽ mở khóa sau khi bạn click).",
       skipBtn: "Bỏ qua",
       nextBtn: "Tiếp theo", 
       requireClick: true // Yêu cầu click
@@ -171,12 +173,13 @@ window.FssTour = (function () {
       target: "#screener-table",
       position: "top", // Hiện bên trên bảng
       title: "Bảng Kết quả Sàng lọc",
-      body: "Đây là nơi hiển thị các siêu cổ phiếu. Cột VGM (Value-Growth-Momentum) tổng hợp sức mạnh toàn diện của doanh nghiệp thành các điểm A, B, C...",
+      body: "Đây là nơi hiển thị các siêu cổ phiếu. Cột Xếp hạng (Chấm điểm VGM: Value-Growth-Momentum) tổng hợp sức mạnh toàn diện của doanh nghiệp thành thang đo 5 sao.",
       skipBtn: "Bỏ qua",
       nextBtn: "Tiếp theo",
       disableInteraction: true,
       customH: 250, // Ép độ cao khoanh đỏ ngắn lại để không bị chiếm hết màn hình
-      noPulse: true // 🛠 THÊM MỚI: Chỉ làm nổi bật (spotlight), không hiện viền đỏ nhấp nháy
+      noPulse: true, // 🛠 THÊM MỚI: Chỉ làm nổi bật (spotlight), không hiện viền đỏ nhấp nháy
+      freezeRect: true        // ← THÊM
     },
     
     // 3. Bắt Double Click vào mã đầu tiên
@@ -190,7 +193,8 @@ window.FssTour = (function () {
       skipBtn: "Bỏ qua",
       requireDblClick: true, // Bắt buộc Double Click
       autoNextAfterClick: true, // Bấm xong tự động qua bước kế
-      autoNextDelay: 1500 // Đợi 1.5s cho UI của Modal kịp Load ra
+      autoNextDelay: 1500, // Đợi 1.5s cho UI của Modal kịp Load ra
+      freezeRect: true        // ← THÊM DÒNG NÀY
     },
     
     // 4. Khóa tương tác, đếm ngược 10 giây
@@ -328,7 +332,8 @@ window.FssTour = (function () {
       shield = document.createElement("div");
       shield.id = "tour-interaction-shield";
       shield.style.position = "fixed";
-      shield.style.zIndex = "10004"; // Nằm TRÊN element đang khoanh đỏ (10002)
+      // 🛠 SỬA DÒNG NÀY: Phải lớn hơn z-index của Target Element (999990)
+      shield.style.zIndex = "999992";
       shield.style.cursor = "not-allowed";
       // 🛠 THÊM DÒNG NÀY: Để khiên không chặn các phần tử con bên trong (nếu có) 
       // hoặc đảm bảo Dialogue Box nằm ngoài tầm phủ của nó
@@ -341,7 +346,8 @@ window.FssTour = (function () {
       warning = document.createElement("div");
       warning.id = "tour-warning-msg";
       warning.style.position = "fixed";
-      warning.style.zIndex = "10005"; // Cao nhất
+      // 🛠 SỬA DÒNG NÀY: Phải lớn nhất trong nhóm cảnh báo
+      warning.style.zIndex = "999995";
       warning.style.background = "rgba(220, 38, 38, 0.95)"; // Đỏ mờ
       warning.style.color = "#ffffff";
       warning.style.padding = "6px 14px";
@@ -387,7 +393,7 @@ window.FssTour = (function () {
     if (!rect) {
       // Không có target → overlay kín toàn màn hình
       backdrop.innerHTML = `
-        <svg width="${W}" height="${H}" style="position:fixed;top:0;left:0;pointer-events:all;">
+        <svg width="${W}" height="${H}" style="position:fixed;top:0;left:0;pointer-events:all;z-index:999989;">
           <rect width="${W}" height="${H}" fill="rgba(0,0,0,0.75)"/>
         </svg>`;
       return;
@@ -580,7 +586,7 @@ window.FssTour = (function () {
 
     tooltip.style.display = "block";
     tooltip.style.width   = "400px"; // 🛠 SỬA 320 -> 400
-    tooltip.style.zIndex  = "10010"; // 🛠 ÉP Z-INDEX CAO NHẤT để luôn nằm trên vùng spotlight và khiên chặn
+    tooltip.style.zIndex  = "999999"; // 🛠 ÉP Z-INDEX CAO NHẤT để luôn nằm trên vùng spotlight và khiên chặn
 
     // Đo chiều cao thực sau khi render để tính vị trí chính xác
     const tooltipH = tooltip.offsetHeight;
@@ -625,7 +631,7 @@ window.FssTour = (function () {
       if (comp.position === 'static') {
         el.style.position = 'relative';
       }
-      el.style.zIndex = '10002';
+      el.style.zIndex = '999990';
     }
   }
 
@@ -703,17 +709,21 @@ window.FssTour = (function () {
     }
 
     // Tự động cuộn màn hình
-    if (step.scrollToY !== undefined) {
+        if (step.scrollToY !== undefined) {
       window.scrollTo({ top: step.scrollToY, left: 0, behavior: 'smooth' });
-      let startTime = Date.now();
-      function followScroll() {
-        if (!isActive || currentStep !== index) return;
-        onResize(); 
-        if (Date.now() - startTime < 800) { 
-          requestAnimationFrame(followScroll);
+      // Chỉ follow scroll nếu bước KHÔNG freezeRect
+      // (tránh loop getBoundingClientRect khi element đang bị CSS hover transform)
+      if (!step.freezeRect) {
+        let startTime = Date.now();
+        function followScroll() {
+          if (!isActive || currentStep !== index) return;
+          onResize();
+          if (Date.now() - startTime < 800) {
+            requestAnimationFrame(followScroll);
+          }
         }
+        followScroll();
       }
-      followScroll();
     }
 
     // Tự động đếm ngược chuyển bước
@@ -819,6 +829,11 @@ window.FssTour = (function () {
   function onResize() {
     if (!isActive) return;
     const step = STEPS[currentStep];
+
+    // FIX hover-flicker: Nếu bước yêu cầu freezeRect thì không re-render
+    // backdrop khi layout thay đổi (tránh loop với CSS hover transform)
+    if (step.freezeRect) return;
+
     const rect = getRect(step);
     
     // 🛠 ĐÃ FIX: Truyền thêm 'step' vào đây

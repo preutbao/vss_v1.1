@@ -19,7 +19,7 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.callbacks.auth_callbacks import _verify_password, _is_vip
+from src.callbacks.auth_callbacks import _verify_password, _has_premium_ui
 from werkzeug.security import generate_password_hash
 
 
@@ -83,24 +83,30 @@ class TestPlaintextMigration:
         assert users["u1"]["password"] != "plaintext_pw_1"
 
 
-class TestVipCheck:
-    def test_is_vip_true_when_logged_in_and_vip_tier(self):
-        assert _is_vip({"logged_in": True, "tier": "vip"}) is True
+class TestHasPremiumUi:
+    """_has_premium_ui() thay thế _is_vip() cũ — tier hệ thống mới chỉ còn
+    'pro' và 'b2b' (bỏ 'vip')."""
 
-    def test_is_vip_false_when_free_tier(self):
+    def test_true_when_logged_in_and_pro_tier(self):
+        assert _has_premium_ui({"logged_in": True, "tier": "pro"}) is True
+
+    def test_true_when_logged_in_and_b2b_tier(self):
+        assert _has_premium_ui({"logged_in": True, "tier": "b2b"}) is True
+
+    def test_false_when_free_tier(self):
         """Bug cũ (screener_callbacks.py): chỉ check 'logged_in', khiến
-        user free đăng nhập cũng được coi là VIP. Test hồi quy trực tiếp
-        cho logic _is_vip dùng chung."""
-        assert _is_vip({"logged_in": True, "tier": "free"}) is False
+        user free đăng nhập cũng được coi là premium. Test hồi quy trực
+        tiếp cho logic _has_premium_ui dùng chung."""
+        assert _has_premium_ui({"logged_in": True, "tier": "free"}) is False
 
-    def test_is_vip_false_when_not_logged_in(self):
-        assert _is_vip({"logged_in": False, "tier": "vip"}) is False
+    def test_false_when_not_logged_in(self):
+        assert _has_premium_ui({"logged_in": False, "tier": "pro"}) is False
 
-    def test_is_vip_false_when_none(self):
-        assert _is_vip(None) is False
+    def test_false_when_none(self):
+        assert _has_premium_ui(None) is False
 
-    def test_is_vip_false_when_empty_dict(self):
-        assert _is_vip({}) is False
+    def test_false_when_empty_dict(self):
+        assert _has_premium_ui({}) is False
 
 
 class TestRequireEntitlement:
@@ -111,36 +117,54 @@ class TestRequireEntitlement:
 
     Điểm quan trọng nhất: hàm PHẢI bỏ qua auth_data.tier gửi từ client và
     luôn đối chiếu với users.json (server-side) — nếu không sẽ tái diễn lỗ
-    hổng cho phép giả mạo tier='vip' qua localStorage/DevTools.
+    hổng cho phép giả mạo tier='pro' qua localStorage/DevTools.
+
+    Tier hệ thống mới chỉ còn 'pro' và 'b2b' (bỏ 'vip'); mặc định
+    allowed_tiers=("pro", "b2b").
     """
 
-    def test_grants_when_server_side_tier_matches(self, monkeypatch):
+    def test_grants_when_server_side_tier_matches_pro(self, monkeypatch):
         import src.callbacks.auth_callbacks as auth_mod
-        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "vip"}})
-        auth_data = {"logged_in": True, "username": "alice", "tier": "vip"}
+        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "pro"}})
+        auth_data = {"logged_in": True, "username": "alice", "tier": "pro"}
         assert auth_mod.require_entitlement(auth_data) is True
 
-    def test_denies_when_client_claims_vip_but_server_says_free(self, monkeypatch):
+    def test_grants_when_server_side_tier_matches_b2b(self, monkeypatch):
+        import src.callbacks.auth_callbacks as auth_mod
+        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "b2b"}})
+        auth_data = {"logged_in": True, "username": "alice", "tier": "b2b"}
+        assert auth_mod.require_entitlement(auth_data) is True
+
+    def test_denies_when_client_claims_pro_but_server_says_free(self, monkeypatch):
         """Mô phỏng chính xác cuộc tấn công đã được audit ghi nhận: user tự
-        sửa localStorage để auth_data.tier='vip' dù server chỉ ghi 'free'."""
+        sửa localStorage để auth_data.tier='pro' dù server chỉ ghi 'free'."""
         import src.callbacks.auth_callbacks as auth_mod
         monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "free"}})
-        spoofed_auth_data = {"logged_in": True, "username": "alice", "tier": "vip"}
+        spoofed_auth_data = {"logged_in": True, "username": "alice", "tier": "pro"}
         assert auth_mod.require_entitlement(spoofed_auth_data) is False
 
     def test_denies_when_not_logged_in(self, monkeypatch):
         import src.callbacks.auth_callbacks as auth_mod
-        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "vip"}})
+        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "pro"}})
         assert auth_mod.require_entitlement({"logged_in": False, "username": "alice"}) is False
 
     def test_denies_when_auth_data_is_none(self, monkeypatch):
         import src.callbacks.auth_callbacks as auth_mod
-        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "vip"}})
+        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "pro"}})
         assert auth_mod.require_entitlement(None) is False
+
+    def test_respects_custom_allowed_tiers(self, monkeypatch):
+        """allowed_tiers giờ có thể tùy biến — ví dụ endpoint chỉ giới hạn
+        riêng cho 'b2b' thì user 'pro' phải bị từ chối."""
+        import src.callbacks.auth_callbacks as auth_mod
+        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "pro"}})
+        auth_data = {"logged_in": True, "username": "alice", "tier": "pro"}
+        assert auth_mod.require_entitlement(auth_data, allowed_tiers=("b2b",)) is False
+        assert auth_mod.require_entitlement(auth_data, allowed_tiers=("pro", "b2b")) is True
 
     def test_denies_unknown_username(self, monkeypatch):
         import src.callbacks.auth_callbacks as auth_mod
-        monkeypatch.setattr(auth_mod, "_load_users", lambda: {})
+        monkeypatch.setattr(auth_mod, "_load_users", lambda: {"alice": {"tier": "pro"}})
         auth_data = {"logged_in": True, "username": "ghost"}
         assert auth_mod.require_entitlement(auth_data) is False
 

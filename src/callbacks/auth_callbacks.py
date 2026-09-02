@@ -717,3 +717,202 @@ def download_ips_pdf_from_profile(n_clicks, profile, goal, will, time_h, auth_da
     display_name = (auth_data or {}).get("display_name")       # ← THÊM
     pdf_bytes = generate_ips_pdf(profile, quiz_answers, display_name=display_name)  # ← SỬA
     return dcc.send_bytes(pdf_bytes, filename=f"Vietcap_HoSoNhaDauTu_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf")
+
+
+# =============================================================================
+# 12b. MỞ/ĐÓNG NOTIFICATION PANEL — chấm đỏ chỉ phụ thuộc trạng thái ĐỌC thật
+# =============================================================================
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (!n_clicks) return window.dash_clientside.no_update;
+
+        var panel = document.getElementById('fss-notif-panel');
+        if (!panel) return window.dash_clientside.no_update;
+
+        var isOpen = panel.style.display === 'flex';
+        panel.style.display = isOpen ? 'none' : 'flex';
+
+        // Chấm đỏ: chỉ tắt khi KHÔNG còn card nào chưa đọc (và chưa bị dismiss)
+        var dot = document.getElementById('notif-dot');
+        if (dot) {
+            var unread = document.querySelectorAll(
+                '.fss-notif-card.is-unread:not([data-dismissed="1"])'
+            );
+            dot.style.display = unread.length > 0 ? 'block' : 'none';
+        }
+
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('btn-notif-bell', 'title'),   # output giả — không đụng vào panel/dot qua Output nữa
+    Input('btn-notif-bell', 'n_clicks'),
+    prevent_initial_call=True,
+)
+    
+
+# =============================================================================
+# 14. ĐÁNH DẤU TẤT CẢ ĐÃ ĐỌC — xóa toàn bộ thanh xanh + tắt chấm đỏ
+# =============================================================================
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (!n_clicks) return window.dash_clientside.no_update;
+        var cards = document.querySelectorAll('.fss-notif-card.is-unread');
+        cards.forEach(function(c) { c.classList.remove('is-unread'); });
+        var dot = document.getElementById('notif-dot');
+        if (dot) dot.style.display = 'none';
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('btn-notif-mark-all-read', 'id'),   # output giả
+    Input('btn-notif-mark-all-read', 'n_clicks'),
+    prevent_initial_call=True,
+)
+
+
+# =============================================================================
+# 15. CLICK TỪNG CARD → ĐÁNH DẤU RIÊNG CARD ĐÓ ĐÃ ĐỌC
+# =============================================================================
+app.clientside_callback(
+    """
+    function(n_clicks_list) {
+        var ctx = window.dash_clientside.callback_context;
+        if (!ctx.triggered || !ctx.triggered.length) {
+            return window.dash_clientside.no_update;
+        }
+        var triggered_id = ctx.triggered[0].prop_id.split('.')[0];
+        var el;
+        try {
+            var parsed = JSON.parse(triggered_id);
+            // Dash render pattern-matching id thành chuỗi JSON trong DOM,
+            // dùng CSS attribute selector để tìm đúng phần tử
+            var idStr = JSON.stringify(parsed);
+            el = document.querySelector('[id=\\'' + idStr + '\\']');
+        } catch (e) {
+            el = null;
+        }
+        if (el) {
+            el.classList.remove('is-unread');
+        }
+        var remaining = document.querySelectorAll('.fss-notif-card.is-unread');
+        if (remaining.length === 0) {
+            var dot = document.getElementById('notif-dot');
+            if (dot) dot.style.display = 'none';
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('fss-notif-list', 'title'),   # output giả — thuộc tính vô hại, không ai đọc
+    Input({"type": "notif-card", "idx": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+
+# =============================================================================
+# 16. NÚT "X" TRÊN TỪNG CARD → ẨN CARD ĐÓ VĨNH VIỄN (đến khi reload)
+# =============================================================================
+app.clientside_callback(
+    """
+    function(n_clicks_list) {
+        var ctx = window.dash_clientside.callback_context;
+        if (!ctx.triggered || !ctx.triggered.length) {
+            return window.dash_clientside.no_update;
+        }
+        var triggered_id = ctx.triggered[0].prop_id.split('.')[0];
+        try {
+            var parsed = JSON.parse(triggered_id);
+            var idStr = JSON.stringify(parsed);
+            var btn = document.querySelector('[id=\\'' + idStr + '\\']');
+            if (btn) {
+                var card = btn.closest('.fss-notif-card');
+                if (card) {
+                    card.style.display = 'none';
+                    card.dataset.dismissed = '1';
+                }
+            }
+        } catch (e) {}
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('fss-notif-panel', 'title'),
+    Input({"type": "notif-dismiss", "idx": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+
+# =============================================================================
+# 17. XEM THÊM / THU GỌN — danh sách mã BCTC trong card
+# =============================================================================
+app.clientside_callback(
+    """
+    function(n_clicks_list) {
+        var ctx = window.dash_clientside.callback_context;
+        if (!ctx.triggered || !ctx.triggered.length) {
+            return window.dash_clientside.no_update;
+        }
+        var triggered_id = ctx.triggered[0].prop_id.split('.')[0];
+        try {
+            var parsed = JSON.parse(triggered_id);
+            var tag = parsed.tag;
+            var preview = document.getElementById(tag + '-preview');
+            var full    = document.getElementById(tag + '-full');
+            var idStr   = JSON.stringify(parsed);
+            var btn     = document.querySelector('[id=\\'' + idStr + '\\']');
+            if (preview && full && btn) {
+                var isExpanded = full.style.display !== 'none';
+                if (isExpanded) {
+                    full.style.display    = 'none';
+                    preview.style.display = 'block';
+                    btn.textContent = 'Xem thêm →';
+                } else {
+                    full.style.display    = 'block';
+                    preview.style.display = 'none';
+                    btn.textContent = 'Thu gọn ↑';
+                }
+            }
+        } catch (e) {}
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output('fss-notif-list', 'title', allow_duplicate=True),   # output giả
+    Input({"type": "notif-expand-btn", "tag": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+
+# =============================================================================
+# 18. TAB "TẤT CẢ" / "CHƯA ĐỌC" — lọc card hiển thị
+# =============================================================================
+app.clientside_callback(
+    """
+    function(all_clicks, unread_clicks) {
+        var ctx = window.dash_clientside.callback_context;
+        if (!ctx.triggered || !ctx.triggered.length) {
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+        }
+        var triggered_id = ctx.triggered[0].prop_id.split('.')[0];
+        var showUnreadOnly = (triggered_id === 'notif-tab-unread');
+
+        var tabAll = document.getElementById('notif-tab-all');
+        var tabUnread = document.getElementById('notif-tab-unread');
+        if (tabAll && tabUnread) {
+            tabAll.classList.toggle('is-active', !showUnreadOnly);
+            tabUnread.classList.toggle('is-active', showUnreadOnly);
+        }
+
+        var cards = document.querySelectorAll('.fss-notif-card');
+        cards.forEach(function(c) {
+            if (c.dataset.dismissed === '1') {
+                c.style.display = 'none';
+                return;
+            }
+            c.style.display = (showUnreadOnly && !c.classList.contains('is-unread')) ? 'none' : '';
+        });
+
+        return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+    }
+    """,
+    Output('notif-tab-all',    'title'),
+    Output('notif-tab-unread', 'title'),
+    Input('notif-tab-all',    'n_clicks'),
+    Input('notif-tab-unread', 'n_clicks'),
+    prevent_initial_call=True,
+)

@@ -376,7 +376,7 @@ body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  max-width: 1120px;
+  max-width: 1220px;
   margin: 0 auto 32px;
   padding: 0 24px;
   
@@ -487,7 +487,7 @@ body {
   display: grid;
   grid-template-columns: 13fr 7fr; /* tỉ lệ 65% / 35% */
   gap: 20px;
-  max-width: 1120px;
+  max-width: 1220px;
   margin: 0 auto 32px;
   padding: 0 24px;
   align-items: start;
@@ -983,7 +983,7 @@ body {
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row:hover {
   background-color: #112236 !important;
   /* Subtle left glow on hover */
-  box-shadow: inset 3px 0 0 rgba(30, 136, 229, 0.4);
+
 }
 
 /* Selected row */
@@ -3345,9 +3345,6 @@ span[style*="f59e0b"] {
     --ag-row-hover-color: rgba(0, 87, 217, 0.05) !important;
 }
 
-[data-theme="dark"] .ag-theme-alpine-dark .ag-row:hover {
-    box-shadow: inset 3px 0 0 rgba(0, 87, 217, 0.4) !important;
-}
 
 [data-theme="dark"] .ag-theme-alpine-dark .ag-row-selected {
     box-shadow: inset 3px 0 0 #0057D9 !important;
@@ -4725,7 +4722,6 @@ input:focus-visible, .Select-control:focus-visible {
 /* AG Grid — Row hover & selected: xóa màu dark cứng trong light mode */
 [data-theme="light"] .ag-theme-alpine-dark .ag-row:hover {
   background-color: rgba(34, 197, 94, 0.06) !important;
-  box-shadow: inset 3px 0 0 rgba(34, 197, 94, 0.4) !important;
 }
 [data-theme="light"] .ag-theme-alpine-dark .ag-row-selected {
   background-color: rgba(34, 197, 94, 0.08) !important;
@@ -5937,4 +5933,400 @@ html {
 /* Ẩn hoàn toàn overlay ổ khóa nếu mất class premium-locked (đã mua VIP) */
 .premium-wrapper:not(.premium-locked) .premium-overlay {
     display: none !important;
+}
+
+/* ── Card clickable — toàn bộ card là 1 vùng bấm ── */
+.home-pick-card-clickable {
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.home-pick-card-clickable:hover {
+  border-color: rgba(0, 144, 255, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Chevron chỉ hiện khi hover ── */
+.home-pick-card-chevron {
+  color: #4b5563;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.home-pick-card-clickable:hover .home-pick-card-chevron {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* ── Ticker row: ticker trái, avg score + sao phải ── */
+.home-pick-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-pick-card-avgscore-inline {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent2, #00c8ff);
+  margin-left: auto;   /* ← đẩy điểm số + mọi thứ sau nó sang phải */
+}
+
+.home-pick-card-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;    /* dính sát điểm số */
+}
+/* ── Breakdown — NEUTRAL hoàn toàn ── */
+.home-pick-score-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.home-pick-score-item {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.home-pick-score-label {
+  font-size: 10px;
+  color: #6b7280;         /* xám — neutral */
+}
+.home-pick-score-value {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 10px;
+  color: #6b7280;         /* trắng nhạt — neutral, KHÔNG còn 3 màu khác nhau */
+}
+.home-pick-score-dot {
+  color: #374151;
+  font-size: 10px;
+}
+
+
+
+
+
+
+
+/* Hero link buttons hover state */
+.hero-link-btn:hover {
+    opacity: 1 !important;
+    text-decoration-color: rgba(255,255,255,0.6) !important;
+}
+
+.hero-link-btn:active {
+    opacity: 0.8 !important;
+}
+
+
+
+
+
+
+/* ══════════════════════════════════════════════════════
+   NOTIFICATION BELL + PANEL
+══════════════════════════════════════════════════════ */
+
+.fss-notif-bell-wrap {
+  position: relative;
+}
+
+.fss-notif-bell-btn {
+  position: relative;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #4A90E2;                 /* xanh nước biển — cùng theme logo thefiwi */
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.fss-notif-bell-btn:hover {
+  background: rgba(74,144,226,0.12);
+  border-color: rgba(74,144,226,0.35);
+}
+
+.fss-notif-dot {
+  position: absolute;
+  top: 6px; right: 7px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #0B132B;
+  display: block;   /* mặc định CÓ chấm đỏ (có thông báo mới) */
+}
+
+/* ── Panel ───────────────────────────────────────────── */
+.fss-notif-panel {
+  position: absolute;
+  top: 46px;
+  right: 0;
+  width: 380px;
+  max-height: 520px;
+  background: #0f1829;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  z-index: 2000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fss-notif-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.fss-notif-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+.fss-notif-panel-mark-all {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px;
+}
+.fss-notif-panel-mark-all:hover {
+  color: #4A90E2;
+}
+
+/* ── Tabs ────────────────────────────────────────────── */
+.fss-notif-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px;
+}
+.fss-notif-tab {
+  background: rgba(255,255,255,0.05);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.fss-notif-tab.is-active {
+  background: #4A90E2;
+  color: #ffffff;
+}
+.fss-notif-tab:hover:not(.is-active) {
+  background: rgba(255,255,255,0.09);
+}
+
+/* ── List ────────────────────────────────────────────── */
+.fss-notif-list {
+  overflow-y: auto;
+  padding: 0 12px 12px;
+  flex: 1;
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.fss-notif-card {
+  position: relative;
+  background: #16213e;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+.fss-notif-card:hover {
+  background: #1a2847;
+}
+
+/* Thanh xanh dọc bên trái = CHƯA ĐỌC */
+.fss-notif-card.is-unread::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 3px;
+  background: #4A90E2;
+}
+
+.fss-notif-card-inner {
+  padding: 13px 14px 11px 17px;
+}
+
+.fss-notif-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fss-notif-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e5e7eb;
+  line-height: 1.4;
+}
+.fss-notif-card-dismiss {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: #9ca3af;
+  font-size: 9px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.fss-notif-card-dismiss:hover {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+}
+
+.fss-notif-card-body {
+  margin-top: 6px;
+}
+.fss-notif-card-tickers {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+.fss-notif-card-bottom {
+  margin-top: 8px;
+}
+.fss-notif-card-date {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* ── Category tag ── */
+.fss-notif-cat {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+.fss-notif-cat--blue  { color: #60a5fa; background: rgba(96,165,250,0.10); }
+.fss-notif-cat--cyan  { color: #22d3ee; background: rgba(34,211,238,0.10); }
+.fss-notif-cat--amber { color: #fbbf24; background: rgba(251,191,36,0.10); }
+.fss-notif-cat--red   { color: #f87171; background: rgba(248,113,113,0.10); }
+.fss-notif-cat--gray  { color: #9ca3af; background: rgba(156,163,175,0.10); }
+
+.fss-notif-card-detail {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.55;
+}
+.fss-notif-card-cta {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4A90E2;
+}
+
+.fss-notif-card-note {
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.fss-notif-expand-btn {
+  display: inline-block;
+  margin-top: 6px;
+  background: transparent;
+  border: none;
+  color: #4A90E2;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.fss-notif-expand-btn:hover {
+  color: #6ba8ea;
+  text-decoration: underline;
+}
+
+.fss-notif-card--tour {
+  background: linear-gradient(135deg, rgba(74,144,226,0.10), rgba(0,229,255,0.05));
+  border: 1px solid rgba(74,144,226,0.25);
+}
+.fss-notif-card--tour:hover {
+  background: linear-gradient(135deg, rgba(74,144,226,0.16), rgba(0,229,255,0.08));
+}
+
+/* ============================================================================
+   OVERRIDE: CUSTOM RANGE SLIDER (THEME XANH DƯƠNG MỚI)
+   ============================================================================ */
+
+/* Đổi màu dải nối (track) từ gradient sang màu xanh đậm solid */
+.custom-range-slider .rc-slider-track {
+  background: #1A73E8 !important; 
+  box-shadow: 0 0 6px rgba(26, 115, 232, 0.4) !important;
+}
+
+/* Đổi màu cục kéo (handle) thành xanh đặc, xóa viền đục */
+.custom-range-slider .rc-slider-handle {
+  background-color: #1A73E8 !important;
+  border: 2px solid #1A73E8 !important; 
+  box-shadow: 0 0 6px rgba(26, 115, 232, 0.5) !important;
+}
+
+/* Hiệu ứng sáng lên (glow) khi di chuột hoặc đang kéo */
+.custom-range-slider .rc-slider-handle:hover,
+.custom-range-slider .rc-slider-handle:active {
+  box-shadow: 0 0 12px rgba(26, 115, 232, 0.8) !important;
+  background-color: #1557B0 !important; /* Làm màu tối đi một chút khi tương tác */
+  border-color: #1557B0 !important;
+}
+
+/* Đồng bộ luôn màu của cái tooltip nhỏ xíu (nếu bạn vẫn đang để nó hiển thị) */
+.custom-range-slider .rc-slider-handle::after {
+    color: #1A73E8 !important;
+}
+
+/* ============================================================================
+   OVERRIDE: THEME XANH NGỌC (CYAN) CÓ BORDER TỐI MÀU
+   ============================================================================ */
+
+/* Màu của dải nối (track) */
+.custom-range-slider .rc-slider-track {
+  background: #00d4ff !important;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4) !important;
+}
+
+/* Hình tròn (handle) với border tối màu tạo nét cắt rõ ràng */
+.custom-range-slider .rc-slider-handle {
+  background-color: #00d4ff !important;
+  border: 3px solid #161b22 !important; /* CHÍNH LÀ LỚP VIỀN TỐI NÀY */
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.7) !important;
+  width: 16px !important; /* Tăng size lên 1 chút để viền nhìn rõ hơn */
+  height: 16px !important;
+  margin-top: -6px !important; /* Chỉnh lại để căn giữa với ray */
+}
+
+/* Hiệu ứng sáng bừng lên khi hover hoặc đang kéo */
+.custom-range-slider .rc-slider-handle:hover,
+.custom-range-slider .rc-slider-handle:active {
+  box-shadow: 0 0 14px rgba(0, 212, 255, 1) !important;
+  background-color: #00e5ff !important;
+  transform: translateX(-50%) scale(1.15) !important; /* Phóng to nhẹ khi kéo */
+}
+
+/* Đổi màu chữ của tooltip về màu xanh ngọc */
+.custom-range-slider .rc-slider-handle::after {
+    color: #00d4ff !important;
 }

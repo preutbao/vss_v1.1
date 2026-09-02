@@ -624,6 +624,216 @@ def _create_coin_svg():
     return html.Div(className="fss-coin-wrap", children=[
         html.Img(src="/assets/coin.svg", className="fss-coin-svg", style={"width": "100%", "height": "100%"})
     ])
+
+
+def _notif_card_v2(category: str, cat_color: str, title: str, detail: str,
+                    date_str: str, is_unread: bool = True, idx: int = 0,
+                    cta_text: str = None, id_tag: str = None,
+                    note_text: str = None) -> html.Div:
+    card_id = id_tag if id_tag else {"type": "notif-card", "idx": idx}
+
+    detail_kwargs = {"className": "fss-notif-card-detail"}
+    title_kwargs  = {"className": "fss-notif-card-title"}
+    date_kwargs   = {"className": "fss-notif-card-date"}
+    if id_tag:
+        detail_kwargs["id"] = f"{id_tag}-detail"
+        title_kwargs["id"]  = f"{id_tag}-title"
+        date_kwargs["id"]   = f"{id_tag}-date"
+
+    extra_attrs = {}
+    if id_tag == "strategy-match":
+        extra_attrs["data-dismissed"] = "0"
+
+    body_children = [html.Div(detail, **detail_kwargs)]
+    if cta_text:
+        body_children.append(html.Span(cta_text, className="fss-notif-card-cta"))
+    if note_text:
+        note_kwargs = {"className": "fss-notif-card-note"}
+        if id_tag:
+            note_kwargs["id"] = f"{id_tag}-note"
+        body_children.append(html.Div(note_text, **note_kwargs))
+
+    return html.Div(
+        id=card_id,
+        n_clicks=0,
+        className=f"fss-notif-card {'is-unread' if is_unread else ''}",
+        children=[
+            html.Div(className="fss-notif-card-inner", children=[
+                html.Span(category, className=f"fss-notif-cat fss-notif-cat--{cat_color}"),
+                html.Div(className="fss-notif-card-top", children=[
+                    html.Div(title, **title_kwargs),
+                    html.Button(
+                        html.I(className="fas fa-times"),
+                        id={"type": "notif-dismiss", "idx": idx},
+                        n_clicks=0,
+                        className="fss-notif-card-dismiss",
+                    ),
+                ]),
+                html.Div(body_children, className="fss-notif-card-body"),
+                html.Div(date_str, **date_kwargs),
+            ]),
+        ],
+        **extra_attrs,
+    )
+
+
+def _notif_card_bctc(category: str, cat_color: str, title: str,
+                      preview: str, full: str, date_str: str,
+                      is_unread: bool, idx: int, id_tag: str) -> html.Div:
+    return html.Div(
+        id=id_tag,
+        n_clicks=0,
+        className=f"fss-notif-card {'is-unread' if is_unread else ''}",
+        children=[
+            html.Div(className="fss-notif-card-inner", children=[
+                html.Span(category, className=f"fss-notif-cat fss-notif-cat--{cat_color}"),
+                html.Div(className="fss-notif-card-top", children=[
+                    html.Div(title, className="fss-notif-card-title"),
+                    html.Button(
+                        html.I(className="fas fa-times"),
+                        id={"type": "notif-dismiss", "idx": idx},
+                        n_clicks=0,
+                        className="fss-notif-card-dismiss",
+                    ),
+                ]),
+                html.Div(className="fss-notif-card-body", children=[
+                    html.Div(preview, id=f"{id_tag}-preview",
+                             className="fss-notif-card-detail"),
+                    html.Div(full, id=f"{id_tag}-full",
+                             className="fss-notif-card-detail",
+                             style={"display": "none"}),
+                    html.Button(
+                        "Xem thêm →",
+                        id={"type": "notif-expand-btn", "tag": id_tag},
+                        n_clicks=0,
+                        className="fss-notif-expand-btn",
+                    ),
+                ]),
+                html.Div(date_str, className="fss-notif-card-date"),
+            ]),
+        ],
+    )
+
+def _create_notification_panel():
+    """Panel thông báo — 6 loại theo đề xuất UX, BCTC gộp 2 card ở cuối."""
+
+    notifs = [
+        # ── 1. Strategy Match (TẠM MOCK — sẽ nối động sau khi có strategy_callbacks.py) ──
+        dict(category="STRATEGY", cat_color="cyan",
+             title="Chọn một trường phái đầu tư để xem gợi ý",
+             detail="Chưa có chiến lược nào được áp dụng.",
+             date="—", unread=False, id_tag="strategy-match",
+             note="Kết quả được tính trên toàn bộ thị trường, không phụ thuộc chế độ đang chọn."),
+
+        # ── 2. FSS Score Change ────────────────────────────────────────
+        dict(category="SCORE", cat_color="blue",
+             title="FSS Score của MBB thay đổi",
+             detail="82 → 87 sau khi cập nhật dữ liệu tài chính mới.",
+             date="01/09/2026 · 14:50", unread=True,
+             cta="Xem nguyên nhân"),
+
+        # ── 3. Saved Screener ──────────────────────────────────────────
+        dict(category="SÀNG LỌC", cat_color="cyan",
+             title="7 mã mới thỏa bộ lọc \u201cTích sản\u201d",
+             detail="FPT, MBB, VCG, HPG, TPB, ACB, VHM",
+             date="01/09/2026 · 15:05", unread=True,
+             cta="Xem 7 mã"),
+
+        # ── 4. Price / Technical Alert ─────────────────────────────────
+        dict(category="ALERT", cat_color="amber",
+             title="FPT đạt điều kiện cảnh báo",
+             detail="Giá vượt SMA20 · Khối lượng = 2,1× trung bình 20 phiên",
+             date="01/09/2026 · 14:45", unread=False),
+
+        # ── 5. Data Quality ─────────────────────────────────────────────
+        dict(category="DATA", cat_color="red",
+             title="Dữ liệu VHM đang chậm cập nhật",
+             detail="Nguồn dữ liệu chính chưa phản hồi. FSS đang dùng dữ liệu gần nhất đã xác thực.",
+             date="01/09/2026 · 16:05", unread=False),
+
+        # ── 6+7. BCTC — GỘP THÀNH 2 CARD Ở CUỐI ──────────────────────
+        dict(category="DỮ LIỆU", cat_color="gray",
+             title="26 doanh nghiệp vừa cập nhật BCTC bán niên 2026",
+             detail_preview="HPW, SKV, HAP...",
+             detail_full="HPW, SKV, HAP, VNP, HII, TSC, TLH, ICT, HHP, ITC, CKG, DTD, VTO, SGN, "
+                         "HPX, RAL, IDI, LBM, SGR, ANT, HDC, DCL, VC3, PTB, DPG, AAA",
+             date="31/08/2026 · 09:00", unread=False, id_tag="bctc-half-year"),
+        dict(category="DỮ LIỆU", cat_color="gray",
+             title="18 doanh nghiệp vừa cập nhật BCTC quý 2/2026",
+             detail_preview="GEE, SAB, KDH...",
+             detail_full="GEE, SAB, KDH, KBC, CII, OIL, VEA, CTR, DGW, PAN, ELC, AST, SAM, CTF, "
+                         "HDC, DCL, VC3, PTB",
+             date="28/08/2026 · 09:00", unread=False, id_tag="bctc-q2"),
+    ]
+
+    return html.Div(
+        id="fss-notif-panel",
+        className="fss-notif-panel",
+        style={"display": "none"},
+        children=[
+            dcc.Store(id="strategy-match-ticker-store", data=None),   # ← THÊM DÒNG NÀY
+            html.Div(className="fss-notif-panel-header", children=[
+                html.Span("Thông báo", className="fss-notif-panel-title"),
+                html.Button(
+                    html.I(className="fas fa-check-double"),
+                    id="btn-notif-mark-all-read",
+                    n_clicks=0,
+                    className="fss-notif-panel-mark-all",
+                    title="Đánh dấu tất cả đã đọc",
+                ),
+            ]),
+            html.Div(className="fss-notif-tabs", children=[
+                html.Button("Tất cả", id="notif-tab-all", n_clicks=0,
+                            className="fss-notif-tab is-active"),
+                html.Button("Chưa đọc", id="notif-tab-unread", n_clicks=0,
+                            className="fss-notif-tab"),
+            ]),
+            html.Div(
+                id="fss-notif-list",
+                className="fss-notif-list",
+                children=[
+                    # ── Welcome / Tour Guide card — luôn ở đầu ──────────
+                    html.Div(
+                        id="notif-welcome-tour",
+                        n_clicks=0,
+                        className="fss-notif-card fss-notif-card--tour",
+                        children=[
+                            html.Div(className="fss-notif-card-inner", children=[
+                                html.Span("CHÀO MỪNG", className="fss-notif-cat fss-notif-cat--cyan"),
+                                html.Div(className="fss-notif-card-top", children=[
+                                    html.Div([
+                                        html.I(className="fas fa-play-circle",
+                                               style={"marginRight": "8px", "color": "#4A90E2"}),
+                                        "Xem hướng dẫn sử dụng hệ thống FSS",
+                                    ], className="fss-notif-card-title"),
+                                ]),
+                                html.Div("Khám phá nhanh các tính năng chính của FinSmartScreener trong 60 giây.",
+                                         className="fss-notif-card-detail"),
+                                html.Div("Nhấn để bắt đầu →", className="fss-notif-card-cta"),
+                            ]),
+                        ],
+                    ),
+                ] + [
+                    _notif_card_bctc(
+                        category=n["category"], cat_color=n["cat_color"],
+                        title=n["title"], preview=n["detail_preview"],
+                        full=n["detail_full"], date_str=n["date"],
+                        is_unread=n["unread"], idx=i, id_tag=n["id_tag"],
+                    ) if "detail_preview" in n else
+                    _notif_card_v2(
+                        category=n["category"], cat_color=n["cat_color"],
+                        title=n["title"], detail=n["detail"],
+                        date_str=n["date"], is_unread=n["unread"], idx=i,
+                        cta_text=n.get("cta"), id_tag=n.get("id_tag"),
+                        note_text=n.get("note"),
+                    )
+                    for i, n in enumerate(notifs)
+                ],
+            ),
+        ],
+    )
+
+
 # ── TOPBAR ────────────────────────────────────────────────────────────────────
 def create_topbar(id_suffix=""):
     wrapper_id = f"vietcap-topbar{id_suffix}" if id_suffix else "vietcap-topbar-only"
@@ -732,6 +942,19 @@ def create_topbar(id_suffix=""):
                     ),
                     # btn-logout-wrap giữ lại (hidden) để không vỡ callback cũ
                     html.Div(id="btn-logout-wrap", style={"display": "none"}),
+                    # Notification bell — CHỈ render ở lần gọi chính (tránh duplicate id)
+                    *([html.Div(className="fss-notif-bell-wrap", children=[
+                        html.Button(
+                            id="btn-notif-bell",
+                            n_clicks=0,
+                            className="fss-notif-bell-btn",
+                            children=[
+                                html.I(className="fas fa-bell"),
+                                html.Span(id="notif-dot", className="fss-notif-dot"),
+                            ],
+                        ),
+                        _create_notification_panel(),
+                    ])] if not id_suffix else []),
                     # Profile modal
                     _create_profile_modal(),
                 ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
@@ -872,8 +1095,47 @@ def create_banner():
         children=[
             html.H1("Fin Smart Screener", className="home-hero-title"),
             html.P(
-                "Lọc, xếp hạng và theo dõi hơn 1.500 mã chứng khoán Việt Nam bằng 165+ "
-                "chỉ báo định lượng — từ định giá, tăng trưởng đến kỹ thuật — trong một màn hình duy nhất.",
+                [
+                    "Từ 1.500+ cổ phiếu đến shortlist phù hợp chiến lược đầu tư của bạn.",
+                    html.Br(),
+                    html.Div([
+                        html.Button("193 chỉ số định lượng", 
+                                id="hero-metrics-btn", 
+                                n_clicks=0,
+                                style={
+                                    "background": "none", "border": "none", "padding": "0",
+                                    "color": "inherit", "fontSize": "inherit", "fontFamily": "inherit",
+                                    "fontStyle": "italic", "cursor": "pointer", 
+                                    "textDecoration": "underline", "textDecorationColor": "rgba(255,255,255,0.3)",
+                                    "margin": "0", "lineHeight": "inherit",
+                                    "font-weight": "inherit",
+                                }),
+                        " · ",
+                        html.Button("10 trường phái đầu tư",
+                                id="hero-schools-btn",
+                                n_clicks=0,
+                                style={
+                                    "background": "none", "border": "none", "padding": "0",
+                                    "color": "inherit", "fontSize": "inherit", "fontFamily": "inherit",
+                                    "fontStyle": "italic", "cursor": "pointer", 
+                                    "textDecoration": "underline", "textDecorationColor": "rgba(255,255,255,0.3)",
+                                    "margin": "0", "lineHeight": "inherit",
+                                    "font-weight": "inherit",
+                                }),
+                        " · ",
+                        html.Button("AI hỗ trợ diễn giải",
+                                id="hero-ai-chat-btn",
+                                n_clicks=0,
+                                style={
+                                    "background": "none", "border": "none", "padding": "0",
+                                    "color": "inherit", "fontSize": "inherit", "fontFamily": "inherit",
+                                    "fontStyle": "italic", "cursor": "pointer", 
+                                    "textDecoration": "underline", "textDecorationColor": "rgba(255,255,255,0.3)",
+                                    "margin": "0", "lineHeight": "inherit",
+                                    "font-weight": "inherit",
+                                }),
+                    ], style={"display": "inline"})
+                ],
                 className="home-hero-desc",
             ),
             html.Div(
@@ -898,7 +1160,7 @@ def create_banner():
                             dcc.Input(
                                 id="home-hero-search-input",
                                 type="text",
-                                placeholder="Nhập mã cổ phiếu (VCB, FPT, HPG,...)",
+                                placeholder="Tìm mã cổ phiếu (VCB, FPT, HPG,...)",
                                 className="home-hero-search-input",
                                 debounce=True,
                                 autoComplete="off",
@@ -920,7 +1182,7 @@ def create_banner():
                             html.Button(
                                 [
                                     html.I(className="fa-solid fa-filter", style={"marginRight": "8px"}),
-                                    "Lọc Cổ Phiếu Ngay"
+                                    "Tự Xây Bộ Lọc"
                                 ],
                                 className="fss-tour-pulse",
                                 style={
@@ -994,39 +1256,83 @@ _PICK_TAGS = {
 def _pick_tag(variant: str) -> html.Span:
     label, _ = _PICK_TAGS[variant]
     return html.Span(label, className=f"home-pick-tag home-pick-tag-{variant}")
+
+
 def _star_row(filled: int = 5, total: int = 5) -> html.Div:
-    """Dải sao — mặc định 5/5 vì đây là các mã đã đạt chuẩn 5 sao từ bộ lọc.
-    Dùng html.I (Font Awesome) để dễ đổi trạng thái filled/empty qua callback sau này."""
     stars = []
     for i in range(total):
         is_filled = i < filled
         stars.append(html.I(className=f"fa-{'solid' if is_filled else 'regular'} fa-star"))
     return html.Div(stars, className="home-pick-card-stars")
+
+
+def _score_bar(label: str, value) -> html.Div:
+    """1 mục breakdown điểm — NEUTRAL, không còn màu riêng theo loại."""
+    v = int(value) if value is not None else 0
+    return html.Div(className="home-pick-score-item", children=[
+        html.Span(label, className="home-pick-score-label"),
+        html.Span(str(v), className="home-pick-score-value"),
+    ])
+
+
 def _pick_card(key: str, ticker: str, tag_variant: str, price_str: str = "—",
                 change_str: str = "", is_positive: bool = True, stars_filled: int = 5,
+                value_score: float = None,
+                growth_score: float = None,
+                momentum_score: float = None,
                 insight_text: str = None) -> html.Div:
-    """1 thẻ trong Top Fin Picks — [BƯỚC 3.1] nhận đủ dữ liệu động qua tham số
-    (không còn id con cố định cho price/change) vì danh sách mã sẽ đổi liên tục
-    theo bảng lọc thật (không còn cố định TPB/MBB/VHM). Toàn bộ thẻ được callback
-    dựng lại mỗi lần từ đầu và trả về nguyên khối trong `home-picks-grid.children`.
-    `key` (vd 'tpb') chỉ dùng làm hậu tố id container cho card, để debug dễ hơn —
-    KHÔNG dùng làm Output riêng lẻ nữa.
+    """1 thẻ trong Top Quant Scores.
+    [BƯỚC 3.3] Giảm rainbow effect:
+      - Điểm trung bình (avg của Value/Growth/Momentum) đặt cạnh ticker,
+        dùng màu accent — đây là điểm nổi bật duy nhất ngoài badge/CTA màu.
+      - Breakdown 3 điểm thành phần chuyển NEUTRAL (label xám, số trắng),
+        không còn 3 màu khác nhau.
+      - Bỏ nút "Xem vì sao" — TOÀN BỘ CARD giờ clickable (n_clicks ở
+        chính html.Div card), icon '›' chỉ hiện khi hover qua CSS.
     """
     change_cls = "home-pick-card-change is-positive" if is_positive else "home-pick-card-change is-negative"
+
+    # Điểm trung bình 3 sub-score — hiển thị cạnh ticker
+    sub_scores = [s for s in [value_score, growth_score, momentum_score] if s is not None]
+    avg_score = round(sum(sub_scores) / len(sub_scores)) if sub_scores else None
+
     children = [
         html.Div(className="home-pick-card-top", children=[
             _pick_tag(tag_variant),
+            html.Span(
+                # f"{avg_score}" if avg_score is not None else "—",
+                f"" if avg_score is not None else "", # tam thoi an diem so di nhin dep hon
+                className="home-pick-card-avgscore-inline",
+            ),
             _star_row(filled=stars_filled),
         ]),
         html.Div(ticker, className="home-pick-card-ticker"),
     ]
     if insight_text:
         children.append(html.Div(insight_text, className="home-pick-card-insight"))
+
     children.append(html.Div(className="home-pick-card-bottom", children=[
         html.Div(price_str, className="home-pick-card-price"),
         html.Div(change_str, className=change_cls),
     ]))
-    return html.Div(id=f"home-pick-{key}-card", className="home-pick-card", children=children)
+
+    # ── Breakdown — NEUTRAL, không màu riêng theo loại ──────────────────
+    children.append(html.Div(className="home-pick-score-breakdown", children=[
+        _score_bar("Value",    value_score),
+        html.Span("·", className="home-pick-score-dot"),
+        _score_bar("Growth",   growth_score),
+        html.Span("·", className="home-pick-score-dot"),
+        _score_bar("Momentum", momentum_score),
+    ]))
+
+    return html.Div(
+        id={"type": "pick-card-click", "ticker": ticker},
+        n_clicks=0,
+        className="home-pick-card home-pick-card-clickable",
+        children=children,
+    )
+
+
 def create_top_fin_picks() -> html.Div:
     """Cột trái (65%) — Top Fin Picks. [BƯỚC 3.1] `home-picks-grid` khởi tạo
     RỖNG (children=[]) — không còn fix cứng TPB/MBB/VHM. Callback trong
@@ -1036,11 +1342,11 @@ def create_top_fin_picks() -> html.Div:
     return html.Div(id="home-picks-col", className="home-picks-col", children=[
         html.Div(className="home-picks-header", children=[
             html.Div(children=[
-                html.H3("Top Fin Picks", className="home-picks-title"),
-                html.P("Các mã đạt chuẩn 5 sao, xếp hạng đầu bộ lọc của bạn.",
+                html.H3("Top Quant Scores", className="home-picks-title"),
+                html.P("Các mã có điểm định lượng cao theo bộ tiêu chí hiện tại.",
                        className="home-picks-subtitle"),
             ]),
-            html.A(["Xem tất cả ", html.I(className="fa-solid fa-arrow-up-right-from-square")],
+            html.A(["Xem tất cả ", html.I(className="fa-solid fa-arrow-right-from-bracket")],
                    href="#screener-scroll-anchor", className="home-picks-viewall"),
         ]),
         html.Div(id="home-picks-grid", className="home-picks-grid", children=[]),
@@ -1050,11 +1356,11 @@ def create_market_pulse() -> html.Div:
     Toàn bộ nội dung động để id trống/placeholder cho callback tự nối sau.
     """
     return html.Div(id="home-market-pulse", className="home-pulse-col", children=[
-        html.H3("Market Pulse", className="home-pulse-title"),
+        html.H3("Nhịp đập Thị trường", className="home-pulse-title"),
         # ── Market Breadth ──
         html.Div(className="home-pulse-breadth", children=[
             html.Div(className="home-pulse-breadth-head", children=[
-                html.Span("MARKET BREADTH", className="home-pulse-breadth-label-static"),
+                html.Span("ĐỘ RỘNG TT", className="home-pulse-breadth-label-static"),
                 html.Span(id="home-pulse-breadth-label", className="home-pulse-breadth-label",
                            children="62% Bullish"),
             ]),

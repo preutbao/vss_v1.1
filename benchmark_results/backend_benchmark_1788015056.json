@@ -1,0 +1,343 @@
+{
+  "timestamp": 1788015056,
+  "timestamp_human": "2026-08-29 21:50:56",
+  "mode": "full",
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.12.10",
+    "cpu_model": "Intel64 Family 6 Model 126 Stepping 5, GenuineIntel",
+    "cpu_physical": 4,
+    "cpu_logical": 8,
+    "total_ram_gb": 11.81,
+    "available_ram_gb": 5.76,
+    "process_rss_mb": 96.09,
+    "pandas_version": "2.3.3",
+    "numpy_version": "2.4.1",
+    "pyarrow_version": "21.0.0",
+    "dash_version": "3.3.0",
+    "plotly_version": "6.3.0",
+    "gunicorn_version": "not_installed",
+    "psutil_version": "6.0.0",
+    "storage_type": "chưa xác nhận thủ công — ghi tay vào báo cáo (SSD/NVMe/HDD)",
+    "test_environment": "chưa xác nhận — ghi tay (local dev / staging / production Gunicorn)",
+    "files": {
+      "parquet_snapshot_mb": 1.417,
+      "parquet_price_mb": 26.091,
+      "parquet_financial_y_mb": 9.959,
+      "parquet_financial_q_mb": 30.355
+    },
+    "requirements_txt_warning": "requirements.txt trong repo được xác nhận là bản CŨ (chưa update). KHÔNG dùng requirements.txt để ghi phiên bản vào báo cáo — dùng các trường *_version phía trên (đọc trực tiếp từ môi trường đang chạy)."
+  },
+  "scenario_a_ram_cache": {
+    "samples": 1000,
+    "mean_ms": 0.0992148,
+    "median_ms": 0.08954999999999999,
+    "p90_ms": 0.12954000000000002,
+    "p95_ms": 0.14841999999999989,
+    "p99_ms": 0.20142599999999997,
+    "min_ms": 0.0677,
+    "max_ms": 0.5797,
+    "std_ms": 0.02909692390889456,
+    "error_rate": 0.0,
+    "snapshot_rows": 1544,
+    "snapshot_cols": 198,
+    "consistency_hash": 9696075615192967600
+  },
+  "snapshot_metadata": {
+    "total_tickers": 1544,
+    "total_columns": 198,
+    "exchanges": {
+      "UPCOM": 831,
+      "HOSE": 410,
+      "HNX": 303
+    },
+    "sectors_count": 12,
+    "fingerprint": 9696075615192967600
+  },
+  "scenario_b_parquet_cache": {
+    "all_reads": {
+      "samples": 30,
+      "mean_ms": 24.204,
+      "median_ms": 23.87375,
+      "p90_ms": 25.92753,
+      "p95_ms": 26.696854999999996,
+      "p99_ms": 27.293177,
+      "min_ms": 22.7772,
+      "max_ms": 27.3044,
+      "std_ms": 1.2088892714664428
+    },
+    "first_read_ms_likely_cold": 27.2657,
+    "warm_reads": {
+      "samples": 29,
+      "mean_ms": 24.098424137931033,
+      "median_ms": 23.859,
+      "p90_ms": 25.58594,
+      "p95_ms": 25.96868,
+      "p99_ms": 26.939616,
+      "min_ms": 22.7772,
+      "max_ms": 27.3044,
+      "std_ms": 1.0850893752018684
+    },
+    "shape_consistent": true,
+    "hash_consistent": true,
+    "note": "'first_read_ms_likely_cold' KHÔNG đảm bảo cold thật (OS page cache có thể đã warm từ trước lần chạy benchmark này — vd IDE, lệnh cat, backup tool). Muốn cold thật cần drop OS cache thủ công (vd `sync; echo 3 > /proc/sys/vm/drop_caches` trên Linux, cần quyền root) TRƯỚC khi chạy scenario này, hoặc restart máy."
+  },
+  "scenario_d_filter": {
+    "_column_health": {
+      "ROE (%)": {
+        "exists": true,
+        "raw_dtype": "float64",
+        "non_null_after_to_numeric": 1213,
+        "non_null_pct": 78.56,
+        "sample_raw_values": [
+          "6.82",
+          "0.93",
+          "5.96"
+        ]
+      },
+      "P/E": {
+        "exists": true,
+        "raw_dtype": "float64",
+        "non_null_after_to_numeric": 725,
+        "non_null_pct": 46.96,
+        "sample_raw_values": [
+          "7.28",
+          "44.62",
+          "6.81"
+        ]
+      },
+      "P/B": {
+        "exists": true,
+        "raw_dtype": "float64",
+        "non_null_after_to_numeric": 796,
+        "non_null_pct": 51.55,
+        "sample_raw_values": [
+          "0.51",
+          "0.4",
+          "0.59"
+        ]
+      },
+      "D/E": {
+        "exists": true,
+        "raw_dtype": "float64",
+        "non_null_after_to_numeric": 968,
+        "non_null_pct": 62.69,
+        "sample_raw_values": [
+          "0.55",
+          "0.55",
+          "0.6"
+        ]
+      },
+      "Market Cap": {
+        "exists": true,
+        "raw_dtype": "float64",
+        "non_null_after_to_numeric": 1544,
+        "non_null_pct": 100.0,
+        "sample_raw_values": [
+          "0.0",
+          "2768011391900.0",
+          "0.0"
+        ]
+      },
+      "Volume": {
+        "exists": true,
+        "raw_dtype": "float64",
+        "non_null_after_to_numeric": 1544,
+        "non_null_pct": 100.0,
+        "sample_raw_values": [
+          "0.0",
+          "863300.0",
+          "174200.0"
+        ]
+      },
+      "Exchange": {
+        "exists": true,
+        "raw_dtype": "object",
+        "non_null_after_to_numeric": 0,
+        "non_null_pct": 0.0,
+        "sample_raw_values": [
+          "'UPCOM'",
+          "'HOSE'",
+          "'UPCOM'"
+        ]
+      },
+      "Sector": {
+        "exists": true,
+        "raw_dtype": "object",
+        "non_null_after_to_numeric": 0,
+        "non_null_pct": 0.0,
+        "sample_raw_values": [
+          "'Hàng tiêu dùng không thiết yếu'",
+          "'Nguyên vật liệu'",
+          "'Chưa phân loại'"
+        ]
+      },
+      "Date": {
+        "exists": true,
+        "raw_dtype": "datetime64[ns]",
+        "non_null_after_to_numeric": 1544,
+        "non_null_pct": 100.0,
+        "sample_raw_values": [
+          "Timestamp('2026-08-28 00:00:00')",
+          "Timestamp('2026-08-28 00:00:00')",
+          "Timestamp('2026-08-28 00:00:00')"
+        ]
+      }
+    },
+    "Q1_no_filter": {
+      "samples": 200,
+      "mean_ms": 0.00138,
+      "median_ms": 0.001,
+      "p90_ms": 0.0012,
+      "p95_ms": 0.0014,
+      "p99_ms": 0.0033389999999997827,
+      "min_ms": 0.0007,
+      "max_ms": 0.0417,
+      "std_ms": 0.003401029255975314,
+      "error_rate": 0.0,
+      "output_rows": 1544
+    },
+    "Q2_single_roe": {
+      "samples": 200,
+      "mean_ms": 0.7878525,
+      "median_ms": 0.65535,
+      "p90_ms": 1.18032,
+      "p95_ms": 1.3409349999999998,
+      "p99_ms": 2.0569829999999985,
+      "min_ms": 0.556,
+      "max_ms": 2.3794,
+      "std_ms": 0.3046707265126566,
+      "error_rate": 0.0,
+      "output_rows": 604
+    },
+    "Q3_five_conditions": {
+      "samples": 200,
+      "mean_ms": 3.6664945,
+      "median_ms": 3.48075,
+      "p90_ms": 4.173749999999999,
+      "p95_ms": 4.462089999999999,
+      "p99_ms": 5.049298999999997,
+      "min_ms": 3.1366,
+      "max_ms": 11.6127,
+      "std_ms": 0.6894085920698625,
+      "error_rate": 0.0,
+      "output_rows": 498
+    },
+    "Q4_exchange_sector": {
+      "samples": 200,
+      "mean_ms": 3.8382025,
+      "median_ms": 3.44105,
+      "p90_ms": 5.50573,
+      "p95_ms": 6.383704999999995,
+      "p99_ms": 8.573756999999993,
+      "min_ms": 2.4289,
+      "max_ms": 12.6555,
+      "std_ms": 1.3648888794490743,
+      "error_rate": 0.0,
+      "output_rows": 68
+    },
+    "Q5_complex_10conds": {
+      "samples": 200,
+      "mean_ms": 10.830609,
+      "median_ms": 9.90205,
+      "p90_ms": 14.880949999999999,
+      "p95_ms": 15.683899999999998,
+      "p99_ms": 17.774729999999956,
+      "min_ms": 7.7542,
+      "max_ms": 54.9355,
+      "std_ms": 3.9565917916458098,
+      "error_rate": 0.0,
+      "output_rows": 278
+    }
+  },
+  "scenario_wifeed_parse": {
+    "sample_file": "D:\\Program Files\\Coding Projects\\idx_2\\vss_v1.1\\benchmarks\\wifeed_output.txt",
+    "raw_records": 1691,
+    "parse_all_ms": {
+      "samples": 100,
+      "mean_ms": 15.113843,
+      "median_ms": 14.562349999999999,
+      "p90_ms": 16.715420000000005,
+      "p95_ms": 17.827515,
+      "p99_ms": 19.55667000000005,
+      "min_ms": 12.8912,
+      "max_ms": 29.5428,
+      "std_ms": 1.9055074166874817
+    },
+    "parse_and_filter_stocks_ms": {
+      "samples": 100,
+      "mean_ms": 15.865339,
+      "median_ms": 15.354949999999999,
+      "p90_ms": 17.58828,
+      "p95_ms": 18.937095,
+      "p99_ms": 20.887745000000002,
+      "min_ms": 13.9538,
+      "max_ms": 21.2486,
+      "std_ms": 1.4248523562738
+    },
+    "error_rate": 0.0,
+    "output_rows": {
+      "total_all_symbols": 1691,
+      "stocks_with_ceiling": 1643,
+      "index_symbols_found": 5,
+      "excluded_no_ceiling": 48
+    },
+    "manual_api_fetch_sample": {
+      "source": "user_reported_manual_run",
+      "note": "Do người dùng tự gọi API Wifeed thật và cung cấp thủ công — KHÔNG phải kết quả đo tự động của script này. N=1, không có phân phối P50/P95. Không dùng số này để công bố SLA.",
+      "recorded_at_vn": "2026-08-29 10:25:00",
+      "elapsed_seconds": 2.1
+    }
+  },
+  "scenario_cache_invalidation": {
+    "market_cache_warm_hit_ms": {
+      "samples": 300,
+      "mean_ms": 0.0013096666666666667,
+      "median_ms": 0.0012,
+      "p90_ms": 0.0014,
+      "p95_ms": 0.0016,
+      "p99_ms": 0.0020589999999999463,
+      "min_ms": 0.0011,
+      "max_ms": 0.0152,
+      "std_ms": 0.0010428198416899356
+    },
+    "market_cache_reload_after_invalidate_ms": {
+      "samples": 20,
+      "mean_ms": 2336.43034,
+      "median_ms": 2215.63325,
+      "p90_ms": 2659.07721,
+      "p95_ms": 2708.8485750000004,
+      "p99_ms": 3229.706594999999,
+      "min_ms": 2134.8772,
+      "max_ms": 3359.9211,
+      "std_ms": 290.1220104254094
+    },
+    "merge_eod_write_ms": {
+      "samples": 5,
+      "mean_ms": 2342.97774,
+      "median_ms": 2333.5999,
+      "p90_ms": 2388.0939399999997,
+      "p95_ms": 2405.60452,
+      "p99_ms": 2419.612984,
+      "min_ms": 2310.7404,
+      "max_ms": 2423.1151,
+      "std_ms": 41.40482997596295
+    },
+    "merge_eod_cache_cleared_every_time": true,
+    "snapshot_df_unaffected_by_eod_merge": true,
+    "snapshot_coherency_note": "True nghĩa là ĐÚNG như tài liệu nội bộ ghi nhận: EOD merge KHÔNG làm snapshot_df (nguồn dữ liệu UI) tự làm mới theo. Đây là rủi ro cache-coherency thật của hệ thống, không phải lỗi của benchmark."
+  },
+  "scenario_h_thread_safety": {
+    "n_threads": 20,
+    "build_count": 1,
+    "error_count": 0,
+    "errors": [],
+    "deadlock_count": 0,
+    "total_time_s": 30.599,
+    "shape_consistent": true,
+    "hash_consistent": true,
+    "threads_completed": 20,
+    "pass": true,
+    "note": "threading.Lock/Barrier chỉ đồng bộ trong CÙNG 1 process. Nếu Gunicorn chạy nhiều worker, mỗi worker có lock riêng — 'build_count == 1' chỉ đúng trong phạm vi 1 process (mục 5.8 PDF)."
+  }
+}

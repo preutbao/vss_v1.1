@@ -411,7 +411,14 @@ def render_idx_mini_chart(is_open, n_intervals, symbol):
             from src.backend.wifeed_updater import get_realtime_index
             rt_idx = get_realtime_index()
             if rt_idx and symbol in rt_idx:
-                rt_close = rt_idx[symbol]
+                # [FIX] _realtime_index[symbol] là 1 dict {"close":..., "change_pct":...}
+                # (xem wifeed_updater.py _save_realtime_cache), KHÔNG PHẢI số float.
+                # Trước đây so sánh thẳng `rt_close > 0` với cả dict -> TypeError,
+                # bị nuốt bởi except Exception ở dưới -> is_live luôn False ->
+                # UI mãi hiện ngày EOD cũ trong parquet, không bao giờ chuyển
+                # sang giờ live dù API đã có giá mới trong ngày.
+                raw = rt_idx[symbol]
+                rt_close = raw.get("close") if isinstance(raw, dict) else raw
                 if rt_close and rt_close > 0:
                     chg_1d  = (rt_close - prev) / prev * 100 if prev else 0
                     latest  = rt_close
@@ -430,12 +437,15 @@ def render_idx_mini_chart(is_open, n_intervals, symbol):
         lo52 = float(df_full.tail(252)[close_col].min())
         pct_from_hi = (latest - hi52) / hi52 * 100
         vol_col = vol_col_name if vol_col_name in df_full.columns else None
-        vol_avg = float(df_full.tail(20)[vol_col].mean()) if vol_col else None
+        # [ĐỔI] Thay vì trung bình 20 phiên (không đủ lịch sử Volume vì
+        # index.parquet mới được vá gần đây), lấy đúng khối lượng phiên gần
+        # nhất — đơn giản, không gây hiểu lầm về số phiên thật sự có dữ liệu.
+        vol_latest = float(df_full[vol_col].dropna().iloc[-1]) if vol_col and df_full[vol_col].notna().any() else None
 
         import pytz
         from datetime import datetime as _dt
         if is_live:
-            last_date_str = _dt.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%d/%m/%y %H:%M")
+            last_date_str = df_full["Date"].max().strftime("%d/%m/%y")
         else:
             last_date_str = df_full["Date"].max().strftime("%d/%m/%y")
 
@@ -478,10 +488,10 @@ def render_idx_mini_chart(is_open, n_intervals, symbol):
             stat_row("1 tuần",    p1w_txt, p1w_col),
             stat_row("1 tháng",   p1m_txt, p1m_col),
             stat_row("1 năm",     p1y_txt, p1y_col),
-            stat_row("52W Cao",   f"{int(hi52):,}", "#f59e0b"),
-            stat_row("52W Thấp",  f"{int(lo52):,}", "#f59e0b"),
+            stat_row("Đỉnh 52W",   f"{int(hi52):,}", "#f59e0b"),
+            stat_row("Đáy 52W",  f"{int(lo52):,}", "#f59e0b"),
             stat_row("Cách đỉnh", f"{pct_from_hi:.1f}%", "#ef4444" if pct_from_hi < -5 else "#10b981"),
-            stat_row("KL TB 20P", f"{int(vol_avg/1e6):.0f}M" if vol_avg else "–", "#7fa8cc"),
+            stat_row("KL Phiên GN", f"{int(vol_latest/1e6):.0f}M" if vol_latest else "–", "#7fa8cc"),
             stat_row("Cập nhật",  last_date_str, "#484f58"),
         ], style={"display": "grid", "gridTemplateColumns": "1fr 1fr", "alignContent": "start"})
 
@@ -540,6 +550,3 @@ def render_idx_mini_chart(is_open, n_intervals, symbol):
             )],
         ))
         return empty_fig, "–", {"color": "#484f58", "fontSize": "11px"}, []
-
-    
-    
