@@ -18,6 +18,29 @@ logger = logging.getLogger(__name__)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL   = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
+# ── PHÁT HIỆN SDK GEMINI ĐANG CÀI ĐƯỢC TRÊN MÁY NÀY ─────────────────────────
+# Một số máy chỉ cài được google-generativeai (SDK cũ), một số máy khác lại
+# chỉ cài được google-genai (SDK mới, package google.genai). Thay vì hardcode
+# 1 trong 2 (như bản cũ chỉ import google.genai và crash nếu thiếu), tự dò
+# xem máy đang chạy có SDK nào thì dùng SDK đó.
+_GENAI_BACKEND = None   # "new" | "old" | None (không cài được cái nào)
+
+try:
+    from google import genai as _genai_new
+    from google.genai import types as _genai_new_types
+    _GENAI_BACKEND = "new"
+    logger.info("✅ Dùng SDK google-genai (mới)")
+except ImportError:
+    try:
+        import google.generativeai as _genai_old
+        _GENAI_BACKEND = "old"
+        logger.info("✅ Dùng SDK google-generativeai (cũ)")
+    except ImportError:
+        logger.warning(
+            "⚠️ Không tìm thấy cả google-genai lẫn google-generativeai. "
+            "Chatbot sẽ báo lỗi khi user gọi."
+        )
+
 # ── SYSTEM PROMPT VINANCEAI ───────────────────────────────────────────────────
 VINANCE_SYSTEM_PROMPT = """
 Bạn là **VinanceAI** – chuyên gia tài chính và chứng khoán hàng đầu Việt Nam (HOSE, HNX, UPCOM) với hơn 20 năm kinh nghiệm thực chiến.
@@ -39,19 +62,18 @@ Nhiệm vụ của bạn là phân tích dữ liệu thị trường và cung c�
 - 🎯 **Hành động (Khuyến nghị tham khảo):** [Vùng mua/Bán/Cắt lỗ theo Hồ sơ rủi ro của người dùng]
 """
 def _call_gemini(messages: list, stock_context: dict = None, screener_context: str = "") -> str:
-    """Gọi Gemini API — đơn giản, không double-retry."""
+    """Gọi Gemini API — tự chọn SDK mới (google-genai) hoặc cũ
+    (google-generativeai) tùy máy đang cài được cái nào."""
     if not GEMINI_API_KEY:
         return "⚠️ Chưa cấu hình GEMINI_API_KEY."
 
-    try:
-        from google import genai
-        from google.genai import types
-    except ImportError:
-        return "Chưa cài google-genai. Chạy: pip install google-genai"
+    if _GENAI_BACKEND is None:
+        return ("Chưa cài SDK Gemini. Chạy MỘT trong hai lệnh sau:\n"
+                 "  pip install google-genai\n"
+                 "  pip install google-generativeai")
 
-    # ── Xây dựng system prompt ──
+    # ── Xây dựng system prompt (giữ nguyên logic cũ) ──
     system_text = VINANCE_SYSTEM_PROMPT
-
     if screener_context:
         system_text += screener_context
 
@@ -77,63 +99,37 @@ def _call_gemini(messages: list, stock_context: dict = None, screener_context: s
 Ưu tiên phân tích mã {ticker} khi user hỏi về cổ phiếu.
 """
 
-    # ── Chuyển đổi history sang format Gemini ──
-    # Gemini dùng role "user" / "model", không có "system"
-    # → Ghép system prompt vào tin nhắn đầu tiên của user
+    # ── Chuyển đổi history sang format chung (role: user/model + text) ──
     gemini_history = []
     for i, msg in enumerate(messages):
         role = msg.get("role", "user")
         if role == "assistant":
             role = "model"
-        
+
         parts = msg.get("parts", [])
         if parts and isinstance(parts, list):
             text = parts[0].get("text", "")
         else:
             text = str(msg.get("content", ""))
-        
+
         if not text:
             continue
-            
-        # Ghép system prompt vào message user đầu tiên
+
         if i == 0 and role == "user":
             text = f"{system_text}\n\n---\n\nCâu hỏi của người dùng: {text}"
-        
-        gemini_history.append({
-            "role": role,
-            "parts": [{"text": text}]
-        })
+
+        gemini_history.append({"role": role, "text": text})
 
     if not gemini_history:
         return "Vui lòng nhập câu hỏi."
 
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
-
-        # Chuyển đổi history sang format mới (Content objects)
-        contents = []
-        for msg in gemini_history:
-            role = msg["role"]  # "user" hoặc "model"
-            text = msg["parts"][0]["text"]
-            contents.append(
-                types.Content(
-                    role=role,
-                    parts=[types.Part(text=text)]
-                )
-            )
-
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=contents,
-            config=types.GenerateContentConfig(
-                max_output_tokens=600,
-                temperature=0.7,
-            ),
-        )
-        return response.text
-
+        if _GENAI_BACKEND == "new":
+            return _call_gemini_new_sdk(gemini_history)
+        else:
+            return _call_gemini_old_sdk(gemini_history)
     except Exception as e:
-        print(f"🔴 Lỗi Gemini API: {e}") # Thêm dòng này để debug
+        print(f"🔴 Lỗi Gemini API: {e}")
         err = str(e).lower()
         if "quota" in err or "429" in err or "resource" in err:
             return "⚠️ Gemini API đang bận. Vui lòng thử lại sau 10 giây."
@@ -141,6 +137,45 @@ def _call_gemini(messages: list, stock_context: dict = None, screener_context: s
             return "❌ GEMINI_API_KEY không hợp lệ. Kiểm tra lại."
         logger.error(f"Gemini error: {e}")
         return f"❌ Lỗi kết nối Gemini: {str(e)[:100]}"
+
+
+def _call_gemini_new_sdk(gemini_history: list) -> str:
+    """Gọi bằng SDK mới: google-genai (package `google.genai`)."""
+    client = _genai_new.Client(api_key=GEMINI_API_KEY)
+    contents = [
+        _genai_new_types.Content(
+            role=m["role"], parts=[_genai_new_types.Part(text=m["text"])]
+        )
+        for m in gemini_history
+    ]
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=contents,
+        config=_genai_new_types.GenerateContentConfig(
+            max_output_tokens=600,
+            temperature=0.7,
+        ),
+    )
+    return response.text
+
+
+def _call_gemini_old_sdk(gemini_history: list) -> str:
+    """Gọi bằng SDK cũ: google-generativeai (package `google.generativeai`)."""
+    _genai_old.configure(api_key=GEMINI_API_KEY)
+    model = _genai_old.GenerativeModel(GEMINI_MODEL)
+
+    contents = [
+        {"role": m["role"], "parts": [m["text"]]}
+        for m in gemini_history
+    ]
+    response = model.generate_content(
+        contents,
+        generation_config=_genai_old.types.GenerationConfig(
+            max_output_tokens=600,
+            temperature=0.7,
+        ),
+    )
+    return response.text
 
 
 # ── DỮ LIỆU SCREENER CHO CHATBOT (cached, rebuild mỗi 5 phút) ────────────────

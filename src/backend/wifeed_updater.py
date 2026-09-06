@@ -28,19 +28,33 @@ _PROCESSED_DIR = os.path.join(_BASE_DIR, "data", "processed")
 _CACHE_PATH    = os.path.join(_PROCESSED_DIR, "realtime_cache.parquet")
 _PRICE_PATH    = os.path.join(_PROCESSED_DIR, "market_prices.parquet")
 _WIFEED_URL    = "https://wifeed.vn/api/du-lieu-gia-eod/ohcl"
+_WIFEED_URL_FS = "https://wifeed.vn/api/tai-chinh-doanh-nghiep/bctc"
 _TZ_VN         = pytz.timezone("Asia/Ho_Chi_Minh")
 # Giờ giao dịch (giờ VN)
 _TRADING_START = dtime(9, 0)
 _TRADING_END   = dtime(14, 45)
 _EOD_CONFIRM   = dtime(15, 30)   # 1 lần cuối xác nhận EOD # dời trễ 30 phút, đảm bảo Wifeed đã settle GD thỏa thuận
-_EOD_CUTOFF    = dtime(17, 0)   # Cho phép fetch EOD đến 17:00
-                                 # (Wifeed giữ data cuối ngày đến tối)
+
+
+_EOD_CUTOFF    = dtime(20, 0)   # [SỬA] Nâng từ 17:00 → 20:00 — đúng với comment
+                                 # gốc "Wifeed giữ data cuối ngày đến tối", và để
+                                 # scheduler/startup vẫn hoạt động khi mở app trễ
+                                 # (18h-20h), thay vì bị khóa cứng sau 17h.
+
+# [MỚI] Cơ chế force-merge KHÔNG dựa vào giờ cố định trên đồng hồ (vì máy local
+# có thể mở app bất kỳ lúc nào 15h-20h) — mà dựa vào THỜI GIAN ĐÃ THỬ kể từ lần
+# đầu tiên trong ngày, cộng với 1 deadline cuối để chốt trước khi scheduler dừng.
+_EOD_FORCE_GRACE_SECONDS = 1800        # 30 phút kể từ lần thử EOD đầu tiên trong ngày
+_EOD_FINAL_DEADLINE      = dtime(19, 50)  # gần sát _EOD_CUTOFF, ép merge bất kể elapsed
+
+
 # Khoảng cách tối thiểu giữa 2 request (giây) — Wifeed rate limit.
 # Đọc từ biến môi trường WIFEED_FETCH_INTERVAL_SECONDS để mỗi môi trường tự
 # chỉnh riêng (vd: local test 60s cho nhanh, HF Space đặt 3600s để tiết kiệm
 # quota/tránh rate-limit) mà KHÔNG cần sửa code — chỉ set env var tương ứng.
 # Áp dụng cho CẢ giá lẫn index vì 2 loại dữ liệu này lấy chung 1 lần gọi API
 # trong _fetch_wifeed() → dùng chung 1 interval là đủ, không cần tách riêng.
+
 try:
     _MIN_INTERVAL = int(os.environ.get("WIFEED_FETCH_INTERVAL_SECONDS", "60"))
 except ValueError:
@@ -49,6 +63,19 @@ except ValueError:
         "dùng mặc định 60s."
     )
     _MIN_INTERVAL = 60
+
+# [MỚI] Giây cố định trong mỗi phút để fetch (VD: 5 -> luôn chạy lúc
+# HH:MM:05) — thay vì neo theo giây lẻ lúc app khởi động. Có thể chỉnh
+# qua env var nếu muốn buffer dài hơn (Wifeed cập nhật chậm) hoặc ngắn
+# hơn (muốn data sớm nhất có thể).
+try:
+    _FETCH_OFFSET_SECONDS = int(os.environ.get("WIFEED_FETCH_OFFSET_SECONDS", "5"))
+except ValueError:
+    logger.warning(
+        "[Wifeed] WIFEED_FETCH_OFFSET_SECONDS không phải số hợp lệ — "
+        "dùng mặc định 5s."
+    )
+    _FETCH_OFFSET_SECONDS = 5
 
 # ── Ngày nghỉ giao dịch (HOSE/HNX) — KHÔNG tự tính được bằng weekday(),
 # vì phụ thuộc lịch âm (Tết) và thông báo riêng từng năm của Sở GDCK.
@@ -88,6 +115,8 @@ _VN_HOLIDAYS: set = {
 _last_fetch_ts:  float        = 0.0          # unix timestamp lần fetch cuối
 _eod_appended:   bool         = False        # đã append EOD hôm nay chưa
 _eod_date:       str          = ""           # "YYYY-MM-DD" của ngày đã append
+_eod_first_attempt_ts:   float = 0.0   # unix ts của lần thử EOD ĐẦU TIÊN hôm nay
+_eod_first_attempt_date: str   = ""    # "YYYY-MM-DD" tương ứng
 _index_appended: bool         = False        # đã append index hôm nay chưa (guard mới)
 _index_date:     str          = ""           # "YYYY-MM-DD" của ngày đã append index
 _cache_lock:     threading.Lock = threading.Lock()
@@ -100,6 +129,31 @@ _realtime_index: dict = {}   # { "VNINDEX": 1821.32, "VN30": 1970.01, ... }
 def get_realtime_index() -> dict:
     """Giá realtime các chỉ số thị trường."""
     return _realtime_index
+
+def get_eod_status() -> str:
+    """
+    Trạng thái EOD hiện tại — dùng cho UI hiển thị badge.
+    "closed"      : hôm nay KHÔNG phải ngày giao dịch (T7/CN/nghỉ lễ)
+    "before_open" : chưa tới giờ mở cửa (trước 09:00)
+    "live"        : đang trong phiên (09:00–14:45)
+    "pending_eod" : đã đóng cửa, đang chờ chốt EOD (14:45–17:00/20:00, chưa merge xong)
+    "eod_done"    : đã merge xong EOD hôm nay
+    """
+    # [FIX] Thiếu hẳn check ngày giao dịch -> Thứ 7/CN trong khung
+    # 09:00-14:45 bị trả về "live" (đúng bug vừa phát hiện). Check trước
+    # tiên, dùng chung _is_market_open_day() với _is_trading_time().
+    if not _is_market_open_day():
+        return "closed"
+    now_t = _now_vn().time()
+    today_str = _now_vn().strftime("%Y-%m-%d")
+    if now_t < _TRADING_START:
+        return "before_open"
+    if now_t < _TRADING_END:
+        return "live"
+    if _eod_appended and _eod_date == today_str:
+        return "eod_done"
+    return "pending_eod"
+
 # Thêm path index parquet
 _INDEX_PATH = os.path.join(_PROCESSED_DIR, "index.parquet")
 def _append_index_to_parquet(df_raw: pd.DataFrame) -> None:
@@ -215,8 +269,25 @@ def get_snapshot_timestamp() -> float:
 # ── Helpers ──────────────────────────────────────────────────────────────────
 def _now_vn() -> datetime:
     return datetime.now(_TZ_VN)
+def _is_market_open_day(d: date = None) -> bool:
+    """
+    [MỚI] Định nghĩa DUY NHẤT cho "ngày giao dịch" — Thứ 2-6 VÀ không nằm
+    trong _VN_HOLIDAYS. Trước đây mỗi hàm (_fetch_job, get_eod_status,
+    run_startup_backfill) tự check riêng, không đồng bộ -> _fetch_job() và
+    get_eod_status() BỊ THIẾU hẳn điều kiện weekday() < 5, khiến hệ thống
+    coi Thứ 7/CN là ngày giao dịch bình thường (fetch + append EOD nhầm).
+    Dùng hàm này ở MỌI nơi cần biết "hôm nay có phải ngày GD không" để
+    tránh lặp lại đúng bug này lần nữa.
+    """
+    if d is None:
+        d = _now_vn().date()
+    return d.weekday() < 5 and d not in _VN_HOLIDAYS
+
 def _is_trading_time() -> bool:
-    """Trả về True nếu đang trong khung giờ giao dịch hoặc giờ xác nhận EOD."""
+    """Trả về True nếu đang trong khung giờ giao dịch hoặc giờ xác nhận EOD,
+    VÀ hôm nay là ngày giao dịch (Thứ 2-6, không nghỉ lễ)."""
+    if not _is_market_open_day():
+        return False
     t = _now_vn().time()
     return _TRADING_START <= t <= _EOD_CUTOFF
 def _is_eod_time() -> bool:
@@ -277,12 +348,23 @@ def _fetch_wifeed() -> tuple[pd.DataFrame, pd.DataFrame]:
     now = time.time()
     elapsed = now - _last_fetch_ts
     if elapsed < _MIN_INTERVAL:
-        wait = _MIN_INTERVAL - elapsed
+        # [FIX] KHÔNG sleep nữa — sleep ở đây tạo vòng lặp phản hồi dương:
+        # mỗi lần sleep đẩy mốc hoàn tất request trễ hơn, khiến lần fetch
+        # sau phải sleep bù NHIỀU HƠN, cộng dồn vô hạn (đã đo được: 4.3s →
+        # 7.0s → 9.7s → ... → 22.4s, tăng đều mỗi chu kỳ). Nguyên nhân sâu
+        # xa: scheduler (IntervalTrigger/CronTrigger) ĐÃ tự đảm bảo khoảng
+        # cách ≥60s giữa các lần TRIGGER (neo theo lịch cố định, không
+        # trôi) — throttle thủ công này chỉ cần thiết để phòng trường hợp
+        # có 2 nguồn gọi _fetch_wifeed() gần nhau (VD: run_startup_backfill
+        # gọi ngay trước khi scheduler tick đầu tiên kịp chạy). Trong
+        # trường hợp đó, đúng cách xử lý là BỎ QUA lần gọi này (an toàn với
+        # rate limit — không hề fetch sớm hơn 60s), để lần trigger kế tiếp
+        # của scheduler tự xử lý — không sleep-rồi-vẫn-fetch như trước.
         logger.warning(
-            f"[Wifeed] Gọi quá sớm ({elapsed:.1f}s < {_MIN_INTERVAL}s). "
-            f"Đợi thêm {wait:.1f}s để tuân thủ rate limit."
+            f"[Wifeed] Gọi quá sớm ({elapsed:.1f}s < {_MIN_INTERVAL}s) — "
+            f"bỏ qua lần gọi này, đợi lần trigger kế tiếp."
         )
-        time.sleep(wait)
+        return pd.DataFrame(), pd.DataFrame()
     try:
         t0  = time.perf_counter()
         resp = requests.get(
@@ -312,8 +394,17 @@ def _fetch_wifeed() -> tuple[pd.DataFrame, pd.DataFrame]:
     except Exception as e:
         logger.error(f"[Wifeed] Lỗi không xác định: {e}", exc_info=True)
     return pd.DataFrame(), pd.DataFrame()
+
+
 _ROOT_PUT_URL   = "https://wifeed.vn/api/du-lieu-gia-eod/root-put"
 _MARKET_SUFFIX  = {6: ".HM", 7: ".HN", 8: ".HNO"}
+# [MỚI] Pattern dùng chung để nhận diện/bỏ đuôi sàn — trước đây rải rác
+# 3 nơi (_filter_known_tickers, _load_exchange_map, root-put) mỗi nơi tự
+# viết lại chuỗi regex y hệt. Gom về 1 hằng số để _merge_eod_into_price_parquet
+# tái dùng, tránh lệch nhau nếu sau này đổi format đuôi sàn.
+_EXCHANGE_SUFFIX_PATTERN = r'\.(HM|HN|HNO)$'
+
+
 def _fetch_root_put_eod(trading_date: str) -> pd.DataFrame:
     """
     Gọi bulk root-put (KHÔNG truyền symbol) để lấy TOÀN THỊ TRƯỜNG cho 1 ngày,
@@ -429,8 +520,45 @@ def _save_realtime_cache(df: pd.DataFrame, df_all: pd.DataFrame = None) -> None:
                 }
         if _realtime_index:
             logger.info(f"[Wifeed] Index realtime: { {k: v['close'] for k, v in _realtime_index.items()} }")
+
+_MATCH_RATIO_THRESHOLD = {
+    "HOSE": 0.85,
+    "HNX":  0.75,
+    "UPCOM": 0.50,
+}
+_MATCH_RATIO_DEFAULT = 0.80
+
+def _load_exchange_map() -> dict:
+    """
+    Map BASE Ticker (không đuôi sàn, vd "MBB") -> Exchange (HOSE/HNX/UPCOM),
+    suy từ đuôi của Ticker trong market_prices.parquet — giống logic
+    _strip_exchange_suffix() trong data_loader.py. KHÔNG đọc cột "Exchange"
+    từ parquet vì cột này không tồn tại trên đĩa (data_loader chỉ tạo nó
+    trong RAM lúc load, không ghi lại file).
+    """
+    try:
+        if os.path.exists(_PRICE_PATH):
+            df_ex = pd.read_parquet(_PRICE_PATH, columns=["Ticker"])
+            df_ex = df_ex.drop_duplicates("Ticker")
+            tickers = df_ex["Ticker"].astype(str)
+
+            exchange_map = {}
+            for ticker in tickers:
+                if ticker.endswith(".HNO"):
+                    exchange_map[ticker[:-4]] = "UPCOM"
+                elif ticker.endswith(".HN"):
+                    exchange_map[ticker[:-3]] = "HNX"
+                elif ticker.endswith(".HM"):
+                    exchange_map[ticker[:-3]] = "HOSE"
+            return exchange_map
+    except Exception as e:
+        logger.warning(f"[Wifeed] Không đọc được Exchange map: {e}")
+    return {}
+
+
+
 def _append_eod_to_parquet(df: pd.DataFrame) -> None:
-    global _eod_appended, _eod_date
+    global _eod_appended, _eod_date, _eod_first_attempt_ts, _eod_first_attempt_date
     today_str = _now_vn().strftime("%Y-%m-%d")
     if _eod_appended and _eod_date == today_str:
         logger.info(f"[Wifeed] EOD đã được append hôm nay ({today_str}), bỏ qua")
@@ -438,6 +566,17 @@ def _append_eod_to_parquet(df: pd.DataFrame) -> None:
     if df.empty:
         logger.warning("[Wifeed] DataFrame rỗng, không append EOD")
         return
+    # [MỚI] Ghi nhận lần thử EOD đầu tiên trong ngày — dùng để tính "đã thử bao
+    # lâu rồi" bất kể app được mở lúc mấy giờ.
+    if _eod_first_attempt_date != today_str:
+        _eod_first_attempt_date = today_str
+        _eod_first_attempt_ts   = time.time()
+    elapsed_since_first = time.time() - _eod_first_attempt_ts
+    now_t = _now_vn().time()
+    auto_force = (
+        elapsed_since_first >= _EOD_FORCE_GRACE_SECONDS
+        or now_t >= _EOD_FINAL_DEADLINE
+    )
     keep_cols = ["Ticker", "Date", "Price Open", "Price High",
              "Price Low", "Price Close", "Volume", "Turnover"]
     df_eod = df[[c for c in keep_cols if c in df.columns]].copy()
@@ -449,32 +588,50 @@ def _append_eod_to_parquet(df: pd.DataFrame) -> None:
         vol_map    = df_root.set_index("_base_ticker")["Volume"].to_dict()
         turn_map   = df_root.set_index("_base_ticker")["Turnover"].to_dict()
         ticker_map = df_root.set_index("_base_ticker")["Ticker"].to_dict()
-        n_matched  = df_eod["_base_ticker"].isin(ticker_map).sum()
+                # [MỚI] Match ratio tách theo sàn — UPCOM cho ngưỡng thấp hơn HOSE/HNX
+        exchange_map = _load_exchange_map()
+        df_eod["_exchange"] = df_eod["_base_ticker"].map(exchange_map).fillna("UNKNOWN")
+        df_eod["_matched"]  = df_eod["_base_ticker"].isin(ticker_map)
 
-        # [FIX] match_ratio phải tính TRƯỚC dòng log dùng nó — bản trước đó
-        # log dùng match_ratio ở đây rồi MỚI gán ở dòng dưới -> UnboundLocalError
-        # mỗi khi root-put CÓ dữ liệu (tức là MỌI ngày giao dịch bình thường)
-        # -> EOD không bao giờ merge được, job crash lặp lại mỗi 60s tới 17h.
+        stats = (
+            df_eod.groupby("_exchange")["_matched"]
+            .agg(["sum", "count"])
+            .rename(columns={"sum": "matched", "count": "total"})
+        )
+        stats["ratio"] = stats["matched"] / stats["total"]
+
+        n_matched   = int(df_eod["_matched"].sum())
         match_ratio = n_matched / len(df_eod) if len(df_eod) > 0 else 0
         logger.info(
             f"[Wifeed DEBUG] EOD fetch @ {_now_vn().strftime('%H:%M:%S')} | "
-            f"match_ratio={match_ratio:.1%} | n_matched={n_matched}/{len(df_eod)}"
+            f"match_ratio TỔNG={match_ratio:.1%} ({n_matched}/{len(df_eod)}) | "
+            f"elapsed={elapsed_since_first:.0f}s | " +
+            ", ".join(f"{ex}={row.ratio:.0%} ({int(row.matched)}/{int(row.total)})"
+                      for ex, row in stats.iterrows())
         )
-        # ─── Validate root-put có "đủ" dữ liệu hay chưa ─────────────
-        # Nếu số mã khớp quá ít (<80% tổng mã) → root-put backend có thể
-        # chưa hoàn tất tính toán, KHÔNG lock guard, để job 60s sau retry.
-        if match_ratio < 0.8:
+
+        failing = [
+            ex for ex, row in stats.iterrows()
+            if row.ratio < _MATCH_RATIO_THRESHOLD.get(ex, _MATCH_RATIO_DEFAULT)
+        ]
+        if failing and not auto_force:
             logger.warning(
-                f"[Wifeed] root-put EOD chỉ khớp {n_matched}/{len(df_eod)} "
-                f"({match_ratio:.0%}) — có thể backend chưa settle xong. "
-                f"KHÔNG lock guard, sẽ retry ở lần fetch tiếp theo."
+                f"[Wifeed] Chưa đạt ngưỡng ở sàn: {failing} — có thể backend "
+                f"chưa settle xong (đã thử {elapsed_since_first:.0f}s). "
+                f"KHÔNG lock guard, sẽ retry."
             )
-            return   # ← không set _eod_appended, không merge, thử lại sau 60s
+            return   # không set _eod_appended, không merge, thử lại sau 60s
+        elif failing and auto_force:
+            logger.warning(
+                f"[Wifeed] FORCE MERGE (đã thử {elapsed_since_first:.0f}s hoặc "
+                f"quá deadline {_EOD_FINAL_DEADLINE}) dù sàn {failing} chưa đạt "
+                f"ngưỡng — phần chưa khớp giữ nguyên Volume/Turnover từ ohcl."
+            )
 
         df_eod["Volume"]   = df_eod["_base_ticker"].map(vol_map).fillna(df_eod["Volume"])
         df_eod["Turnover"] = df_eod["_base_ticker"].map(turn_map).fillna(df_eod.get("Turnover", 0))
         df_eod["Ticker"]   = df_eod["_base_ticker"].map(ticker_map).fillna(df_eod["Ticker"])
-        df_eod = df_eod.drop(columns=["_base_ticker"])
+        df_eod = df_eod.drop(columns=["_base_ticker", "_exchange", "_matched"])
         logger.info(f"[Wifeed] Đã override Volume/Turnover từ root-put: {n_matched}/{len(df_eod)} mã khớp")
     else:
         # [FIX] BỎ `return` ở đây — trước đây nếu root-put rỗng hoàn toàn thì
@@ -552,9 +709,33 @@ def _merge_eod_into_price_parquet(df_eod: pd.DataFrame) -> bool:
                 df_existing["Date"] = _to_naive(df_existing["Date"])
                 df_eod["Date"]      = _to_naive(df_eod["Date"])
                 df_combined = pd.concat([df_existing, df_eod], ignore_index=True)
+
+                # [FIX] Dedupe theo BASE TICKER (bỏ đuôi sàn) + Date thay vì
+                # Ticker nguyên văn. Trước đây "MBB" và "MBB.HM" bị coi là 2
+                # mã khác nhau khi dedupe (chuỗi khác nhau), nên khi 1 nguồn
+                # ghi thiếu đuôi sàn (VD mã không khớp root-put), cả 2 dòng
+                # cùng tồn tại song song cho cùng 1 ngày — gây %1D=0.00% sai
+                # (2 dòng "gần nhất" hoá ra cùng 1 ngày) và crash pivot() ở
+                # calculate_robo_allocation (duplicate index). Ưu tiên GIỮ
+                # dòng CÓ đuôi sàn bất kể ghi trước/sau, bằng cách sort để
+                # dòng có đuôi luôn đứng SAU trong nhóm trước khi
+                # drop_duplicates(keep="last").
+                df_combined["_base_dedupe"] = (
+                    df_combined["Ticker"].astype(str)
+                    .str.replace(_EXCHANGE_SUFFIX_PATTERN, '', regex=True)
+                )
+                df_combined["_has_suffix_dedupe"] = (
+                    df_combined["Ticker"].astype(str)
+                    .str.contains(_EXCHANGE_SUFFIX_PATTERN, regex=True)
+                )
+                df_combined = df_combined.sort_values(
+                    ["_base_dedupe", "Date", "_has_suffix_dedupe"]
+                )
                 df_combined = df_combined.drop_duplicates(
-                    subset=["Ticker", "Date"], keep="last"
-                ).sort_values(["Ticker", "Date"])
+                    subset=["_base_dedupe", "Date"], keep="last"
+                )
+                df_combined = df_combined.drop(columns=["_base_dedupe", "_has_suffix_dedupe"])
+                df_combined = df_combined.sort_values(["Ticker", "Date"])
             else:
                 df_combined = df_eod
             df_combined.to_parquet(_PRICE_PATH, index=False)
@@ -629,17 +810,14 @@ def _filter_known_tickers(df: pd.DataFrame) -> pd.DataFrame:
 # ── Job chính chạy bởi scheduler ─────────────────────────────────────────────
 def _fetch_job() -> None:
     global _eod_appended
+    # [SỬA] _is_trading_time() giờ đã tự bao gồm cả check weekday()+holiday
+    # qua _is_market_open_day() -> không cần check riêng _VN_HOLIDAYS ở
+    # đây nữa (tránh lặp code, tránh lệch nhau như bug vừa gặp).
     if not _is_trading_time():
-        logger.debug(f"[Wifeed] Ngoài giờ GD ({_now_vn().strftime('%H:%M')}), bỏ qua")
-        return
-
-    # [FIX] _is_trading_time() chỉ check GIỜ trong ngày, không biết hôm nay
-    # có phải ngày nghỉ lễ hay không — nếu không thêm check này, vào ngày
-    # lễ giữa tuần (Tet, Quốc khánh...) trong khung 09:00-17:00, job vẫn
-    # gọi Wifeed mỗi 60s và có thể tạo dòng EOD "giả" cho 1 ngày market
-    # không hề mở cửa.
-    if _now_vn().date() in _VN_HOLIDAYS:
-        logger.debug(f"[Wifeed] Hôm nay ({_now_vn().strftime('%Y-%m-%d')}) là ngày nghỉ lễ, bỏ qua")
+        logger.debug(
+            f"[Wifeed] Ngoài giờ GD hoặc không phải ngày giao dịch "
+            f"({_now_vn().strftime('%a %H:%M')}), bỏ qua"
+        )
         return
 
     today_str = _now_vn().strftime("%Y-%m-%d")
@@ -665,6 +843,33 @@ def _fetch_job() -> None:
             _eod_appended = False   # mở khóa tạm để cho phép merge lại 1 lần
         _append_eod_to_parquet(df_filtered)
         _append_index_to_parquet(df_all)
+
+def _build_fetch_trigger():
+    """
+    Ưu tiên CronTrigger căn theo mốc giờ tròn (wall-clock) thay vì
+    IntervalTrigger neo theo giây lẻ lúc app khởi động:
+    - _MIN_INTERVAL == 60s (mặc định/local): chạy mỗi phút, đúng giây
+      _FETCH_OFFSET_SECONDS (VD: 10:01:05, 10:02:05, ...).
+    - _MIN_INTERVAL là bội số của 3600s (VD: 3600 trên HF Space để tiết
+      kiệm quota): chạy mỗi N giờ, phút 0, giây _FETCH_OFFSET_SECONDS.
+    - Giá trị khác (hiếm gặp, custom không tròn phút/giờ): fallback về
+      IntervalTrigger như cũ, kèm cảnh báo — không ép căn giờ vô nghĩa.
+    """
+    from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    if _MIN_INTERVAL == 60:
+        return CronTrigger(second=str(_FETCH_OFFSET_SECONDS))
+    if _MIN_INTERVAL % 3600 == 0:
+        hours = _MIN_INTERVAL // 3600
+        return CronTrigger(hour=f"*/{hours}", minute=0, second=_FETCH_OFFSET_SECONDS)
+    logger.warning(
+        f"[Wifeed] WIFEED_FETCH_INTERVAL_SECONDS={_MIN_INTERVAL} không phải "
+        f"60 hoặc bội số của 3600 -> không căn được theo giờ tròn, dùng "
+        f"IntervalTrigger neo theo giờ app khởi động như cũ."
+    )
+    return IntervalTrigger(seconds=_MIN_INTERVAL)
+
 # ── Khởi động scheduler ──────────────────────────────────────────────────────
 def start_wifeed_scheduler() -> None:
     """
@@ -705,7 +910,7 @@ def start_wifeed_scheduler() -> None:
     )
     scheduler.add_job(
         _fetch_job,
-        trigger=IntervalTrigger(seconds=_MIN_INTERVAL),
+        trigger=_build_fetch_trigger(),  # [SỬA] căn theo giờ tròn thay vì IntervalTrigger neo app-start
         id="wifeed_fetch",
         name="Wifeed EOD Fetch",
         replace_existing=True,
@@ -757,7 +962,7 @@ def run_startup_backfill() -> None:
     # [FIX] Thêm điều kiện not-holiday — trước đây chỉ check weekday() < 5,
     # nên các ngày lễ giữa tuần (Tet, 30/4-1/5, Quoc khanh...) vẫn bị coi
     # là "ngày giao dịch", dẫn tới days_missing tính sai (xem _VN_HOLIDAYS).
-    is_trading_day = today_vn.weekday() < 5 and today_vn not in _VN_HOLIDAYS
+    is_trading_day = _is_market_open_day(today_vn)  # [SỬA] dùng chung định nghĩa, tránh lệch 3 nơi
     last_date = None
     # 2. Tìm ngày cuối cùng trong parquet
     if os.path.exists(_PRICE_PATH):
@@ -809,12 +1014,24 @@ def run_startup_backfill() -> None:
             except Exception as e:
                 logger.error(f"[Data Gap] Lỗi khi chạy SSI Fallback: {e}")
                 needs_wifeed_eod = True # Nếu SSI sập, thử dùng Wifeed để vớt vát EOD
-        
+
+        elif days_missing == 0:
+            # [FIX] np.busday_count(begin, end) loại trừ `end` (today_vn), nên
+            # khi TẤT CẢ ngày làm việc TRƯỚC hôm nay đã đủ data, kết quả luôn
+            # ra 0 — kể cả khi hôm nay CHƯA CÓ data. Không có nhánh nào xử lý
+            # days_missing==0 khiến needs_wifeed_eod giữ nguyên False (giá trị
+            # khởi tạo), làm append_today_eod luôn False bất kể mở app lúc nào.
+            # -> Set True để nhường lại cho nhánh append_today_eod (dòng dưới)
+            # tự quyết định qua đúng điều kiện giờ/ngày của nó.
+            needs_wifeed_eod = True
         elif days_missing == 1:
+            # Ngày bị thiếu đã kết thúc phiên từ lâu -> dữ liệu đã chốt, lấy được
             # Ngày bị thiếu đã kết thúc phiên từ lâu -> dữ liệu đã chốt, lấy được
             # bất cứ lúc nào qua root-put (có tham số ngày cụ thể), KHÔNG phụ
             # thuộc hôm nay có phải ngày GD hay không, không phụ thuộc giờ hiện tại.
-            missing_date = last_date + dt.timedelta(days=1)
+            missing_date = pd.Timestamp(
+                np.busday_offset(last_date, 1, roll="forward", holidays=sorted(_VN_HOLIDAYS))
+            ).date()
             missing_date_str = missing_date.strftime("%Y-%m-%d")
             logger.info(f"[Wifeed] Backfill 1 ngày thiếu ({missing_date_str}) qua root-put...")
             try:

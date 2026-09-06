@@ -85,9 +85,15 @@ def _cell(ticker, perf, company, mc_t, tw, th):
     )
 
 
-def _build(df, perf_col, W=1560, H=600):
+def _build(df, perf_col, W=1560, H=600, dark=True):
     HDR = 22
     GAP = 3
+
+    # ── Màu nền theo theme ──
+    sector_hdr_bg   = "#1e2530" if dark else "#ffffff"
+    sector_hdr_text = "#e5e7eb" if dark else "#1e293b"
+    sector_box_bg    = "#161b26" if dark else "#f8fafc"
+    sector_box_border = "#2d3748" if dark else "#e2e8f0"
 
     df = df.copy()
     df["mc"]   = pd.to_numeric(df["Market Cap"], errors="coerce").fillna(0)
@@ -143,9 +149,9 @@ def _build(df, perf_col, W=1560, H=600):
             html.Div(sn, style={
                 "position": "absolute", "top": "0", "left": "0",
                 "width": "100%", "height": f"{HDR}px",
-                "backgroundColor": "#ffffff",
+                "backgroundColor": sector_hdr_bg,
                 "borderBottom": f"2px solid {accent}",
-                "color": "#1e293b", "fontSize": "11px", "fontWeight": "700",
+                "color": sector_hdr_text, "fontSize": "11px", "fontWeight": "700",
                 "display": "flex", "alignItems": "center", "paddingLeft": "8px",
                 "boxSizing": "border-box", "zIndex": "2",
                 "overflow": "hidden", "whiteSpace": "nowrap",
@@ -164,8 +170,8 @@ def _build(df, perf_col, W=1560, H=600):
             "top":    f"{sy + GAP/2:.1f}px",
             "width":  f"{max(sw - GAP, 1):.1f}px",
             "height": f"{max(sh - GAP, 1):.1f}px",
-            "backgroundColor": "#f8fafc",
-            "border": "1px solid #e2e8f0",
+            "backgroundColor": "#1e2530" if dark else "#f8fafc",
+            "border": f"1px solid {'#2d3748' if dark else '#e2e8f0'}",
             "borderRadius": "5px",
             "overflow": "hidden",
         }))
@@ -173,7 +179,7 @@ def _build(df, perf_col, W=1560, H=600):
     return html.Div(out, style={
         "position": "relative",
         "width": "100%", "height": f"{H}px",
-        "backgroundColor": "#f8fafc",
+        "backgroundColor": "#1e2530" if dark else "#f8fafc",
         "borderRadius": "6px", "flexShrink": "0",
     })
 
@@ -183,10 +189,12 @@ def _build(df, perf_col, W=1560, H=600):
     Output("heatmap-html-container", "children"),
     Input("btn-heatmap",             "n_clicks"),
     Input("heatmap-metric",          "value"),
-    Input("heatmap-exchange-filter", "value"),   # ← MỚI: lọc theo sàn
+    Input("heatmap-exchange-filter", "value"),
+    State("theme-store",             "data"),   # ← THÊM
     prevent_initial_call=False,
 )
-def render_heatmap(_, metric, exchange):
+def render_heatmap(_, metric, exchange, theme):
+    dark = (theme == "dark")   # ← THÊM
     try:
         from src.backend.data_loader import get_snapshot_df
         df = get_snapshot_df().copy()
@@ -211,8 +219,7 @@ def render_heatmap(_, metric, exchange):
             ("#ca8a04", "0~-1%"), ("#ea580c", "-1~-3%"),
             ("#dc2626", "-3~-6%"), ("#7f1d1d", "<-6%"),
         ]
-
-        hm = _build(df, perf_col, W=1500, H=600)
+        hm = _build(df, perf_col, W=1500, H=600, dark=(theme == "dark"))
 
         legend_v = html.Div([
             html.Div([
@@ -222,7 +229,7 @@ def render_heatmap(_, metric, exchange):
                     "border": "1px solid rgba(15,23,42,0.10)",
                 }),
                 html.Span(lbl, style={
-                    "fontSize": "10px", "color": "#64748b",
+                    "fontSize": "10px", "color": "#94a3b8" if dark else "#64748b",
                     "fontFamily": "'Sora', sans-serif", "whiteSpace": "nowrap",
                 }),
             ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"})
@@ -230,10 +237,10 @@ def render_heatmap(_, metric, exchange):
         ], style={
             "display": "flex", "flexDirection": "column",
             "padding": "10px 12px",
-            "backgroundColor": "#ffffff",
+            "backgroundColor": "#1e2530" if dark else "#ffffff",
             "borderRadius": "8px",
-            "border": "1px solid #e2e8f0",
-            "boxShadow": "0 4px 24px rgba(15, 23, 42, 0.06)",
+            "border": f"1px solid {'#2d3748' if dark else '#e2e8f0'}",
+            "boxShadow": "0 4px 24px rgba(0, 0, 0, 0.25)" if dark else "0 4px 24px rgba(15, 23, 42, 0.06)",
             "marginLeft": "10px", "flexShrink": "0",
             "alignSelf": "flex-start",
         })
@@ -277,7 +284,7 @@ def toggle_heatmap(n, is_open):
 # PHẦN 2: X-RAY DÒNG TIỀN — HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
 
-_C = {
+_C_LIGHT = {
     "bg":     "#f8fafc",
     "card":   "#ffffff",
     "border": "#e2e8f0",
@@ -291,6 +298,28 @@ _C = {
     "orange": "#fb923c",
     "font":   "'Sora', 'Inter', 'Segoe UI', sans-serif",
 }
+
+_C_DARK = {
+    "bg":     "#0d1117",
+    "card":   "#161b22",
+    "border": "#2d3748",
+    "border2":"#2d3748",
+    "text":   "#e5e7eb",
+    "muted":  "#8b95a5",
+    "accent": "#38bdf8",
+    "green":  "#34d399",
+    "red":    "#f87171",
+    "yellow": "#fbbf24",
+    "orange": "#fb923c",
+    "font":   "'Sora', 'Inter', 'Segoe UI', sans-serif",
+}
+
+# Bộ màu đang active — được swap bởi render_breadth_xray()/render_sector_detail()
+# TRƯỚC KHI gọi các helper (_card, _label, _sbs_bar_row, _methodology_modal)
+# đọc _C[...] — an toàn vì gunicorn chạy --workers 1 --worker-class sync
+# (xem main.py), tức 1 request xử lý xong hoàn toàn mới tới request kế tiếp,
+# không có race condition giữa 2 user xem 2 theme khác nhau cùng lúc.
+_C = _C_DARK
 
 _SECTOR_SUB = {
     "Energy":                 "Dầu khí & Năng lượng",
@@ -378,7 +407,7 @@ def _sbs_bar_row(rank, sector, sbs, delta=None, color="#0ea5e9", n_stocks=0):
                 "backgroundColor": color, "borderRadius": "2px",
                 "transition": "width 0.4s ease",
             }),
-            style={"height": "3px", "backgroundColor": "#e2e8f0",
+            style={"height": "3px", "backgroundColor": _C["border"],
                    "borderRadius": "2px", "marginLeft": "36px"},
         ),
     ], style={
@@ -416,7 +445,7 @@ def _methodology_modal():
                     style={
                         "fontFamily": "JetBrains Mono, monospace",
                         "fontSize": "12px", "color": _C["accent"],
-                        "backgroundColor": "#f8fafc",
+                        "backgroundColor": _C["bg"],
                         "padding": "12px 16px", "borderRadius": "6px",
                         "border": f"1px solid {_C['border']}",
                         "marginBottom": "20px", "overflowX": "auto",
@@ -446,7 +475,7 @@ def _methodology_modal():
                 html.Div(formula, style={
                     "fontSize": "11px", "color": _C["muted"],
                     "fontFamily": "JetBrains Mono, monospace",
-                    "backgroundColor": "#f8fafc",
+                    "backgroundColor": _C["bg"],
                     "padding": "4px 8px", "borderRadius": "4px",
                     "marginBottom": "12px",
                 }),
@@ -513,7 +542,7 @@ def _methodology_modal():
                 ),
             ], style={
                 "marginTop": "16px", "padding": "12px 14px",
-                "backgroundColor": "#f8fafc", "borderRadius": "6px",
+                "backgroundColor": _C["bg"], "borderRadius": "6px",
                 "border": f"1px solid {_C['border']}",
             }),
         ], style={"backgroundColor": _C["card"], "padding": "20px 24px",
@@ -552,9 +581,12 @@ def toggle_methodology_modal(n, is_open):
     Input("btn-heatmap",             "n_clicks"),
     Input("heatmap-exchange-filter", "value"),
     State("heatmap-collapse",        "is_open"),
+    State("theme-store",             "data"),   # ← THÊM
     prevent_initial_call=False,
 )
-def render_breadth_xray(_, exchange, is_open):
+def render_breadth_xray(_, exchange, is_open, theme):
+    global _C
+    _C = _C_DARK if theme == "dark" else _C_LIGHT
     try:
         from src.backend.data_loader import (
             get_market_internals,
@@ -1017,10 +1049,13 @@ def render_breadth_xray(_, exchange, is_open):
     Output("sector-detail-container", "children"),
     Input("selected-sector-store",    "data"),
     State("heatmap-exchange-filter",  "value"),
+    State("theme-store",              "data"),   # ← THÊM
     prevent_initial_call=True,
 )
-def render_sector_detail(selected_sector, exchange):
-    """Radar 6 cánh (fixed size) + trajectory + factor bars + constituents."""
+def render_sector_detail(selected_sector, exchange, theme):
+    global _C
+    _C = _C_DARK if theme == "dark" else _C_LIGHT
+
     if not selected_sector:
         return html.Div()
 

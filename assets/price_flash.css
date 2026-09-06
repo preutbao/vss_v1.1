@@ -1,0 +1,5 @@
+/* assets/price_flash.css */
+.ag-theme-alpine-dark.ssi-screener-grid {
+    --ag-value-change-delta-up-color:   rgba(16, 185, 129, 0.55);  /* nền xanh khi giá TĂNG so với tick trước */
+    --ag-value-change-delta-down-color: rgba(239, 68, 68, 0.55);   /* nền đỏ khi giá GIẢM so với tick trước */
+}

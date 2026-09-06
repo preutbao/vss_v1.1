@@ -1550,8 +1550,10 @@ layout = html.Div([
                         "paginationPageSize": 20,
                         "rowSelection": "single",
                         "animateRows": True,
-                        "enableCellChangeFlash": False,
+                        "getRowId": {"function": "params.data.Ticker"},
                         "rowHeight": 45,
+                        "cellFlashDuration": 700,      # thời gian flash (ms)
+                        "cellFadeDuration":  500,      # thời gian mờ dần sau flash
                         "initialState": {
                             "sort": {
                                 "sortModel": [

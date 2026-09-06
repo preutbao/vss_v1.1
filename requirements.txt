@@ -34,6 +34,7 @@ reportlab==4.0.9         # export PDF
 # Bỏ comment nếu muốn dùng tính năng auto-update trong data_loader.py
 yfinance==0.2.36
 
+google-generativeai>=0.8.0
 google-genai>=2.2.0
 python-dotenv>=1.0.0
 

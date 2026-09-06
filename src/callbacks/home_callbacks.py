@@ -654,7 +654,7 @@ def update_market_overview_cards(pathname, n_intervals):
 
         val_str = f"{current_val:,.2f}"
         badge_str = f"{'+' if is_up else ''}{change_pct:.2f}%"
-        pts_str = f"{'+' if is_up else ''}{change_pts:.2f} pts"
+        pts_str = f"{'▲ ' if is_up else '▼ '} {abs(change_pts):.2f} điểm"
 
         fig = create_mini_chart(chart_data, color=chart_color, is_bar=False)
         return val_str, badge_str, color_class, pts_str, color_class, fig
@@ -735,7 +735,7 @@ def update_market_overview_cards(pathname, n_intervals):
     )
 
     # ==========================================
-    # 4. TOTAL VOLUME
+    # 4. TỔNG GIÁ TRỊ GIAO DỊCH (Turnover)
     # ==========================================
     try:
         df_mkt = load_market_data()
@@ -756,27 +756,71 @@ def update_market_overview_cards(pathname, n_intervals):
     else:
         daily_turnover = pd.Series(dtype="float64")
 
+    # ── [MỚI] Patch LIVE — cộng "Turnover" (giatri_giaodich) từ TOÀN BỘ
+    # snapshot realtime Wifeed, chính xác hơn cách ước lượng Volume*Close cũ
+    # (Wifeed đã tính sẵn giá trị giao dịch thật cho từng mã). Nếu chưa có
+    # snapshot (chưa fetch lần nào / ngoài giờ), giữ nguyên số EOD như cũ.
+    live_turnover = None
+    live_volume_shares = None   # ← THÊM: tổng khối lượng (cổ phiếu) live
+    try:
+        from src.backend.wifeed_updater import get_realtime_snapshot
+        rt_snapshot = get_realtime_snapshot()
+        if rt_snapshot:
+            live_turnover = sum(float(rt.get("Turnover") or 0) for rt in rt_snapshot.values())
+            live_volume_shares = sum(float(rt.get("Volume") or 0) for rt in rt_snapshot.values())
+    except Exception:
+        live_turnover = None
+        live_volume_shares = None
+
+    # Xác định hôm nay (giờ VN) đã có trong daily_turnover (đã EOD merge) hay
+    # chưa — quyết định GHI ĐÈ bar cuối hay THÊM bar mới cho đúng ngày.
+    today_vn_str = None
+    if live_turnover is not None:
+        try:
+            import pytz
+            from datetime import datetime as _dt
+            today_vn_str = _dt.now(pytz.timezone("Asia/Ho_Chi_Minh")).strftime("%Y-%m-%d")
+        except Exception:
+            today_vn_str = None
+
     if not daily_turnover.empty:
+        if live_turnover is not None and today_vn_str:
+            last_date_str = pd.Timestamp(daily_turnover.index.max()).strftime("%Y-%m-%d")
+            if last_date_str == today_vn_str:
+                # Hôm nay ĐÃ có trong EOD -> LIVE chính xác hơn (có thể có
+                # GD thỏa thuận muộn EOD chưa kịp cập nhật) -> ghi đè bar cuối.
+                daily_turnover.iloc[-1] = live_turnover
+            else:
+                # Hôm nay CHƯA có trong EOD (đang trong phiên) -> thêm bar mới.
+                daily_turnover.loc[pd.Timestamp(today_vn_str)] = live_turnover
+                daily_turnover = daily_turnover.sort_index()
+
         latest_turnover = float(daily_turnover.iloc[-1])
         avg20 = float(daily_turnover.tail(20).mean())
-        
+
         vol_chart_data = daily_turnover.tail(15).tolist()
-        vol_badge_str = "Avg. High" if latest_turnover >= avg20 else "Avg. Low"
-        
+        # [SỬA] Badge giờ hiện KHỐI LƯỢNG (cổ phiếu) live thay vì so sánh TB20 —
+        # dùng số live nếu có, fallback ước lượng từ Turnover/giá TB thị trường
+        # nếu vì lý do gì đó chưa lấy được snapshot Wifeed (ngoài giờ/mới khởi động).
+        if live_volume_shares is not None:
+            vol_badge_str = f"{live_volume_shares / 1e6:,.1f}tr CP"
+        else:
+            vol_badge_str = "—"
+
         if len(vol_chart_data) > 0:
             min_v = min(vol_chart_data)
             max_v = max(vol_chart_data)
             if max_v > min_v:
-                baseline = min_v - (max_v - min_v) * 0.1 
+                baseline = min_v - (max_v - min_v) * 0.1
                 vol_chart_data = [v - baseline for v in vol_chart_data]
             # 🔴 FIX LỖI TOÁN HỌC: Nếu max_v == min_v (các phiên vol y chang nhau hoặc bằng 0), 
             # không làm gì cả, để list như cũ, hàm create_mini_chart sẽ tự handle
     else:
-        latest_turnover = 0.0
+        latest_turnover = live_turnover or 0.0
         vol_chart_data = [0.0, 0.0]
         vol_badge_str = "—"
 
-    vol_val_str = f"{latest_turnover / 1e9:,.0f}B"  # Tỷ VNĐ
+    vol_val_str = f"{latest_turnover / 1e9:,.0f} Tỷ"  # [SỬA] "B" -> "Tỷ" cho tiếng Việt
     vol_fig = create_mini_chart(vol_chart_data, color="#3b82f6", is_bar=True)
 
     # ==========================================
@@ -819,7 +863,12 @@ def _get_top_fin_picks(n: int = 3) -> list:
       phiên trước (snapshot chỉ có 1 dòng/mã = phiên mới nhất, không có phiên
       liền trước để so sánh).
 
-    Mỗi item trả về: {key, ticker, tag_variant, price, pct, stars, insight}
+    Mỗi item trả về: {key, ticker, price, pct, stars, value_score, growth_score,
+    momentum_score, insight}. KHÔNG còn "tag_variant" ở đây — tag Value/Growth/
+    Momentum giờ do header.py._pick_card tự suy ra từ value_score/growth_score/
+    momentum_score (điểm nào cao nhất thắng), để tag luôn khớp với số breakdown
+    hiển thị trên card (trước tính tag từ letter grade A-F, có thể lệch với số
+    Pct hiển thị khi 2 thành phần trùng grade).
     (insight ở đây là TÊN DOANH NGHIỆP thật, lấy qua get_company_name_vi())
     """
     try:
@@ -889,15 +938,6 @@ def _get_top_fin_picks(n: int = 3) -> list:
         except Exception:
             pass
 
-        # ── Xác định tag Growth/Value/Momentum — điểm nào cao nhất thắng ──
-        # Cột Score trong snapshot là XẾP HẠNG CHỮ (A/B/C/D/F), không phải số
-        # -> quy đổi sang thang điểm trước khi so sánh. 'A' = tốt nhất.
-        g = _grade_to_score(row.get("Growth Score"))
-        v = _grade_to_score(row.get("Value Score"))
-        m = _grade_to_score(row.get("Momentum Score"))
-        scores = {"growth": g, "value": v, "momentum": m}
-        tag_variant = max(scores, key=scores.get) if any(scores.values()) else "growth"
-
         # ── Tên doanh nghiệp thật (thay cho câu nhận xét) — ưu tiên get_company_name_vi(),
         # fallback cột "Company Common Name" nếu có sẵn trong snapshot, cuối cùng để trống ──
         company_name = get_company_name_vi(ticker)
@@ -911,10 +951,21 @@ def _get_top_fin_picks(n: int = 3) -> list:
             stars_filled = 5
         stars_filled = max(0, min(5, stars_filled))
 
+        # ── Tag Growth/Value/Momentum: KHÔNG tự tính ở đây nữa. Trước dùng
+        # letter grade (A-F, _grade_to_score) để so hạng cao nhất — nhưng đó
+        # là thang RỜI RẠC 5 mức, trong khi số hiển thị trên card (bên dưới)
+        # là Value_Score_Pct/Growth_Score_Pct/Momentum_Score_Pct (thang liên
+        # tục 0-100). Hai nguồn khác nhau có thể lệch: vd Value=86 và
+        # Growth=72 cùng rơi vào grade 'A' (bell curve rộng) -> tie letter
+        # grade -> code cũ mặc định chọn "growth" (key đầu tiên trong dict)
+        # dù Value_Score_Pct rõ ràng cao hơn -> tag hiển thị SAI so với số
+        # breakdown ngay bên dưới nó, y hệt kiểu lệch số 87-vs-96 đã gặp ở
+        # phần FSS Smart Rank. Giờ để header.py._pick_card tự suy ra tag từ
+        # ĐÚNG 3 số Pct đã gửi xuống dưới đây (value_score/growth_score/
+        # momentum_score) — 1 nguồn sự thật duy nhất, tag không thể lệch số.
         picks.append({
             "key": ticker.lower(),
             "ticker": ticker,
-            "tag_variant": tag_variant,
             "price": price,
             "pct": pct,
             "stars": stars_filled,
@@ -967,14 +1018,35 @@ def _compute_market_pulse() -> dict:
         prev_c = g["Price Close"].iloc[-2]
         return (last_c - prev_c) / prev_c * 100 if prev_c else np.nan
 
-    pct_series = d.groupby("Ticker").apply(_last_pct).dropna()
+    pct_series = d.groupby("Ticker").apply(_last_pct, include_groups=False).dropna()
     if pct_series.empty:
         return None
 
-    # ── Market Breadth: %mã tăng / (mã tăng + mã giảm) ──
-    up_count = int((pct_series > 0).sum())
+    # ── [MỚI] Patch LIVE từ realtime snapshot — cùng pattern đã dùng ở
+    # _get_top_fin_picks() (baseline EOD trước, ghi đè bằng giá/pct realtime
+    # sau cùng để nó "thắng"). Nếu không có realtime (ngoài giờ, chưa fetch
+    # lần nào), pct_series giữ nguyên baseline EOD như cũ — không lỗi.
+    try:
+        from src.backend.wifeed_updater import get_realtime_snapshot
+        rt_snapshot = get_realtime_snapshot()
+    except Exception:
+        rt_snapshot = {}
+
+    if rt_snapshot:
+        for rt_ticker, rt in rt_snapshot.items():
+            t = str(rt_ticker).strip().upper()
+            pct_val = rt.get("Price_Change_Pct")
+            if pct_val is not None:
+                try:
+                    pct_series.loc[t] = float(pct_val)
+                except (TypeError, ValueError):
+                    pass
+
+    # ── Market Breadth: đếm mã tăng / giảm / đứng giá ──
+    up_count   = int((pct_series > 0).sum())
     down_count = int((pct_series < 0).sum())
-    total_ud = up_count + down_count
+    flat_count = int((pct_series == 0).sum())
+    total_ud   = up_count + down_count
     bullish_pct = (up_count / total_ud * 100) if total_ud else 50.0
     bearish_pct = 100 - bullish_pct
 
@@ -1026,7 +1098,7 @@ def _compute_market_pulse() -> dict:
             used.add(acc_row["Sector"])
             vol_txt = f", KL x{acc_row['avg_vol_ratio']:.1f} TB" if pd.notna(acc_row["avg_vol_ratio"]) else ""
             alerts.append(_build_alert_li(
-                "fa-bolt", "positive", "Strong Accumulation",
+                "fa-bolt", "positive", "Tích lũy mạnh",
                 f"Dòng tiền vào {acc_row['Sector']} (+{acc_row['avg_pct']:.2f}%{vol_txt})",
             ))
 
@@ -1037,7 +1109,7 @@ def _compute_market_pulse() -> dict:
                 con_row = remain.sort_values("abs_pct", ascending=True).iloc[0]
                 used.add(con_row["Sector"])
                 alerts.append(_build_alert_li(
-                    "fa-arrow-right", "neutral", "Sector Consolidation",
+                    "fa-arrow-right", "neutral", "Tích lũy ngành",
                     f"Nhóm {con_row['Sector']} đi ngang ({con_row['avg_pct']:+.2f}%), tích lũy",
                 ))
 
@@ -1046,40 +1118,63 @@ def _compute_market_pulse() -> dict:
             if not remain2.empty:
                 neg_row = remain2.sort_values("avg_pct", ascending=True).iloc[0]
                 alerts.append(_build_alert_li(
-                    "fa-triangle-exclamation", "negative", "Volatile Resistance",
+                    "fa-triangle-exclamation", "negative", "Gặp vùng cản",
                     f"Áp lực bán ở nhóm {neg_row['Sector']} ({neg_row['avg_pct']:.2f}%)",
                 ))
 
-    return {"bullish_pct": bullish_pct, "bearish_pct": bearish_pct, "alerts": alerts}
+    return {
+        "bullish_pct": bullish_pct,
+        "bearish_pct": bearish_pct,
+        "up_count": up_count,
+        "down_count": down_count,
+        "flat_count": flat_count,
+        "alerts": alerts,
+    }
 
 
 @app.callback(
     Output("home-pulse-breadth-label", "children"),
+    Output("home-pulse-breadth-counts", "children"),  # [MỚI]
     Output("home-pulse-breadth-fill-bull", "style"),
     Output("home-pulse-breadth-fill-bear", "style"),
     Output("home-pulse-alerts-list", "children"),
-    Input("home-market-overview", "id"),  # trigger on-load
+    Input("home-market-overview", "id"),        # trigger lần đầu load
+    Input("header-realtime-interval", "n_intervals"),  # [MỚI] refresh mỗi 60s
     prevent_initial_call=False,
 )
-def update_market_pulse(_):
+def update_market_pulse(_, n_intervals):
     result = _compute_market_pulse()
-    
+
     # 🔴 NẾU KHÔNG CÓ DATA THẬT -> TRẢ VỀ PLACEHOLDER TẠI ĐÂY
     if not result:
-        mock_label = "62% Bullish"
+        mock_label = "62% TĂNG"
+        mock_counts = [
+            html.Span([html.Strong("312"), " tăng"], className="home-pulse-breadth-count-item"),
+            html.Span([html.Strong("180"), " giảm"], className="home-pulse-breadth-count-item"),
+            html.Span("42 đứng giá", className="home-pulse-breadth-count-item"),
+        ]
         mock_bull = {"width": "62%"}
         mock_bear = {"width": "38%"}
         mock_alerts = [
-            _build_alert_li("fa-bolt", "positive", "Strong Accumulation", "Dòng tiền mạnh đổ vào nhóm Tài chính"),
-            _build_alert_li("fa-arrow-right", "neutral", "Sector Consolidation", "Nhóm Bất động sản đang tích lũy ổn định"),
-            _build_alert_li("fa-triangle-exclamation", "negative", "Volatile Resistance", "Nhóm Năng lượng chạm kháng cự 52 tuần"),
+            _build_alert_li("fa-bolt", "positive", "Tích lũy mạnh", "Dòng tiền mạnh đổ vào nhóm ..."),
+            _build_alert_li("fa-arrow-right", "neutral", "Tích lũy ngành", "Nhóm ... đang tích lũy ổn định"),
+            _build_alert_li("fa-triangle-exclamation", "negative", "Gặp vùng cản", "Nhóm ... chạm kháng cự 52 tuần"),
         ]
-        return mock_label, mock_bull, mock_bear, mock_alerts
+        return mock_label, mock_counts, mock_bull, mock_bear, mock_alerts
 
     # 🟢 NẾU CÓ DATA THẬT -> XỬ LÝ BÌNH THƯỜNG
     bullish_pct = result["bullish_pct"]
     bearish_pct = result["bearish_pct"]
-    label = f"{bullish_pct:.0f}% Bullish"
+    up_count    = result["up_count"]
+    down_count  = result["down_count"]
+    flat_count  = result["flat_count"]
+
+    label  = f"{bullish_pct:.0f}% TĂNG"
+    counts = [
+        html.Span([html.Strong(f"{up_count}"), " tăng"], className="home-pulse-breadth-count-item"),
+        html.Span([html.Strong(f"{down_count}"), " giảm"], className="home-pulse-breadth-count-item"),
+        html.Span(f"{flat_count} đứng giá", className="home-pulse-breadth-count-item"),
+    ]  # [MỚI]
     bull_style = {"width": f"{bullish_pct:.1f}%"}
     bear_style = {"width": f"{bearish_pct:.1f}%"}
 
@@ -1089,8 +1184,7 @@ def update_market_pulse(_):
             "Chưa đủ dữ liệu ngành (cột Sector) để đưa ra nhận định.",
             className="home-pulse-alert-item",
         )]
-
-    return label, bull_style, bear_style, alerts
+    return label, counts, bull_style, bear_style, alerts
 
 # ============================================================================
 # CALLBACK: REALTIME UPDATE — Header market overview + top picks
@@ -1114,7 +1208,6 @@ def update_header_picks(n_intervals):
         cards.append(_pick_card(
             key=p["key"],
             ticker=p["ticker"],
-            tag_variant=p["tag_variant"],
             price_str=f"{p['price']:,.0f}",
             change_str=f"{'+' if p['pct'] >= 0 else ''}{p['pct']:.2f}%",
             is_positive=p["pct"] >= 0,
@@ -1125,3 +1218,63 @@ def update_header_picks(n_intervals):
             insight_text=p["insight"],
         ))
     return cards
+
+# ============================================================================
+# CALLBACK: CLICK VÀO TOP PICK CARD → MỞ DETAIL MODAL (giống double-click bảng)
+# ============================================================================
+from dash import callback_context, no_update, ALL
+import json
+
+@app.callback(
+    Output("detail-modal",          "is_open",  allow_duplicate=True),
+    Output("modal-title",           "children", allow_duplicate=True),
+    Output("selected-stock-store",  "data",     allow_duplicate=True),
+    Output("selected-ticker-store", "data",     allow_duplicate=True),
+    Input({"type": "pick-card-click", "ticker": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+def open_modal_from_pick_card(n_clicks_list):
+    ctx = callback_context
+    if not ctx.triggered or not any(n_clicks_list):
+        return no_update, no_update, no_update, no_update
+
+    # Lấy ticker từ id của card vừa bị click
+    triggered_prop = ctx.triggered[0]["prop_id"].split(".")[0]
+    try:
+        triggered_id = json.loads(triggered_prop)
+        ticker = triggered_id.get("ticker")
+    except Exception:
+        return no_update, no_update, no_update, no_update
+
+    if not ticker:
+        return no_update, no_update, no_update, no_update
+
+    # Lấy đầy đủ dữ liệu dòng đó từ snapshot (không có sẵn rowData ở đây
+    # như bảng screener, nên đọc thẳng từ get_snapshot_df())
+    from src.backend.data_loader import get_snapshot_df
+    df = get_snapshot_df()
+    row = df[df["Ticker"] == ticker]
+    if row.empty:
+        return no_update, no_update, no_update, no_update
+
+    stock = row.iloc[0].to_dict()
+
+    # ── Tên công ty tiếng Việt — tái dùng đúng logic của open_detail_modal_fast ──
+    from src.callbacks.screener_callbacks import df_comp_info
+    company_name = stock.get('Company Common Name', '')
+    company_name_vn = company_name
+    if not df_comp_info.empty:
+        match = df_comp_info[df_comp_info['Ticker'] == ticker]
+        if not match.empty:
+            for col in ['organ_name', 'company_name_vi', 'ten_cong_ty', 'name_vi']:
+                if col in match.columns:
+                    val = str(match[col].values[0]).strip()
+                    if val and val.lower() not in ('nan', 'none', ''):
+                        company_name_vn = val
+                        break
+    if company_name_vn == company_name or not company_name_vn:
+        company_name_vn = company_name or ticker
+
+    title_text = f"Cổ phiếu {ticker} – {company_name_vn}"
+
+    return True, title_text, stock, ticker

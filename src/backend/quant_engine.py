@@ -1759,7 +1759,16 @@ def calculate_robo_allocation(filtered_df, nav, df_price=None):
         logger.info(f"🧠 Đang chạy Markowitz & Monte Carlo cho: {tickers}")
         
         # 2. Xử lý Dữ liệu Lịch sử (Trích xuất chuỗi lợi nhuận ngày)
-        df_px = df_price[df_price['Ticker'].isin(tickers)].pivot(index='Date', columns='Ticker', values='Price Close').sort_index()
+        
+        # [FIX] Loại trùng (Ticker, Date) trước khi pivot — pivot() crash cứng nếu
+        # có ≥2 dòng cùng 1 cặp Ticker+Date (từng gặp do dữ liệu ghi trùng ở
+        # market_prices.parquet). keep="last" ưu tiên dòng mới nhất, cùng quy ước
+        # với _merge_eod_into_price_parquet() trong wifeed_updater.py.
+        df_sub = df_price[df_price['Ticker'].isin(tickers)].drop_duplicates(
+            subset=["Ticker", "Date"], keep="last"
+        )
+        
+        df_px = df_sub.pivot(index='Date', columns='Ticker', values='Price Close').sort_index()
         returns = df_px.pct_change().dropna()
         
         if returns.empty or len(returns) < 20:

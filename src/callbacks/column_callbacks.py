@@ -5,6 +5,7 @@ Logic: Khi user thêm chỉ tiêu vào bộ lọc → cột tương ứng hiện
 """
 from dash import Input, Output, no_update
 from src.app_instance import app
+from src.pages.screener import _TOOLTIPS
 
 # ============================================================================
 # HELPER JS: MÀU TRUNG TÍNH THEO THEME (sáng/tối)
@@ -177,11 +178,29 @@ def _ssi_ticker_style():
 
 def _ssi_price_style():
     return {
-        "color": "#fbbf24",
-        "fontWeight": "700",
-        "fontSize": "13px",
-        "fontVariantNumeric": "tabular-nums",
-        "fontFamily": "'Roboto Mono', monospace",
+        "function": """
+            var d = params.data;
+            var __theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            var __muted = '#94a3b8';
+            if (!d) return {color: __muted, fontWeight: '700', fontSize: '13px',
+                             fontVariantNumeric: 'tabular-nums',
+                             fontFamily: "'Roboto Mono', monospace"};
+            var pct = d['Price_Change_Pct'];
+            var n = Number(pct);
+            var color = __muted;
+            if (pct !== null && pct !== undefined && !isNaN(n)) {
+                if      (n >= 6.9)  color = '#0ea5e9';   // trần
+                else if (n >  0.1)  color = '#10b981';   // tăng
+                else if (n >= -0.1) color = (__theme === 'light' ? '#b45309' : '#fde047'); // tham chiếu
+                else if (n > -6.9)  color = '#ef4444';   // giảm
+                else                color = '#dc2626';   // sàn
+            }
+            return {
+                color: color, fontWeight: '700', fontSize: '13px',
+                fontVariantNumeric: 'tabular-nums',
+                fontFamily: "'Roboto Mono', monospace"
+            };
+        """
     }
 
 def _ssi_pct_style():
@@ -231,10 +250,33 @@ FIXED_COLS = [
     {
         "field": "Price Close",
         "headerName": "GIÁ",
+        
+        # 1. Các thuộc tính hiển thị cơ bản (Lấy từ screener.py)
+        "headerTooltip": _TOOLTIPS["GIÁ"] if "_TOOLTIPS" in globals() or "_TOOLTIPS" in locals() else "Giá hiện tại", 
         "sortable": True,
         "width": 73,
         "valueFormatter": {"function": "d3.format(',.0f')(params.value)"},
-        "cellStyle": _ssi_price_style(),
+        
+        # 2. BẬT FLASH NỀN KHI GIÁ THAY ĐỔI
+        "enableCellChangeFlash": True,
+        
+        # 3. ĐỔI MÀU CHỮ DỰA TRÊN % THAY ĐỔI 
+        "cellStyle": {
+            "styleConditions": [
+                {
+                    "condition": "params.data.Price_Change_Pct > 0", 
+                    "style": {"color": "#10b981", "fontWeight": "bold"} # Xanh lá
+                },
+                {
+                    "condition": "params.data.Price_Change_Pct < 0", 
+                    "style": {"color": "#ef4444", "fontWeight": "bold"} # Đỏ
+                },
+                {
+                    "condition": "params.data.Price_Change_Pct == 0", 
+                    "style": {"color": "#f59e0b", "fontWeight": "bold"} # Vàng
+                }
+            ]
+        },
     },
     
     {
@@ -252,7 +294,7 @@ FIXED_COLS = [
         "field": "Star_Rating",
         "headerName": "FSS SCORE",
         "type": "leftAligned",
-        "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
+        "headerTooltip": "Xếp hạng toàn diện cổ phiếu từ 1-5 sao dựa trên chiến lược đầu tư VGM, tích hợp bộ lọc điều chỉnh rủi ro thanh khoản và dòng tiền.",
         "width": 120,
         "sortable": True,
         "sort": "desc",

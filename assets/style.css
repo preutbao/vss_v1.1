@@ -701,6 +701,21 @@ body {
   transition: width 0.3s var(--ease-glass);
 }
 
+.home-pulse-breadth-counts {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.home-pulse-breadth-count-item strong {
+  font-weight: 1000;
+  color: var(--text-primary);   /* [SỬA] đổi từ text-muted → text-primary (sáng hơn) */
+}
+
 .home-pulse-alerts {
   list-style: none;
   margin: 0;
@@ -4299,11 +4314,28 @@ span[style*="f59e0b"] {
   color: var(--accent) !important;
 }
 
-/* ── 11. FOCUS VISIBLE — giữ khả năng điều hướng bằng bàn phím rõ ràng ── */
+/* ── 11. FOCUS VISIBLE — giữ khả năng điều hướng bằng bàn phím rõ ràng ──
+   [SỬA] Bỏ input:focus-visible khỏi rule này: outline bọc quanh ô input
+   tự co giãn theo text (đặc thù react-select .Select-input) tạo thành
+   khung xanh "phình" theo độ dài chữ đang gõ — không đẹp. Giữ nguyên
+   outline cho button/link/[tabindex] (điều hướng bàn phím vẫn cần thấy
+   rõ đang ở đâu), chỉ input text thì bỏ, dùng con trỏ nhấp nháy mặc định
+   của trình duyệt là đủ. */
 button:focus-visible, a:focus-visible, [tabindex]:focus-visible,
-input:focus-visible, .Select-control:focus-visible {
+.Select-control:focus-visible {
   outline: 2px solid var(--accent) !important;
   outline-offset: 2px;
+}
+
+/* [MỚI] Tắt hẳn outline mặc định của trình duyệt cho MỌI ô input đang gõ
+   chữ — kể cả input thường lẫn input bên trong react-select — chỉ còn
+   lại con trỏ | nhấp nháy mặc định. */
+input:focus-visible,
+input:focus,
+.Select-input input:focus-visible,
+.Select-input input:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* ── 12. LIGHT MODE — đảm bảo kính mờ vẫn đủ tương phản trên nền sáng ── */

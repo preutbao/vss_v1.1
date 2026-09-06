@@ -55,7 +55,6 @@ def _load_comp_info():
                     df['Ticker'] = df['Ticker'].str.replace(
                         r'\.(HNO|HN|HM)$', '', regex=True
                     ).str.strip()
-                print(f"✅ Loaded COMP INFO từ: {path} ({len(df)} rows)")
                 return df
             except Exception as e:
                 print(f"⚠️ Lỗi đọc {path}: {e}")
@@ -1200,11 +1199,10 @@ from dash import State
 # CALLBACK 2A: MỞ MODAL NGAY (< 50ms) — chỉ set title + lưu stock vào store
 # ============================================================================
 @app.callback(
-    Output("detail-modal",          "is_open"),
-    Output("modal-title",           "children"),
-    Output("selected-stock-store",  "data"),
-    # 🟢 THÊM OUTPUT NÀY ĐỂ BƠM MÃ CỔ PHIẾU CHO 2 TAB CÒN LẠI:
-    Output("selected-ticker-store", "data"), 
+    Output("detail-modal",          "is_open",  allow_duplicate=True),
+    Output("modal-title",           "children", allow_duplicate=True),
+    Output("selected-stock-store",  "data",     allow_duplicate=True),
+    Output("selected-ticker-store", "data",     allow_duplicate=True), 
     
     Input("screener-table", "cellDoubleClicked"), 
     State("screener-table", "rowData"), 
@@ -1215,18 +1213,19 @@ def open_detail_modal_fast(double_clicked_cell, grid_data):
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     row_id_str = double_clicked_cell.get("rowId")
-    
-    if row_id_str is not None and str(row_id_str).isdigit():
-        real_index = int(row_id_str)
-        stock = grid_data[real_index]
-    else:
+
+    if not row_id_str:
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+    # rowId giờ là Ticker (do dashGridOptions.getRowId = params.data.Ticker),
+    # không còn là index số như trước → tìm theo Ticker thay vì int(row_id_str).
+    stock = next((r for r in grid_data if r.get("Ticker") == row_id_str), None)
+    if stock is None:
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
     ticker       = stock.get('Ticker', 'N/A')
     company_name = stock.get('Company Common Name', '')
-
     company_name_vn = company_name   # default = tên tiếng Anh từ snapshot
-
     # Ưu tiên 1: đọc từ COMP INFO.csv (có tên tiếng Việt)
     if not df_comp_info.empty:
         match = df_comp_info[df_comp_info['Ticker'] == ticker]
@@ -1238,11 +1237,9 @@ def open_detail_modal_fast(double_clicked_cell, grid_data):
                     if val and val.lower() not in ('nan', 'none', ''):
                         company_name_vn = val
                         break
-
     # Ưu tiên 2 (fallback): snapshot đã có Company Common Name
     if company_name_vn == company_name or not company_name_vn:
         company_name_vn = company_name or ticker
-
     title_text = f"Cổ phiếu {ticker} – {company_name_vn}"
     
     # 🟢 TRẢ VỀ THÊM CÁI `ticker` Ở CUỐI CÙNG CHO VỪA VỚI 4 OUTPUT
@@ -2153,7 +2150,7 @@ def load_detail_content(stock, theme="dark"):
                         ], style={"marginBottom": "6px"}),
                         html.P(
                             "Đo lường chất lượng cơ bản của doanh nghiệp qua Star_Rating (1-5 sao). "
-                            "Star_Rating là tổng hợp của VGM Score (Value + Growth + Momentum) "
+                            "Star_Rating là tổng hợp của VGM Score (Value + Growth + Momentum) dựa trên chiến lược đầu tư VGM"
                             "với các điều chỉnh phạt lỗi (CFO âm, thanh khoản thấp). Trọng số cao nhất (30%) "
                             "nhấn mạnh tầm quan trọng của chất lượng cơ bản.",
                             style={"fontSize": "11px", "color": T["page_text_dim"], "lineHeight": "1.6", "marginBottom": "10px"}
@@ -4466,21 +4463,32 @@ def update_cutoff_label(row_data, fetch_ts):
     _TZ_VN = pytz.timezone("Asia/Ho_Chi_Minh")
 
     try:
-        # Ưu tiên 1: Nếu vừa có fetch realtime thì hiện giờ VN hiện tại
         if fetch_ts and float(fetch_ts) > 0:
             try:
-                from src.backend.wifeed_updater import get_snapshot_timestamp
+                from src.backend.wifeed_updater import get_snapshot_timestamp, get_eod_status
                 ts = get_snapshot_timestamp()
                 if ts > 0:
                     dt_vn  = datetime.fromtimestamp(ts, tz=_TZ_VN)
+                    status = get_eod_status()
+
+                    # [MỚI] 4 badge trạng thái thay vì luôn hiện LIVE
+                    badge_map = {
+                        "closed":       ("● ĐÓNG CỬA",       "#8a8a8a", "none"),  # [MỚI] T7/CN/nghỉ lễ
+                        "before_open":  ("● CHƯA MỞ CỬA",    "#5a8ab0", "none"),
+                        "live":         ("● LIVE",          "#00e676", "realtime-pulse 2s ease-in-out infinite"),
+                        "pending_eod":  ("● ĐANG CHỐT EOD",  "#ffb300", "none"),
+                        "eod_done":     ("● EOD",            "#5a8ab0", "none"),
+                    }
+                    label, color, animation = badge_map.get(status, badge_map["live"])
+
                     return [
-                        html.Span("● LIVE", style={
-                            "color":       "#00e676",
+                        html.Span(label, style={
+                            "color":       color,
                             "fontWeight":  "700",
                             "fontSize":    "9px",
-                            "marginRight": "5px",
+                            "marginRight": "18px",
                             "letterSpacing": "0.1em",
-                            "animation":   "realtime-pulse 2s ease-in-out infinite",
+                            "animation":   animation,
                         }),
                         html.Span(
                             f"{dt_vn.strftime('%H:%M')} · {dt_vn.strftime('%d/%m/%Y')}",
@@ -4578,3 +4586,40 @@ def update_nav_display(nav_val):
         return f"(= {val / 1e9:,.2f} Tỷ VNĐ)"
     except Exception:
         return "(Lỗi định dạng)"
+
+
+# =============================================================================
+# FAQ TOGGLE — mở/đóng từng câu hỏi trong FAQ section của screener.py
+# (Copy cùng logic đã dùng cho FAQ onboarding trong main.py — screener.py
+# dùng chung id pattern faq-btn-{i}/faq-content-{i}/faq-icon-{i} nhưng
+# trước đây chưa có callback nào lắng nghe, nên câu 1 kẹt cứng "mở sẵn"
+# và câu 2-7 không click được.)
+# =============================================================================
+for i in range(1, 8):
+    app.clientside_callback(
+        f"""
+        function(n_clicks) {{
+            if (!n_clicks) return window.dash_clientside.no_update;
+
+            var content = document.getElementById('faq-content-{i}');
+            var icon = document.getElementById('faq-icon-{i}');
+
+            if (content && icon) {{
+                if (content.style.display === 'none' || content.style.display === '') {{
+                    content.style.display = 'block';
+                    icon.innerText = '×';
+                    icon.classList.add('is-active');
+                }} else {{
+                    content.style.display = 'none';
+                    icon.innerText = '+';
+                    icon.classList.remove('is-active');
+                }}
+            }}
+
+            return window.dash_clientside.no_update;
+        }}
+        """,
+        Output(f"faq-content-{i}", "id"),   # Output giả — không dùng giá trị trả về
+        Input(f"faq-btn-{i}", "n_clicks"),
+        prevent_initial_call=True,
+    )

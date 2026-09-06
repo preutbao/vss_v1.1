@@ -10,6 +10,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import pandas as pd
+import os
 from dash_iconify import DashIconify
 sys_font = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif"
 def _get_avatar_color(name: str) -> str:
@@ -1202,19 +1203,56 @@ def create_banner():
         ]
     )
 # ── [BƯỚC 2] MARKET OVERVIEW — 4 thẻ chỉ số ngang ──────────────────────────────
-def _market_index_card(key: str, label: str) -> html.Div:
+def _market_change_badge(change_pct: float = None):
+    """Badge % cho 3 thẻ chỉ số (VN-INDEX/HNX-INDEX/VN30-INDEX).
+
+    LƯU Ý: quant_engine.py KHÔNG có hàm "badge" riêng cho market index — file
+    đó chỉ có công thức % thay đổi chuẩn dùng cho CỔ PHIẾU:
+        _prev_close = df_px.groupby('Ticker')['Price Close'].shift(1)
+        change_pct  = (close - _prev_close) / _prev_close * 100
+    (xem calculate_sbs_snapshot() trong quant_engine.py). Với index cũng áp
+    dụng đúng công thức % thay đổi chuẩn này (chỉ khác input là giá đóng cửa
+    chỉ số thay vì giá cổ phiếu) — không bịa quy ước riêng.
+
+    Class CSS "is-positive"/"is-negative" lấy đúng theo quy ước ĐÃ CÓ SẴN ở
+    _pick_card() (biến change_cls) trong cùng file header.py, để đồng bộ toàn
+    app thay vì tạo class mới.
+
+    Trả về (label, css_class). label=None khi chưa có dữ liệu -> badge để
+    trống, giữ đúng hành vi placeholder cũ.
+    """
+    base_cls = "home-market-badge"
+    if change_pct is None or (isinstance(change_pct, float) and pd.isna(change_pct)):
+        return None, base_cls
+    if change_pct > 0:
+        return f"+{change_pct:.2f}%", f"{base_cls} is-positive"
+    if change_pct < 0:
+        return f"{change_pct:.2f}%", f"{base_cls} is-negative"
+    return "0.00%", f"{base_cls} is-flat"
+
+
+def _market_index_card(key: str, label: str, change_pct: float = None,
+                        value_str: str = None, pts_str: str = None) -> html.Div:
     """1 thẻ chỉ số (VN-INDEX / HNX-INDEX / VN30-INDEX).
     key dùng làm hậu tố id, vd key='vnindex' -> home-mkt-vnindex-value...
-    Toàn bộ nội dung động (value/badge/pts/spark) để trống/placeholder —
-    callback (bạn tự nối) sẽ đổ dữ liệu thật vào các id này.
+
+    [ĐÃ NỐI BADGE] change_pct/value_str/pts_str đều optional (mặc định None)
+    để KHÔNG phá code cũ — create_market_overview() hiện gọi hàm này không
+    kèm data, nên hành vi placeholder "—" / badge rỗng vẫn giữ nguyên y hệt
+    trước đây, và callback (home_callbacks.py) vẫn Output vào đúng các id bên
+    dưới như cũ. Nếu sau này muốn render sẵn phía server, chỉ cần gọi kèm
+    change_pct=... (và value_str/pts_str nếu có) — badge sẽ tự tính đúng nhãn
+    +/-/flat qua _market_change_badge() ở trên.
     """
+    badge_label, badge_class = _market_change_badge(change_pct)
     return html.Div(id=f"home-mkt-{key}-card", className="home-market-card", children=[
         html.Div(className="home-market-card-top", children=[
             html.Span(label, className="home-market-card-label"),
-            html.Span(id=f"home-mkt-{key}-badge", className="home-market-badge"),
+            html.Span(badge_label, id=f"home-mkt-{key}-badge", className=badge_class),
         ]),
-        html.Div(id=f"home-mkt-{key}-value", className="home-market-card-value", children="—"),
-        html.Div(id=f"home-mkt-{key}-pts", className="home-market-card-pts"),
+        html.Div(value_str if value_str is not None else "—",
+                 id=f"home-mkt-{key}-value", className="home-market-card-value"),
+        html.Div(pts_str, id=f"home-mkt-{key}-pts", className="home-market-card-pts"),
         dcc.Graph(
             id=f"home-mkt-{key}-spark",
             className="home-market-card-spark",
@@ -1227,7 +1265,7 @@ def _market_volume_card() -> html.Div:
     (vd 'Avg. High') thay vì %, và biểu đồ mini là bar chart thay vì line."""
     return html.Div(id="home-mkt-volume-card", className="home-market-card", children=[
         html.Div(className="home-market-card-top", children=[
-            html.Span("TOTAL VOLUME", className="home-market-card-label"),
+            html.Span("TỔNG GT GIAO DỊCH", className="home-market-card-label"),
             html.Span(id="home-mkt-volume-badge", className="home-market-badge"),
         ]),
         html.Div(id="home-mkt-volume-value", className="home-market-card-value", children="—"),
@@ -1242,8 +1280,10 @@ def create_market_overview() -> html.Div:
     """Grid ngang 4 cột: VN-INDEX, HNX-INDEX, VN30-INDEX, TOTAL VOLUME."""
     return html.Div(id="home-market-overview", className="home-market-grid", children=[
         _market_index_card("vnindex", "VN-INDEX"),
-        _market_index_card("hnxindex", "HNX-INDEX"),
+        
         _market_index_card("vn30index", "VN30-INDEX"),
+
+        _market_index_card("hnxindex", "HNX-INDEX"),
         _market_volume_card(),
     ])
 # ── [BƯỚC 3] TOP FIN PICKS + MARKET PULSE — layout 65/35 ──────────────────────
@@ -1275,7 +1315,23 @@ def _score_bar(label: str, value) -> html.Div:
     ])
 
 
-def _pick_card(key: str, ticker: str, tag_variant: str, price_str: str = "—",
+def _infer_pick_tag(value_score=None, growth_score=None, momentum_score=None) -> str:
+    """Chọn tag_variant (value/growth/momentum) cho _pick_card dựa trên thành
+    phần VGM cao nhất — đúng theo cách quant_engine.py tính (Value_Score_Pct,
+    Growth_Score_Pct, Momentum_Score_Pct — đều thang 0-100, xem
+    calculate_value_score/calculate_growth_score/calculate_momentum_score).
+    Cổ phiếu vào Top Quant Scores vì mạnh nhất ở thành phần nào thì gắn tag
+    thành phần đó (vd Value 86 · Growth 72 · Momentum 77 -> tag "value").
+    """
+    scores = {"value": value_score, "growth": growth_score, "momentum": momentum_score}
+    scores = {k: v for k, v in scores.items()
+              if v is not None and not (isinstance(v, float) and pd.isna(v))}
+    if not scores:
+        return "value"  # fallback an toàn khi thiếu cả 3 điểm, tránh KeyError ở _PICK_TAGS
+    return max(scores, key=scores.get)
+
+
+def _pick_card(key: str, ticker: str, tag_variant: str = None, price_str: str = "—",
                 change_str: str = "", is_positive: bool = True, stars_filled: int = 5,
                 value_score: float = None,
                 growth_score: float = None,
@@ -1289,7 +1345,16 @@ def _pick_card(key: str, ticker: str, tag_variant: str, price_str: str = "—",
         không còn 3 màu khác nhau.
       - Bỏ nút "Xem vì sao" — TOÀN BỘ CARD giờ clickable (n_clicks ở
         chính html.Div card), icon '›' chỉ hiện khi hover qua CSS.
+
+    [ĐÃ NỐI TAG] tag_variant giờ optional — nếu người gọi (home_callbacks.py)
+    vẫn truyền tag_variant tường minh như cũ thì giữ nguyên giá trị đó (không
+    đổi hành vi cũ). Nếu KHÔNG truyền (None), tự suy ra bằng _infer_pick_tag()
+    dựa trên value_score/growth_score/momentum_score — đúng điểm thành phần
+    cao nhất theo quant_engine.py.
     """
+    if tag_variant is None:
+        tag_variant = _infer_pick_tag(value_score, growth_score, momentum_score)
+
     change_cls = "home-pick-card-change is-positive" if is_positive else "home-pick-card-change is-negative"
 
     # Điểm trung bình 3 sub-score — hiển thị cạnh ticker
@@ -1362,13 +1427,20 @@ def create_market_pulse() -> html.Div:
             html.Div(className="home-pulse-breadth-head", children=[
                 html.Span("ĐỘ RỘNG TT", className="home-pulse-breadth-label-static"),
                 html.Span(id="home-pulse-breadth-label", className="home-pulse-breadth-label",
-                           children="62% Bullish"),
+                           children="...% TĂNG"),
             ]),
             html.Div(className="home-pulse-breadth-track", children=[
                 html.Div(id="home-pulse-breadth-fill-bull", className="home-pulse-breadth-fill-bull",
-                          style={"width": "62%"}),
+                          style={"width": "69%"}),
                 html.Div(id="home-pulse-breadth-fill-bear", className="home-pulse-breadth-fill-bear",
-                          style={"width": "38%"}),
+                          style={"width": "31%"}),
+            ]),
+            # [MỚI] Hiển thị số mã tăng/giảm/đứng giá — 3 span riêng để
+            # canh space-between (dài hết thanh) và bold riêng từng số.
+            html.Div(id="home-pulse-breadth-counts", className="home-pulse-breadth-counts", children=[
+                html.Span([html.Strong("..."), " tăng"], className="home-pulse-breadth-count-item"),
+                html.Span([html.Strong("..."), " giảm"], className="home-pulse-breadth-count-item"),
+                html.Span("... đứng giá", className="home-pulse-breadth-count-item"),
             ]),
         ]),
         # ── Danh sách cảnh báo — callback trả list các <li> mới để thay children ──
@@ -1376,22 +1448,22 @@ def create_market_pulse() -> html.Div:
             html.Li(className="home-pulse-alert-item", children=[
                 html.I(className="fa-solid fa-bolt home-pulse-alert-icon home-pulse-alert-icon-positive"),
                 html.Div(children=[
-                    html.Div("Strong Accumulation", className="home-pulse-alert-title"),
-                    html.Div("Dòng tiền mạnh đổ vào nhóm Tài chính", className="home-pulse-alert-desc"),
+                    html.Div("Tích lũy mạnh", className="home-pulse-alert-title"),
+                    html.Div("Dòng tiền mạnh đổ vào nhóm ...", className="home-pulse-alert-desc"),
                 ]),
             ]),
             html.Li(className="home-pulse-alert-item", children=[
                 html.I(className="fa-solid fa-arrow-right home-pulse-alert-icon home-pulse-alert-icon-neutral"),
                 html.Div(children=[
-                    html.Div("Sector Consolidation", className="home-pulse-alert-title"),
-                    html.Div("Nhóm Bất động sản đang tích lũy ổn định", className="home-pulse-alert-desc"),
+                    html.Div("Tích lũy ngành", className="home-pulse-alert-title"),
+                    html.Div("Nhóm ... đang tích lũy ổn định", className="home-pulse-alert-desc"),
                 ]),
             ]),
             html.Li(className="home-pulse-alert-item", children=[
                 html.I(className="fa-solid fa-triangle-exclamation home-pulse-alert-icon home-pulse-alert-icon-negative"),
                 html.Div(children=[
-                    html.Div("Volatile Resistance", className="home-pulse-alert-title"),
-                    html.Div("Nhóm Năng lượng chạm kháng cự 52 tuần", className="home-pulse-alert-desc"),
+                    html.Div("Gặp vùng cản", className="home-pulse-alert-title"),
+                    html.Div("Nhóm ... chạm kháng cự 52 tuần", className="home-pulse-alert-desc"),
                 ]),
             ]),
         ]),
@@ -1434,7 +1506,12 @@ def create_header_content():
               ├── wrap-transparent > create_market_overview()
               └── wrap-transparent > create_picks_and_pulse_section()
     """
-    GIF_URL = "/assets/infinite_candlesticks_dark_glow.gif"
+    # --- ĐOẠN MỚI THÊM VÀO ---
+    # Kiểm tra xem app đang chạy trên Hugging Face (có biến SPACE_ID) hay chạy Local
+    is_huggingface = "SPACE_ID" in os.environ
+    bg_filename = "infinite_candlesticks_dark_glow.png" if is_huggingface else "infinite_candlesticks_dark_glow.gif"
+    BG_URL = f"/assets/{bg_filename}"
+    # -------------------------
 
     bg_gif_layer = html.Div(style={
         "position": "absolute",
@@ -1448,7 +1525,7 @@ def create_header_content():
         "left": "50%",
         "width": "100vw",
         "transform": "translateX(-50%)",
-        "backgroundImage": f"url('{GIF_URL}')",
+        "backgroundImage": f"url('{BG_URL}')",  # <-- Đã đổi thành biến BG_URL động
         "backgroundSize": "cover",
         "backgroundPosition": "center",
         "backgroundRepeat": "no-repeat",

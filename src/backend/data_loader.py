@@ -479,7 +479,7 @@ def load_market_data():
     # [FIX 4] TTL cache 5 phút — đủ cho phiên dùng liên tục
     now = time.time()
     if _MARKET_CACHE["data"] is not None and now - _MARKET_CACHE["ts"] < 300:
-        logger.info(f"[MarketCache] HIT — trả từ RAM ({len(_MARKET_CACHE['data']):,} dòng)")
+        #logger.info(f"[MarketCache] HIT — trả từ RAM ({len(_MARKET_CACHE['data']):,} dòng)")
         return _MARKET_CACHE["data"]
 
     parquet = os.path.join(PROCESSED_DIR, FILES["parquet_price"])
@@ -495,7 +495,7 @@ def load_market_data():
         df = _strip_exchange_suffix(df)
         if 'Exchange' in df.columns:
             exch_sample = df[['Ticker','Exchange']].drop_duplicates('Ticker').head(5)
-            logger.info(f"[DEBUG load_market] Exchange sample:\n{exch_sample.to_string()}")
+            #logger.info(f"[DEBUG load_market] Exchange sample:\n{exch_sample.to_string()}")
             logger.info(f"[DEBUG load_market] Exchange counts: {df['Exchange'].value_counts().to_dict()}")
         else:
             logger.warning("[DEBUG load_market] Cột Exchange KHÔNG tồn tại sau strip!")
@@ -1309,7 +1309,7 @@ def get_filter_ranges() -> dict:
             if filter_id in _HARD_BOUNDS:
                 min_v, max_v = _HARD_BOUNDS[filter_id]
                 ranges[filter_id] = [min_v, max_v]
-                logger.info(f"  Range {filter_id}: [{min_v}, {max_v}]  (hard-coded)")
+                #logger.info(f"  Range {filter_id}: [{min_v}, {max_v}]  (hard-coded)")
                 continue
 
             # Chọn percentile clipping
@@ -1340,10 +1340,11 @@ def get_filter_ranges() -> dict:
 
             if min_v < max_v:
                 ranges[filter_id] = [min_v, max_v]
-                logger.info(
+                """ logger.info(
                     f"  Range {filter_id}: [{min_v}, {max_v}]  "
                     f"(p{lo_pct}/p{hi_pct}, cột '{col_name}')"
-                )
+                ) too many log lines
+                """ 
 
     except Exception as e:
         logger.error(f"Lỗi tính filter ranges: {e}")

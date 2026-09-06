@@ -263,7 +263,7 @@ def _footer(c, page_num):
     c.setFont("VnFont", 7)
     c.setFillColor(C_GREY)
     c.drawString(MARGIN, 8, "FinSmartScreener – Dữ liệu mang tính tham khảo, không phải khuyến nghị đầu tư.")
-    c.drawRightString(PW - MARGIN, 8, f"Trang {page_num} | idx-screener.com")
+    c.drawRightString(PW - MARGIN, 8, f"Trang {page_num} | Báo cáo Phân tích Cổ phiếu")
 
 
 def _sec(c, text, x, y, width=None):

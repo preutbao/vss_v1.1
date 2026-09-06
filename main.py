@@ -24,6 +24,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# [MỚI] Tắt log request của werkzeug (dev server) — mặc định nó log MỌI
+# request kể cả static assets (.css/.js/.png), gây spam console. Chỉ giữ
+# lại log khi có lỗi thật (WARNING trở lên, vd 404/500). Đặt SAU
+# basicConfig() vẫn ổn vì đây chỉ set level cho 1 logger con cụ thể
+# ("werkzeug"), không ảnh hưởng gì tới ngưỡng INFO chung mà basicConfig()
+# vừa thiết lập cho toàn bộ hệ thống (bao gồm logger [Wifeed], [MarketCache]...).
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
+
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, Input, Output, no_update
