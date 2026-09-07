@@ -511,12 +511,21 @@ def _create_login_modal():
                                 "padding": "4px 10px", "borderRadius": "12px", "letterSpacing": "0.05em"
                             }),
                             html.Div([
+                                # Phần thẻ giảm giá (đã bỏ giá gốc gạch ngang)
                                 html.Div([
-                                    html.Span("2.490k", style={"fontSize": "13px", "color": "#6b7280", "textDecoration": "line-through", "fontWeight": "500", "marginRight": "8px"}),
                                     html.Span("-20%", style={"backgroundColor": "rgba(239,68,68,0.15)", "color": "#ef4444", "fontSize": "10px", "fontWeight": "800", "padding": "2px 6px", "borderRadius": "4px", "letterSpacing": "0.05em", "border": "1px solid rgba(239,68,68,0.3)"}),
-                                ], style={"marginBottom": "2px", "display": "flex", "alignItems": "center"}),
-                                html.Span("1.990k", style={"fontSize": "26px", "color": "#00e676", "fontWeight": "800", "lineHeight": "1"}),
-                                html.Span(" /năm", style={"fontSize": "12px", "color": "#9ca3af", "fontWeight": "500"})
+                                ], style={"marginBottom": "6px", "display": "flex", "alignItems": "center"}),
+
+                                # Số to nổi bật: Giá theo năm
+                                html.Div([
+                                    html.Span("1.990k", style={"fontSize": "26px", "color": "#00e676", "fontWeight": "800", "lineHeight": "1"}),
+                                    html.Span(" /năm", style={"fontSize": "12px", "color": "#9ca3af", "fontWeight": "500"})
+                                ], style={"marginBottom": "4px"}),
+
+                                # Dòng mờ phía dưới: Tuỳ chọn giá theo tháng
+                                html.Div([
+                                    html.Span("hoặc 200k/tháng", style={"fontSize": "13px", "color": "#6b7280", "fontWeight": "500"})
+                                ])
                             ], style={"marginTop": "12px", "marginBottom": "20px"}),
                             _pricing_row("fas fa-check", "#00e676", "Chatbot AI Real-time", is_pro=True),
                             _pricing_row("fas fa-check", "#00e676", "Backtest 10 trường phái", is_pro=True),
@@ -894,7 +903,7 @@ def create_topbar(id_suffix=""):
                         "fontSize": "10px", "marginLeft": "2px",
                         "verticalAlign": "super", "fontStyle": "normal",
                     }),
-                ], href="#faq-section", target="_blank",
+                ], href="https://www.vietcap.com.vn/", target="_blank",
                     style={"textDecoration": "none", "display": "flex", "alignItems": "center"}),
                 # Nav links
                 html.Div([

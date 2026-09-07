@@ -136,7 +136,7 @@ def get_kpis(stock):
         "P/B": _fmt(stock.get("P/B"), bn=False, dec=1),
         "Cổ tức (%)": f"{_fmt(stock.get('Dividend Yield (%)', 0), bn=False, dec=1)}",
         "Giá": _fmt(stock.get("Price Close"), bn=False, dec=1),
-        "Vietcap Score": f"{GRADE_MAP.get(str(stock.get('VGM Score', 'C')), 3.0)}/5",
+        "FSS Score (Sao)": f"{GRADE_MAP.get(str(stock.get('VGM Score', 'C')), 3.0)}/5",
     }
 
 
@@ -179,7 +179,7 @@ def _header(c, ticker, company, exchange, title: str, stock: dict):
 
     c.setFont("VnFont", 8)
     c.setFillColor(C_TEXT)
-    c.drawString(MARGIN + 145, y_top, "Phân tích cổ phiếu chuyên sâu - Thị trường VN")
+    c.drawString(MARGIN + 145, y_top, "Phân tích cổ phiếu chuyên sâu - Thị trường Việt Nam")
 
     # Góc phải: Tên báo cáo & Giờ cập nhật
     c.setFont("VnFont-Bold", 9)

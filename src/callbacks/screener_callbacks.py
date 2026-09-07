@@ -574,9 +574,15 @@ def update_screener_table(
 
         # ── HARD FILTER theo chế độ đầu tư ──────────────────────────────────────────
         # ── HARD FILTER theo hồ sơ nhà đầu tư ──────────
-        _has_user_filters = bool(active_filters)  # True nếu còn thẻ nào đó
-
-        if trading_mode != "all_market" and investor_profile and investor_profile.get("auto_filters") and _has_user_filters:   # ← THÊM điều kiện này
+        # [FIX] Bỏ gate `_has_user_filters` — trước đây Profile Filter (dựa
+        # trên hồ sơ nhà đầu tư: vol/cap/price tối thiểu) CHỈ kích hoạt sau
+        # khi người dùng chạm vào bất kỳ filter card nào (kể cả chỉ nới
+        # lỏng, không liên quan gì tới nội dung Profile Filter). Hệ quả:
+        # kết quả sụt đột ngột và khó hiểu (VD 64→31 mã) ngay khi người
+        # dùng tương tác lần đầu, dù họ chỉ đang NỚI RỘNG 1 điều kiện khác.
+        # Áp dụng nhất quán ngay từ đầu để số liệu ổn định, không "giật cấp"
+        # giữa lần chưa chạm filter và lần đã chạm.
+        if trading_mode != "all_market" and investor_profile and investor_profile.get("auto_filters"):
             af = investor_profile["auto_filters"]
             min_vol   = af.get("min_vol",   30_000)
             min_cap   = af.get("min_cap",   200_000_000_000)

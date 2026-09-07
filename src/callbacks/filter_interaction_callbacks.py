@@ -1376,6 +1376,19 @@ def activate_readonly_filter_on_drag(slider_values, slider_ids, slider_mins,
                 and new_val[0] == ips_range[0] and new_val[1] == ips_range[1]):
             return no_update
 
+        # [FIX] Value không đổi so với store hiện tại → bỏ qua. THIẾU đoạn
+        # này là nguyên nhân gây "double lọc": rc-slider bắn sự kiện value
+        # 2 lần cho 1 lần kéo-thả (giữa lúc kéo + lúc buông chuột), cùng
+        # giá trị cuối. Nhánh B (card thường) đã có guard này, nhánh A thì
+        # không -> lần bắn thứ 2 vẫn tạo dict mới + return af, khiến
+        # active-filters-store đổi 2 lần -> screener_callbacks.py chạy lại
+        # run_strategy() (toàn bộ Fisher metrics + filter) 2 lần liên tiếp
+        # cho cùng 1 thao tác của người dùng.
+        if dragged_fid in af:
+            existing_val = af[dragged_fid].get("value") if isinstance(af[dragged_fid], dict) else None
+            if existing_val == new_val:
+                return no_update
+
         # Người dùng thực sự kéo → cập nhật value, GIỮ NGUYÊN toàn bộ af
         label = dragged_fid
         for cfg in CRITERIA_CONFIG.values():

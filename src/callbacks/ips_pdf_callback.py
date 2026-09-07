@@ -519,19 +519,107 @@ def _get_top3(profile: dict) -> list:
         logger.warning(f"[IPS PDF] _get_top3 error: {e}")
         return []
 
-def _load_display_name(username: str):
-    """Fallback: đọc display_name từ users.json theo username (khi không ai truyền display_name trực tiếp)."""
+_USERS_JSON_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "users.json")
+
+# Mặc định avatar cho IPS PDF khi user chưa từng chọn avatar (thay vì vòng
+# tròn initials "?"/chữ cái đầu — dùng ảnh minh họa có sẵn cho thân thiện hơn).
+_DEFAULT_AVATAR = "avt_1"
+
+_ASSETS_AVATAR_DIR_CANDIDATES = [
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "assets", "avatar_templates"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "avatar_templates"),
+    os.path.join(os.getcwd(), "assets", "avatar_templates"),
+]
+
+
+def _find_avatar_path(avatar_src: str):
+    """Thử vài vị trí thư mục assets phổ biến — trả None nếu không tìm thấy ở đâu cả."""
+    for d in _ASSETS_AVATAR_DIR_CANDIDATES:
+        p = os.path.join(d, f"{avatar_src}.png")
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def _load_user_record(username: str) -> dict:
+    """
+    Đọc nguyên bản ghi user (display_name, bio, avatar) từ users.json.
+    Đây là nguồn dữ liệu server-side đáng tin cậy nhất — không phụ thuộc
+    auth-store phía client (có thể thiếu bio/avatar tùy thời điểm).
+    """
     if not username:
-        return None
+        return {}
     import json
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "users.json")
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(_USERS_JSON_PATH, "r", encoding="utf-8") as f:
             users = json.load(f)
-        return (users.get(username) or {}).get("display_name") or None
+        return users.get(username) or {}
     except Exception as e:
         logger.debug(f"[IPS PDF] Không đọc được users.json: {e}")
-        return None
+        return {}
+
+
+def _load_display_name(username: str):
+    """Fallback: đọc display_name từ users.json theo username."""
+    return _load_user_record(username).get("display_name") or None
+
+
+def _avatar_color(display_name: str) -> "colors.Color":
+    """
+    Màu nền avatar initials — ĐỒNG BỘ palette với _get_avatar_color()
+    trong src/components/header.py (Google-style theo chữ cái đầu tên).
+    """
+    _palette = ["#0057D9", "#0057D9", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#ec4899"]
+    if not display_name:
+        return colors.HexColor(_palette[0])
+    idx = ord(display_name.split()[-1][0].upper()) % len(_palette)
+    return colors.HexColor(_palette[idx])
+
+
+def _draw_avatar(c, cx, cy, r, display_name, avatar_src):
+    """
+    Vẽ avatar tròn tại (cx, cy) bán kính r — dùng ảnh template thật nếu có
+    (avt_1/avt_2/avt_3, khớp src/components/header.py), fallback về vòng
+    tròn initials màu Google-style khi avatar là 'initials' hoặc ảnh lỗi.
+    """
+    initials = display_name.split()[-1][0].upper() if display_name else "?"
+
+    def _draw_initials_circle():
+        c.setFillColor(_avatar_color(display_name))
+        c.circle(cx, cy, r, fill=1, stroke=0)
+        c.setFont("VnFont-Bold", r * 0.85)
+        c.setFillColor(colors.white)
+        c.drawCentredString(cx, cy - r * 0.32, initials)
+
+    if avatar_src and avatar_src not in ("initials", "initials_purple", "initials_red"):
+        img_path = _find_avatar_path(avatar_src)
+        if img_path:
+            try:
+                c.saveState()
+                p = c.beginPath()
+                p.circle(cx, cy, r)
+                c.clipPath(p, stroke=0, fill=0)
+                c.drawImage(img_path, cx - r, cy - r, width=2*r, height=2*r,
+                            mask="auto", preserveAspectRatio=True)
+                c.restoreState()
+                return
+            except Exception as e:
+                logger.warning(f"[IPS PDF] Lỗi vẽ avatar ảnh '{img_path}': {e}")
+        else:
+            logger.warning(
+                f"[IPS PDF] Không tìm thấy file avatar '{avatar_src}.png' ở các thư mục: "
+                f"{_ASSETS_AVATAR_DIR_CANDIDATES} — dùng fallback initials.")
+    # avatar 'initials'/'initials_purple'/'initials_red' hoặc ảnh lỗi/không có
+    color_map = {"initials_purple": "#8b5cf6", "initials_red": "#ef4444"}
+    if avatar_src in color_map:
+        c.setFillColor(colors.HexColor(color_map[avatar_src]))
+        c.circle(cx, cy, r, fill=1, stroke=0)
+        c.setFont("VnFont-Bold", r * 0.85)
+        c.setFillColor(colors.white)
+        c.drawCentredString(cx, cy - r * 0.32, initials)
+    else:
+        _draw_initials_circle()
 
 
 
@@ -549,10 +637,24 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict,
     quiz_answers  = quiz_answers or {}
     now           = datetime.now()
 
-    # display_name truyền thẳng từ auth-store (ưu tiên) — chỉ fallback
-    # đọc users.json khi không ai truyền display_name lẫn username vào.
+    # display_name truyền thẳng từ auth-store (ưu tiên) — nhưng bio/avatar
+    # LUÔN đọc từ users.json vì auth-store phía client không đảm bảo có
+    # 2 field này tại mọi thời điểm (avatar chỉ set sau khi bấm Lưu ở
+    # profile modal; bio tương tự).
+    _user_rec = _load_user_record(username)
     if not display_name:
-        display_name = _load_display_name(username)
+        display_name = _user_rec.get("display_name")
+    bio        = (_user_rec.get("bio") or "").strip()
+    avatar_src = _user_rec.get("avatar") or _DEFAULT_AVATAR
+
+    # Bio trống → dùng tagline mặc định theo tier để card không bị "trống"
+    # (giống một CV thật luôn có dòng giới thiệu ngắn dưới tên).
+    if not bio:
+        _tier = (_user_rec.get("tier") or "free").lower()
+        bio = {
+            "pro": "Thành viên Pro · VSS Smart Screener",
+            "b2b": "Đối tác B2B · VSS Smart Screener",
+        }.get(_tier, "Thành viên Pro")
 
     buf = io.BytesIO()
     c   = rl_canvas.Canvas(buf, pagesize=A4)
@@ -673,27 +775,87 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict,
     _sec_title_num(c, 1, "KẾT QUẢ TRẮC NGHIỆM IPS", MARGIN, y, CW)
     y -= 18
 
-    # 4 KPI cards (cao hơn cho cân đối với screener)
-    kpi_w = (CW - 9) / 4
-    kpi_h = 52
+    # ── Thẻ hồ sơ kiểu CV: trái = avatar + tên + giới thiệu,
+    #    phải = 4 chỉ số IPS xếp dọc (thay cho 4 KPI card cạnh nhau cũ) ──
     kpis = [
-        ("Khẩu vị rủi ro",    risk_lbl,
-         risk_col),
-        ("Điểm tâm lý (Will)",
-         f"{will_s*100:.0f}/100",
-         colors.HexColor("#7C3AED")),
-        ("Năng lực TC (Ability)",
-         f"{abil_s*100:.0f}/100",
-         C_BLUE),
-        ("Final Score (CFA L3)",
-         f"{final_s*100:.0f}/100",
-         risk_col),
+        ("Khẩu vị rủi ro",       risk_lbl,                     risk_col),
+        ("Điểm tâm lý (Will)",   f"{will_s*100:.0f}/100",      colors.HexColor("#7C3AED")),
+        ("Năng lực TC (Ability)",f"{abil_s*100:.0f}/100",      C_BLUE),
+        ("Final Score (CFA L3)",f"{final_s*100:.0f}/100",      risk_col),
     ]
-    kx = MARGIN
-    for label, value, acc in kpis:
-        _kpi_card(c, kx, y - kpi_h, kpi_w, kpi_h, label, value, acc)
-        kx += kpi_w + 3
-    y -= kpi_h + 14
+
+    CARD_H  = 88
+    LEFT_W  = 116
+    card_top = y
+    card_bot = y - CARD_H
+
+    # Khung ngoài
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.HexColor("#C8DDEF")); c.setLineWidth(0.8)
+    c.roundRect(MARGIN, card_bot, CW, CARD_H, radius=6, fill=1, stroke=1)
+
+    # Panel trái — nền NHẠT (không còn tối màu) để chữ đen dễ đọc, kèm dải
+    # accent màu theo khẩu vị rủi ro cho có điểm nhấn (bo góc trái, vuông
+    # góc phải bằng cách phủ dải vuông đè lên phần bo tròn dư).
+    c.setFillColor(colors.HexColor("#F4F8FD"))
+    c.roundRect(MARGIN, card_bot, LEFT_W, CARD_H, radius=6, fill=1, stroke=0)
+    c.rect(MARGIN + LEFT_W - 6, card_bot, 6, CARD_H, fill=1, stroke=0)
+    # Đường phân cách bên phải panel trái
+    c.setStrokeColor(colors.HexColor("#D6E4F2")); c.setLineWidth(0.7)
+    c.line(MARGIN + LEFT_W, card_bot + 4, MARGIN + LEFT_W, card_top - 4)
+    # Dải accent màu rủi ro mỏng bên trái cùng
+    c.setFillColor(risk_col)
+    c.roundRect(MARGIN, card_bot, 4, CARD_H, radius=2, fill=1, stroke=0)
+
+    # Avatar tròn
+    avatar_r  = 18
+    avatar_cx = MARGIN + LEFT_W / 2 + 2
+    avatar_cy = card_top - 22
+    c.setFillColor(colors.white)
+    c.circle(avatar_cx, avatar_cy, avatar_r + 2, fill=1, stroke=0)
+    c.setStrokeColor(risk_col); c.setLineWidth(1.2)
+    c.circle(avatar_cx, avatar_cy, avatar_r + 2, fill=0, stroke=1)
+    _draw_avatar(c, avatar_cx, avatar_cy, avatar_r, display_name, avatar_src)
+
+    # Tên nhà đầu tư — chữ tối màu (không còn trắng) vì nền đã đổi sang nhạt
+    name_y = avatar_cy - avatar_r - 9
+    disp = display_name or "Nhà Đầu Tư VSS"
+    _fs = 8.5
+    while pdfmetrics.stringWidth(disp, "VnFont-Bold", _fs) > LEFT_W - 12 and _fs > 6.5:
+        _fs -= 0.5
+    # An toàn: nếu tên quá dài mà vẫn không vừa ở font nhỏ nhất → cắt bớt
+    while pdfmetrics.stringWidth(disp, "VnFont-Bold", _fs) > LEFT_W - 12 and len(disp) > 4:
+        disp = disp[:-1]
+    if disp != (display_name or "Nhà Đầu Tư VSS") and len(disp) > 3:
+        disp = disp.rstrip() + "…"
+    c.setFont("VnFont-Bold", _fs); c.setFillColor(C_HEADER_DARK)
+    c.drawCentredString(avatar_cx, name_y, disp)
+
+    # Giới thiệu (bio) — tối đa 2 dòng, luôn có tagline mặc định nếu trống
+    bio_lines = _wrap_text(bio, LEFT_W - 16, "VnFont", 6.0)[:2]
+    by = name_y - 10
+    c.setFont("VnFont", 6.0); c.setFillColor(colors.HexColor("#4B5563"))
+    for line in bio_lines:
+        c.drawCentredString(avatar_cx, by, line)
+        by -= 8
+
+    # 4 hàng chỉ số IPS bên phải (thay cho 4 card cạnh nhau)
+    rx = MARGIN + LEFT_W + 16
+    rw = CW - LEFT_W - 16 - 12
+    row_h = CARD_H / 4
+    for i, (label, value, acc) in enumerate(kpis):
+        ry_mid = card_top - row_h * i - row_h / 2
+        c.setFillColor(acc)
+        c.rect(rx, ry_mid - 4, 8, 8, fill=1, stroke=0)
+        c.setFont("VnFont", 8); c.setFillColor(C_GREY)
+        c.drawString(rx + 14, ry_mid - 2, label)
+        c.setFont("VnFont-Bold", 12); c.setFillColor(acc)
+        c.drawRightString(rx + rw, ry_mid - 3, value)
+        if i < 3:
+            c.setStrokeColor(C_LIGHT_GREY); c.setLineWidth(0.5)
+            c.line(rx, card_top - row_h * (i + 1), rx + rw, card_top - row_h * (i + 1))
+
+    y -= CARD_H + 14
 
     # Info rows (2 cột)
     info_col_w = CW / 2 - 6
@@ -722,7 +884,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict,
     y -= (len(info_pairs) // 2 + 1) * 16 + 14
 
     # ── Biểu đồ Điểm số IPS (Will / Ability / Final) — style Bloomberg ──
-    chart_h = 100
+    chart_h = 84
     try:
         fig, ax = plt.subplots(figsize=(CW/72, chart_h/72), facecolor="#FFFFFF")
         _styled_ax(ax, "Phân Tích Điểm Số IPS  ·  Mô hình CFA Level III", grid_axis="x")
@@ -735,8 +897,14 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict,
         ax.set_yticklabels(score_labels, fontsize=8)
         ax.set_xlim(0, 100)
         for i, v in enumerate(score_vals):
-            ax.text(min(v + 2, 92), i, f"{v:.0f}/100", va="center",
-                    fontsize=8, fontweight="bold", color="#0A1628")
+            # Giá trị cao (gần 100) → đặt nhãn VÀO TRONG thanh (né viền phải
+            # bị chạm/tràn ra ngoài trục); giá trị thấp → đặt ngoài như cũ.
+            if v > 80:
+                ax.text(v - 3, i, f"{v:.0f}/100", va="center", ha="right",
+                        fontsize=8, fontweight="bold", color="white")
+            else:
+                ax.text(v + 2, i, f"{v:.0f}/100", va="center", ha="left",
+                        fontsize=8, fontweight="bold", color="#0A1628")
         fig.subplots_adjust(left=0.24, right=0.97, top=0.78, bottom=0.14)
         _embed(c, fig, MARGIN, y - chart_h, CW, chart_h)
     except Exception as _ce:
@@ -795,7 +963,7 @@ def generate_ips_pdf(profile: dict, quiz_answers: dict,
     y -= 18
 
     # Text box chiến lược — nền xanh nhạt, viền
-    box_h_est = 88
+    box_h_est = 80
     c.setFillColor(C_BLUE_SOFT)
     c.setStrokeColor(C_BLUE_BORDER)
     c.setLineWidth(0.8)

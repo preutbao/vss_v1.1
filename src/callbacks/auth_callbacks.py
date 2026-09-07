@@ -359,11 +359,8 @@ def update_navbar_auth(auth_data):
 _PREMIUM_WRAPPERS = [
     "pw-detail-pdf",    # [MỚI] Nút PDF nhỏ trong header modal "Phân tích chi tiết"
     "pw-screener-pdf",  # Báo cáo PDF trong screener
-    "pw-watchlist",  # Watchlist — PREMIUM
-    'pw-compare',
     'pw-portfolio',
     "pw-crisis",
-    'pw-alerts',
     'pw-strategies',
     'pw-momentum',
 ]

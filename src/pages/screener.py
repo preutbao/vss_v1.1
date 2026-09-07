@@ -1181,53 +1181,7 @@ layout = html.Div([
                             "Dòng tiền ngành",
                         ], id="btn-heatmap", size="sm", className="fss-tbtn fss-tbtn--cyan"),
 
-                        html.Div(
-                            id="pw-export-excel",
-                            className="premium-wrapper premium-locked",   # ← bỏ "premium-locked" nếu user đã VIP
-                            children=[
-                                # ── Nội dung thật (bị overlay che khi chưa VIP) ──
-                                html.Div(
-                                    children=[
-                                        dbc.Button(
-                                            [
-                                                html.I(className="fas fa-file-excel fss-tbtn-icon"),
-                                                "Excel",
-                                            ],
-                                            id="btn-export-excel",
-                                            size="sm",
-                                            className="fss-tbtn fss-tbtn--green",
-                                        ),
-                                        # Thêm dcc.Download cho Excel (tương tự PDF)
-                                        dcc.Download(id="export-excel-download"), 
-                                    ],
-                                    className="premium-content",
-                                ),
-                                # ── Overlay khóa VIP (hiện khi chưa đăng ký) ──
-                                html.Div(
-                                    id={"type": "premium-overlay-btn", "section": "export-excel"}, # Đổi section thành export-excel
-                                    n_clicks=0,
-                                    className="premium-overlay",
-                                    children=[
-                                        html.I(
-                                            className="fas fa-lock",
-                                            style={
-                                                "fontSize": "10px",
-                                                "color": "#0057D9",
-                                                "marginBottom": "2px",
-                                            },
-                                        ),
-                                        html.Span(
-                                            "VIP",
-                                            style={
-                                                "fontSize": "9px",
-                                                "fontWeight": "700",
-                                                "color": "#6e7681",
-                                            },
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
+                        
 
 
                         
@@ -1305,32 +1259,11 @@ layout = html.Div([
                                 ),
                             ],
                         ),
-                        
-                        # So sánh — PREMIUM
-                        html.Div(
-                            id="pw-compare",
-                            className="premium-wrapper premium-locked",
-                            children=[
-                                html.Div(
-                                    dbc.Button([
-                                        html.I(className="fas fa-code-compare fss-tbtn-icon"),
-                                        "So sánh",
-                                    ], id="btn-compare", size="sm", className="fss-tbtn fss-tbtn--violet"),
-                                    className="premium-content",
-                                ),
-                                html.Div(
-                                    id={"type": "premium-overlay-btn", "section": "compare"},
-                                    n_clicks=0,
-                                    className="premium-overlay",
-                                    children=[
-                                        html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
-                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
-                                    ],
-                                ),
-                            ],
-                        ),
 
+
+                        
+                        
+                        
 
                         # Danh mục — PREMIUM (giữ nguyên)
                         html.Div(
@@ -1382,65 +1315,84 @@ layout = html.Div([
                                 ),
                             ],
                         ),
+                        
+
+                        # So sánh
+                        dbc.Button([
+                            html.I(className="fas fa-code-compare fss-tbtn-icon"),
+                            "So sánh",
+                        ], id="btn-compare", size="sm", className="fss-tbtn fss-tbtn--violet"),
+
+                        # Watchlist
+                        dbc.Button([
+                            html.I(className="fas fa-eye fss-tbtn-icon"),
+                            html.Span("Watchlist", id="label-watchlist-btn")
+                        ], id="btn-watchlist", size="sm", className="fss-tbtn fss-tbtn--gold"),
+
+                        # Cảnh báo — giữ tint vàng-lime ở icon chuông vì
+                        # gắn với badge số lượng cảnh báo, cần dễ nhận diện
+                        html.Div([
+                            dbc.Button([
+                                html.I(className="fas fa-bell fss-tbtn-icon"),
+                                "Cảnh báo",
+                            ], id="btn-alerts", size="sm", className="fss-tbtn fss-tbtn--lime"),
+                            html.Span("0", id="alert-badge", style={"display": "none"}),
+                        ], style={"position": "relative"}),
 
 
-                        # Watchlist — PREMIUM
+
                         html.Div(
-                            id="pw-watchlist",
-                            className="premium-wrapper premium-locked",
+                            id="pw-export-excel",
+                            className="premium-wrapper premium-locked",   # ← bỏ "premium-locked" nếu user đã VIP
                             children=[
+                                # ── Nội dung thật (bị overlay che khi chưa VIP) ──
                                 html.Div(
-                                    dbc.Button(
-                                        [
-                                            html.I(className="fas fa-eye fss-tbtn-icon"),
-                                            html.Span("Watchlist", id="label-watchlist-btn")
-                                        ],
-                                        id="btn-watchlist",
-                                        size="sm",
-                                        className="fss-tbtn fss-tbtn--gold",
-                                    ),
+                                    children=[
+                                        dbc.Button(
+                                            [
+                                                html.I(className="fas fa-file-excel fss-tbtn-icon"),
+                                                "Excel",
+                                            ],
+                                            id="btn-export-excel",
+                                            size="sm",
+                                            className="fss-tbtn fss-tbtn--green",
+                                        ),
+                                        # Thêm dcc.Download cho Excel (tương tự PDF)
+                                        dcc.Download(id="export-excel-download"), 
+                                    ],
                                     className="premium-content",
                                 ),
+                                # ── Overlay khóa VIP (hiện khi chưa đăng ký) ──
                                 html.Div(
-                                    id={"type": "premium-overlay-btn", "section": "watchlist"},
+                                    id={"type": "premium-overlay-btn", "section": "export-excel"}, # Đổi section thành export-excel
                                     n_clicks=0,
                                     className="premium-overlay",
                                     children=[
-                                        html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
-                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
+                                        html.I(
+                                            className="fas fa-lock",
+                                            style={
+                                                "fontSize": "10px",
+                                                "color": "#0057D9",
+                                                "marginBottom": "2px",
+                                            },
+                                        ),
+                                        html.Span(
+                                            "VIP",
+                                            style={
+                                                "fontSize": "9px",
+                                                "fontWeight": "700",
+                                                "color": "#6e7681",
+                                            },
+                                        ),
                                     ],
                                 ),
                             ],
                         ),
 
-                        # Cảnh báo — PREMIUM — giữ tint vàng-lime ở icon chuông vì
-                        # gắn với badge số lượng cảnh báo, cần dễ nhận diện
-                        html.Div(
-                            id="pw-alerts",
-                            className="premium-wrapper premium-locked",
-                            children=[
-                                html.Div([
-                                    dbc.Button([
-                                        html.I(className="fas fa-bell fss-tbtn-icon"),
-                                        "Cảnh báo",
-                                    ], id="btn-alerts", size="sm", className="fss-tbtn fss-tbtn--lime"),
-                                    html.Span("0", id="alert-badge", style={"display": "none"}),
-                                ], style={"position": "relative"}, className="premium-content"),
-                                html.Div(
-                                    id={"type": "premium-overlay-btn", "section": "alerts"},
-                                    n_clicks=0,
-                                    className="premium-overlay",
-                                    children=[
-                                        html.I(className="fas fa-lock",
-                                               style={"fontSize": "10px", "color": "#0057D9", "marginBottom": "2px"}),
-                                        html.Span("VIP", style={"fontSize": "9px", "fontWeight": "700", "color": "#6e7681"}),
-                                    ],
-                                ),
-                            ],
-                        ),
 
-                    ]
+
+
+                    ],
                 ),
 
                 html.Div([
