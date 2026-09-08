@@ -435,7 +435,7 @@ def _create_login_modal():
                         html.H2("Đăng nhập", style={"fontSize": "24px", "fontWeight": "700", "color": "#f9fafb", "marginBottom": "6px", "letterSpacing": "-0.02em"}),
                         html.P("Truy cập hệ thống dữ liệu định lượng FSS", style={"fontSize": "14px", "color": "#9ca3af", "marginBottom": "32px"}),
                     ]),
-                    _login_field("TÊN ĐĂNG NHẬP", "login-username", placeholder="user@vietcap.com", icon_cls="fas fa-envelope"),
+                    _login_field("TÊN ĐĂNG NHẬP", "login-username", placeholder="user@fss.com", icon_cls="fas fa-envelope"),
                     _login_field("MẬT KHẨU", "login-password", input_type="password", placeholder="••••••••", icon_cls="fas fa-lock"),
                     html.Div(id="login-error-msg", style={"display": "none", "color": "#ef4444", "fontSize": "12px", "marginTop": "-8px", "marginBottom": "12px"}),
                     dbc.Button(

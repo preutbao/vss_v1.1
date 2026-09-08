@@ -1866,6 +1866,22 @@ STRATEGY_META = {
     "STRAT_MAGIC": {"name": "Công Thức Kỳ Diệu (Greenblatt)", "icon": "🪄"},
     "STRAT_ADX_MOMENTUM": {"name": "ADX Momentum — Xu hướng & Siêu Cổ Phiếu (Wilder)", "icon": "🔥"},
 }
+# [FIX] Cache kết quả run_strategy() theo (id(df_snapshot), strategy_id) — 
+# phát hiện qua debug: 2 callback Dash ĐỘC LẬP (update_screener_table trong
+# screener_callbacks.py VÀ update_strategy_match_notification trong
+# strategy_callbacks.py) đều nghe Input("strategy-preset-dropdown") và MỖI
+# callback tự chạy run_strategy() riêng trên CÙNG 1 snapshot 1545 mã, cho
+# CÙNG 1 kết quả — tốn gấp đôi thời gian tính toán (~5.8s x2 = ~11.6s cho
+# STRAT_VALUE) một cách hoàn toàn vô ích.
+# id(df_snapshot) làm key vì data_loader giữ snapshot là 1 object DUY NHẤT
+# trong RAM cho tới khi rebuild sau EOD mới — id() tự đổi đúng lúc cache
+# cần invalidate, không cần data_loader.py báo hiệu gì thêm.
+_STRATEGY_RESULT_CACHE = {}
+_STRATEGY_CACHE_MAXSIZE = 8  # giữ vài strategy gần nhất, tránh phình RAM
+
+def _strategy_cache_key(df_snapshot, strategy_id, df_fin):
+    return (id(df_snapshot), strategy_id, id(df_fin) if df_fin is not None else None)
+
 
 def run_strategy(df_snapshot, strategy_id, df_fin=None):
     """
@@ -1876,11 +1892,28 @@ def run_strategy(df_snapshot, strategy_id, df_fin=None):
 
     CANSLIM tự load quarterly data bên trong calculate_canslim_metrics.
     """
+    # 1. KIỂM TRA CACHE TRƯỚC
+    _cache_key = _strategy_cache_key(df_snapshot, strategy_id, df_fin)
+    if _cache_key in _STRATEGY_RESULT_CACHE:
+        logger.info(
+            f"[Strategy Cache] HIT — dùng lại kết quả {strategy_id} đã tính "
+            f"(bỏ qua tính toán trùng lặp từ callback khác)"
+        )
+        return _STRATEGY_RESULT_CACHE[_cache_key].copy()
+
     if strategy_id not in STRATEGY_MAP:
         logger.warning(f"Không nhận ra strategy_id: {strategy_id}")
         return df_snapshot
 
+    # 2. CHƯA CÓ CACHE -> TÍNH TOÁN
     calc_fn, apply_fn = STRATEGY_MAP[strategy_id]
     logger.info(f"▶ Chạy chiến lược: {strategy_id}")
     df_enriched = calc_fn(df_snapshot, df_fin=df_fin)
-    return apply_fn(df_enriched)
+    df_filtered = apply_fn(df_enriched) # Lưu vào biến df_filtered thay vì return luôn
+
+    # 3. [FIX] LƯU CACHE TRƯỚC KHI RETURN
+    if len(_STRATEGY_RESULT_CACHE) >= _STRATEGY_CACHE_MAXSIZE:
+        _STRATEGY_RESULT_CACHE.pop(next(iter(_STRATEGY_RESULT_CACHE)))  # FIFO đơn giản
+    _STRATEGY_RESULT_CACHE[_cache_key] = df_filtered.copy()
+
+    return df_filtered

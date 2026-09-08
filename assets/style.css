@@ -5909,7 +5909,7 @@ input:focus,
 
 .fss-tour-pulse {
     background-color: #0dcaf0 !important; /* Xanh lơ sáng */
-    color: #0a192f !important; /* Chữ xanh đen */
+    color: #ffffff !important; /* Chữ xanh đen */
     font-weight: 600;
     border: none !important;
     border-radius: 8px;
@@ -6361,4 +6361,155 @@ html {
 /* Đổi màu chữ của tooltip về màu xanh ngọc */
 .custom-range-slider .rc-slider-handle::after {
     color: #00d4ff !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   FILTER MANAGER MODAL
+══════════════════════════════════════════════════════ */
+.fm-modal-content {
+  background: #0f1829 !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 16px !important;
+  padding: 24px 22px 20px;
+  position: relative;
+  max-height: 82vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.fm-modal-close-btn {
+  position: absolute; top: 16px; right: 16px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); border: none;
+  color: #9ca3af; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.fm-modal-title {
+  font-size: 17px; font-weight: 700; color: #e5e7eb;
+  margin-bottom: 16px;
+}
+
+/* ── Tabs ── */
+.fm-tabs {
+  display: flex; gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px; padding: 4px;
+  margin-bottom: 16px; width: fit-content;
+}
+.fm-tab {
+  background: transparent; border: none;
+  padding: 7px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; color: #9ca3af;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.fm-tab.is-active {
+  background: #16213e; color: #ffffff;
+}
+
+/* ── Panel / list ── */
+.fm-panel {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fm-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #16213e;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: background 0.15s;
+}
+.fm-row:hover { background: #1a2847; }
+
+.fm-row-main { cursor: pointer; flex: 1; min-width: 0; }
+.fm-row-title-line { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.fm-row-name { font-size: 13.5px; font-weight: 600; color: #e5e7eb; }
+.fm-row-default-tag {
+  font-size: 9px; font-weight: 700; color: #4A90E2;
+  background: rgba(74,144,226,0.12); padding: 2px 6px; border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+.fm-row-count-badge {
+  font-size: 11px; color: #6b7280;
+}
+.fm-row-count-badge--muted { font-style: italic; }
+
+.fm-row-meta-line { display: flex; align-items: center; gap: 12px; margin-top: 2px; }
+.fm-row-stat { font-size: 11px; color: #6b7280; }
+.fm-row-author { font-size: 11px; color: #4A90E2; }
+
+/* ── Kebab menu ── */
+.fm-row-kebab-wrap { position: relative; flex-shrink: 0; margin-left: 10px; }
+.fm-kebab-btn {
+  background: transparent; border: none; color: #6b7280;
+  width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
+}
+.fm-kebab-btn:hover { background: rgba(255,255,255,0.08); color: #e5e7eb; }
+
+.fm-kebab-menu {
+  position: absolute; top: 30px; right: 0;
+  background: #1a2540; border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 8px; padding: 6px; min-width: 170px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  z-index: 50;
+}
+.fm-kebab-item {
+  display: flex; align-items: center;
+  font-size: 12px; color: #d1d5db;
+  padding: 8px 10px; border-radius: 6px; cursor: pointer;
+}
+.fm-kebab-item:hover { background: rgba(255,255,255,0.06); }
+.fm-kebab-item--danger { color: #f87171; }
+
+/* ── Community search + filter ── */
+.fm-search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.fm-search-box {
+  flex: 1; display: flex; align-items: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 9px 12px;
+}
+.fm-search-input {
+  background: transparent; border: none; outline: none;
+  color: #e5e7eb; font-size: 13px; flex: 1;
+}
+.fm-filter-icon-btn {
+  width: 38px; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+  color: #9ca3af; cursor: pointer;
+}
+.fm-filter-icon-btn:hover { color: #4A90E2; border-color: rgba(74,144,226,0.35); }
+
+.fm-community-filter-panel {
+  position: absolute; top: 90px; right: 24px;
+  width: 300px; background: #16213e;
+  border: 1px solid rgba(255,255,255,0.10); border-radius: 12px;
+  padding: 18px; z-index: 60;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+}
+.fm-popover-label {
+  font-size: 11px; font-weight: 700; color: #9ca3af;
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+}
+.fm-radio-group { display: flex; gap: 16px; }
+.fm-radio-label { font-size: 12px; color: #d1d5db; margin-right: 4px; }
+.fm-radio-input { margin-right: 4px; }
+.fm-popover-actions {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 18px;
+}
+.fm-btn-reset {
+  background: transparent; border: none; color: #9ca3af;
+  font-size: 12px; cursor: pointer;
+}
+.fm-btn-apply {
+  background: linear-gradient(135deg, #0090ff, #00c8ff);
+  border: none; color: #fff; font-size: 12px; font-weight: 700;
+  padding: 8px 20px; border-radius: 8px; cursor: pointer;
 }

@@ -914,7 +914,9 @@ layout = html.Div([
                 
                 style={"backgroundColor":"#0d1829",
                        "borderBottom":"1px solid #1e3a5f"},
-                close_button=False,
+
+                # SỬA 2 DÒNG NÀY ĐỂ HIỂN THỊ NÚT X MÀU TRẮNG
+                close_button=True,
             ),
 
             dbc.ModalBody([
@@ -928,7 +930,7 @@ layout = html.Div([
                     html.P([
                         html.I(className="fas fa-shield-alt",
                                style={"marginRight":"6px","color":"#00875a"}),
-                        "Vietcap Defensive Pick (Top 3)",
+                        "Lựa chọn phòng thủ (Top 3)",
                     ], style={"fontWeight":"700","fontSize":"12px",
                               "color":"#a8d8b0","marginBottom":"6px"}),
                     html.Div(id="modal-ncn-table"),
@@ -1164,6 +1166,7 @@ layout = html.Div([
                         id="btn-start-tour",
                         size="md",
                         className="fss-tour-pulse",
+                        style={"color": "white"}  # Thêm dòng này để đổi màu chữ và icon thành trắng
                     ),
                 ], style={"display": "flex", "justifyContent": "flex-end", "marginBottom": "4px"}),
 
