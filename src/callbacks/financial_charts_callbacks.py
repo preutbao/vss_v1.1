@@ -706,7 +706,7 @@ def render_fin_charts_tab(active_tab, period, selected_rows, saved_selection, st
 
     # Validation an toàn
     if not selected_rows or len(selected_rows) == 0:
-        return html.P("Chọn một cổ phiếu để xem biểu đồ.",
+        return html.P("Click chọn một cổ phiếu để xem biểu đồ.",
                       style={"color": "#94a3b8", "padding": "20px", "textAlign": "center"})
                       
     ticker = selected_rows[0].get("Ticker", "")

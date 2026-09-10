@@ -18,3 +18,7 @@ snapshot_cache.parquet
 .DS_Store
 **/.DS_Store
 assets/infinite_candlesticks_dark_glow.gif
+backtest_output/
+benchmark_results/
+benchmarks
+backtest.py

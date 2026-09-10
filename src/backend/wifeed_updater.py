@@ -121,6 +121,13 @@ _index_appended: bool         = False        # đã append index hôm nay chưa 
 _index_date:     str          = ""           # "YYYY-MM-DD" của ngày đã append index
 _cache_lock:     threading.Lock = threading.Lock()
 _scheduler_started: bool      = False
+# [MỚI] Cờ báo hiệu "đang chạy backfill nặng qua daily_updater/root-put
+# nhiều trang" — dùng để _fetch_job() (chạy trên thread nền APScheduler,
+# ĐỘC LẬP với main thread) tự tạm dừng, tránh race condition đọc/ghi
+# market_prices.parquet cùng lúc với daily_updater.run_update() (không
+# dùng chung _cache_lock) hoặc với chính _fetch_root_put_eod() nhiều
+# trang (10 giây+) đang chạy dở trong _append_eod_to_parquet().
+_backfill_in_progress: threading.Event = threading.Event()
 # ── In-memory cache ──────────────────────────────────────────────────────────
 # dict: { "Ticker": { "Price Close": float, "Volume": int, ... } }
 _realtime_snapshot: dict = {}
@@ -810,6 +817,16 @@ def _filter_known_tickers(df: pd.DataFrame) -> pd.DataFrame:
 # ── Job chính chạy bởi scheduler ─────────────────────────────────────────────
 def _fetch_job() -> None:
     global _eod_appended
+    # [MỚI] Nếu đang có backfill nặng chạy (daily_updater.run_update() hoặc
+    # root-put nhiều trang trong run_startup_backfill()) trên main thread,
+    # bỏ qua tick này — tránh đọc/ghi market_prices.parquet chồng lấn với
+    # thread kia (xem comment tại _backfill_in_progress).
+    if _backfill_in_progress.is_set():
+        logger.debug(
+            "[Wifeed] Đang có backfill nặng chạy (daily_updater/root-put) — "
+            "tạm bỏ qua tick này của scheduler."
+        )
+        return
     # [SỬA] _is_trading_time() giờ đã tự bao gồm cả check weekday()+holiday
     # qua _is_market_open_day() -> không cần check riêng _VN_HOLIDAYS ở
     # đây nữa (tránh lặp code, tránh lệch nhau như bug vừa gặp).
@@ -972,7 +989,16 @@ def run_startup_backfill() -> None:
                 last_date = pd.to_datetime(df_cache["Date"]).max().date()
         except Exception as e:
             logger.error(f"[Wifeed] Lỗi đọc parquet check date: {e}")
-    needs_wifeed_eod = False
+    needs_wifeed_eod = True
+    # [FIX 2] Đổi default False -> True. Ý nghĩa của biến này giờ CHỈ còn
+    # là "hôm nay có cần append_today_eod hay không" — mặc định True (cứ
+    # để append_today_eod tự quyết định dựa trên giờ + last_date != today),
+    # trừ khi nhánh days_missing > 1 (gọi daily_updater.run_update(), vốn
+    # tự lo luôn cả hôm nay qua SSI/VNDirect) xác nhận set False. Nhánh
+    # days_missing == 1 (vá 1 NGÀY TRƯỚC hôm nay qua root-put) KHÔNG được
+    # đụng vào biến này nữa — xem comment chi tiết trong nhánh đó bên dưới,
+    # đây chính là nguyên nhân gây bug "vá xong ngày X nhưng bỏ luôn ngày
+    # hôm nay" bạn vừa phát hiện.
     # [FIX] Cờ riêng cho việc backfill index.parquet — TÁCH KHỎI needs_wifeed_eod.
     # Lý do: khi days_missing==1, nhánh root-put backfill giá cổ phiếu (dưới
     # đây) set needs_wifeed_eod=False ngay khi thành công -> điều kiện
@@ -984,6 +1010,10 @@ def run_startup_backfill() -> None:
     # quên, lệch pha ngày với nhau đúng như log bạn vừa cho thấy (27/08 vs
     # 28/08 của giá cổ phiếu).
     needs_index_backfill = False
+    days_missing = None  # [MỚI] khởi tạo tường minh — dùng ở bước 3.5 bên
+                          # dưới để check riêng index. None nghĩa là "chưa
+                          # tính được" (trường hợp last_date is None, tức
+                          # market_prices.parquet chưa tồn tại).
     # 3. Logic Backfill bằng SSI/VNDirect (gọi từ daily_updater)
     if last_date:
         # SAU — đếm NGÀY GIAO DỊCH (Thứ 2–6) bị thiếu, bỏ qua cuối tuần:
@@ -998,6 +1028,11 @@ def run_startup_backfill() -> None:
         # Nếu hổng > 1 ngày (VD: qua cuối tuần, nghỉ lễ, tắt máy nhiều ngày)
         if days_missing > 1:
             logger.warning(f"[Data Gap] Phát hiện thiếu {days_missing} ngày dữ liệu (Từ {last_date}). Kích hoạt SSI/VND Fallback...")
+            # [MỚI] Bật cờ TRƯỚC khi gọi run_update() (có thể chạy 5-15 phút
+            # cho ~1500 mã) để _fetch_job() trên thread nền tự tạm dừng suốt
+            # thời gian này — dùng try/finally để cờ CHẮC CHẮN được tắt lại
+            # kể cả khi run_update() ném exception.
+            _backfill_in_progress.set()
             try:
                 # Import động để tránh circular import, gọi trực tiếp bộ máy của daily_updater
                 from daily_updater import run_update
@@ -1014,6 +1049,8 @@ def run_startup_backfill() -> None:
             except Exception as e:
                 logger.error(f"[Data Gap] Lỗi khi chạy SSI Fallback: {e}")
                 needs_wifeed_eod = True # Nếu SSI sập, thử dùng Wifeed để vớt vát EOD
+            finally:
+                _backfill_in_progress.clear()
 
         elif days_missing == 0:
             # [FIX] np.busday_count(begin, end) loại trừ `end` (today_vn), nên
@@ -1026,34 +1063,92 @@ def run_startup_backfill() -> None:
             needs_wifeed_eod = True
         elif days_missing == 1:
             # Ngày bị thiếu đã kết thúc phiên từ lâu -> dữ liệu đã chốt, lấy được
-            # Ngày bị thiếu đã kết thúc phiên từ lâu -> dữ liệu đã chốt, lấy được
             # bất cứ lúc nào qua root-put (có tham số ngày cụ thể), KHÔNG phụ
             # thuộc hôm nay có phải ngày GD hay không, không phụ thuộc giờ hiện tại.
+            #
+            # [FIX 2] BỎ TOÀN BỘ việc gán needs_wifeed_eod trong nhánh này.
+            # missing_date ở đây LUÔN LÀ NGÀY TRƯỚC HÔM NAY (last_date + 1
+            # ngày làm việc, vd 04/09 -> missing_date=07/09, trong khi hôm
+            # nay có thể là 08/09) — việc vá xong ngày ĐÓ hoàn toàn không
+            # liên quan tới việc HÔM NAY đã có data hay chưa, đây là 2 nhu
+            # cầu độc lập nhau. Set needs_wifeed_eod=False ở đây (bản cũ)
+            # vô tình tắt luôn append_today_eod của HÔM NAY dù đã qua giờ
+            # chốt (_EOD_CONFIRM) từ lâu — đúng bug bạn vừa thấy trong log
+            # (backfill xong 07/09 nhưng 08/09 không được fetch dù 23h06).
+            # Giữ nguyên needs_wifeed_eod ở giá trị mặc định (True, xem
+            # dòng khởi tạo đầu hàm) trong TOÀN BỘ nhánh này — để
+            # append_today_eod bên dưới tự quyết định dựa đúng vào
+            # (last_date != today_vn) + giờ hiện tại, không bị nhánh vá
+            # gap-ngày-trước này can thiệp nữa.
             missing_date = pd.Timestamp(
                 np.busday_offset(last_date, 1, roll="forward", holidays=sorted(_VN_HOLIDAYS))
             ).date()
             missing_date_str = missing_date.strftime("%Y-%m-%d")
             logger.info(f"[Wifeed] Backfill 1 ngày thiếu ({missing_date_str}) qua root-put...")
+            _backfill_in_progress.set()
             try:
                 df_backfill = _fetch_root_put_eod(missing_date_str)
                 if not df_backfill.empty:
                     if _merge_eod_into_price_parquet(df_backfill):
                         logger.info(f"[Wifeed] Backfill {missing_date_str} thành công qua root-put.")
-                        needs_wifeed_eod = False   # đã xong, khỏi cần nhánh append_today_eod nữa
-                        # [FIX] root-put không có data index -> vẫn cần 1 lượt
-                        # fetch bulk OHLC riêng để lấy VNINDEX/VN30/... cho
-                        # đúng ngày vừa backfill.
                         needs_index_backfill = True
                     else:
-                        needs_wifeed_eod = True
+                        logger.error(f"[Wifeed] Merge backfill {missing_date_str} thất bại.")
                 else:
                     logger.warning(f"[Wifeed] root-put không có data cho {missing_date_str} — có thể là ngày nghỉ lễ.")
-                    needs_wifeed_eod = False   # tránh loop vô ích nếu đó là ngày lễ
             except Exception as e:
                 logger.error(f"[Wifeed] Lỗi backfill qua root-put: {e}")
                 needs_wifeed_eod = True
+            finally:
+                _backfill_in_progress.clear()
     else:
         needs_wifeed_eod = True # File chưa tồn tại, bắt buộc lấy
+
+    # 3.5. [MỚI] Kiểm tra riêng index.parquet — tách biệt hoàn toàn khỏi
+    # days_missing của GIÁ, vì 2 file được ghi bởi 2 hàm độc lập
+    # (_merge_eod_into_price_parquet cho giá, _append_index_to_parquet cho
+    # index) và có thể lệch pha nhau (đã xác nhận qua bug needs_index_backfill
+    # ở trên). Nếu không có check này, kịch bản "giá vẫn cập nhật đều nhưng
+    # index tự đứng yên nhiều ngày do lỗi mạng/exception bị nuốt lúc gọi
+    # _append_index_to_parquet" sẽ KHÔNG BAO GIỜ được nhánh nào ở trên phát
+    # hiện, vì toàn bộ logic days_missing ở trên chỉ đọc từ _PRICE_PATH.
+    index_last_date = None
+    if os.path.exists(_INDEX_PATH):
+        try:
+            df_idx_cache = pd.read_parquet(_INDEX_PATH, columns=["Date"])
+            if not df_idx_cache.empty:
+                index_last_date = pd.to_datetime(df_idx_cache["Date"]).max().date()
+        except Exception as e:
+            logger.error(f"[Wifeed] Lỗi đọc index parquet check date: {e}")
+
+    if index_last_date:
+        index_days_missing = int(np.busday_count(
+            index_last_date + timedelta(days=1), today_vn, holidays=sorted(_VN_HOLIDAYS)
+        ))
+    else:
+        index_days_missing = 999  # chưa có file index -> coi như thiếu nghiêm trọng
+
+    # Chỉ can thiệp khi GIÁ đang ổn (days_missing is None nghĩa là chưa có
+    # parquet giá — trường hợp đó nhánh needs_wifeed_eod=True/SSI-fallback ở
+    # trên đã lo cả giá lẫn index rồi, không cần xử lý thêm) NHƯNG index tự
+    # lệch riêng >= 2 ngày — đúng kịch bản lỗ hổng bạn phát hiện.
+    if index_days_missing > 1 and days_missing is not None and days_missing <= 1:
+        logger.warning(
+            f"[Data Gap] index.parquet thiếu {index_days_missing} ngày "
+            f"(từ {index_last_date}) dù market_prices.parquet vẫn ổn "
+            f"({days_missing} ngày thiếu). Ép chạy SSI/VNDirect fallback "
+            f"riêng cho index qua daily_updater.run_update(force=True)..."
+        )
+        try:
+            from daily_updater import run_update
+            success_idx = run_update(rebuild_snapshot=False, force=True)
+            if success_idx:
+                logger.info("[Data Gap] Backfill index bằng SSI/VNDirect thành công.")
+            else:
+                logger.error("[Data Gap] Backfill index bằng SSI/VNDirect thất bại.")
+        except Exception as e:
+            logger.error(f"[Data Gap] Lỗi khi ép backfill index qua daily_updater: {e}")
+
     # 4. Logic lấy data Wifeed "Hôm nay"
     # Điều kiện lấy EOD Wifeed: 
     # Cần lấy EOD VÀ là ngày GD VÀ đã qua 15:00 VÀ hôm nay chưa có data

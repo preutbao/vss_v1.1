@@ -1194,7 +1194,7 @@ def create_banner():
                                     html.I(className="fa-solid fa-filter", style={"marginRight": "8px"}),
                                     "Tự Xây Bộ Lọc"
                                 ],
-                                className="fss-tour-pulse",
+                                className="fss-tour-pulsee",
                                 style={
                                     "padding": "12px 24px",
                                     "fontSize": "16px",

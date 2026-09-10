@@ -5231,14 +5231,35 @@ input:focus,
    thể màu .fss-tbtn--color đầy đủ hơn, phủ cả viền + icon + hover) */
 
 
-/* Nút chính "Công cụ" — nổi bật nhẹ hơn 1 chút vì là master-toggle */
+/* Định nghĩa hiệu ứng nhịp thở / tỏa sáng */
+@keyframes softGlow {
+  0% {
+    box-shadow: 0 0 0px rgba(30, 136, 229, 0);
+    border-color: rgba(30, 136, 229, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(30, 136, 229, 0.6), inset 0 0 5px rgba(30, 136, 229, 0.2);
+    border-color: rgba(30, 136, 229, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(30, 136, 229, 0);
+    border-color: rgba(30, 136, 229, 0.35);
+  }
+}
+
+/* Áp dụng animation vào nút Công cụ */
 .fss-tbtn-primary {
   border-color: rgba(30, 136, 229, 0.35) !important;
   color: #cfe3fb !important;
+  /* Chạy animation liên tục: thời gian 2.5 giây, lặp vô tận */
+  animation: softGlow 2.5s infinite ease-in-out !important; 
 }
+
 .fss-tbtn-primary:hover {
   background: rgba(30, 136, 229, 0.16) !important;
   border-color: #1E88E5 !important;
+  /* Tùy chọn: Bạn có thể giữ hoặc bỏ dòng dưới nếu muốn khi rê chuột animation dừng lại hoặc nhanh hơn */
+  animation: softGlow 1.2s infinite ease-in-out !important; 
 }
 
 /* Vạch phân cách giữa các nhóm nút liên quan */
@@ -5907,9 +5928,45 @@ input:focus,
     max-width: 620px;
 }
 
+/* Định nghĩa keyframes chung cho hiệu ứng nhịp thở / tỏa sáng */
+@keyframes softGlowCyan {
+  0% {
+    box-shadow: 0 0 0px rgba(13, 202, 240, 0);
+    border-color: rgba(13, 202, 240, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(13, 202, 240, 0.7), inset 0 0 6px rgba(13, 202, 240, 0.3);
+    border-color: rgba(13, 202, 240, 1);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(13, 202, 240, 0);
+    border-color: rgba(13, 202, 240, 0.35);
+  }
+}
+
 .fss-tour-pulse {
     background-color: #0dcaf0 !important; /* Xanh lơ sáng */
-    color: #ffffff !important; /* Chữ xanh đen */
+    color: #ffffff !important; /* Chữ trắng */
+    font-weight: 600;
+    border: 0.5px solid rgba(13, 202, 240, 0.35) !important; /* Thêm border nhẹ để hiệu ứng boxShadow hiển thị rõ nét */
+    border-radius: 8px;
+    padding: 8px 15px;
+    animation: softGlowCyan 2.5s infinite ease-in-out !important; /* Đồng bộ thời gian 2.5s với nút Công cụ */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fss-tour-pulse i {
+    margin-right: 6px;
+}
+
+.fss-tour-pulse:hover {
+    transform: scale(1.05); /* Phóng to nhẹ khi rê chuột vào */
+    animation: softGlowCyan 1.2s infinite ease-in-out !important; /* Tăng tốc nhịp đập khi hover cho sinh động */
+}
+
+.fss-tour-pulsee {
+    background-color: #0dcaf0 !important; /* Xanh lơ sáng */
+    color: #000000 !important; /* Chữ xanh đen */
     font-weight: 600;
     border: none !important;
     border-radius: 8px;
@@ -5918,11 +5975,11 @@ input:focus,
     transition: transform 0.2s ease;
 }
 
-.fss-tour-pulse i {
+.fss-tour-pulsee i {
     margin-right: 6px;
 }
 
-.fss-tour-pulse:hover {
+.fss-tour-pulsee:hover {
     transform: scale(1.05); /* Phóng to nhẹ khi rê chuột vào */
 }
 
@@ -6512,4 +6569,34 @@ html {
   background: linear-gradient(135deg, #0090ff, #00c8ff);
   border: none; color: #fff; font-size: 12px; font-weight: 700;
   padding: 8px 20px; border-radius: 8px; cursor: pointer;
+}
+
+/* Modal content nền tối cho filter-manager-modal (Bootstrap Modal mặc định) */
+#filter-manager-modal .modal-content {
+  background-color: #0d1117 !important;
+  border: 1px solid #30363d !important;
+}
+#filter-manager-modal .modal-header {
+  background-color: #0d1117 !important;
+  border-bottom: 1px solid #30363d !important;
+}
+#filter-manager-modal .btn-close {
+  filter: invert(1);
+}
+
+.fm-row-top-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #001a20;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+.fm-row--top {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: linear-gradient(180deg, rgba(251,191,36,0.06), #16213e 40%);
 }

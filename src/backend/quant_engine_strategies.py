@@ -1879,8 +1879,29 @@ STRATEGY_META = {
 _STRATEGY_RESULT_CACHE = {}
 _STRATEGY_CACHE_MAXSIZE = 8  # giữ vài strategy gần nhất, tránh phình RAM
 
+def _df_content_fingerprint(df):
+    """
+    [FIX] Dấu vân tay theo NỘI DUNG (cột Ticker), không theo id() object —
+    vì cả 2 nơi gọi run_strategy() đều tạo DataFrame MỚI mỗi lần
+    (screener_callbacks.py dùng .copy(), strategy_callbacks.py dùng
+    pd.DataFrame(records)) nên id() luôn khác nhau dù nội dung giống hệt,
+    khiến cache theo id() không bao giờ hit. hash_pandas_object là
+    vectorized, cực rẻ (<1ms cho ~1500 dòng) so với ~5.8s cần tiết kiệm.
+    """
+    if df is None or "Ticker" not in df.columns:
+        return None
+    try:
+        return (len(df), int(pd.util.hash_pandas_object(df["Ticker"], index=False).sum()))
+    except Exception:
+        return id(df)  # fallback an toàn nếu có lỗi bất thường
+
+
 def _strategy_cache_key(df_snapshot, strategy_id, df_fin):
-    return (id(df_snapshot), strategy_id, id(df_fin) if df_fin is not None else None)
+    return (
+        _df_content_fingerprint(df_snapshot),
+        strategy_id,
+        id(df_fin) if df_fin is not None else None,  # df_fin đã cache ổn định trong data_loader, giữ id() cho rẻ
+    )
 
 
 def run_strategy(df_snapshot, strategy_id, df_fin=None):

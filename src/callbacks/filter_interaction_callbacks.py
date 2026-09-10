@@ -998,18 +998,19 @@ def manage_filter_ui(
     saved = dict(saved_store or {})
     opts = list(saved_options or [{"label": "Bộ lọc cá nhân", "value": "default"}])
 
-    # ── CHỌN TRƯỜNG PHÁI → AUTO ADD FILTER CARDS (display-only, không active) ──
+    # ── CHỌN TRƯỜNG PHÁI → AUTO ADD FILTER CARDS + ÁP DỤNG NGAY ──────────────
     if trigger_prop == "strategy-preset-dropdown.value":
         if not strategy_selected:
             return (NO,) * 11
         filt_list = _STRATEGY_FILTERS.get(strategy_selected, [])
         if not filt_list:
             return (NO,) * 11
-            
+
         new_ch = []
-        readonly_ids = {} # <--- SỬA 1: Đổi thành Dict {} tại đây
+        readonly_ids = {}        # {fid: [lo, hi]} — dùng để build UI card (giữ nguyên vai trò cũ)
+        readonly_entries = {}    # [MỚI] {fid: {"label":..., "type":"readonly_range", "value":[lo,hi]}}
         ranges = get_filter_ranges()
-        
+
         for (fid, lbl, default_rng) in filt_list:
             if fid in ranges:
                 actual_min, actual_max = ranges[fid]
@@ -1018,32 +1019,36 @@ def manage_filter_ui(
             else:
                 actual_min, actual_max = default_rng[0], default_rng[1]
                 lo, hi = float(default_rng[0]), float(default_rng[1])
-                
-            readonly_ids[fid] = [lo, hi] # <--- SỬA 2: Lưu [lo, hi] vào Dict
+
+            readonly_ids[fid] = [lo, hi]
+            readonly_entries[fid] = {"label": lbl, "type": "readonly_range", "value": [lo, hi]}
             new_ch.append(create_range_filter_ui_readonly(fid, lbl, actual_min, actual_max, [lo, hi]))
-            
+
         dirty_opts = [
             {**o, "label": ("* " + o["label"]) if (o.get("value") == dd_selected
                                                    and dd_selected and dd_selected != "default"
                                                    and not o["label"].startswith("* ")) else o["label"]}
             for o in opts
         ]
-        
-        # ── QUAN TRỌNG: active-filters-store phải là NO để không trigger screener lần 2 ──
-        has_old_readonly = any(
-            isinstance(v, dict) and v.get("type") in ("readonly_range",)
-            for v in af.values()
-        )
-        if has_old_readonly:
-            # Có readonly cũ → cần xóa → trả về af đã xóa
-            af_clean = {
-                k: v for k, v in af.items()
-                if not (isinstance(v, dict) and v.get("type") == "readonly_range")
-            }
-            return new_ch, af_clean, NO, NO, NO, NO, dirty_opts, NO, NO, True, readonly_ids
-        else:
-            # Không có readonly cũ → active_filters không thay đổi → NO
-            return new_ch, NO, NO, NO, NO, NO, dirty_opts, NO, NO, True, readonly_ids
+
+        # [REVERT] Fix trước ("áp readonly ngay khi chọn trường phái") gây
+        # regression nghiêm trọng hơn: 10 thẻ range CHUNG của toàn thị trường
+        # (percentile p1-p99, KHÔNG phải range riêng của các mã đã qua sàng
+        # lọc trường phái) bị AND chồng lên kết quả trường phái vốn đã dùng
+        # công thức tinh vi hơn nhiều — case STRAT_NCN: nội bộ lọc đúng 40
+        # mã, nhưng bị 10 range chung ép xuống còn 4 mã (mất oan ~90%).
+        # "Tham khảo" đúng nghĩa đen là để THAM KHẢO, không phải để lọc
+        # ngay — quay lại hành vi gốc: chỉ hiển thị, active_filters không
+        # đổi cho tới khi người dùng TỰ TAY kéo 1 thẻ cụ thể (lúc đó
+        # activate_readonly_filter_on_drag() sẽ chỉ thêm ĐÚNG thẻ đó, không
+        # phải cả 10 thẻ cùng lúc).
+        af_clean = {
+            k: v for k, v in af.items()
+            if not (isinstance(v, dict) and v.get("type") == "readonly_range")
+        }
+        af_output = af_clean if af_clean != af else NO
+
+        return new_ch, af_output, NO, NO, NO, NO, dirty_opts, NO, NO, True, readonly_ids
 
     # ── RESET ──────────────────────────────────────────────────────────────
     if trigger_prop == "btn-reset-ui.n_clicks":

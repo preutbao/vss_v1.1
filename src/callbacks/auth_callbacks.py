@@ -363,6 +363,8 @@ _PREMIUM_WRAPPERS = [
     "pw-crisis",
     'pw-strategies',
     'pw-momentum',
+    'pw-gia-sma',  # (Có thể cập nhật thêm comment ở dòng 357 ghi chú pw-gia-sma → "Biến động giá & KL", pw-ky-thuat → "Chỉ báo kỹ thuật" cho dễ đọc sau này, không bắt buộc.)
+    'pw-ky-thuat',
 ]
 # [FIX] pw-export-excel TÁCH RIÊNG khỏi list trên: B2B-only theo đề xuất CFO
 # (Export data thô cho Broker/Môi giới) — Premium 'pro' 199k KHÔNG dùng được,
@@ -390,7 +392,7 @@ def update_excel_gate(auth_data):
     is_b2b = bool(
         auth_data
         and auth_data.get('logged_in')
-        and auth_data.get('tier') == 'b2b'
+        and (auth_data.get('tier') == 'b2b' or auth_data.get('tier') == 'pro')
     )
     return 'premium-wrapper premium-unlocked' if is_b2b else 'premium-wrapper premium-locked'
 

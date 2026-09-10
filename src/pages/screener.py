@@ -1175,7 +1175,8 @@ layout = html.Div([
                 # 1. Container chứa các nút (Mặc định được ẩn đi bằng display: none)
                 html.Div(
                     id="action-buttons-container",
-                    style={"display": "none", "gap": "8px", "alignItems": "center"},
+                    # 🟢 SỬA "display": "none" THÀNH "display": "flex" Ở ĐÂY:
+                    style={"display": "flex", "gap": "8px", "alignItems": "center"},
                     children=[
                         
                         # Heatmap
@@ -1419,7 +1420,7 @@ layout = html.Div([
                     )
                 ])
 
-                ], style={"display": "flex", "alignItems": "center", "justifyContent": "flex-end"}),
+                ], style={"display": "flex", "alignItems": "center", "justifyContent": "flex-end", "gap": "4px"}),
                 # ↑ đóng HÀNG 2 (dùng đúng style cũ)
 
             ], style={"display": "flex", "flexDirection": "column"}),

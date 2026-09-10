@@ -814,7 +814,7 @@ def update_stock_context_bar(selected_rows):
             html.Span(f"{int(price):,}đ" if isinstance(price, (int, float)) else "",
                       style={"color": "#fbbf24", "fontSize": "11px", "fontWeight": "600", "marginRight": "6px"}),
             html.Span(p1w_str, style={"color": p1w_color, "fontSize": "11px", "fontWeight": "600", "marginRight": "6px"}),
-            html.Span(f"Xếp hạng:{vgm}", style={
+            html.Span(f"Xếp hạng: {vgm}", style={
                 "background": "rgba(14,165,233,0.1)",
                 "border": "1px solid rgba(14,165,233,0.25)",
                 "color": "#38bdf8", "fontSize": "10px",

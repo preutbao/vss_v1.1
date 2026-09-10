@@ -278,3 +278,4 @@ def open_ticker_from_strategy_match(n_clicks, ticker):
     title_text = f"Cổ phiếu {ticker} – {company_name}"
 
     return True, title_text, stock, ticker
+

@@ -15,63 +15,101 @@ from src.constants import SECTOR_TRANSLATION
 MOCK_PERSONAL_FILTERS = [
     {
         "id": "default", "name": "Bộ lọc mặc định", "is_default": True,
-        "criteria": [], "count": 0,
+        "criteria": [], "count": 0, "filter_values": {},
     },
     {
         "id": "p1", "name": "Tích sản Ngân hàng", "is_default": False,
         "criteria": ["ROE > 15%", "P/E < 12", "P/B < 1.8", "Nợ/VCSH < 1.2", "Cổ tức > 4%"],
         "count": 5,
+        "filter_values": {
+            "filter-roe": [15, 100], "filter-pe": [0, 12], "filter-pb": [0, 1.8],
+            "filter-de": [0, 1.2], "filter-div-yield": [4, 100],
+        },
     },
     {
         "id": "p2", "name": "Tăng trưởng Bền vững", "is_default": False,
-        "criteria": ["EPS Growth YoY > 20%", "ROE > 18%", "Doanh thu tăng 3 quý liên tiếp",
-                     "Nợ/VCSH < 1", "P/E < 20", "Biên LN ròng > 10%", "VGM Score ≥ B"],
-        "count": 7,
+        "criteria": ["EPS Growth YoY > 20%", "ROE > 18%", "Doanh thu tăng trưởng > 15%",
+                     "Nợ/VCSH < 1", "P/E < 20", "Biên LN ròng > 10%"],
+        "count": 6,
+        "filter_values": {
+            "filter-eps-growth-yoy": [20, 1000], "filter-roe": [18, 100],
+            "filter-rev-growth-yoy": [15, 1000], "filter-de": [0, 1],
+            "filter-pe": [0, 20], "filter-net-margin": [10, 100],
+        },
     },
     {
         "id": "p3", "name": "Cổ tức cao & Ổn định", "is_default": False,
-        "criteria": ["Cổ tức tiền mặt > 6%", "Trả cổ tức ≥ 3 năm liên tiếp",
-                     "Nợ/VCSH < 0.8", "Dòng tiền HĐKD dương"],
-        "count": 4,
+        "criteria": ["Cổ tức tiền mặt > 6%", "Nợ/VCSH < 0.8", "Current Ratio > 1.2"],
+        "count": 3,
+        "filter_values": {
+            "filter-div-yield": [6, 100], "filter-de": [0, 0.8],
+            "filter-current-ratio": [1.2, 100],
+        },
     },
 ]
 
 MOCK_COMMUNITY_FILTERS = [
     {
-        "id": "c1", "name": "Ngân hàng Tăng trưởng ROE cao",
-        "author": "Trần N. Báu", "likes": 12, "saves": 230,
-        "criteria": ["ROE > 20%", "NIM > 3.5%", "Nợ xấu (NPL) < 1.5%",
-                     "Tăng trưởng tín dụng > 15%", "P/B < 2", "CASA > 25%"],
-        "count": 6,
-    },
-    {
-        "id": "c2", "name": "Cổ tức Bluechip Ổn định",
-        "author": "AFA C. Capital", "likes": 8, "saves": 150,
-        "criteria": ["Vốn hóa > 10,000 tỷ", "Cổ tức > 5%", "ROE > 15%", "Beta < 1"],
-        "count": 4,
-    },
-    {
-        "id": "c3", "name": "Midcap Bứt phá Kỹ thuật",
-        "author": "Võ T. Diễm", "likes": 5, "saves": 98,
-        "criteria": ["Giá vượt SMA20 & SMA50", "Volume > 1.5x TB20", "RSI(14) 50–70",
-                     "Vốn hóa 1,000–10,000 tỷ", "MACD Histogram dương"],
-        "count": 5,
-    },
-    {
-        "id": "c4", "name": "Giá trị Ẩn — Deep Value",
-        "author": "Nguyễn H. Long", "likes": 15, "saves": 310,
-        "criteria": ["P/E < 8", "P/B < 1", "ROE > 10%", "Nợ/VCSH < 0.5",
-                     "Thanh khoản trung bình > 500tr/phiên", "FCF Yield > 8%"],
-        "count": 6,
-    },
-    {
-        "id": "c5", "name": "Xuất khẩu hưởng lợi Tỷ giá",
-        "author": "Trần N. Báu", "likes": 6, "saves": 87,
-        "criteria": ["Doanh thu xuất khẩu > 50%", "Biên LN gộp tăng QoQ", "Nợ vay ngoại tệ thấp"],
+        "id": "c1", "name": "Săn Cổ phiếu Vượt Đỉnh",
+        "author": "Đặng M. Khôi", "likes": 24, "saves": 410,
+        "criteria": ["RSI(14) 50–70", "Volume > 1.5x TB20", "Vốn hóa Midcap"],
         "count": 3,
+        "filter_values": {"filter-rsi14": [50, 70], "filter-vol-vs-sma20": [1.5, 50],
+                          "filter-market-cap": [1000, 10000]},
+    },
+    {
+        "id": "c2", "name": "Phòng thủ Lãi suất Thấp",
+        "author": "Ngọc Hà Invest", "likes": 19, "saves": 355,
+        "criteria": ["Cổ tức > 5%", "Nợ/VCSH < 0.8", "Current Ratio > 1.2"],
+        "count": 3,
+        "filter_values": {"filter-div-yield": [5, 100], "filter-de": [0, 0.8],
+                          "filter-current-ratio": [1.2, 100]},
+    },
+    {
+        "id": "c3", "name": "Bứt tốc Lợi nhuận Quý",
+        "author": "FA Nguyễn Tiến", "likes": 17, "saves": 298,
+        "criteria": ["EPS Growth YoY > 20%", "Doanh thu tăng trưởng > 15%", "ROE > 18%"],
+        "count": 3,
+        "filter_values": {"filter-eps-growth-yoy": [20, 1000], "filter-rev-growth-yoy": [15, 1000],
+                          "filter-roe": [18, 100]},
+    },
+    {
+        "id": "c4", "name": "Định giá Thấp Vốn hóa Nhỏ",
+        "author": "Giá trị Capital", "likes": 11, "saves": 205,
+        "criteria": ["P/E < 8", "P/B < 1", "Vốn hóa Smallcap"],
+        "count": 3,
+        "filter_values": {"filter-pe": [0, 8], "filter-pb": [0, 1],
+                          "filter-market-cap": [200, 1000]},
+    },
+    {
+        "id": "c5", "name": "Ngân hàng Chất lượng Cao",
+        "author": "Bank Watcher VN", "likes": 9, "saves": 176,
+        "criteria": ["ROE > 20%", "P/B < 2", "Biên LN ròng > 20%"],
+        "count": 3,
+        "filter_values": {"filter-roe": [20, 100], "filter-pb": [0, 2], "filter-net-margin": [20, 100]},
+    },
+    {
+        "id": "c6", "name": "Cổ phiếu Ít Nợ Vay",
+        "author": "Rủi ro Thấp Club", "likes": 7, "saves": 132,
+        "criteria": ["Nợ/VCSH < 0.5", "Current Ratio > 1.5"],
+        "count": 2,
+        "filter_values": {"filter-de": [0, 0.5], "filter-current-ratio": [1.5, 100]},
+    },
+    {
+        "id": "c7", "name": "Kỹ thuật Đảo chiều RSI",
+        "author": "Trader Bảo Long", "likes": 5, "saves": 94,
+        "criteria": ["RSI(14) 30–45 (thoát oversold)"],
+        "count": 1,
+        "filter_values": {"filter-rsi14": [30, 45]},
+    },
+    {
+        "id": "c8", "name": "Vốn hóa Trung bình Sinh lời",
+        "author": "MidCap Fund", "likes": 3, "saves": 61,
+        "criteria": ["Vốn hóa 1,000–10,000 tỷ", "ROE > 12%"],
+        "count": 2,
+        "filter_values": {"filter-market-cap": [1000, 10000], "filter-roe": [12, 100]},
     },
 ]
-
 
 def _fm_kebab_menu(idx: int, scope: str, is_default: bool = False) -> html.Div:
     """Menu 3 chấm — mock các hành động (chia sẻ, đổi tên, xóa)."""
@@ -84,8 +122,9 @@ def _fm_kebab_menu(idx: int, scope: str, is_default: bool = False) -> html.Div:
     if scope == "community":
         items.append(html.Div([
             html.I(className="fas fa-copy", style={"marginRight": "8px", "width": "14px"}),
-            "Sao chép về của tôi",
-        ], className="fm-kebab-item"))
+            "Sao chép về Cá nhân",
+        ], id={"type": "fm-copy-personal", "idx": idx}, n_clicks=0,
+           className="fm-kebab-item"))
     elif not is_default:
         items.append(html.Div([
             html.I(className="fas fa-pen", style={"marginRight": "8px", "width": "14px"}),
@@ -132,13 +171,15 @@ def _fm_personal_row(f: dict, idx: int) -> html.Div:
     ], className="fm-row")
 
 
-def _fm_community_row(f: dict, idx: int) -> html.Div:
+def _fm_community_row(f: dict, idx: int, is_top: bool = False) -> html.Div:
+    title_children = [html.Span(f["name"], className="fm-row-name")]
+    if is_top:
+        title_children.append(html.Span("TOP", className="fm-row-top-badge"))
+    title_children.append(html.Span(f"{f['count']} tiêu chí", className="fm-row-count-badge"))
+
     return html.Div([
         html.Div([
-            html.Div([
-                html.Span(f["name"], className="fm-row-name"),
-                html.Span(f"{f['count']} tiêu chí", className="fm-row-count-badge"),
-            ], className="fm-row-title-line"),
+            html.Div(title_children, className="fm-row-title-line"),
             html.Div([
                 html.Span([html.I(className="fas fa-heart", style={"marginRight": "4px"}),
                            str(f["likes"])], className="fm-row-stat"),
@@ -158,101 +199,111 @@ def _fm_community_row(f: dict, idx: int) -> html.Div:
             ),
             _fm_kebab_menu(idx, "community"),
         ], className="fm-row-kebab-wrap"),
-    ], className="fm-row")
+    ], className="fm-row" + (" fm-row--top" if is_top else ""))
 
 
 def _build_filter_manager_modal():
-    return dbc.Modal(
-        id="filter-manager-modal",
-        is_open=False,
-        centered=True,
-        size="md",
-        contentClassName="fm-modal-content",
-        children=[
-            html.Button(
-                html.I(className="fas fa-times"),
-                id="btn-close-filter-manager",
-                n_clicks=0,
-                className="fm-modal-close-btn",
-            ),
-            html.Div("Quản lý bộ lọc", className="fm-modal-title"),
-
-            # ── Tabs ─────────────────────────────────────────────────
+    return dbc.Modal([
+        dbc.ModalHeader(
             html.Div([
-                html.Button("Cá nhân", id="fm-tab-personal", n_clicks=0,
-                            className="fm-tab is-active"),
-                html.Button("Cộng đồng", id="fm-tab-community", n_clicks=0,
-                            className="fm-tab"),
-            ], className="fm-tabs"),
+                html.I(className="fas fa-layer-group",
+                       style={"color": "#10b981", "marginRight": "10px", "fontSize": "16px"}),
+                html.Span("FinSmartScreener", style={
+                    "fontWeight": "800", "fontSize": "15px",
+                    "color": "#e5e7eb",
+                    "fontFamily": "'JetBrains Mono', monospace",
+                }),
+                html.Span(" — Quản lý Bộ lọc Phân tích & Thư viện Chiến lược Cộng đồng", style={
+                    "fontSize": "13px", "color": "#9ca3af", "marginLeft": "6px",
+                }),
+            ], style={"display": "flex", "alignItems": "center"}),
+            close_button=True,
+        ),
+        dbc.ModalBody([
+            dbc.Tabs([
+                dbc.Tab(
+                    label="Cá nhân",
+                    tab_id="fm-tab-personal",
+                    children=html.Div(
+                        id="fm-panel-personal",
+                        className="fm-panel",
+                        children=[
+                            _fm_personal_row(f, i) for i, f in enumerate(MOCK_PERSONAL_FILTERS)
+                        ],
+                        style={"marginTop": "14px"},
+                    ),
+                    tab_style={"fontSize": "12px"},
+                ),
+                dbc.Tab(
+                    label="Cộng đồng",
+                    tab_id="fm-tab-community",
+                    children=html.Div(
+                        id="fm-panel-community",
+                        className="fm-panel",
+                        style={"marginTop": "14px", "position": "relative"},
+                        children=[
+                            html.Div([
+                                html.Div([
+                                    html.I(className="fas fa-search", style={"marginRight": "8px", "color": "#6b7280"}),
+                                    dcc.Input(id="fm-community-search", type="text",
+                                             placeholder="Nhập tên / link chia sẻ",
+                                             className="fm-search-input"),
+                                ], className="fm-search-box"),
+                                html.Button(
+                                    html.I(className="fas fa-filter"),
+                                    id="btn-fm-community-filter",
+                                    n_clicks=0,
+                                    className="fm-filter-icon-btn",
+                                ),
+                            ], className="fm-search-row"),
 
-            # ── PANEL: Cá nhân ───────────────────────────────────────
-            html.Div(
-                id="fm-panel-personal",
-                className="fm-panel",
-                children=[
-                    _fm_personal_row(f, i) for i, f in enumerate(MOCK_PERSONAL_FILTERS)
-                ],
-            ),
+                            html.Div([
+                                html.Div("Theo người dùng", className="fm-popover-label"),
+                                dcc.Dropdown(
+                                    id="fm-community-user-filter",
+                                    options=[{"label": a, "value": a} for a in
+                                            sorted({f["author"] for f in MOCK_COMMUNITY_FILTERS})],
+                                    placeholder="Chọn và tìm kiếm người dùng",
+                                    className="ssi-dropdown-custom",
+                                ),
+                                html.Div("Thời gian lọc", className="fm-popover-label",
+                                        style={"marginTop": "14px"}),
+                                dcc.RadioItems(
+                                    id="fm-community-time-filter",
+                                    options=[
+                                        {"label": " Tuần", "value": "week"},
+                                        {"label": " Tháng", "value": "month"},
+                                        {"label": " Quý", "value": "quarter"},
+                                    ],
+                                    className="fm-radio-group",
+                                    inputClassName="fm-radio-input",
+                                    labelClassName="fm-radio-label",
+                                ),
+                                html.Div([
+                                    html.Button("Reset", id="btn-fm-filter-reset", n_clicks=0,
+                                               className="fm-btn-reset"),
+                                    html.Button("Áp dụng", id="btn-fm-filter-apply", n_clicks=0,
+                                               className="fm-btn-apply"),
+                                ], className="fm-popover-actions"),
+                            ], id="fm-community-filter-panel",
+                               className="fm-community-filter-panel",
+                               style={"display": "none"}),
 
-            # ── PANEL: Cộng đồng ─────────────────────────────────────
-            html.Div(
-                id="fm-panel-community",
-                className="fm-panel",
-                style={"display": "none"},
-                children=[
-                    html.Div([
-                        html.Div([
-                            html.I(className="fas fa-search", style={"marginRight": "8px", "color": "#6b7280"}),
-                            dcc.Input(id="fm-community-search", type="text",
-                                     placeholder="Nhập tên / link chia sẻ",
-                                     className="fm-search-input"),
-                        ], className="fm-search-box"),
-                        html.Button(
-                            html.I(className="fas fa-filter"),
-                            id="btn-fm-community-filter",
-                            n_clicks=0,
-                            className="fm-filter-icon-btn",
-                        ),
-                    ], className="fm-search-row"),
-
-                    # Popover filter (theo mock ảnh WeData)
-                    html.Div([
-                        html.Div("Theo người dùng", className="fm-popover-label"),
-                        dcc.Dropdown(
-                            id="fm-community-user-filter",
-                            options=[{"label": a, "value": a} for a in
-                                    sorted({f["author"] for f in MOCK_COMMUNITY_FILTERS})],
-                            placeholder="Chọn và tìm kiếm người dùng",
-                            className="ssi-dropdown-custom",
-                        ),
-                        html.Div("Thời gian lọc", className="fm-popover-label",
-                                style={"marginTop": "14px"}),
-                        dcc.RadioItems(
-                            id="fm-community-time-filter",
-                            options=[
-                                {"label": " Tuần", "value": "week"},
-                                {"label": " Tháng", "value": "month"},
-                                {"label": " Quý", "value": "quarter"},
+                            *[
+                                _fm_community_row(f, orig_idx, is_top=(rank < 3))
+                                for rank, (orig_idx, f) in enumerate(
+                                    sorted(enumerate(MOCK_COMMUNITY_FILTERS),
+                                           key=lambda x: x[1]["likes"], reverse=True)
+                                )
                             ],
-                            className="fm-radio-group",
-                            inputClassName="fm-radio-input",
-                            labelClassName="fm-radio-label",
-                        ),
-                        html.Div([
-                            html.Button("Reset", id="btn-fm-filter-reset", n_clicks=0,
-                                       className="fm-btn-reset"),
-                            html.Button("Áp dụng", id="btn-fm-filter-apply", n_clicks=0,
-                                       className="fm-btn-apply"),
-                        ], className="fm-popover-actions"),
-                    ], id="fm-community-filter-panel",
-                       className="fm-community-filter-panel",
-                       style={"display": "none"}),
-
-                    *[_fm_community_row(f, i) for i, f in enumerate(MOCK_COMMUNITY_FILTERS)],
-                ],
-            ),
-        ],
-    )
+                        ],
+                    ),
+                    tab_style={"fontSize": "12px"},
+                ),
+            ], id="fm-tabs", active_tab="fm-tab-personal"),
+        ], style={"backgroundColor": "#0d1117", "minHeight": "520px"}),
+    ], id="filter-manager-modal", size="xl", is_open=False, centered=True, scrollable=True,
+       style={"fontFamily": "'Inter', sans-serif"})
 
 theme_switch = html.Div(
     [
@@ -620,6 +671,12 @@ WIZARD_GROUPS = [
     },
 ]
 
+_PREMIUM_GROUP_LABELS = {
+    "momentum": "Hành vi TT · VIP",
+    "gia-sma": "Biến động giá KL · VIP",
+    "ky-thuat": "Chỉ báo KT · VIP",
+}
+
 # --- CỘT 1: Danh sách nhóm ---
 _col1_groups = html.Div(
     [
@@ -680,10 +737,10 @@ _col1_groups = html.Div(
                         },
                         className="wizard-group-item",
                     ),
-                    wrapper_id="pw-momentum",
-                    section="momentum",
-                    label="Hành vi TT · VIP",
-                ) if g["id"] == "momentum" else
+                    wrapper_id=f"pw-{g['id']}",
+                    section=g["id"],
+                    label=_PREMIUM_GROUP_LABELS[g["id"]],
+                ) if g["id"] in _PREMIUM_GROUP_LABELS else
                 html.Div(
                     [
                         html.Span(g["label"], style={
@@ -1259,18 +1316,18 @@ layout = html.Div(
                         id="btn-manage-filters",
                         children=[
                             html.I(className="fas fa-sliders-h",
-                                   style={"marginRight": "5px", "color": "#0057D9"}),
+                                   style={"marginRight": "5px", "color": "#10b981"}),
                             html.Span("Quản lý bộ lọc"),
                         ],
                         n_clicks=0,
                         size="sm",
-                        color="primary",
+                        color="success",
                         outline=True,
                         style={
                             "borderRadius": "20px", "fontSize": "11px",
                             "padding": "4px 12px", "whiteSpace": "nowrap",
                             "fontWeight": "600",
-                            "borderColor": "#0057D9", "color": "#0057D9",
+                            "borderColor": "#10b981", "color": "#10b981",
                         },
                     ),
                     _build_filter_manager_modal(),

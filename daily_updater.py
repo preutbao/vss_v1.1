@@ -323,10 +323,27 @@ def check_if_up_to_date() -> bool:
         
         logger.info(f"↳ Dữ liệu trong máy: {latest_saved_date.date()}")
         logger.info(f"↳ Dữ liệu thị trường: {latest_market_date.date()}")
-        
-        # Nếu máy đã có dữ liệu của ngày mới nhất -> Không cần chạy lại
-        if latest_saved_date >= latest_market_date:
-            return True
+
+        # Nếu GIÁ chưa mới nhất -> chắc chắn phải chạy lại
+        if latest_saved_date < latest_market_date:
+            return False
+
+        # [MỚI] Giá đã ổn KHÔNG có nghĩa index cũng ổn — 2 file được ghi
+        # độc lập nhau (xem wifeed_updater._append_index_to_parquet vs
+        # _merge_eod_into_price_parquet), có thể lệch pha. Nếu chỉ check
+        # giá như cũ, hàm này có thể trả True (up-to-date) trong khi
+        # index.parquet đang thiếu vài ngày -> lần gọi run_update() nào đó
+        # không dùng force=True sẽ bị skip ngay từ đây một cách sai lệch.
+        if INDEX_PARQUET.exists():
+            df_idx_check = pd.read_parquet(INDEX_PARQUET, columns=["Date"])
+            if not df_idx_check.empty:
+                latest_index_date = pd.to_datetime(df_idx_check["Date"]).max().tz_localize(None)
+                logger.info(f"↳ Index trong máy: {latest_index_date.date()}")
+                if latest_index_date < latest_market_date:
+                    logger.info("↳ Index chưa mới nhất dù giá đã ổn -> vẫn cần chạy lại.")
+                    return False
+
+        return True
     except Exception as e:
         logger.warning(f"Lỗi kiểm tra trước: {e}")
         
@@ -335,14 +352,20 @@ def check_if_up_to_date() -> bool:
 # ═════════════════════════════════════════════════════════════════════════════
 # PHẦN 5: MAIN PIPELINE
 # ═════════════════════════════════════════════════════════════════════════════
-def run_update(rebuild_snapshot: bool = False) -> bool:
+def run_update(rebuild_snapshot: bool = False, force: bool = False) -> bool:
+    """
+    force=True: bỏ qua check_if_up_to_date(), luôn chạy full pipeline.
+    Dùng khi gọi có chủ đích để vá 1 phần cụ thể (VD: wifeed_updater phát
+    hiện riêng index.parquet bị lệch) — vì check_if_up_to_date() (dù đã
+    sửa ở B.2 bên dưới) vẫn nên có cửa "ép chạy" tường minh để không phụ
+    thuộc hoàn toàn vào logic so sánh ngày tự động.
+    """
     t0 = time.time()
     logger.info("=" * 70)
     logger.info("FSS DAILY UPDATER (SSI/VND API) — BẮT ĐẦU")
     logger.info("=" * 70)
-
     # CHÈN LỚP PHÒNG NGỰ VÀO ĐÂY
-    if check_if_up_to_date():
+    if not force and check_if_up_to_date():
         logger.info("✅ Dữ liệu đã là mới nhất! BỎ QUA quá trình tải 1500 mã.")
         logger.info("=" * 70)
         return True # Trả về thành công và thoát ngay lập tức
