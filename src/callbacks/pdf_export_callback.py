@@ -115,13 +115,140 @@ def _pct_chg(new, old):
     try:
         if float(old) == 0: return 0
         return (float(new) - float(old)) / abs(float(old)) * 100
-    except Exception as _e:  # noqa: audit-fix bare-except
+    except Exception as _e:
         logger.debug(f"Suppressed non-critical error in {__name__} near line 118: {_e}")
         return 0
 
 
-def get_kpis(stock):
-    val_cap = stock.get("Market Cap", 0)
+# ── Tỷ suất cổ tức — GIỐNG HỆT công thức KPI card trong screener_callbacks.py
+# (dòng ~1369-1372): DPS mới nhất / Giá đóng cửa. KHÔNG đọc thẳng cột
+# "Dividend Yield (%)" vì cột đó rỗng/NaN với phần lớn mã trong snapshot dùng
+# cho PDF — đây chính là nguyên nhân báo cáo thiếu số liệu cổ tức.
+_DPS_COL = "DPS - Common - Net - Issue - By Announcement Date"
+
+def _calc_dividend_yield_pct(row, qtr_df: pd.DataFrame = None) -> float:
+    """
+    [FIX] Cột DPS ("DPS - Common - Net - Issue - By Announcement Date") là
+    trường BCTC THEO QUÝ — CHỈ tồn tại trong df_history/qtr_df (load qua
+    load_financial_data("quarterly")), KHÔNG bao giờ có trong `row`/`stock`
+    (snapshot tổng hợp hàng năm, chỉ merge load_financial_data("yearly")
+    — xem data_loader._build_snapshot_df()). Trước đây gọi row.get(_DPS_COL)
+    luôn trả None -> đây là nguyên nhân thật của việc cột "Cổ tức (%)"
+    trong PDF bị thiếu ở hầu hết các mã, KHÔNG PHẢI do sai tên cột.
+    Đồng bộ đúng cách đọc với screener_callbacks.py (dòng ~1369-1372):
+    lấy DPS từ dòng MỚI NHẤT của qtr_df.
+    """
+    try:
+        price = float(row.get("Price Close") or 0)
+        dps = None
+        if qtr_df is not None and not qtr_df.empty and _DPS_COL in qtr_df.columns:
+            dps_series = pd.to_numeric(qtr_df[_DPS_COL], errors="coerce").dropna()
+            if not dps_series.empty:
+                dps = dps_series.iloc[-1]
+        if price > 0 and dps is not None and pd.notna(dps):
+            return float(dps) / price * 100
+    except Exception:
+        pass
+    # Fallback 1: nếu cột "Dividend Yield (%)" tình cờ có sẵn giá trị hợp lệ trong snapshot, dùng nó
+    try:
+        val = row.get("Dividend Yield (%)")
+        if val is not None and pd.notna(val) and float(val) != 0:
+            return float(val)
+    except Exception:
+        pass
+    # Fallback 2: [MỚI] một số mã không công bố DPS theo quý (dữ liệu bị
+    # thiếu ở nguồn hoặc mã mới lên sàn/không chia cổ tức tiền mặt trong kỳ
+    # gần nhất) nhưng CÓ dòng tiền chi trả cổ tức trong BCTC — dùng
+    # "Dividends Paid - Cash - Total - Cash Flow_x" (đã thấy trong
+    # COLUMN_MAP của screener_callbacks.py dòng 148) chia cho số cổ phiếu
+    # lưu hành, ra DPS suy ra rồi tính yield y hệt công thức chính.
+    try:
+        if qtr_df is not None and not qtr_df.empty:
+            div_paid_col = "Dividends Paid - Cash - Total - Cash Flow_x"
+            shares_col = "Common Shares - Outstanding - Total_x"
+            if div_paid_col in qtr_df.columns and shares_col in qtr_df.columns:
+                div_paid = pd.to_numeric(qtr_df[div_paid_col], errors="coerce").abs().dropna()
+                shares   = pd.to_numeric(qtr_df[shares_col], errors="coerce").dropna()
+                if not div_paid.empty and not shares.empty and shares.iloc[-1] > 0:
+                    dps_implied = div_paid.iloc[-1] / shares.iloc[-1]
+                    price = float(row.get("Price Close") or 0)
+                    if price > 0 and dps_implied > 0:
+                        return dps_implied / price * 100
+    except Exception:
+        pass
+    return 0.0
+
+
+def _calc_live_valuation(stock, qtr_df: pd.DataFrame = None) -> dict:
+    """
+    [FIX] Market Cap / P/E / P/B trong PDF bị lệch — CÙNG BUG đã sửa ở
+    modal chi tiết (screener_callbacks.py): các cột này là giá trị tính
+    sẵn trong snapshot, dùng giá tại thời điểm snapshot rebuild lần gần
+    nhất — trong khi "Price Close" trong `stock` được patch realtime mỗi
+    60s (xem realtime_price_callbacks.py._patch_rows), nên luôn mới hơn.
+    Hàm này tính lại 3 chỉ số bằng price hiện tại + dữ liệu cơ bản (EPS,
+    Shares Outstanding, Common Equity), CHỈ dùng số snapshot làm dự phòng
+    khi thiếu input để tự tính — cùng thứ tự ưu tiên với modal chi tiết.
+    Trả dict {"market_cap", "pe", "pb"} — giá trị None nếu không có cách
+    nào tính được (để _fmt() tự hiển thị "---").
+    """
+    price = stock.get("Price Close")
+    try:
+        price = float(price) if price is not None and pd.notna(price) else 0.0
+    except Exception:
+        price = 0.0
+
+    result = {
+        "market_cap": stock.get("Market Cap"),
+        "pe":         stock.get("P/E"),
+        "pb":         stock.get("P/B"),
+    }
+
+    # Shares Outstanding — ưu tiên snapshot, fallback sang BCTC quý
+    shares_out = stock.get("Shares Outstanding", stock.get("Common Shares Outstanding"))
+    try:
+        if (shares_out is None or pd.isna(shares_out)) and qtr_df is not None and not qtr_df.empty:
+            col = "Common Shares - Outstanding - Total_x"
+            if col in qtr_df.columns:
+                s = pd.to_numeric(qtr_df[col], errors="coerce").dropna()
+                if not s.empty:
+                    shares_out = s.iloc[-1]
+        shares_out = float(shares_out) if shares_out is not None and pd.notna(shares_out) else None
+    except Exception:
+        shares_out = None
+
+    if shares_out and shares_out > 0 and price > 0:
+        result["market_cap"] = price * shares_out
+
+    # P/E = Giá hiện tại / EPS
+    eps = stock.get("EPS")
+    try:
+        eps = float(eps) if eps is not None and pd.notna(eps) else None
+    except Exception:
+        eps = None
+    if eps and eps > 0 and price > 0:
+        result["pe"] = price / eps
+
+    # P/B = Giá hiện tại / (Vốn CSH / Shares Outstanding)
+    try:
+        if (qtr_df is not None and not qtr_df.empty
+                and "Common Equity - Total" in qtr_df.columns
+                and shares_out and shares_out > 0):
+            eq_series = pd.to_numeric(qtr_df["Common Equity - Total"], errors="coerce").dropna()
+            if not eq_series.empty:
+                bvps = eq_series.iloc[-1] / shares_out
+                if bvps > 0 and price > 0:
+                    result["pb"] = price / bvps
+    except Exception:
+        pass
+
+    return result
+
+
+def get_kpis(stock, qtr_df: pd.DataFrame = None):
+    val = _calc_live_valuation(stock, qtr_df)   # [FIX] Market Cap/P/E/P/B tính lại bằng giá hiện tại
+
+    val_cap = val["market_cap"]
     cap_str = f"{val_cap / 1e9:,.0f}" if pd.notnull(val_cap) and val_cap else "---"
 
     vol = stock.get("Volume", 0)
@@ -132,13 +259,12 @@ def get_kpis(stock):
     return {
         "Vốn hóa (Tỷ)": cap_str,
         "GTGD (Tỷ)": gtgd_str,
-        "P/E": _fmt(stock.get("P/E"), bn=False, dec=1),
-        "P/B": _fmt(stock.get("P/B"), bn=False, dec=1),
-        "Cổ tức (%)": f"{_fmt(stock.get('Dividend Yield (%)', 0), bn=False, dec=1)}",
-        "Giá": _fmt(stock.get("Price Close"), bn=False, dec=1),
-        "FSS Score (Sao)": f"{GRADE_MAP.get(str(stock.get('VGM Score', 'C')), 3.0)}/5",
+        "P/E": _fmt(val["pe"], bn=False, dec=1),
+        "P/B": _fmt(val["pb"], bn=False, dec=1),
+        "Cổ tức (%)": f"{_fmt(_calc_dividend_yield_pct(stock, qtr_df), bn=False, dec=1)}",
+        "Giá": _fmt(stock.get("Price Close"), bn=False, dec=0),
+        "FSS Score (Sao)": f"{int(GRADE_MAP.get(str(stock.get('VGM Score', 'C')), 3.0))}/5",
     }
-
 
 # ─────────────────────────────────────────────────────────────
 # CANVAS PRIMITIVES 
@@ -149,8 +275,13 @@ def _bg(c):
     c.rect(0, 0, PW, PH, fill=1, stroke=0)
 
 
-def _header(c, ticker, company, exchange, title: str, stock: dict):
-    """Header có nền (background) siêu sang trọng và khối KPI bo góc (Card)"""
+def _header(c, ticker, company, exchange, title: str, stock: dict, qtr_df: pd.DataFrame = None):
+    """Header có nền (background) siêu sang trọng và khối KPI bo góc (Card).
+    [FIX] qtr_df=None mặc định — các trang không có sẵn BCTC quý trong scope
+    (_p2 dùng yearly_df, _p8 dùng prices_df) vẫn gọi _header() bình thường
+    mà không cần sửa, KPI "Cổ tức (%)" của các trang đó sẽ rơi về fallback
+    trong _calc_dividend_yield_pct() (đọc "Dividend Yield (%)" từ snapshot,
+    hoặc "---" nếu không có) thay vì crash NameError như bug vừa gặp."""
 
     # 1. Nền Header tổng thể
     c.setFillColor(colors.HexColor("#f0f7ff"))  # Nền xanh nhạt IDX
@@ -220,7 +351,9 @@ def _header(c, ticker, company, exchange, title: str, stock: dict):
     c.roundRect(MARGIN, kpi_y, PW - 2 * MARGIN, kpi_h, radius=6, fill=1, stroke=1)
 
     # 5. Render KPI Grid bên trong Card
-    kpis = get_kpis(stock)
+    # [FIX] Truyền qtr_df (đã có sẵn trong tham số _p1) để _calc_dividend_yield_pct
+    # đọc đúng DPS từ BCTC quý thay vì từ snapshot hàng năm (luôn thiếu cột này).
+    kpis = get_kpis(stock, qtr_df)
     if kpis:
         slot_w = (PW - 2 * MARGIN) / len(kpis)
         for i, (k, v) in enumerate(kpis.items()):
@@ -561,7 +694,7 @@ def _ch_gauge(value, max_val=5, title="VGM"):
     ax.plot(theta_v, [1] * 100, color=col, lw=14, solid_capstyle="round")
     ax.set_ylim(0, 1.5);
     ax.axis("off")
-    ax.text(math.pi / 2, 0.2, f"{value:.1f}/{max_val}", ha="center", va="center", fontsize=15, fontweight="bold",
+    ax.text(math.pi / 2, 0.2, f"{value:.0f}/{max_val}", ha="center", va="center", fontsize=15, fontweight="bold",
             color=col)
     ax.text(math.pi / 2, -0.2, title, ha="center", va="center", fontsize=8, color="#777777", fontweight="bold")
     fig.tight_layout(pad=0.1)
@@ -657,7 +790,7 @@ def _p1(c, stock, prices_df, qtr_df):
     ticker = stock.get("Ticker", "---")
     company = stock.get("Company Common Name", "")
     _bg(c);
-    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích kỹ thuật", stock)
+    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích kỹ thuật", stock, qtr_df)
 
     y0 = PH - 160  # Dành nhiều không gian cho Header
     _sec(c, "Giá & Khối lượng giao dịch", MARGIN, y0)
@@ -837,7 +970,7 @@ def _p3(c, stock, qtr_df):
     ticker = stock.get("Ticker", "---")
     company = stock.get("Company Common Name", "")
     _bg(c);
-    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Báo cáo quý", stock)
+    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Báo cáo quý", stock, qtr_df)
 
     y0 = PH - 160
     if qtr_df.empty:
@@ -912,7 +1045,7 @@ def _p4(c, stock, qtr_df):
     ticker = stock.get("Ticker", "---")
     company = stock.get("Company Common Name", "")
     _bg(c);
-    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích Bridge", stock)
+    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích Bridge", stock, qtr_df)
 
     y0 = PH - 160
     _sec(c, "Dòng tiền tự do (FCF) theo kỳ", MARGIN, y0)
@@ -1006,7 +1139,7 @@ def _p5(c, stock, qtr_df):
     ticker = stock.get("Ticker", "---")
     company = stock.get("Company Common Name", "")
     _bg(c);
-    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích Bảng cân đối kế toán", stock)
+    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích Bảng cân đối kế toán", stock, qtr_df)
 
     y0 = PH - 160
     half = CW / 2 - 4
@@ -1126,7 +1259,7 @@ def _p6(c, stock, qtr_df):
     ticker = stock.get("Ticker", "---")
     company = stock.get("Company Common Name", "")
     _bg(c);
-    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích Kết quả kinh doanh", stock)
+    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Phân tích Kết quả kinh doanh", stock, qtr_df)
 
     y0 = PH - 160
 
@@ -1227,12 +1360,12 @@ def _p6(c, stock, qtr_df):
     _footer(c, 6)
 
 
-def _p7(c, stock):
+def _p7(c, stock, qtr_df: pd.DataFrame = None):
     """Trang 7 – Xếp hạng & Định giá"""
     ticker = stock.get("Ticker", "---")
     company = stock.get("Company Common Name", "")
     _bg(c);
-    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Xếp hạng & Định giá", stock)
+    _header(c, ticker, company, stock.get("Exchange", "IDX"), "Xếp hạng & Định giá", stock, qtr_df)
 
     y0 = PH - 160
     half = CW / 2 - 4
@@ -1256,7 +1389,7 @@ def _p7(c, stock):
         ["Growth Score", str(stock.get("Growth Score", "---"))],
         ["Momentum Score", str(stock.get("Momentum Score", "---"))],
         ["VGM Score", str(stock.get("VGM Score", "---"))],
-        ["IDX Score", f"{GRADE_MAP.get(str(stock.get('VGM Score', 'C')), 3.0)}/5"],
+        ["IDX Score", f"{int(GRADE_MAP.get(str(stock.get('VGM Score', 'C')), 3.0))}/5"],
         ["Beta", _fmt(stock.get("Beta"), bn=False)],
         ["RS 1M %", _fmt(stock.get("RS_1M"), bn=False, pct=True)],
         ["RS 3M %", _fmt(stock.get("RS_3M"), bn=False, pct=True)],
@@ -1271,16 +1404,16 @@ def _p7(c, stock):
     _sec(c, "Chỉ số định giá", MARGIN, y0, width=half)
     _sec(c, "Chỉ tiêu cơ bản", MARGIN + half + 8, y0, width=half)
     y0 -= 15
-
+    val = _calc_live_valuation(stock, qtr_df)   # [FIX] Market Cap/P/E/P/B tính lại bằng giá hiện tại
     VAL = [
-        ["P/E", _fmt(stock.get("P/E"), bn=False), "lần"],
-        ["P/B", _fmt(stock.get("P/B"), bn=False), "lần"],
+        ["P/E", _fmt(val["pe"], bn=False), "lần"],
+        ["P/B", _fmt(val["pb"], bn=False), "lần"],
         ["EV/EBITDA", _fmt(stock.get("EV/EBITDA"), bn=False), "lần"],
-        ["Div. Yield", _fmt(stock.get("Dividend Yield (%)"), bn=False), "%"],
+        ["Div. Yield", _fmt(_calc_dividend_yield_pct(stock, qtr_df), bn=False), "%"],
         ["P/S", _fmt(stock.get("P/S"), bn=False), "lần"],
         ["EPS", _fmt(stock.get("EPS"), bn=False), "VND"],
         ["BVPS", _fmt(stock.get("BVPS"), bn=False), "VND"],
-        ["Market Cap", _fmt(stock.get("Market Cap")), ""],
+        ["Market Cap", _fmt(val["market_cap"]), ""],
     ]
     yw_v = y0
     _table(c, ["Chỉ số", "Giá trị", "ĐV"], VAL, MARGIN, yw_v, [half * 0.45, half * 0.35, half * 0.2], row_h=16,
@@ -1314,7 +1447,7 @@ def _p7(c, stock):
     info_lines = [
         f"Ngành: {stock.get('Sector', '')} / {stock.get('Industry', '')}",
         f"Sàn: {stock.get('Exchange', 'IDX')}",
-        f"Vốn hóa: {_fmt(stock.get('Market Cap'))} VND",
+        f"Vốn hóa: {_fmt(val['market_cap'])} VND",
         f"Giá hiện tại: {_fmt(stock.get('Price Close'), bn=False)} VND",
         f"52W Hi: {_fmt(stock.get('High_52W'), bn=False)} | Lo: {_fmt(stock.get('Low_52W'), bn=False)}",
     ]
@@ -1502,7 +1635,7 @@ def generate_pdf(stock: dict) -> bytes:
         lambda: _p4(c, stock, qtr_df),
         lambda: _p5(c, stock, qtr_df),
         lambda: _p6(c, stock, qtr_df),
-        lambda: _p7(c, stock),
+        lambda: _p7(c, stock, qtr_df),
         lambda: _p8(c, stock, prices_df),
     ]
 
@@ -1578,7 +1711,7 @@ def export_pdf_report(n_clicks, stock_data):
     ticker = stock.get("Ticker", stock.get("ticker", "STOCK"))
     try:
         pdf_bytes = generate_pdf(stock)
-        fname = f"BaoCaoTVDT_Vietcap_{ticker}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        fname = f"BaoCaoTVDT_{ticker}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
         return dcc.send_bytes(pdf_bytes, fname), f"✅ Đã xuất: {fname}", False, _BTN_NORMAL_STYLE, "PDF"
     except Exception as e:
         logger.error(f"PDF export fail: {e}")

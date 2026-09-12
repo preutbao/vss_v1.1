@@ -1349,16 +1349,66 @@ def load_detail_content(stock, theme="dark"):
 
     shares_out = float(shares_out_raw) if shares_out_raw is not None and pd.notna(shares_out_raw) else np.nan
 
-    if market_cap_raw is not None and pd.notna(market_cap_raw) and float(market_cap_raw) > 0:
-        market_cap = float(market_cap_raw) / 1_000_000  # Chuyển sang Triệu VND
-    elif not pd.isna(shares_out):
+    # [FIX] Đảo thứ tự ưu tiên: LUÔN tính Market Cap = Giá hiện tại × Shares
+    # Outstanding trước tiên (nếu có đủ dữ liệu), CHỈ dùng cột "Market Cap"
+    # tính sẵn trong snapshot làm phương án dự phòng cuối cùng.
+    # Lý do: "Price Close" trong `stock` được realtime_price_callbacks.py
+    # patch trực tiếp vào rowData mỗi 60s trong giờ GD (xem _patch_rows()),
+    # nên LUÔN mới hơn giá tại thời điểm snapshot được build. Cột "Market
+    # Cap" tính sẵn thì KHÔNG nằm trong danh sách được patch realtime — nó
+    # bị đóng băng ở giá lúc snapshot rebuild lần gần nhất (sau EOD merge
+    # hoặc lúc khởi động app). Ưu tiên dùng số cũ này trước (logic gốc) gây
+    # ra đúng bug: Market Cap trên modal lệch so với giá đang hiển thị, dù
+    # tự tính tay Price × Shares lại ra đúng số khớp báo cáo chính thức.
+    if not pd.isna(shares_out) and shares_out > 0 and price_close > 0:
         market_cap = price_close * shares_out / 1_000_000
+    elif market_cap_raw is not None and pd.notna(market_cap_raw) and float(market_cap_raw) > 0:
+        # Dự phòng: thiếu shares_out (hoặc giá = 0, VD mã tạm ngừng GD) —
+        # dùng con số snapshot tính sẵn, dù có thể hơi cũ, còn hơn hiển thị 0.
+        market_cap = float(market_cap_raw) / 1_000_000
+        logger.debug(
+            f"[Market Cap] {ticker}: dùng fallback snapshot (thiếu shares_out "
+            f"hoặc price_close=0) — số liệu có thể không khớp giá hiện tại."
+        )
     else:
         market_cap = 0
 
     eps = stock.get('EPS', 0)
-    pe = stock.get('P/E', 0)
-    pb = stock.get('P/B', 0)
+
+    # [FIX] P/E, P/B — CÙNG BUG với Market Cap (xem fix ở trên): đây là
+    # cột tính sẵn trong snapshot, KHÔNG nằm trong danh sách được
+    # realtime_price_callbacks.py patch mỗi 60s (chỉ patch "Price Close" +
+    # "Price_Change_Pct") — nên bị đóng băng ở giá tại thời điểm snapshot
+    # rebuild lần gần nhất, lệch với price_close đang hiển thị. Ưu tiên
+    # tính lại bằng price_close (tươi) khi có đủ EPS / giá trị sổ sách,
+    # chỉ dùng số snapshot làm dự phòng cuối khi thiếu input để tự tính.
+    pe_raw = stock.get('P/E', None)
+    if eps is not None and pd.notna(eps) and float(eps) > 0 and price_close > 0:
+        pe = price_close / float(eps)
+    elif pe_raw is not None and pd.notna(pe_raw):
+        pe = float(pe_raw)
+        logger.debug(f"[P/E] {ticker}: dùng fallback snapshot (thiếu EPS hợp lệ) — có thể không khớp giá hiện tại.")
+    else:
+        pe = 0
+
+    pb_raw = stock.get('P/B', None)
+    book_value_total = None
+    if not df_history.empty:
+        book_value_total = df_history.iloc[-1].get('Common Equity - Total')
+    bvps = (
+        float(book_value_total) / shares_out
+        if book_value_total is not None and pd.notna(book_value_total)
+        and not pd.isna(shares_out) and shares_out > 0
+        else None
+    )
+    if bvps is not None and bvps > 0 and price_close > 0:
+        pb = price_close / bvps
+    elif pb_raw is not None and pd.notna(pb_raw):
+        pb = float(pb_raw)
+        logger.debug(f"[P/B] {ticker}: dùng fallback snapshot (thiếu giá trị sổ sách) — có thể không khớp giá hiện tại.")
+    else:
+        pb = 0
+
     roe = stock.get('ROE (%)', 0)
     # Beta THẬT — đã tính sẵn trong technical_indicators.py bằng
     # cov(return cổ phiếu, return VN-Index) / var(return VN-Index), có lọc

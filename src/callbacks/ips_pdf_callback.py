@@ -1134,7 +1134,7 @@ def download_ips_pdf(n_clicks, profile, goal, will, time_h, auth_data):   # ← 
     try:
         display_name = (auth_data or {}).get("display_name")     # ← THÊM
         pdf_bytes = generate_ips_pdf(profile, quiz, display_name=display_name)  # ← SỬA
-        fname = f"Vietcap_HoSoNhaDauTu_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        fname = f"HoSoNhaDauTu_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
         return dcc.send_bytes(pdf_bytes, fname)
     except Exception as e:
         logger.error(f"[IPS PDF] Lỗi generate: {e}", exc_info=True)

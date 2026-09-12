@@ -21,6 +21,7 @@
 
 import io, os, math, logging, traceback, json
 from datetime import datetime
+from src.callbacks.pdf_export_callback import _calc_dividend_yield_pct
 
 import numpy as np
 import pandas as pd
@@ -1074,7 +1075,8 @@ def _gemini_summary(df_top: pd.DataFrame, ncn_tickers: list,
                 pe = row.get("P/E", 0)
                 roe = row.get("ROE (%)", 0)
                 cfo = row.get("CFO", "Dương") 
-                div = row.get("Dividend_Yield", ">5%")
+                div_val = _calc_dividend_yield_pct(row)
+                div = f"{div_val:.1f}%" if div_val else "N/A"
                 stats_list.append(f"{tk} (P/E:{pe:.1f}, ROE:{roe:.1f}%, Cổ tức:{div}, CFO:{cfo})")
             top3_stats_str = " | ".join(stats_list)
 
@@ -2291,7 +2293,7 @@ def download_pdf_from_modal(n_clicks, row_data, active_filters,
             include_quant=bool(use_quant),
         )
         fname = (
-            f"Vietcap_DanhMucLoc"
+            f"DanhMucLoc"
             f"{'_MC' if use_quant else ''}"
             f"_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
         )
