@@ -213,7 +213,11 @@ def _compute_cagr(df_fin, value_col, years):
     latest.columns = ['Ticker', 'latest_date', 'v_t']
 
     # Với mỗi ticker, tìm kỳ gần nhất với (latest_date - years)
-    def find_base(grp):
+    def find_base(grp, **kwargs):
+        # 🟢 **kwargs để hứng tham số 'include_groups' mà pandas phiên bản cũ
+        # (<2.2, đang chạy trên HF Space) nhả xuống vì nó không nhận diện được
+        # đây là kwarg riêng của .apply() — pattern giống hệt sbs_for_group()
+        # trong quant_engine.py (đã chạy ổn định trên cả 2 version).
         ticker = grp.name  # group key có sẵn qua grp.name, không cần grp['Ticker']
         lat_row = latest[latest['Ticker'] == ticker]
         if lat_row.empty:

@@ -672,6 +672,22 @@ def update_market_overview_cards(pathname, n_intervals):
         pct = (pts / prev_val * 100) if prev_val else 0.0
         spark = d[col].tail(n).tolist()
 
+        # [FIX #2] Bug mới phát sinh từ fix #1: dùng "dòng cuối cùng" (vị trí)
+        # làm baseline chỉ đúng khi index.parquet CHƯA có dòng hôm nay. Nhưng
+        # _append_index_to_parquet() KHÔNG có cơ chế chờ/retry theo match
+        # ratio như giá cổ phiếu — nó ghi dòng hôm nay ngay khi _is_eod_time()
+        # bắt đầu (15:30), sớm hơn nhiều so với lúc market_prices.parquet
+        # merge xong. Vậy nên ngay khi bước qua giờ EOD, "dòng cuối cùng"
+        # trong index.parquet ĐÃ LÀ hôm nay -> baseline = hôm nay, rt_close
+        # cũng = hôm nay (Wifeed vẫn báo đúng giá đóng cửa) -> pts = 0.00.
+        #
+        # Sửa đúng gốc: baseline phải là dòng gần nhất có NGÀY THỰC SỰ < hôm
+        # nay (không phụ thuộc index.parquet đã merge dòng hôm nay hay chưa),
+        # tức luôn tìm đúng "giá đóng cửa phiên trước", bất kể vị trí dòng.
+        today_vn = pd.Timestamp.now(tz="Asia/Ho_Chi_Minh").normalize().tz_localize(None)
+        d_prior = d[pd.to_datetime(d["Date"]).dt.normalize() < today_vn]
+        eod_baseline = float(d_prior[col].iloc[-1]) if not d_prior.empty else last_val
+
         # ── Ưu tiên realtime nếu có (giống logic bảng lọc dùng get_realtime_snapshot) ──
         if symbol_key:
             try:
@@ -680,7 +696,12 @@ def update_market_overview_cards(pathname, n_intervals):
                 if rt and rt.get("close") is not None:
                     rt_close = float(rt["close"])
                     rt_pct = float(rt.get("change_pct", pct) or 0)
-                    rt_pts = rt_close - prev_val if prev_val else pts
+                    # [FIX] Dùng eod_baseline (đúng "phiên trước", theo ngày
+                    # thực) thay vì prev_val (lùi theo VỊ TRÍ, sai khi index
+                    # đã merge dòng hôm nay) hoặc last_val (sai khi index
+                    # CHƯA merge dòng hôm nay) — eod_baseline xử lý đúng cả
+                    # 2 trường hợp.
+                    rt_pts = rt_close - eod_baseline if eod_baseline else pts
 
                     last_val = rt_close
                     pct = rt_pct
@@ -1011,7 +1032,8 @@ def _compute_market_pulse() -> dict:
 
     d = df_price.sort_values(["Ticker", "Date"])
 
-    def _last_pct(g):
+    def _last_pct(g, **kwargs):
+        # 🟢 **kwargs hứng 'include_groups' cho pandas cũ trên HF Space.
         if len(g) < 2:
             return np.nan
         last_c = g["Price Close"].iloc[-1]

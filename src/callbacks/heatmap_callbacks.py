@@ -733,14 +733,18 @@ def render_breadth_xray(_, exchange, is_open, theme):
         chart_right_1 = html.Div()   # line chart VNIndex vs SBS
         chart_right_2 = html.Div()   # thêm chart SBS ngành top/bottom
 
+        def _weighted_avg_sbs(g, **kwargs):
+            # 🟢 **kwargs hứng 'include_groups' mà pandas cũ nhả xuống —
+            # cùng pattern với sbs_for_group() trong quant_engine.py.
+            n_sum = g["N"].sum()
+            return (g["SBS"] * g["N"]).sum() / n_sum if n_sum > 0 else None
+
         try:
             df_hist = get_market_internals_history(exchange_filter=exchange)
             if df_hist is not None and not df_hist.empty:
                 mkt_daily = (
                     df_hist.groupby("Date")
-                    .apply(lambda g: (g["SBS"] * g["N"]).sum() / g["N"].sum()
-                           if g["N"].sum() > 0 else None,
-                           include_groups=False)
+                    .apply(_weighted_avg_sbs, include_groups=False)
                     .dropna()
                     .reset_index()
                 )

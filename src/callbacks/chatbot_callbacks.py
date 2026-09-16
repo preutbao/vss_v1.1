@@ -59,7 +59,6 @@ Nhiệm vụ của bạn là phân tích dữ liệu thị trường và cung c�
 - 🏢 **Tổng quan & Định giá:** [P/E, P/B, ROE... Đắt hay rẻ?]
 - 📉 **Kỹ thuật & Dòng tiền:** [RSI, Trend, Động lượng]
 - ⚖️ **Cơ hội & Rủi ro:** [Điểm mạnh, điểm yếu theo tiêu chí]
-- 🎯 **Hành động (Khuyến nghị tham khảo):** [Vùng mua/Bán/Cắt lỗ theo Hồ sơ rủi ro của người dùng]
 """
 def _call_gemini(messages: list, stock_context: dict = None, screener_context: str = "") -> str:
     """Gọi Gemini API — tự chọn SDK mới (google-genai) hoặc cũ
