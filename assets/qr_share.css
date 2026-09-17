@@ -1,0 +1,67 @@
+/* ============================================================
+   QR Share ("Mở trên điện thoại") — nút trigger + modal
+   ============================================================ */
+
+.fss-qr-trigger-btn {
+    transition: background-color .15s ease, border-color .15s ease, transform .1s ease;
+}
+
+.fss-qr-trigger-btn:hover {
+    background-color: rgba(0, 200, 255, 0.12) !important;
+    border-color: rgba(0, 200, 255, 0.35) !important;
+    color: #00c8ff !important;
+}
+
+.fss-qr-trigger-btn:active {
+    transform: scale(0.94);
+}
+
+.fss-qr-modal-content {
+    background: #12161c;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+#qr-share-url-input {
+    text-overflow: ellipsis;
+}
+
+/* Trên màn hình rất hẹp: modal chiếm gần trọn chiều rộng, ảnh QR co lại
+   một chút để chừa margin, tránh tràn ngang */
+@media (max-width: 360px) {
+    #qr-share-img {
+        width: 180px !important;
+        height: 180px !important;
+    }
+}
+
+/* Trên mobile: navbar hẹp, bớt margin quanh nút QR để không đẩy tràn
+   các phần tử khác (logo, đăng nhập, theme switch) */
+@media (max-width: 767px) {
+    .fss-qr-trigger-btn {
+        width: 32px !important;
+        height: 32px !important;
+        margin-right: 6px !important;
+        font-size: 13px !important;
+    }
+}
+
+/* ============================================================
+   Navbar — giảm padding/khoảng cách trên mobile để chừa chỗ cho
+   cụm nút mới (QR + theme switch + đăng nhập) không bị vỡ dòng.
+   Chỉ chỉnh spacing, không đổi cấu trúc/layout hiện có.
+   ============================================================ */
+@media (max-width: 480px) {
+    .fss-nav-inner {
+        padding: 0 12px !important;
+    }
+    .vietcap-nav-login-btn {
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+    .vietcap-nav-login-btn i {
+        margin-right: 4px !important;
+    }
+}
+

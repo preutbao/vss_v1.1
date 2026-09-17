@@ -168,6 +168,7 @@ import src.callbacks.tplus_callbacks
 import src.callbacks.margin_crisis_callbacks
 import src.callbacks.screener_pdf_callback
 import src.callbacks.psychology_callbacks
+import src.callbacks.qr_share_callbacks
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BUILD LAYOUT — hai section: onboarding ↔ main app

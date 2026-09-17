@@ -69,6 +69,77 @@ def _pricing_row(icon_cls, color, text, is_pro=False):
             "textDecoration": "line-through" if color == "#484f58" else "none",
         }),
     ], style={"display": "flex", "alignItems": "flex-start", "gap": "10px", "marginBottom": "10px"})
+def _create_qr_modal():
+    """Popup 'Mở trên điện thoại' — QR code trỏ tới URL hiện tại của app.
+    QR được sinh phía client (JS) từ window.location.href, dùng ảnh QR
+    render qua api.qrserver.com (không cần thư viện JS mới, không phụ
+    thuộc backend biết public hostname — quan trọng vì app có thể chạy
+    sau reverse proxy / HF Spaces với hostname nội bộ khác domain public).
+    """
+    return dbc.Modal(
+        id="qr-share-modal",
+        is_open=False,
+        centered=True,
+        size="sm",
+        contentClassName="fss-qr-modal-content",
+        style={"border": "none"},
+        children=[
+            html.Button(
+                html.I(className="fas fa-times"),
+                id="btn-close-qr-modal",
+                n_clicks=0,
+                style={
+                    "position": "absolute", "top": "14px", "right": "14px",
+                    "background": "rgba(255,255,255,0.06)", "border": "none",
+                    "color": "#9ca3af", "width": "30px", "height": "30px",
+                    "borderRadius": "50%", "zIndex": "10", "cursor": "pointer",
+                    "display": "flex", "alignItems": "center", "justifyContent": "center",
+                },
+            ),
+            dbc.ModalBody([
+                html.Div([
+                    html.Div("Mở trên điện thoại",
+                             style={"fontSize": "16px", "fontWeight": "700",
+                                    "color": "#e5e7eb", "marginBottom": "4px"}),
+                    html.Div("Quét mã QR bằng camera điện thoại để mở FinSmartScreener ngay trên di động",
+                             style={"fontSize": "12px", "color": "#6b7280", "lineHeight": "1.5"}),
+                ], style={"marginBottom": "20px", "paddingBottom": "14px",
+                          "borderBottom": "1px solid rgba(255,255,255,0.06)"}),
+                html.Div(
+                    html.Img(id="qr-share-img", src="", alt="QR code",
+                             style={"width": "220px", "height": "220px",
+                                    "borderRadius": "12px", "background": "#fff",
+                                    "padding": "10px"}),
+                    style={"display": "flex", "justifyContent": "center",
+                           "marginBottom": "18px"},
+                ),
+                html.Div([
+                    dbc.Input(id="qr-share-url-input", value="", readonly=True,
+                              style={
+                                  "backgroundColor": "rgba(255,255,255,0.04)",
+                                  "border": "1px solid rgba(255,255,255,0.08)",
+                                  "borderRadius": "8px 0 0 8px", "color": "#9ca3af",
+                                  "fontSize": "12px", "fontFamily": "'DM Mono', monospace",
+                              }),
+                    dbc.Button(
+                        html.I(className="fas fa-copy"),
+                        id="btn-copy-qr-url", n_clicks=0,
+                        style={
+                            "background": "linear-gradient(135deg, #0057D9, #00c8ff)",
+                            "border": "none", "color": "#fff",
+                            "borderRadius": "0 8px 8px 0", "padding": "8px 14px",
+                        },
+                    ),
+                ], style={"display": "flex", "marginBottom": "4px"}),
+                html.Div(id="qr-copy-feedback", style={
+                    "fontSize": "11px", "color": "#4ade80", "height": "16px",
+                    "marginTop": "6px", "textAlign": "center",
+                }),
+            ], style={"padding": "28px 24px 20px"}),
+        ],
+    )
+
+
 def _create_profile_modal():
     """Popup chỉnh profile người dùng — avatar, bio, hồ sơ nhà đầu tư."""
     _avatar_templates = [f"avt_{i}" for i in range(1, 4)]
@@ -915,6 +986,23 @@ def create_topbar(id_suffix=""):
                 ], className="d-flex align-items-center gap-4"),
                 # Auth area
                 html.Div([
+                    # Nút "Mở trên điện thoại" — QR code (chỉ render 1 lần, tránh duplicate id)
+                    *([html.Button(
+                        html.I(className="fas fa-qrcode"),
+                        id="btn-open-qr-modal", n_clicks=0,
+                        title="Mở trên điện thoại (quét QR)",
+                        className="fss-qr-trigger-btn",
+                        style={
+                            "background": "rgba(255,255,255,0.05)",
+                            "border": "1px solid rgba(255,255,255,0.1)",
+                            "color": "rgba(255,255,255,0.85)",
+                            "width": "34px", "height": "34px",
+                            "borderRadius": "8px", "marginRight": "10px",
+                            "display": "flex", "alignItems": "center",
+                            "justifyContent": "center", "cursor": "pointer",
+                            "fontSize": "15px",
+                        },
+                    )] if not id_suffix else []),
                     theme_switch,
                     # Nút đăng nhập (chưa login)
                     dbc.Button(
@@ -967,6 +1055,8 @@ def create_topbar(id_suffix=""):
                     ])] if not id_suffix else []),
                     # Profile modal
                     _create_profile_modal(),
+                    # QR share modal — chỉ render 1 lần, tránh duplicate id
+                    *([_create_qr_modal()] if not id_suffix else []),
                 ], style={"display": "flex", "alignItems": "center", "gap": "12px"}),
             ])
         # TÌM ĐOẠN NÀY TRONG HÀM create_topbar():
