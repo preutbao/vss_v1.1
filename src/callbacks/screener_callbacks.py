@@ -303,6 +303,59 @@ def _build_col_defs(active_filters, strategy_id, trading_mode="investing"):
     return FIXED_COLS + dynamic_cols
 
 
+def _apply_realtime_to_records(records: list) -> list:
+    """
+    [FIX] Áp giá realtime (Wifeed) lên rowData NGAY TẠI THỜI ĐIỂM RENDER.
+
+    Trước đây rowData của bảng screener chỉ được dựng từ snapshot
+    (get_snapshot_df() -> snapshot_cache.parquet = giá EOD phiên trước), và
+    chỉ được vá giá mới bởi realtime_price_callbacks.update_screener_realtime()
+    khi dcc.Interval bắn — tức SỚM NHẤT là giây thứ 60 sau khi trang load.
+    Hậu quả (đã xác nhận trên thực tế):
+
+      1. Khởi động app trong giờ giao dịch: run_startup_backfill() ĐÃ fetch
+         Wifeed và nạp snapshot realtime vào RAM ngay từ đầu, nên các thẻ KPI
+         ở header (home_callbacks.py — đọc thẳng get_realtime_snapshot() /
+         get_realtime_index() lúc render) hiện giá MỚI ngay lập tức, trong khi
+         bảng lọc chính bên dưới vẫn hiện giá EOD hôm trước suốt 1 phút đầu.
+      2. Mỗi lần user đổi bộ lọc, callback này dựng lại rowData từ snapshot
+         EOD -> giá lại "nhảy ngược" về giá cũ cho tới tick 60s kế tiếp.
+
+    Hàm này áp đúng cùng logic patch mà realtime_price_callbacks đang dùng
+    (_patch_rows — chỉ "Price Close" + "Price_Change_Pct") nên KHÔNG tạo ra
+    hành vi mới, chỉ khiến nó xảy ra ngay lập tức thay vì trễ 60s. Cách làm
+    này cũng khớp với pattern sẵn có ở home_callbacks.py: patch realtime SAU
+    CÙNG để nó là giá trị "thắng" lúc hiển thị.
+
+    An toàn:
+      - Ngoài giờ GD / chưa fetch lần nào -> get_realtime_snapshot() rỗng ->
+        trả nguyên records, không đụng gì.
+      - Dòng "🔒 VIP" (locked rows) không có trong snapshot -> _patch_rows tự
+        bỏ qua, không cần lọc riêng.
+      - Import lazy trong hàm (giống toàn bộ codebase) để tránh circular
+        import; realtime_price_callbacks vốn đã được main.py import từ lúc
+        khởi động nên đây chỉ là cache hit, KHÔNG đăng ký lại callback.
+      - Mọi lỗi đều nuốt và trả records gốc — không bao giờ làm hỏng bảng lọc
+        chỉ vì giá realtime không sẵn sàng.
+    """
+    if not records:
+        return records
+    try:
+        from src.backend.wifeed_updater import get_realtime_snapshot
+        from src.callbacks.realtime_price_callbacks import _patch_rows
+
+        snapshot = get_realtime_snapshot()
+        if not snapshot:
+            return records
+        return _patch_rows(records, snapshot)
+    except Exception as e:
+        logger.warning(
+            f"[Screener] Không áp được giá realtime vào rowData: {e} — "
+            f"giữ nguyên giá từ snapshot EOD."
+        )
+        return records
+
+
 def _add_forward_pe(df):
     """Tính Forward P/E inline — tránh callback riêng gây double-render."""
     try:
@@ -567,7 +620,8 @@ def update_screener_table(
         if triggered_id == 'btn-reset' or triggered_id == 'btn-reset.n_clicks':
             df = _add_forward_pe(df)
             col_defs = _build_col_defs(active_filters, current_strategy, trading_mode)
-            return df.to_dict('records'), col_defs, f"📊 Hiển thị tất cả: {total_stocks} mã", "", False, "", None
+            return (_apply_realtime_to_records(df.to_dict('records')),   # [FIX] giá realtime ngay lúc render
+                    col_defs, f"📊 Hiển thị tất cả: {total_stocks} mã", "", False, "", None)
 
         df_filtered = df.copy()
         df_null_excluded = pd.DataFrame()  # Accumulate mã bị loại vì null
@@ -1129,6 +1183,12 @@ def update_screener_table(
             final_rows = visible + locked_rows
         else:
             final_rows = df_filtered.to_dict("records")
+
+        # [FIX] Áp giá realtime lên rowData ngay lúc render — xem
+        # _apply_realtime_to_records(). Đặt SAU cả VIP gate để dòng "🔒 VIP"
+        # cũng đi qua (vô hại, không có trong snapshot) và để giá realtime là
+        # giá trị "thắng" cuối cùng, giống pattern ở home_callbacks.py.
+        final_rows = _apply_realtime_to_records(final_rows)
 
         # [CẬP NHẬT] Trả về thêm 2 tham số của Toast cảnh báo ở cuối
         return (

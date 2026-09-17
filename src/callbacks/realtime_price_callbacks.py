@@ -43,6 +43,26 @@ def create_realtime_components():
             n_intervals=0,
             disabled=False,
         ),
+        # [MỚI] Interval "mồi" chạy ngay sau khi trang load xong, KHÔNG đợi
+        # đủ 60s như interval chính. Lý do: lúc khởi động app trong giờ giao
+        # dịch, run_startup_backfill() ĐÃ fetch Wifeed và nạp sẵn snapshot
+        # realtime vào RAM — nhưng bảng screener lại dựng rowData từ
+        # snapshot_cache.parquet (giá EOD hôm trước), và callback patch giá
+        # chỉ chạy lần đầu ở giây thứ 60 (prevent_initial_call + interval
+        # 60s). Kết quả: user nhìn giá cũ suốt 1 phút đầu, trong khi các thẻ
+        # KPI ở header đọc thẳng RAM nên đã hiện giá mới ngay.
+        #
+        # max_intervals=3 (không phải 1) để thử lại vài lần: tick đầu có thể
+        # chạy TRƯỚC khi AG Grid kịp render xong rowData — khi đó
+        # current_row_data rỗng, callback trả no_update, không patch được gì.
+        # Các tick sau vá nốt. Khi đã patch xong, tick thừa vô hại
+        # (n_patched == 0 -> no_update, không re-render grid).
+        dcc.Interval(
+            id="realtime-price-kickstart",
+            interval=2_000,
+            n_intervals=0,
+            max_intervals=3,
+        ),
         # Thêm 2 Store ẩn làm bia đỡ đạn cho clientside callback
         dcc.Store(id="dummy-blur-output"),
         dcc.Store(id="dummy-unblur-output"),
@@ -224,10 +244,11 @@ clientside_callback(
     Output("screener-table",    "rowData",  allow_duplicate=True),
     Output("realtime-fetch-ts", "data"),
     Input("realtime-price-interval", "n_intervals"),
+    Input("realtime-price-kickstart", "n_intervals"),   # [MỚI] mồi lúc khởi động
     State("screener-table",     "rowData"),
     prevent_initial_call=True,
 )
-def update_screener_realtime(n_intervals, current_row_data):
+def update_screener_realtime(n_intervals, n_kickstart, current_row_data):
     """
     Mỗi 60s: đọc in-memory snapshot từ wifeed_updater → patch rowData.
     Luôn chạy để apply khi có dữ liệu mới, kể cả ngoài giờ giao dịch.

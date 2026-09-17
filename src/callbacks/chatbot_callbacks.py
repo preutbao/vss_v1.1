@@ -271,6 +271,70 @@ def _build_screener_context() -> str:
         return ""
 
 
+# ── TÌM MÃ CỔ PHIẾU TRONG TIN NHẮN (regex + validate với danh sách thật) ─────
+_valid_tickers_cache: dict = {"set": set(), "ts": 0.0}
+_TICKER_CACHE_TTL = 300  # giây, giữ đồng bộ với _SCREENER_CACHE_TTL
+
+def _get_valid_tickers() -> set:
+    """Danh sách mã thật từ snapshot — dùng để validate regex, tránh match
+    nhầm các từ tiếng Việt 3 chữ cái viết hoa tình cờ trùng ticker (vd
+    "CHO", "LÀ" viết hoa không phải mã, nhưng "FPT", "VNM" thì đúng là mã)."""
+    import time as _time
+    now = _time.time()
+    if now - _valid_tickers_cache["ts"] < _TICKER_CACHE_TTL and _valid_tickers_cache["set"]:
+        return _valid_tickers_cache["set"]
+    try:
+        from src.backend.data_loader import get_snapshot_df
+        df = get_snapshot_df()
+        if df is not None and not df.empty and "Ticker" in df.columns:
+            tickers = set(df["Ticker"].astype(str).str.upper().str.strip())
+            _valid_tickers_cache["set"] = tickers
+            _valid_tickers_cache["ts"]  = now
+            return tickers
+    except Exception as e:
+        logger.warning(f"Không lấy được danh sách ticker để validate: {e}")
+    return _valid_tickers_cache["set"]  # trả cache cũ (có thể rỗng) nếu lỗi
+
+
+def _extract_ticker_from_text(text: str) -> str | None:
+    """Regex tìm mã CK 3 ký tự hoa trong tin nhắn, validate với danh sách
+    ticker thật. Trả về mã đầu tiên khớp, hoặc None nếu không tìm thấy."""
+    import re
+    if not text:
+        return None
+
+    valid = _get_valid_tickers()
+    if not valid:
+        return None
+
+    # \b...\b đảm bảo match nguyên từ (không cắt giữa từ dài hơn).
+    # re.IGNORECASE để bắt cả "phân tích fpt" lẫn "phân tích FPT".
+    candidates = re.findall(r"\b[A-Za-z]{3}\b", text)
+    for cand in candidates:
+        cand_upper = cand.upper()
+        if cand_upper in valid:
+            return cand_upper
+    return None
+
+
+def _get_stock_row_by_ticker(ticker: str) -> dict | None:
+    """Lấy đầy đủ dữ liệu 1 mã từ snapshot theo ticker — dùng khi regex
+    tìm thấy mã trong tin nhắn, KHÔNG phụ thuộc vào việc user đã click
+    dòng nào trong bảng hay chưa."""
+    try:
+        from src.backend.data_loader import get_snapshot_df
+        df = get_snapshot_df()
+        if df is None or df.empty or "Ticker" not in df.columns:
+            return None
+        row = df[df["Ticker"].astype(str).str.upper() == ticker]
+        if row.empty:
+            return None
+        return row.iloc[0].to_dict()
+    except Exception as e:
+        logger.warning(f"Lỗi lấy dữ liệu mã {ticker}: {e}")
+        return None
+
+
 # ── RENDER TIN NHẮN ───────────────────────────────────────────────────────────
 def _render_messages(history: list) -> list:
     bubbles = []
@@ -972,8 +1036,21 @@ def handle_chat(n_send, n_enter, n_clear, quick_clicks, user_input,
     time_now = datetime.now().strftime("%H:%M")
     history.append({"role": "user", "parts": [{"text": message}], "time": time_now})
 
-    # ── Gọi OpenAI ──
-    stock_context = selected_rows[0] if selected_rows else None
+    # ── Xác định stock_context — ƯU TIÊN mã tìm thấy TRONG CÂU HỎI ─────────
+    # Trước đây chỉ lấy selected_rows[0] (dòng đã click) — nếu user gõ
+    # "phân tích MBB" mà trước đó lỡ click VHM, AI trả lời NHẦM dùng data
+    # VHM cho câu hỏi về MBB. Giờ regex tìm mã NGAY TRONG tin nhắn trước,
+    # chỉ fallback về selected_rows khi tin nhắn không chứa mã nào.
+    ticker_in_msg = _extract_ticker_from_text(message)
+    if ticker_in_msg:
+        stock_context = _get_stock_row_by_ticker(ticker_in_msg)
+        if stock_context is None:
+            # Regex match nhưng không tìm thấy trong snapshot (hiếm, có
+            # thể do lệch cache) — fallback về dòng đã click như cũ.
+            stock_context = selected_rows[0] if selected_rows else None
+    else:
+        stock_context = selected_rows[0] if selected_rows else None
+
     screener_ctx  = _build_screener_context()
 
     # Chỉ truyền các message có role hợp lệ
