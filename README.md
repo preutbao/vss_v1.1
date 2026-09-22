@@ -36,7 +36,7 @@ FSS là công cụ sàng lọc định lượng tích hợp đồng thời:
 - **10 trường phái đầu tư** kinh điển thế giới, **tham số hoá trên dữ liệu thị trường Việt Nam** — hiệu quả thực tế đang được kiểm nghiệm qua backtest point-in-time (tránh look-ahead bias)
 - **Giá real-time trong giờ giao dịch** qua Wifeed API (cập nhật mỗi 60 giây) + tự động backfill ngày dữ liệu bị thiếu
 - **VinanceAI Chatbot** & **Trạm cứu viện tâm lý** — Công cụ AI hỗ trợ ra quyết định, được "ghim" (grounded) vào đúng số liệu Quant Engine đã tính sẵn — AI diễn giải, không tự sinh số liệu tài chính
-- Pipeline ETL tự động cập nhật dữ liệu (Wifeed real-time + SSI/VNDirect fallback qua GitHub Actions)
+- Pipeline ETL tự động cập nhật dữ liệu (Wifeed real-time + fallback qua GitHub Actions)
 - Bộ các tính năng theo dõi, đọc vị chi tiết xu hướng thị trường chứng khoán Việt Nam, được thiết kế cho nhà đầu tư bởi đội ngũ TTSTN đến từ Vietcap
 
 ---
@@ -126,7 +126,7 @@ Kiểm tra quyền được thực thi ở **cả 2 lớp**: client-side (ẩn/m
 ```
 vietcap-smart-screener/
 ├── main.py                              # Entry point (dev + production)
-├── daily_updater.py                     # ETL fallback: SSI/VNDirect (dùng khi Wifeed backfill >1 ngày thiếu)
+├── daily_updater.py                     # ETL fallback: dùng khi Wifeed backfill >1 ngày thiếu
 ├── convert_to_parquet.py                # Chuyển raw data Excel → Parquet
 ├── Dockerfile                           # Deploy Hugging Face Spaces
 ├── requirements.txt
@@ -228,7 +228,7 @@ run_startup_backfill()  ── ĐỒNG BỘ, chạy trước khi Dash nhận req
     ├── Thiếu 1 ngày giao dịch?  ──→  Backfill qua root-put API (giá + volume
     │                                  khớp lệnh + thỏa thuận, chuẩn hoá theo
     │                                  đuôi sàn .HM/.HN/.HNO qua market_id)
-    ├── Thiếu >1 ngày?  ──→  Fallback sang daily_updater (SSI/VNDirect, quét lại)
+    ├── Thiếu >1 ngày?  ──→  Fallback sang daily_updater (quét lại)
     └── Đang trong giờ giao dịch?  ──→  Build realtime_cache ngay
     │
     ▼
@@ -239,14 +239,14 @@ APScheduler (interval 60s, 09:00–17:00 giờ VN)
         + index.parquet (VNINDEX/VN30/HNXINDEX/HNX30/UPCOM, gồm cả Volume)
 ```
 
-### Pipeline BCTC & fallback khoảng trống dữ liệu lớn (SSI/VNDirect, GitHub Actions)
+### Pipeline BCTC & fallback khoảng trống dữ liệu lớn (GitHub Actions)
 
 ```
 GitHub Actions (15h00 T2-T6)
     │
     ├── Kiểm tra dữ liệu đã up-to-date?  ──→  Thoát sớm nếu có
     │
-    ├── Download ~1.500 mã  (SSI iBoard API  →  fallback VNDirect)
+    ├── Download ~1.500 mã  (iBoard API  →  fallback)
     │   └── Sequential + 450ms delay (chống bị block IP)
     │
     ├── Download VNINDEX
@@ -410,13 +410,13 @@ python clean_session.py
 - Các sheet `BS_*` — Bảng cân đối kế toán
 - Các sheet `IS_*` — Kết quả kinh doanh
 - Các sheet `CF_*` — Lưu chuyển tiền tệ
-- **Nguồn:** kho dữ liệu tự tổng hợp nội bộ (khác nguồn với giá real-time — xem ghi chú dưới)
+- **Nguồn:** Công ty Dữ liệu Kinh tế Tài chính WiGroup.
 
 ### INDEX.xlsx — dữ liệu khởi tạo
 - Cột `Date` + giá đóng cửa các chỉ số (`VNINDEX_Close`…) — dùng làm benchmark cho RS, Beta, Alpha
 - Cập nhật hàng ngày qua Wifeed (kèm Volume khớp lệnh của từng chỉ số)
 
-> **Về nguồn dữ liệu:** dữ liệu **giá/EOD** (Market Data) lấy qua **Wifeed API** — đã tích hợp và vận hành thật trong bản hiện tại. Dữ liệu **báo cáo tài chính (BCTC)** hiện dùng kho tổng hợp nội bộ, **chưa** qua Wifeed — lộ trình chuẩn hoá toàn bộ (cả giá lẫn BCTC) qua 1 nguồn API duy nhất sẽ triển khai ở giai đoạn thương mại hoá.
+> **Về nguồn dữ liệu:** dữ liệu **giá/EOD** (Market Data) lấy qua **Wifeed API**, và dữ liệu **về DN** (FS Data) lấy qua **công cụ WiData** — đã tích hợp và vận hành thật trong bản hiện tại. Dữ liệu được CTCP Dữ liệu Kinh tế Tài chính WiGroup cấp phép đầy đủ, thuần túy cho mục đích Proof-of-Concept (PoC).
 
 ---
 
@@ -487,7 +487,7 @@ df_price (latest snapshot/ticker)
 | **CFO Lead** | Huỳnh Bảo Nhi |
 | **Marketing B2B/B2C** | Trần Thị Hoài Nhân |
 
-> **Liên hệ:** 0946 700 605 (Zalo/SMS)
+> **Liên hệ:** 0946 700 605 (Zalo/SMS) - Ngô Cao Nguyên
 
 ---
 

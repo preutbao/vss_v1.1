@@ -1064,6 +1064,7 @@ layout = html.Div([
         html.Div([
             # Trong file screener.py (khoảng dòng 475)
             html.Div([
+                # HÀNG 1 — Tiêu đề + số mã phù hợp (đã bỏ icon phễu, chuyển result-count lên đây)
                 html.Div([
                     html.Div([
                         html.I(
@@ -1075,83 +1076,76 @@ layout = html.Div([
                                 "marginRight": "10px", "cursor": "pointer",
                                 "verticalAlign": "middle",
                                 "transition": "color 0.15s",
-                                "zIndex": "1029", 
+                                "zIndex": "1029",
                             },
                         ),
                         dbc.Tooltip(
                             "Về FSS & Cách hoạt động",
                             target="btn-about-fss",
                             placement="right",
-                            className="custom-fss-tooltip", # <--- Thêm class name này
-                            style={"zIndex": "10000"}       # <--- Ép z-index cao hơn header (9000)
+                            className="custom-fss-tooltip",
+                            style={"zIndex": "10000"}
                         ),
-                        html.B("FIN SMART SCREENER - KẾT QUẢ SÀNG LỌC"),
-                        
-                        dbc.Button(
-                            id="mode-toggle-btn",
+                        html.B("KẾT QUẢ LỌC:", style={"marginRight": "9px"}),
+
+                        # ── result-count chuyển lên hàng 1 (bỏ icon phễu fa-filter) ──
+                        dcc.Loading(
+                            type="circle",
+                            color="#0057D9",
+                            style={"display": "inline-block", "marginLeft": "10px"},
                             children=[
-                                # moi mo app la mode tich san mac dinh de demo cho bgk
-                                html.I(className="fas fa-seedling", style={"marginRight": "5px"}),
-                                html.Span("Tích sản", id="mode-toggle-label"),
-                            ],
-                            n_clicks=0,
-                            size="sm",
-                            color="primary",
-                            outline=True,
-                            style={
-                                "borderRadius": "20px", "fontSize": "11px",
-                                "padding": "4px 12px", "whiteSpace": "nowrap",
-                                "fontWeight": "600", "marginLeft": "10px",
-                                "borderColor": "#0057D9", "color": "#0057D9", # Đổi từ blue sang green
-                            },
+                                html.Span(id="result-count", style={
+                                    "fontFamily": "'JetBrains Mono', monospace",
+                                    "fontSize": "12px", "color": "#5a8ab0", "letterSpacing": "0.46px"
+                                }),
+                            ]
                         ),
-                        
-                        # CHÈN NÚT THEME VÀO ĐÂY
-
-                        # ... (Giữ nguyên Tooltip bên dưới)
-
-                            # NÂNG CẤP TOOLTIP
-                            dbc.Tooltip(
-                                children=[
-                                    html.Div([
-                                        html.I(className="fas fa-bolt", style={"marginRight": "6px", "color": "#1E88E5"}),
-                                        html.B("Chế độ Tích sản", style={"color": "#1E88E5", "fontSize": "14px", "letterSpacing": "0.5px"}),
-                                    ], style={"marginBottom": "6px", "borderBottom": "1px solid rgba(0, 240, 255, 0.2)", "paddingBottom": "4px"}),
-                                    
-                                    html.Div(
-                                        "Bật chế độ này để lọc và hiển thị các chỉ số định giá phù hợp cho chiến lược gom cổ phiếu dài hạn.", 
-                                        style={"color": "#e2e8f0", "lineHeight": "1.5"}
-                                    ),
-                                ],
-                                id="mode-toggle-tooltip",
-                                target="mode-toggle-btn",
-                                placement="bottom",
-                                className="cyber-tooltip", # Gọi class CSS tùy chỉnh
-                                delay={"show": 200, "hide": 50}, # Thêm độ trễ nhẹ cho mượt mà
-                            ),
-                        html.Span(id="data-cutoff-label", style={
-                            "fontSize": "11px", "color": "#5a8ab0",
-                            "fontFamily": "'JetBrains Mono', monospace",
-                            "marginLeft": "10px", "fontWeight": "400",
-                            "letterSpacing": "0.3px",
-                        }),
                     ], style={"display": "flex", "alignItems": "center"})
-                ], style={"display": "flex", "alignItems": "center", "marginBottom": "4px"}),
+                ], style={"display": "flex", "alignItems": "center", "marginBottom": "5px"}),
+
+                # HÀNG 2 — Trading mode button + tooltip + data-cutoff-label (chuyển xuống đây)
                 html.Div([
-                    html.I(className="fas fa-filter", style={
-                        "color": "#0057D9", "marginRight": "6px", "fontSize": "10px"
-                    }),
-                    dcc.Loading(
-                        type="circle",
-                        color="#0057D9",
-                        style={"display": "inline-block"},
+                    dbc.Button(
+                        id="mode-toggle-btn",
                         children=[
-                            html.Span(id="result-count", style={
-                                "fontFamily": "'JetBrains Mono', monospace",
-                                "fontSize": "12px", "color": "#5a8ab0", "letterSpacing": "0.5px"
-                            }),
-                        ]
+                            html.I(className="fas fa-seedling", style={"marginRight": "5px"}),
+                            html.Span("Tích sản", id="mode-toggle-label"),
+                        ],
+                        n_clicks=0,
+                        size="sm",
+                        color="primary",
+                        outline=True,
+                        style={
+                            "borderRadius": "20px", "fontSize": "11px",
+                            "padding": "4px 12px", "whiteSpace": "nowrap",
+                            "fontWeight": "600",
+                            "borderColor": "#0057D9", "color": "#0057D9",
+                        },
                     ),
+                    dbc.Tooltip(
+                        children=[
+                            html.Div([
+                                html.I(className="fas fa-bolt", style={"marginRight": "6px", "color": "#1E88E5"}),
+                                html.B("Chế độ Tích sản", style={"color": "#1E88E5", "fontSize": "14px", "letterSpacing": "0.5px"}),
+                            ], style={"marginBottom": "6px", "borderBottom": "1px solid rgba(0, 240, 255, 0.2)", "paddingBottom": "4px"}),
+
+                            html.Div(
+                                "Bật chế độ này để lọc và hiển thị các chỉ số định giá phù hợp cho chiến lược gom cổ phiếu dài hạn.",
+                                style={"color": "#e2e8f0", "lineHeight": "1.5"}
+                            ),
+                        ],
+                        id="mode-toggle-tooltip",
+                        target="mode-toggle-btn",
+                        placement="bottom",
+                        className="cyber-tooltip",
+                        delay={"show": 200, "hide": 50},
+                    ),
+                    html.Span(id="data-cutoff-label", style={
+                        "fontSize": "11px", "color": "#5a8ab0",
+                        "fontFamily": "'JetBrains Mono', monospace",
+                        "marginLeft": "10px", "fontWeight": "400",
+                        "letterSpacing": "0.3px",
+                    }),
                 ], style={"display": "flex", "alignItems": "center"}),
             ], style={"flex": "1"}),
 
@@ -1428,8 +1422,8 @@ layout = html.Div([
 
         ], style={
             "display": "flex", "alignItems": "flex-start", "justifyContent": "space-between",
-            "padding": "12px 0 10px 2px",
-            "borderBottom": "1px solid #0e2540", "marginBottom": "12px",
+            "padding": "6px 0 6px 2px",
+            "borderBottom": "1px solid #0e2540", "marginBottom": "6px",
         }),
 
         # Heatmap panel (collapse, ẩn mặc định)

@@ -19,6 +19,12 @@ logger = logging.getLogger(__name__)
 # ── Cache histogram (tránh tính lại mỗi lần thêm filter card) ──
 _histogram_cache: dict = {}  # { filter_id: base64_svg_string }
 
+# Cache đơn giản, chỉ tồn tại trong RAM của process hiện tại — an toàn vì app
+# chạy gunicorn --workers 1 --worker-class sync (xem main.py). Dùng để chặn
+# rc-slider bắn 2 lần sự kiện "value" giống hệt nhau cho 1 lần kéo-thả-buông
+# chuột (quirk đã biết của thư viện, độc lập với updatemode="mouseup").
+_LAST_SLIDER_TRIGGER_VALUE: dict = {}
+_LAST_BADGE_TRIGGER_VALUE: dict = {}
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -1210,6 +1216,7 @@ def manage_filter_ui(
 
     return (NO,) * 11
 
+
 # ============================================================================
 # CALLBACK: CẬP NHẬT BADGE ĐẾM MÃ KHI SLIDER THAY ĐỔI (REALTIME)
 # ============================================================================
@@ -1230,9 +1237,18 @@ def update_count_badge(range_value, filter_year):
     }
     if not range_value or len(range_value) != 2:
         return "–", {**_style_base, "color": "#484f58"}
+
     ctx = callback_context
     if not ctx.triggered:
         return no_update, no_update
+
+    # ── GUARD: chặn rc-slider double-fire (cùng filter_id + cùng value) ──
+    trig_key = ctx.triggered[0]["prop_id"]
+    trig_val = ctx.triggered[0]["value"]
+    if _LAST_BADGE_TRIGGER_VALUE.get(trig_key) == trig_val:
+        return no_update, no_update
+    _LAST_BADGE_TRIGGER_VALUE[trig_key] = trig_val
+
     try:
         filter_id = json.loads(ctx.triggered[0]["prop_id"].split(".")[0])["filter"]
     except Exception:
@@ -1277,27 +1293,33 @@ _ALL_FILTER_STORE_IDS = [
     State({"type": "range-slider", "filter": ALL}, "min"),
     State({"type": "range-slider", "filter": ALL}, "max"),
     State("saved-filters-dropdown", "value"),
-    State("readonly-filters-store", "data"),   # ← THÊM
+    State("readonly-filters-store", "data"),
     prevent_initial_call=True
 )
 def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
-                             current_dd_val, readonly_filter_ids):   # ← THÊM tham số
+                             current_dd_val, readonly_filter_ids):
     ctx = callback_context
-    # ── DEBUG BLOCK update_all_range_stores ────────────────────────
-    ctx = callback_context
-    if ctx.triggered:
-        import time as _time
-        _trig = ctx.triggered[0]['prop_id'][:60]
-        logger.warning(
-            f"[RANGE_STORES] @ {_time.strftime('%H:%M:%S')} | "
-            f"triggered={_trig} | "
-            f"readonly_id_set_size={len(set(readonly_filter_ids.keys()) if isinstance(readonly_filter_ids, dict) else (readonly_filter_ids or []))}"
-        )
-    # ── END DEBUG ──────────────────────────────────────────────────
     if not ctx.triggered:
         return [no_update] * (len(_ALL_FILTER_STORE_IDS) + 1)
 
-    # Xử lý cả 2 format (dict mới hoặc list cũ)
+    # ── GUARD: chặn rc-slider double-fire (cùng prop_id + cùng value) ──────
+    trig = ctx.triggered[0]
+    trig_key = trig["prop_id"]
+    trig_val = trig["value"]
+    if _LAST_SLIDER_TRIGGER_VALUE.get(trig_key) == trig_val:
+        return [no_update] * (len(_ALL_FILTER_STORE_IDS) + 1)
+    _LAST_SLIDER_TRIGGER_VALUE[trig_key] = trig_val
+
+    # ── DEBUG BLOCK update_all_range_stores ────────────────────────
+    import time as _time
+    logger.warning(
+        f"[RANGE_STORES] @ {_time.strftime('%H:%M:%S')} | "
+        f"triggered={trig_key[:60]} | value={trig_val} | "
+        f"readonly_id_set_size={len(set(readonly_filter_ids.keys()) if isinstance(readonly_filter_ids, dict) else (readonly_filter_ids or []))}"
+    )
+    # ── END DEBUG ──────────────────────────────────────────────────
+
+    # (phần còn lại của hàm giữ nguyên y hệt — không đổi gì thêm)
     if isinstance(readonly_filter_ids, dict):
         readonly_id_set = set(readonly_filter_ids.keys())
     else:
@@ -1307,13 +1329,10 @@ def update_all_range_stores(slider_values, slider_ids, slider_mins, slider_maxs,
     for val, id_spec, smin, smax in zip(slider_values, slider_ids, slider_mins, slider_maxs):
         if isinstance(id_spec, dict) and 'filter' in id_spec:
             fid = id_spec['filter']
-            # Bỏ qua slider readonly (card Tham khảo) — chúng dùng riêng active-filters-store
             if fid in readonly_id_set:
                 continue
-            # Bỏ qua nếu value == [min, max] → slider chỉ mới mount  
             if val and len(val) == 2 and val[0] == smin and val[1] == smax:
                 continue
-            # THÊM: bỏ qua nếu đây là IPS filter với value đúng bằng ips range (mount event)
             if isinstance(readonly_filter_ids, dict) and fid in readonly_filter_ids:
                 ips_range = readonly_filter_ids[fid]
                 if isinstance(ips_range, list) and len(ips_range) == 2:

@@ -1040,7 +1040,7 @@ layout = html.Div(
                         id="search-ticker-input",
                         options=[],
                         value=None,
-                        placeholder="Tìm mã hoặc tên công ty (Tiếng Việt/Tiếng Anh)...",
+                        placeholder="Tìm mã cổ phiếu, ngành, hoặc từ khóa...",
                         searchable=True,
                         clearable=True,
                         multi=False,
@@ -1165,57 +1165,7 @@ layout = html.Div(
                         # Phiếu (Wilder)" trong dropdown "Chiến lược VIP" phía trên,
                         # tránh trùng lặp 2 cơ chế lọc ADX song song gây nhầm lẫn.
 
-                        # ── T+2.5 TOGGLE — gộp cùng div với strategy để không có gap thừa ──
-                        html.Div([
-                            html.Div([
-                                html.Span("T+2.5", style={"fontSize": "11px", "fontWeight": "700", "color": "#1E88E5", "fontFamily": "'Roboto Mono', monospace", "letterSpacing": "0.5px"}),
-                                html.Span("BETA", style={"fontSize": "8px", "fontWeight": "700", "color": "#f59e0b", "backgroundColor": "rgba(245,158,11,0.12)", "border": "1px solid rgba(245,158,11,0.3)", "borderRadius": "3px", "padding": "1px 4px", "marginLeft": "4px"}),
-                            ], style={"marginBottom": "3px"}),
-                            html.Div([
-                                html.Div(
-                                    id="tplus-toggle-track", n_clicks=0,
-                                    style={"width": "36px", "height": "18px", "borderRadius": "9px", "backgroundColor": "#1e2d3d", "border": "1px solid #30363d", "position": "relative", "transition": "all 0.2s ease"},
-                                    children=[
-                                        html.Div(id="tplus-toggle-thumb", style={"width": "12px", "height": "12px", "borderRadius": "50%", "backgroundColor": "#484f58", "position": "absolute", "top": "2px", "left": "2px", "transition": "all 0.2s ease"})
-                                    ]
-                                ),
-                            ]),
-                            dbc.Tooltip(
-                                "Bật chế độ này để mô phỏng sự kiện rủi ro T+2.5: Cảnh báo kẹt thanh khoản (trắng bên mua) và Call Margin nếu thị trường giảm sâu.",
-                                target="tplus-wrapper", 
-                                placement="bottom",
-                                className="cyber-theme-tooltip" # ← Chỉ cần gọi class này là nhận toàn bộ CSS
-                            )
-                        ], id="tplus-wrapper", style={ 
-                            "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "4px 10px",
-                            "backgroundColor": "rgba(30, 136, 229,0.04)", "border": "1px solid rgba(30, 136, 229,0.12)",
-                            "borderRadius": "8px", "cursor": "pointer", "flexShrink": "0",
-                            "marginLeft": "6px",   # ← thay vì dùng gap của toolbar, gắn sát vào strategy
-                        }),
                     ], style={"display": "flex", "alignItems": "center", "gap": "0"}),  # wrapper gộp 2 item, gap=0 để 2 item sát nhau, không có khoảng trống thừa giữa chúng
-                    # 3. CỤM NHẬP VỐN (NAV) VỚI TOOLTIP PREMIUM
-                    html.Div([
-                        html.I(className="fas fa-wallet", style={"color": "#10b981", "fontSize": "13px", "marginRight": "6px"}), 
-                        html.Span("Vốn:", style={"color": "#9ca3af", "fontSize": "12px", "fontWeight": "bold", "marginRight": "6px"}),
-                        dcc.Input(
-                            id="nav-input", type="text", placeholder="VD: 50,000,000", debounce=True,
-                            style={
-                                "width": "120px", "backgroundColor": "#0d1117", "color": "#10b981",
-                                "border": "1px solid #30363d", "borderRadius": "14px", "padding": "0 10px", 
-                                "fontSize": "12px", "height": "28px", "fontWeight": "bold", "outline": "none"
-                            }
-                        ),
-                        dbc.Tooltip(
-                            "Nhập số tiền đầu tư. Hệ thống sẽ tự loại bỏ các cổ phiếu có thị giá quá cao (không đủ mua 1 lô 100 cổ) và gợi ý phân bổ vốn tối ưu.",
-                            target="nav-wrapper", placement="bottom",
-                            className="cyber-theme-tooltip"
-                        )
-                    ], id="nav-wrapper", style={ 
-                        "display": "flex", "alignItems": "center", "backgroundColor": "#161b22", 
-                        "borderRadius": "20px", "border": "1px solid #21262d", "padding": "4px 12px",
-                        "height": "34px", "flexShrink": "0", "cursor": "help"
-                    }),
-                    
                     # 5. NÚT XÓA TẤT CẢ
                     dbc.Button(
                         [html.I(className="fas fa-times", style={"marginRight": "6px"}), "Xoá tất cả"],
@@ -1299,6 +1249,57 @@ layout = html.Div(
                         className="ssi-dropdown-custom",
                         style={"minWidth": "155px", "maxWidth": "240px"},
                     ),
+
+                    # ── T+2.5 TOGGLE (dời từ tab Chiến lược sang tab Phạm vi) ──
+                    html.Div([
+                        html.Div([
+                            html.Span("T+2.5", style={"fontSize": "11px", "fontWeight": "700", "color": "#1E88E5", "fontFamily": "'Roboto Mono', monospace", "letterSpacing": "0.5px"}),
+                            html.Span("BETA", style={"fontSize": "8px", "fontWeight": "700", "color": "#f59e0b", "backgroundColor": "rgba(245,158,11,0.12)", "border": "1px solid rgba(245,158,11,0.3)", "borderRadius": "3px", "padding": "1px 4px", "marginLeft": "4px"}),
+                        ], style={"marginBottom": "3px"}),
+                        html.Div([
+                            html.Div(
+                                id="tplus-toggle-track", n_clicks=0,
+                                style={"width": "36px", "height": "18px", "borderRadius": "9px", "backgroundColor": "#1e2d3d", "border": "1px solid #30363d", "position": "relative", "transition": "all 0.2s ease"},
+                                children=[
+                                    html.Div(id="tplus-toggle-thumb", style={"width": "12px", "height": "12px", "borderRadius": "50%", "backgroundColor": "#484f58", "position": "absolute", "top": "2px", "left": "2px", "transition": "all 0.2s ease"})
+                                ]
+                            ),
+                        ]),
+                        dbc.Tooltip(
+                            "Bật chế độ này để mô phỏng sự kiện rủi ro T+2.5: Cảnh báo kẹt thanh khoản (trắng bên mua) và Call Margin nếu thị trường giảm sâu.",
+                            target="tplus-wrapper", 
+                            placement="bottom",
+                            className="cyber-theme-tooltip" # ← Chỉ cần gọi class này là nhận toàn bộ CSS
+                        )
+                    ], id="tplus-wrapper", style={ 
+                        "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "4px 10px",
+                        "backgroundColor": "rgba(30, 136, 229,0.04)", "border": "1px solid rgba(30, 136, 229,0.12)",
+                        "borderRadius": "8px", "cursor": "pointer", "flexShrink": "0",
+                        "marginLeft": "6px",
+                    }),
+
+                    # ── CỤM NHẬP VỐN (NAV) (dời từ tab Chiến lược sang tab Phạm vi) ──
+                    html.Div([
+                        html.I(className="fas fa-wallet", style={"color": "#10b981", "fontSize": "13px", "marginRight": "6px"}), 
+                        html.Span("Vốn:", style={"color": "#9ca3af", "fontSize": "12px", "fontWeight": "bold", "marginRight": "6px"}),
+                        dcc.Input(
+                            id="nav-input", type="text", placeholder="VD: 50,000,000", debounce=True,
+                            style={
+                                "width": "120px", "backgroundColor": "#0d1117", "color": "#10b981",
+                                "border": "1px solid #30363d", "borderRadius": "14px", "padding": "0 10px", 
+                                "fontSize": "12px", "height": "28px", "fontWeight": "bold", "outline": "none"
+                            }
+                        ),
+                        dbc.Tooltip(
+                            "Nhập số tiền đầu tư. Hệ thống sẽ tự loại bỏ các cổ phiếu có thị giá quá cao (không đủ mua 1 lô 100 cổ) và gợi ý phân bổ vốn tối ưu.",
+                            target="nav-wrapper", placement="bottom",
+                            className="cyber-theme-tooltip"
+                        )
+                    ], id="nav-wrapper", style={ 
+                        "display": "flex", "alignItems": "center", "backgroundColor": "#161b22", 
+                        "borderRadius": "20px", "border": "1px solid #21262d", "padding": "4px 12px",
+                        "height": "34px", "flexShrink": "0", "cursor": "help"
+                    }),
                 ], id="toolbar-panel-scope", className="toolbar-panel toolbar-panel-hidden"),
 
                 # ── PANEL 4: Cá nhân ─────────────────────────────────────────────

@@ -306,37 +306,11 @@ def _build_col_defs(active_filters, strategy_id, trading_mode="investing"):
 def _apply_realtime_to_records(records: list) -> list:
     """
     [FIX] Áp giá realtime (Wifeed) lên rowData NGAY TẠI THỜI ĐIỂM RENDER.
-
-    Trước đây rowData của bảng screener chỉ được dựng từ snapshot
-    (get_snapshot_df() -> snapshot_cache.parquet = giá EOD phiên trước), và
-    chỉ được vá giá mới bởi realtime_price_callbacks.update_screener_realtime()
-    khi dcc.Interval bắn — tức SỚM NHẤT là giây thứ 60 sau khi trang load.
-    Hậu quả (đã xác nhận trên thực tế):
-
-      1. Khởi động app trong giờ giao dịch: run_startup_backfill() ĐÃ fetch
-         Wifeed và nạp snapshot realtime vào RAM ngay từ đầu, nên các thẻ KPI
-         ở header (home_callbacks.py — đọc thẳng get_realtime_snapshot() /
-         get_realtime_index() lúc render) hiện giá MỚI ngay lập tức, trong khi
-         bảng lọc chính bên dưới vẫn hiện giá EOD hôm trước suốt 1 phút đầu.
-      2. Mỗi lần user đổi bộ lọc, callback này dựng lại rowData từ snapshot
-         EOD -> giá lại "nhảy ngược" về giá cũ cho tới tick 60s kế tiếp.
-
-    Hàm này áp đúng cùng logic patch mà realtime_price_callbacks đang dùng
-    (_patch_rows — chỉ "Price Close" + "Price_Change_Pct") nên KHÔNG tạo ra
-    hành vi mới, chỉ khiến nó xảy ra ngay lập tức thay vì trễ 60s. Cách làm
-    này cũng khớp với pattern sẵn có ở home_callbacks.py: patch realtime SAU
-    CÙNG để nó là giá trị "thắng" lúc hiển thị.
-
-    An toàn:
-      - Ngoài giờ GD / chưa fetch lần nào -> get_realtime_snapshot() rỗng ->
-        trả nguyên records, không đụng gì.
-      - Dòng "🔒 VIP" (locked rows) không có trong snapshot -> _patch_rows tự
-        bỏ qua, không cần lọc riêng.
-      - Import lazy trong hàm (giống toàn bộ codebase) để tránh circular
-        import; realtime_price_callbacks vốn đã được main.py import từ lúc
-        khởi động nên đây chỉ là cache hit, KHÔNG đăng ký lại callback.
-      - Mọi lỗi đều nuốt và trả records gốc — không bao giờ làm hỏng bảng lọc
-        chỉ vì giá realtime không sẵn sàng.
+    Xem giải thích đầy đủ trong lịch sử trao đổi — tóm tắt: rowData trước
+    đây chỉ dựng từ snapshot EOD, chỉ được vá giá mới bởi
+    realtime_price_callbacks.update_screener_realtime() khi dcc.Interval
+    60s bắn — khiến giá "kẹt" ở EOD tới 60s đầu và mỗi lần đổi bộ lọc.
+    Dùng lại đúng _patch_rows() sẵn có, không tạo hành vi mới.
     """
     if not records:
         return records
@@ -1185,16 +1159,15 @@ def update_screener_table(
             final_rows = df_filtered.to_dict("records")
 
         # [FIX] Áp giá realtime lên rowData ngay lúc render — xem
-        # _apply_realtime_to_records(). Đặt SAU cả VIP gate để dòng "🔒 VIP"
-        # cũng đi qua (vô hại, không có trong snapshot) và để giá realtime là
-        # giá trị "thắng" cuối cùng, giống pattern ở home_callbacks.py.
+        # _apply_realtime_to_records(). Đặt SAU cả VIP gate, giá realtime
+        # là giá trị "thắng" cuối cùng, giống pattern home_callbacks.py.
         final_rows = _apply_realtime_to_records(final_rows)
 
         # [CẬP NHẬT] Trả về thêm 2 tham số của Toast cảnh báo ở cuối
         return (
             final_rows,
             col_defs,
-            f"Tìm thấy {filtered_count} / {total_stocks} mã phù hợp",
+            f"{filtered_count} / {total_stocks} mã phù hợp",
             f"Lọc: {filtered_count} mã | Tổng: {total_stocks} mã",
             toast_is_open,
             toast_msg,
@@ -4579,7 +4552,22 @@ def update_cutoff_label(row_data, fetch_ts):
     _TZ_VN = pytz.timezone("Asia/Ho_Chi_Minh")
 
     try:
-        if fetch_ts and float(fetch_ts) > 0:
+        # [FIX] BỎ điều kiện "if fetch_ts and float(fetch_ts) > 0:" bọc ngoài
+        # nhánh get_eod_status(). Đây là nguyên nhân badge "kẹt" ở EOD/ngày
+        # cũ: fetch_ts là Store CHỈ được set bởi update_screener_realtime()
+        # (realtime_price_callbacks.py) — 1 callback prevent_initial_call=True
+        # phụ thuộc dcc.Interval phía CLIENT đếm đủ 60s. Trước khi Store đó
+        # có giá trị lần đầu, nhánh get_eod_status() KHÔNG BAO GIỜ được thử.
+        #
+        # get_snapshot_timestamp()/get_eod_status() là hàm SERVER-SIDE, đọc
+        # thẳng RAM backend — không phụ thuộc Store fetch_ts phía client.
+        # run_startup_backfill() chạy ĐỒNG BỘ, xong TRƯỚC KHI Dash nhận
+        # request nào, nên get_snapshot_timestamp() > 0 sẵn từ request đầu
+        # tiên trong giờ GD — bỏ gate này, badge đúng ngay từ lần render đầu
+        # tiên, không phụ thuộc bất kỳ client-side interval nào. fetch_ts
+        # vẫn giữ làm Input (xem decorator) để re-trigger khi có data mới,
+        # chỉ không dùng để GATE nữa.
+        if True:
             try:
                 from src.backend.wifeed_updater import get_snapshot_timestamp, get_eod_status
                 ts = get_snapshot_timestamp()
